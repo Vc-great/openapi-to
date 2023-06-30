@@ -11,7 +11,11 @@
     "resolveJsonModule": true,
     "useUnknownInCatchVariables": false,
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
     "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "types": ["jest"]
+  "types": ["jest"],
+  "ts-node": {
+    "esm": true
+  }
 }
