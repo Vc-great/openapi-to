@@ -1,0 +1,5079 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "接口文档",
+    "version": "1.0.0",
+    "title": "接口文档"
+  },
+  "host": "127.0.0.1:8080",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "任务管理",
+      "description": "Task Controller"
+    }
+  ],
+  "paths": {
+    "tasks": {
+      "get": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "查询dataUploadingTask",
+        "operationId": "allUsingGET_14",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "businessTypeCode",
+            "in": "query",
+            "description": "业务类型",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "ID",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码 (0..N)，默认为0",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "每页显示的数目,默认为10",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "以下列格式排序标准：property[,asc | desc]。 默认排序顺序为升序。 支持多种排序条件：如：id,asc",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "启动时间",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "状态",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "description": "委端任务id",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "taskName",
+            "in": "query",
+            "description": "任务名称",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "taskType",
+            "in": "query",
+            "description": "任务类型0.测试数据，1.正式数据",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "typeCode",
+            "in": "query",
+            "description": "业务类型编码",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«Page«dataUploadingTask»»",
+              "originalRef": "Response«Page«dataUploadingTask»»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      },
+      "post": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "新增dataUploadingTask",
+        "operationId": "createUsingPOST_10",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "resources",
+            "description": "resources",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SzydDataUploadingTaskDto",
+              "originalRef": "SzydDataUploadingTaskDto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«dataUploadingTask»",
+              "originalRef": "Response«dataUploadingTask»"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      },
+      "put": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "修改dataUploadingTask",
+        "operationId": "updateUsingPUT_10",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "resources",
+            "description": "resources",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SzydDataUploadingTaskDto",
+              "originalRef": "SzydDataUploadingTaskDto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«dataUploadingTask»",
+              "originalRef": "Response«dataUploadingTask»"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      },
+      "delete": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "删除dataUploadingTask",
+        "operationId": "deleteUsingDELETE_10",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "list",
+            "description": "list",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«object»",
+              "originalRef": "Response«object»"
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/all": {
+      "get": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "查询dataUploadingTask",
+        "operationId": "allUsingGET_13",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "businessTypeCode",
+            "in": "query",
+            "description": "业务类型",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "ID",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "启动时间",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "状态",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "description": "委端任务id",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "taskName",
+            "in": "query",
+            "description": "任务名称",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "taskType",
+            "in": "query",
+            "description": "任务类型0.测试数据，1.正式数据",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "typeCode",
+            "in": "query",
+            "description": "业务类型编码",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«Page«dataUploadingTask»»",
+              "originalRef": "Response«Page«dataUploadingTask»»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/fork": {
+      "post": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "复制（打开）dataUploadingTask",
+        "operationId": "forkUsingPOST",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "resources",
+            "description": "resources",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SzydDataUploadingTaskDto",
+              "originalRef": "SzydDataUploadingTaskDto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«dataUploadingTask»",
+              "originalRef": "Response«dataUploadingTask»"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/sync-feedback": {
+      "get": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "uploadTaskSyncFeedBack",
+        "operationId": "uploadTaskSyncFeedBackUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«Void»",
+              "originalRef": "Response«Void»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/taskAndIdList": {
+      "get": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "查询委端任务下拉，id：任务表id，taskName：委端任务名",
+        "operationId": "taskAndIdListUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "businessTypeCode",
+            "in": "query",
+            "description": "businessTypeCode",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«object»",
+              "originalRef": "Response«object»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/{id}": {
+      "get": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "查询dataUploadingTask详情",
+        "operationId": "oneUsingGET_10",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "fields",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«dataUploadingTask»",
+              "originalRef": "Response«dataUploadingTask»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/{id}/data": {
+      "get": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "查询上报任务关联的上报数据",
+        "operationId": "getRelateDataUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "dataName",
+            "in": "query",
+            "description": "数据名称",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "dataUniqueCode",
+            "in": "query",
+            "description": "数据唯一标识",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "dataUploadingTypeId",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "operationFlag",
+            "in": "query",
+            "description": "操作标识（add新增，edit修改，del删除）",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "orgId",
+            "in": "query",
+            "description": "所属企业",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "orgName",
+            "in": "query",
+            "description": "所属企业名称",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pid",
+            "in": "query",
+            "description": "父id",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "状态(待关联0 待上报1 已上报2)",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "subType",
+            "in": "query",
+            "description": "是否是子类型",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "description": "委端任务id",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«List«上报空间»»",
+              "originalRef": "Response«List«上报空间»»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/{task-id}/add-relateData": {
+      "put": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "追加关联上报数据",
+        "operationId": "addRelateDataUsingPUT",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "list",
+            "description": "list",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          {
+            "name": "task-id",
+            "in": "path",
+            "description": "task-id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«dataUploadingTask»",
+              "originalRef": "Response«dataUploadingTask»"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/{task-id}/create-db": {
+      "post": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "creatdb",
+        "operationId": "creatdbUsingPOST",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "task-id",
+            "in": "path",
+            "description": "task-id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«object»",
+              "originalRef": "Response«object»"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/{task-id}/remove-relateData": {
+      "delete": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "移除已关联的上报数据",
+        "operationId": "removeUsingDELETE",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "list",
+            "description": "list",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          {
+            "name": "task-id",
+            "in": "path",
+            "description": "task-id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«dataUploadingTask»",
+              "originalRef": "Response«dataUploadingTask»"
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "tasks/{task-id}/start-trigger": {
+      "post": {
+        "tags": [
+          "任务管理"
+        ],
+        "summary": "startTrigge",
+        "operationId": "startTriggeUsingPOST",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "task-id",
+            "in": "path",
+            "description": "task-id",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Response«object»",
+              "originalRef": "Response«object»"
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    }
+  },
+  "securityDefinitions": {
+    "Authorization": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "BusinessTypeDto": {
+      "type": "object",
+      "required": [
+        "groupCode",
+        "orgCode",
+        "orgName",
+        "sortNo",
+        "typeCode",
+        "typeName"
+      ],
+      "properties": {
+        "groupCode": {
+          "type": "string",
+          "description": "集团编码"
+        },
+        "gzwServerConfig": {
+          "type": "string",
+          "description": "国资委配置信息"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "orgCode": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "orgName": {
+          "type": "string",
+          "description": "企业名称"
+        },
+        "sortNo": {
+          "type": "integer",
+          "format": "int32",
+          "description": "排序"
+        },
+        "sourceJson": {
+          "type": "string",
+          "description": "数据连接配置"
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "数据来源方式（db文件、视图、api接口、url等）",
+          "enum": [
+            "DB_CONNECTION",
+            "API_INTERFACE"
+          ]
+        },
+        "typeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "typeName": {
+          "type": "string",
+          "description": "业务类型名称"
+        },
+        "typeRuleConfig": {
+          "type": "string",
+          "description": "类型相关规则配置"
+        }
+      },
+      "title": "BusinessTypeDto"
+    },
+    "DataUploadingExceptionFeedbackDto": {
+      "type": "object",
+      "properties": {
+        "businessTypeCode": {
+          "type": "string",
+          "description": "异常类型 SZYD ZZJG"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "excetionType": {
+          "type": "string",
+          "description": "异常类型"
+        },
+        "feedbackFileId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "反馈文件id"
+        },
+        "feedbackFileName": {
+          "type": "string",
+          "description": "反馈文件名称"
+        },
+        "gzwFileId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "国资委反馈文件id"
+        },
+        "gzwFileMd": {
+          "type": "string",
+          "description": "国资委反馈文件文件的md5"
+        },
+        "gzwFileName": {
+          "type": "string",
+          "description": "国资委反馈文件名称"
+        },
+        "gzwFileRecvTime": {
+          "description": "国资委反馈文件接收到文件的时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "gzwFileSavePath": {
+          "type": "string",
+          "description": "国资委反馈文件文件保存的路径"
+        },
+        "gzwFileSize": {
+          "type": "string",
+          "description": "国资委反馈文件大小"
+        },
+        "gzwFileSystemCode": {
+          "type": "string",
+          "description": "国资委反馈文件所属业务系统的编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "state": {
+          "type": "string",
+          "description": "状态"
+        },
+        "subterminalTaskName": {
+          "type": "string",
+          "description": "委端任务名称"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报任务id"
+        },
+        "uploadingTaskName": {
+          "type": "string",
+          "description": "上报任务任务名称"
+        }
+      },
+      "title": "DataUploadingExceptionFeedbackDto"
+    },
+    "DataUploadingExceptionTrackConfirmDto": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "modifyContent": {
+          "type": "string",
+          "description": "修改内容"
+        },
+        "modifyType": {
+          "type": "integer",
+          "format": "int32",
+          "description": "修改类型0-填写无误，校验不准确,1,问题属实本次填报修改,2,不属于实际管理企业、已注销、已申请注销、已划拨至其他企业管理,3-其他,"
+        }
+      },
+      "title": "DataUploadingExceptionTrackConfirmDto"
+    },
+    "DataUploadingExceptionTrackInspectDto": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "inspectState": {
+          "type": "integer",
+          "format": "int32",
+          "description": "0-上报国资委，1-驳回"
+        }
+      },
+      "title": "DataUploadingExceptionTrackInspectDto"
+    },
+    "DataUploadingExceptionTrackRejectDto": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态：4-驳回"
+        },
+        "trackIds": {
+          "type": "array",
+          "description": "ID,传数组",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "title": "DataUploadingExceptionTrackRejectDto"
+    },
+    "DataUploadingModeDto": {
+      "type": "object",
+      "required": [
+        "typeId"
+      ],
+      "properties": {
+        "columnName": {
+          "type": "string",
+          "description": "数据库列名"
+        },
+        "columnTag": {
+          "type": "string",
+          "description": "列标签(普通:REGULAR,所属企业:ORG_NAME,唯一标识:UNIQUE_FLAG,更新时间:UPDATE_TIME,数据名称:DATE_NAME)",
+          "enum": [
+            "REGULAR",
+            "ORG_NAME",
+            "ORG_CODE",
+            "GROUP_CODE",
+            "UNIQUE_FLAG",
+            "UPDATE_TIME",
+            "DATA_NAME",
+            "OPERATION_FLAG"
+          ]
+        },
+        "dataSize": {
+          "type": "integer",
+          "format": "int32",
+          "description": "指标数据长度"
+        },
+        "dataType": {
+          "type": "string",
+          "description": "指标数据类型(number、text、longtext、boolean)",
+          "enum": [
+            "CHAR",
+            "INT",
+            "TEXT",
+            "FLOAT",
+            "DATE",
+            "ATTACHMENT"
+          ]
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "modeCode": {
+          "type": "string",
+          "description": "指标编码"
+        },
+        "modeDescribe": {
+          "type": "string",
+          "description": "指标说明"
+        },
+        "modeField": {
+          "type": "string",
+          "description": "指标标识"
+        },
+        "modeName": {
+          "type": "string",
+          "description": "指标名称"
+        },
+        "primaryKeyFlag": {
+          "type": "boolean",
+          "description": "是否表主键"
+        },
+        "requiredFlag": {
+          "type": "boolean",
+          "description": "是否必填（0否，1是）"
+        },
+        "typeId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数据类型id"
+        },
+        "uniqueFlag": {
+          "type": "boolean",
+          "description": "是否表内唯一"
+        },
+        "valueRules": {
+          "type": "string",
+          "description": "值约束"
+        }
+      },
+      "title": "DataUploadingModeDto"
+    },
+    "DataUploadingTypeDto": {
+      "type": "object",
+      "required": [
+        "businessTypeCode",
+        "dataTypeCode",
+        "dataTypeName",
+        "hasOrgInfo",
+        "subType"
+      ],
+      "properties": {
+        "associatedColumnInChild": {
+          "type": "string",
+          "description": "子表关联字段"
+        },
+        "associatedColumnInParent": {
+          "type": "string",
+          "description": "父表中被关联字段"
+        },
+        "businessTypeCode": {
+          "type": "string",
+          "description": "businessTypeCode"
+        },
+        "connectConfig": {
+          "type": "string",
+          "description": "数据连接配置"
+        },
+        "dataTypeCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "数据类型编码"
+        },
+        "dataTypeName": {
+          "type": "string",
+          "description": "数据类型名称"
+        },
+        "dataUploadingModeDtoList": {
+          "type": "array",
+          "description": "数据上报指标",
+          "items": {
+            "$ref": "#/definitions/DataUploadingModeDto",
+            "originalRef": "DataUploadingModeDto"
+          }
+        },
+        "hasOrgInfo": {
+          "type": "boolean",
+          "description": "是否有机构信息(0否、1是)"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "modeConfig": {
+          "type": "string",
+          "description": "数据指标约束配置"
+        },
+        "pid": {
+          "type": "integer",
+          "format": "int64",
+          "description": "父级id,类型为子类型是需填写"
+        },
+        "queryBuilder": {
+          "type": "string",
+          "description": "查询模型"
+        },
+        "selectConfig": {
+          "type": "string",
+          "description": "数据选择配置"
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "数据来源方式（db文件、视图、api接口、url等）",
+          "enum": [
+            "DB_CONNECTION",
+            "API_INTERFACE"
+          ]
+        },
+        "subType": {
+          "type": "boolean",
+          "description": "是否子类型(0否、1是)"
+        },
+        "validateConfig": {
+          "type": "string",
+          "description": "数据上报校验配置"
+        }
+      },
+      "title": "DataUploadingTypeDto"
+    },
+    "FeedbackDataEnterpriseDataSubmissionDataCollectionDto": {
+      "type": "object",
+      "properties": {
+        "businessDataCoding": {
+          "type": "string",
+          "description": "业务数据编码"
+        },
+        "businessDataName": {
+          "type": "string",
+          "description": "业务数据名称"
+        },
+        "businessTypeCoding": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "businessTypeName": {
+          "type": "string",
+          "description": "业务类型名称"
+        },
+        "createBy": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "createTime": {
+          "description": "创建时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "deliveryTime": {
+          "type": "string",
+          "description": "下发时间"
+        },
+        "enterpriseCoding": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "enterpriseDataSubmissionStatusExceptionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "企业数据报送情况-报送数据采集异常情况ID"
+        },
+        "enterpriseDataSubmissionStatusId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "企业数据报送情况ID"
+        },
+        "exceptionDetailDescription": {
+          "type": "string",
+          "description": "异常详细描述"
+        },
+        "exceptionFeedbackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常信息反馈表id"
+        },
+        "exceptionTypeCoding": {
+          "type": "string",
+          "description": "异常类型编码"
+        },
+        "exceptionTypeName": {
+          "type": "string",
+          "description": "异常类型名称"
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "所属集团编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "issueBatchNumber": {
+          "type": "string",
+          "description": "下发批次号"
+        },
+        "operater": {
+          "type": "string",
+          "description": "修改责任人"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态(0待处理、1待确认、2已修复、3已过期)"
+        },
+        "updateBy": {
+          "type": "string",
+          "description": "更新人"
+        },
+        "updateTime": {
+          "description": "更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        }
+      },
+      "title": "FeedbackDataEnterpriseDataSubmissionDataCollectionDto"
+    },
+    "LocalStorage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "媒体类型"
+        },
+        "name": {
+          "type": "string",
+          "description": "文件名"
+        },
+        "path": {
+          "type": "string",
+          "description": "路径"
+        },
+        "realName": {
+          "type": "string",
+          "description": "真实文件名"
+        },
+        "size": {
+          "type": "string",
+          "description": "大小(格式化)"
+        },
+        "sizeLong": {
+          "type": "integer",
+          "format": "int64",
+          "description": "大小"
+        },
+        "suffix": {
+          "type": "string",
+          "description": "后缀"
+        },
+        "type": {
+          "type": "string",
+          "description": "类型"
+        }
+      },
+      "title": "LocalStorage"
+    },
+    "Map«string,object»": {
+      "type": "object",
+      "title": "Map«string,object»",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "OrgDataUploadingExceptionFeedbackDto": {
+      "type": "object",
+      "properties": {
+        "applyDescription": {
+          "type": "string",
+          "description": "申请说明"
+        },
+        "applyType": {
+          "type": "string",
+          "description": "申请类型"
+        },
+        "contrastData": {
+          "type": "string",
+          "description": "对比数据"
+        },
+        "createBy": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "createTime": {
+          "description": "创建时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "dataSource": {
+          "type": "string",
+          "description": "数据来源"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "exceptionCode": {
+          "type": "string",
+          "description": "异常标识码"
+        },
+        "exceptionFeedbackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常信息反馈表id"
+        },
+        "exceptionTrackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常信息跟踪表id"
+        },
+        "fillData": {
+          "type": "string",
+          "description": "填报数据"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "modeName": {
+          "type": "string",
+          "description": "指标名称"
+        },
+        "operater": {
+          "type": "string",
+          "description": "修改责任人"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "resourcesName": {
+          "type": "string",
+          "description": "资源名称"
+        },
+        "rowNo": {
+          "type": "string",
+          "description": "行号"
+        },
+        "sourceName": {
+          "type": "string",
+          "description": "来源名称"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态(0待提交、1已提交、2已确认)"
+        },
+        "updateBy": {
+          "type": "string",
+          "description": "更新人"
+        },
+        "updateTime": {
+          "description": "更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "validateType": {
+          "type": "string",
+          "description": "验证类型"
+        }
+      },
+      "title": "OrgDataUploadingExceptionFeedbackDto"
+    },
+    "Page": {
+      "type": "object",
+      "required": [
+        "page",
+        "size"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "description": "页码 (0..N)，默认为0"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32",
+          "description": "每页显示的数目,默认为10"
+        },
+        "sort": {
+          "type": "array",
+          "description": "以下列格式排序标准：property[,asc | desc]。 默认排序顺序为升序。 支持多种排序条件：如：id,asc",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "Page"
+    },
+    "PageMetadata": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "format": "int32",
+          "description": "页数"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int64",
+          "description": "每页数量"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64",
+          "description": "总数量"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32",
+          "description": "总页数"
+        }
+      },
+      "title": "PageMetadata"
+    },
+    "Page«dataUploadingTask»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/dataUploadingTask",
+            "originalRef": "dataUploadingTask"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«dataUploadingTask»"
+    },
+    "Page«三重一大数据反馈-报送数据采集异常情况»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/三重一大数据反馈-报送数据采集异常情况",
+            "originalRef": "三重一大数据反馈-报送数据采集异常情况"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«三重一大数据反馈-报送数据采集异常情况»"
+    },
+    "Page«上报异常信息反馈»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/上报异常信息反馈",
+            "originalRef": "上报异常信息反馈"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«上报异常信息反馈»"
+    },
+    "Page«上报数据类型»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/上报数据类型",
+            "originalRef": "上报数据类型"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«上报数据类型»"
+    },
+    "Page«上报空间»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/上报空间",
+            "originalRef": "上报空间"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«上报空间»"
+    },
+    "Page«业务类型»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/业务类型",
+            "originalRef": "业务类型"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«业务类型»"
+    },
+    "Page«委端任务»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/委端任务",
+            "originalRef": "委端任务"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«委端任务»"
+    },
+    "Page«异常跟踪»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/异常跟踪",
+            "originalRef": "异常跟踪"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«异常跟踪»"
+    },
+    "Page«数据指标表»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/数据指标表",
+            "originalRef": "数据指标表"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«数据指标表»"
+    },
+    "Page«数据浏览通用对象»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/数据浏览通用对象",
+            "originalRef": "数据浏览通用对象"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«数据浏览通用对象»"
+    },
+    "Page«组织信息上报异常信息反馈»": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/组织信息上报异常信息反馈",
+            "originalRef": "组织信息上报异常信息反馈"
+          }
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "first": {
+          "type": "boolean"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "number": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numberOfElements": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageable": {
+          "$ref": "#/definitions/Page",
+          "originalRef": "Page"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sort": {
+          "$ref": "#/definitions/Sort",
+          "originalRef": "Sort"
+        },
+        "totalElements": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Page«组织信息上报异常信息反馈»"
+    },
+    "Response«List«上报数据类型»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "type": "array",
+          "description": "返回数据类型",
+          "items": {
+            "$ref": "#/definitions/上报数据类型",
+            "originalRef": "上报数据类型"
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«List«上报数据类型»»"
+    },
+    "Response«List«上报空间»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "type": "array",
+          "description": "返回数据类型",
+          "items": {
+            "$ref": "#/definitions/上报空间",
+            "originalRef": "上报空间"
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«List«上报空间»»"
+    },
+    "Response«List«上报空间子数据实体对象»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "type": "array",
+          "description": "返回数据类型",
+          "items": {
+            "$ref": "#/definitions/上报空间子数据实体对象",
+            "originalRef": "上报空间子数据实体对象"
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«List«上报空间子数据实体对象»»"
+    },
+    "Response«List«委端任务»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "type": "array",
+          "description": "返回数据类型",
+          "items": {
+            "$ref": "#/definitions/委端任务",
+            "originalRef": "委端任务"
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«List«委端任务»»"
+    },
+    "Response«List«数据浏览通用对象»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "type": "array",
+          "description": "返回数据类型",
+          "items": {
+            "$ref": "#/definitions/数据浏览通用对象",
+            "originalRef": "数据浏览通用对象"
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«List«数据浏览通用对象»»"
+    },
+    "Response«Page«dataUploadingTask»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«dataUploadingTask»",
+          "originalRef": "Page«dataUploadingTask»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«dataUploadingTask»»"
+    },
+    "Response«Page«三重一大数据反馈-报送数据采集异常情况»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«三重一大数据反馈-报送数据采集异常情况»",
+          "originalRef": "Page«三重一大数据反馈-报送数据采集异常情况»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«三重一大数据反馈-报送数据采集异常情况»»"
+    },
+    "Response«Page«上报异常信息反馈»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«上报异常信息反馈»",
+          "originalRef": "Page«上报异常信息反馈»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«上报异常信息反馈»»"
+    },
+    "Response«Page«上报数据类型»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«上报数据类型»",
+          "originalRef": "Page«上报数据类型»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«上报数据类型»»"
+    },
+    "Response«Page«上报空间»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«上报空间»",
+          "originalRef": "Page«上报空间»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«上报空间»»"
+    },
+    "Response«Page«业务类型»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«业务类型»",
+          "originalRef": "Page«业务类型»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«业务类型»»"
+    },
+    "Response«Page«委端任务»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«委端任务»",
+          "originalRef": "Page«委端任务»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«委端任务»»"
+    },
+    "Response«Page«异常跟踪»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«异常跟踪»",
+          "originalRef": "Page«异常跟踪»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«异常跟踪»»"
+    },
+    "Response«Page«数据指标表»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«数据指标表»",
+          "originalRef": "Page«数据指标表»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«数据指标表»»"
+    },
+    "Response«Page«数据浏览通用对象»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«数据浏览通用对象»",
+          "originalRef": "Page«数据浏览通用对象»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«数据浏览通用对象»»"
+    },
+    "Response«Page«组织信息上报异常信息反馈»»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/Page«组织信息上报异常信息反馈»",
+          "originalRef": "Page«组织信息上报异常信息反馈»"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Page«组织信息上报异常信息反馈»»"
+    },
+    "Response«Void»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«Void»"
+    },
+    "Response«dataUploadingTask»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/dataUploadingTask",
+          "originalRef": "dataUploadingTask"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«dataUploadingTask»"
+    },
+    "Response«object»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "type": "object",
+          "description": "返回数据类型"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«object»"
+    },
+    "Response«三重一大数据反馈-报送数据采集异常情况»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/三重一大数据反馈-报送数据采集异常情况",
+          "originalRef": "三重一大数据反馈-报送数据采集异常情况"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«三重一大数据反馈-报送数据采集异常情况»"
+    },
+    "Response«上报异常信息反馈»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/上报异常信息反馈",
+          "originalRef": "上报异常信息反馈"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«上报异常信息反馈»"
+    },
+    "Response«上报数据类型»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/上报数据类型",
+          "originalRef": "上报数据类型"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«上报数据类型»"
+    },
+    "Response«上报空间»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/上报空间",
+          "originalRef": "上报空间"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«上报空间»"
+    },
+    "Response«业务类型»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/业务类型",
+          "originalRef": "业务类型"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«业务类型»"
+    },
+    "Response«委端任务»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/委端任务",
+          "originalRef": "委端任务"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«委端任务»"
+    },
+    "Response«异常跟踪»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/异常跟踪",
+          "originalRef": "异常跟踪"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«异常跟踪»"
+    },
+    "Response«数据指标表»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/数据指标表",
+          "originalRef": "数据指标表"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«数据指标表»"
+    },
+    "Response«组织信息上报异常信息反馈»": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态码，非http status，是业务自定义的状态码"
+        },
+        "content": {
+          "description": "返回数据类型",
+          "$ref": "#/definitions/组织信息上报异常信息反馈",
+          "originalRef": "组织信息上报异常信息反馈"
+        },
+        "message": {
+          "type": "string",
+          "description": "返回结果详细信息"
+        },
+        "metadata": {
+          "description": "服务请求结果的元数据信息",
+          "$ref": "#/definitions/PageMetadata",
+          "originalRef": "PageMetadata"
+        },
+        "name": {
+          "type": "string"
+        },
+        "timeConsumed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "服务调用时长（ms）"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "服务器端的时间戳"
+        },
+        "title": {
+          "type": "string",
+          "description": "返回结果摘要信息"
+        },
+        "type": {
+          "type": "string",
+          "description": "code码对应的http uri说明"
+        }
+      },
+      "title": "Response«组织信息上报异常信息反馈»"
+    },
+    "Sort": {
+      "type": "object",
+      "properties": {
+        "empty": {
+          "type": "boolean"
+        },
+        "sorted": {
+          "type": "boolean"
+        },
+        "unsorted": {
+          "type": "boolean"
+        }
+      },
+      "title": "Sort"
+    },
+    "SubterminalTaskCollectionDto": {
+      "type": "object",
+      "properties": {
+        "acquireType": {
+          "type": "string",
+          "description": "委端文件获取方式（枚举）",
+          "enum": [
+            "FRONT_PROCESSOR"
+          ]
+        },
+        "businessTypeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "任务结束时间"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "insideTaskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委内任务id"
+        },
+        "requestInterface": {
+          "type": "string",
+          "description": "获取文件请求接口"
+        },
+        "requestParams": {
+          "type": "string",
+          "description": "获取文件请求参数"
+        },
+        "resFileInfoId": {
+          "type": "string",
+          "description": "在本系统转存资源表文件ids，多个文件用英文逗号分割"
+        },
+        "resInfoId": {
+          "type": "string",
+          "description": "采集任务包含的资源表id列表"
+        },
+        "returnData": {
+          "type": "string",
+          "description": "获取文件接口返回结果"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "任务开始时间"
+        },
+        "systemCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "系统编码"
+        },
+        "taskCreateTime": {
+          "type": "string",
+          "description": "任务创建时间"
+        },
+        "taskDescription": {
+          "type": "string",
+          "description": "任务描述"
+        },
+        "taskFileName": {
+          "type": "string",
+          "description": "任务数据示例文件名称"
+        },
+        "taskFileNameId": {
+          "type": "string",
+          "description": "在本系统转存任务数据示例文件的资源表文件ids，多个文件用英文逗号分割"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委端任务id"
+        },
+        "taskName": {
+          "type": "string",
+          "description": "任务名称"
+        }
+      },
+      "title": "SubterminalTaskCollectionDto"
+    },
+    "SzydDataUploadingLogDto": {
+      "type": "object",
+      "properties": {
+        "attachment": {
+          "type": "string",
+          "description": "附件id"
+        },
+        "createBy": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "createTime": {
+          "description": "创建时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "delFlag": {
+          "type": "integer",
+          "format": "int32",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "operationContent": {
+          "type": "string",
+          "description": "日志内容"
+        },
+        "operationScene": {
+          "type": "string",
+          "description": "场景（用户操作、接口对接、结果返回）"
+        },
+        "operationTime": {
+          "description": "操作时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "updateBy": {
+          "type": "string",
+          "description": "更新人"
+        },
+        "updateTime": {
+          "description": "更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "uploadingTaskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报任务id"
+        }
+      },
+      "title": "SzydDataUploadingLogDto"
+    },
+    "SzydDataUploadingTaskDto": {
+      "type": "object",
+      "properties": {
+        "attachmentId": {
+          "type": "string",
+          "description": "上报文件附件id"
+        },
+        "attachmentName": {
+          "type": "string",
+          "description": "上报文件附件名"
+        },
+        "batchId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "批次ID"
+        },
+        "businessTypeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "createBy": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "createTime": {
+          "description": "创建时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "dataIdList": {
+          "type": "array",
+          "description": "数据id集合",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "delFlag": {
+          "type": "integer",
+          "format": "int32",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "exceptionIndexCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "异常指标数"
+        },
+        "feedBackList": {
+          "type": "array",
+          "description": "反馈结果列表",
+          "items": {
+            "$ref": "#/definitions/Map«string,object»",
+            "originalRef": "Map«string,object»"
+          }
+        },
+        "firstReturnFeedBack": {
+          "type": "string",
+          "description": "首次返回结果json"
+        },
+        "firstReturnFile": {
+          "type": "string",
+          "description": "首次返回结果文件id"
+        },
+        "firstReturnTime": {
+          "description": "首次返回结果时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "returnFileId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "国资委返回的文件id"
+        },
+        "secondReturnFile": {
+          "type": "string",
+          "description": "二次返回结果文件id"
+        },
+        "secondReturnTime": {
+          "description": "二次返回结果时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "startTime": {
+          "description": "启动时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "任务状态,0.待关联任务 1.已关联，待上报 2.已上报（调用国资委上报接口成功）"
+        },
+        "subterminalTaskCollectionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "任务采集表id"
+        },
+        "taskDescribe": {
+          "type": "string",
+          "description": "任务描述"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委端任务ID"
+        },
+        "taskName": {
+          "type": "string",
+          "description": "任务名称"
+        },
+        "taskType": {
+          "type": "integer",
+          "format": "int32",
+          "description": "任务类型 0测试数据1正式数据"
+        },
+        "thirdReturnFile": {
+          "type": "string",
+          "description": "三次返回结果文件id"
+        },
+        "thirdReturnTime": {
+          "description": "三次返回结果时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "updateBy": {
+          "type": "string",
+          "description": "更新人"
+        },
+        "updateTime": {
+          "description": "更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "uploadFiles": {
+          "type": "string",
+          "description": "上报文件id"
+        },
+        "uploadFilesName": {
+          "type": "string",
+          "description": "上报文件db文件名"
+        }
+      },
+      "title": "SzydDataUploadingTaskDto"
+    },
+    "Timestamp": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "day": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "hours": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "minutes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "month": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "nanos": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "seconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "time": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "timezoneOffset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "year": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Timestamp"
+    },
+    "dataUploadingTask": {
+      "type": "object",
+      "properties": {
+        "attachmentId": {
+          "type": "string",
+          "description": "上报文件附件id"
+        },
+        "attachmentName": {
+          "type": "string",
+          "description": "上报文件附件名"
+        },
+        "batchId": {
+          "type": "integer",
+          "format": "int32",
+          "description": "批次ID"
+        },
+        "businessTypeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "dataIdList": {
+          "type": "array",
+          "description": "关联数据id集合",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "delFlag": {
+          "type": "integer",
+          "format": "int32",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "exceptionIndexCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "异常指标数"
+        },
+        "feedBackList": {
+          "type": "array",
+          "description": "反馈结果",
+          "items": {
+            "$ref": "#/definitions/Map«string,object»",
+            "originalRef": "Map«string,object»"
+          }
+        },
+        "firstReturnFeedBack": {
+          "type": "string",
+          "description": "首次返回结果json"
+        },
+        "firstReturnFile": {
+          "type": "string",
+          "description": "首次返回结果文件id"
+        },
+        "firstReturnTime": {
+          "description": "首次返回结果时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "returnFileId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "国资委返回的文件id"
+        },
+        "secondReturnFile": {
+          "type": "string",
+          "description": "二次返回结果文件id"
+        },
+        "secondReturnTime": {
+          "description": "二次返回结果时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "startTime": {
+          "description": "启动时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "任务状态,0.待关联任务 1.已关联，待上报 2.已上报（调用国资委上报接口成功）"
+        },
+        "subterminalTaskCollectionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "任务采集表id"
+        },
+        "taskDescribe": {
+          "type": "string",
+          "description": "任务描述"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委端任务ID"
+        },
+        "taskName": {
+          "type": "string",
+          "description": "任务名称"
+        },
+        "taskType": {
+          "type": "integer",
+          "format": "int32",
+          "description": "任务类型 0测试数据1正式数据"
+        },
+        "thirdReturnFile": {
+          "type": "string",
+          "description": "三次返回结果文件id"
+        },
+        "thirdReturnTime": {
+          "description": "三次返回结果时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "uploadFiles": {
+          "type": "string",
+          "description": "上报文件id"
+        },
+        "uploadFilesName": {
+          "type": "string",
+          "description": "上报文件db文件名"
+        }
+      },
+      "title": "dataUploadingTask"
+    },
+    "三重一大数据反馈-报送数据采集异常情况": {
+      "type": "object",
+      "properties": {
+        "businessDataCoding": {
+          "type": "string",
+          "description": "业务数据编码"
+        },
+        "businessDataName": {
+          "type": "string",
+          "description": "业务数据名称"
+        },
+        "businessTypeCoding": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "businessTypeName": {
+          "type": "string",
+          "description": "业务类型名称"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "deliveryTime": {
+          "type": "string",
+          "description": "下发时间"
+        },
+        "enterpriseCoding": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "enterpriseDataSubmissionStatusExceptionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "企业数据报送情况-报送数据采集异常情况ID"
+        },
+        "enterpriseDataSubmissionStatusId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "企业数据报送情况ID"
+        },
+        "exceptionDetailDescription": {
+          "type": "string",
+          "description": "异常详细描述"
+        },
+        "exceptionFeedbackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常信息反馈表id"
+        },
+        "exceptionTypeCoding": {
+          "type": "string",
+          "description": "异常类型编码"
+        },
+        "exceptionTypeName": {
+          "type": "string",
+          "description": "异常类型名称"
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "所属集团编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "issueBatchNumber": {
+          "type": "string",
+          "description": "下发批次号"
+        },
+        "operater": {
+          "type": "string",
+          "description": "修改责任人"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态(0待处理、1待确认、2已修复、3已过期)"
+        }
+      },
+      "title": "三重一大数据反馈-报送数据采集异常情况"
+    },
+    "上报异常信息反馈": {
+      "type": "object",
+      "properties": {
+        "businessTypeCode": {
+          "type": "string",
+          "description": "异常类型 SZYD ZZJG"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "excetionType": {
+          "type": "string",
+          "description": "异常类型"
+        },
+        "feedbackFileId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "反馈文件id"
+        },
+        "feedbackFileName": {
+          "type": "string",
+          "description": "反馈文件名称"
+        },
+        "gzwFileId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "国资委反馈文件id"
+        },
+        "gzwFileMd": {
+          "type": "string",
+          "description": "国资委反馈文件文件的md5"
+        },
+        "gzwFileName": {
+          "type": "string",
+          "description": "国资委反馈文件名称"
+        },
+        "gzwFileRecvTime": {
+          "description": "国资委反馈文件接收到文件的时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "gzwFileSavePath": {
+          "type": "string",
+          "description": "国资委反馈文件文件保存的路径"
+        },
+        "gzwFileSize": {
+          "type": "string",
+          "description": "国资委反馈文件大小"
+        },
+        "gzwFileSystemCode": {
+          "type": "string",
+          "description": "国资委反馈文件所属业务系统的编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "state": {
+          "type": "string",
+          "description": "状态"
+        },
+        "subterminalTaskName": {
+          "type": "string",
+          "description": "委端任务名称"
+        },
+        "uploadingTaskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报任务id"
+        },
+        "uploadingTaskName": {
+          "type": "string",
+          "description": "上报任务任务名称"
+        }
+      },
+      "title": "上报异常信息反馈"
+    },
+    "上报数据类型": {
+      "type": "object",
+      "properties": {
+        "associatedColumnInChild": {
+          "type": "string",
+          "description": "子表关联字段"
+        },
+        "associatedColumnInParent": {
+          "type": "string",
+          "description": "父表中被关联字段"
+        },
+        "businessTypeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "connectConfig": {
+          "type": "string",
+          "description": "数据连接配置"
+        },
+        "dataTypeCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "数据类型编码"
+        },
+        "dataTypeName": {
+          "type": "string",
+          "description": "数据类型名称"
+        },
+        "dataUploadingModeList": {
+          "type": "array",
+          "description": "数据上报指标",
+          "items": {
+            "$ref": "#/definitions/数据指标表",
+            "originalRef": "数据指标表"
+          }
+        },
+        "dataUploadingModelCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "数据指标数量"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "hasChildren": {
+          "type": "boolean",
+          "description": "是否有子类型"
+        },
+        "hasOrgInfo": {
+          "type": "boolean",
+          "description": "是否有企业信息标识(0否、1是)"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "modeConfig": {
+          "type": "string",
+          "description": "数据指标约束配置"
+        },
+        "parentName": {
+          "type": "string",
+          "description": "上级数据类型名称"
+        },
+        "pid": {
+          "type": "integer",
+          "format": "int64",
+          "description": "父级id,类型为子类型是需填写"
+        },
+        "queryBuilder": {
+          "type": "string",
+          "description": "查询模型"
+        },
+        "selectConfig": {
+          "type": "string",
+          "description": "数据选择配置"
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "数据来源方式（db文件、视图、api接口、url等）",
+          "enum": [
+            "DB_CONNECTION",
+            "API_INTERFACE"
+          ]
+        },
+        "subType": {
+          "type": "boolean",
+          "description": "是否子类型(0否、1是)"
+        },
+        "validateConfig": {
+          "type": "string",
+          "description": "数据上报校验配置"
+        }
+      },
+      "title": "上报数据类型"
+    },
+    "上报空间": {
+      "type": "object",
+      "properties": {
+        "dataId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "表数据id"
+        },
+        "dataJson": {
+          "type": "string",
+          "description": "数据JSON"
+        },
+        "dataName": {
+          "type": "string",
+          "description": "数据名称"
+        },
+        "dataTypeId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数据类型id"
+        },
+        "dataUid": {
+          "type": "string",
+          "description": "主数据UID标识"
+        },
+        "dataUpdateTime": {
+          "description": "源数据更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "exceptionFeedbackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常反馈id"
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "集团编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "operationFlag": {
+          "type": "string",
+          "description": "操作标识（add新增，edit修改，del删除）",
+          "enum": [
+            "add",
+            "edit",
+            "del"
+          ]
+        },
+        "orgCode": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "orgName": {
+          "type": "string",
+          "description": "企业名称"
+        },
+        "pid": {
+          "type": "integer",
+          "format": "int64",
+          "description": "父级id"
+        },
+        "reportTime": {
+          "description": "数据上报时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态(0:待关联,1:已关联,2:数据已提交,3:上报失败,4:上报成功)"
+        },
+        "subType": {
+          "type": "boolean",
+          "description": "是否是子类型"
+        },
+        "subterminalTaskCollection": {
+          "description": "委端任务",
+          "$ref": "#/definitions/委端任务",
+          "originalRef": "委端任务"
+        },
+        "szydDataUploadingTask": {
+          "description": "上报任务",
+          "$ref": "#/definitions/dataUploadingTask",
+          "originalRef": "dataUploadingTask"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委端任务id"
+        },
+        "typeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        }
+      },
+      "title": "上报空间"
+    },
+    "上报空间主数据": {
+      "type": "object",
+      "properties": {
+        "dataId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "表数据id"
+        },
+        "dataJson": {
+          "type": "string",
+          "description": "数据JSON"
+        },
+        "dataName": {
+          "type": "string",
+          "description": "数据名称"
+        },
+        "dataTypeId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数据类型id"
+        },
+        "dataUid": {
+          "type": "string",
+          "description": "主数据UID标识"
+        },
+        "dataUpdateTime": {
+          "description": "源数据更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "集团编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "operationFlag": {
+          "type": "string",
+          "description": "操作标识（add新增，edit修改，del删除）"
+        },
+        "orgCode": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "orgName": {
+          "type": "string",
+          "description": "企业名称"
+        },
+        "pid": {
+          "type": "integer",
+          "format": "int64",
+          "description": "父级id"
+        },
+        "subType": {
+          "type": "boolean",
+          "description": "是否是子类型"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委端任务id"
+        },
+        "typeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        }
+      },
+      "title": "上报空间主数据"
+    },
+    "上报空间子数据实体对象": {
+      "type": "object",
+      "properties": {
+        "dataUploadingList": {
+          "type": "array",
+          "description": "上报数据子类型列表",
+          "items": {
+            "$ref": "#/definitions/上报空间",
+            "originalRef": "上报空间"
+          }
+        },
+        "dataUploadingTypeId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数据类型id"
+        },
+        "dataUploadingTypeName": {
+          "type": "string",
+          "description": "数据类型名称"
+        }
+      },
+      "title": "上报空间子数据实体对象"
+    },
+    "业务类型": {
+      "type": "object",
+      "properties": {
+        "dataUploadingModelCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "数据指标数量"
+        },
+        "dataUploadingTypeCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "数据类型数量"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "集团编码"
+        },
+        "gzwFileList": {
+          "type": "array",
+          "description": "国资委信息标准文件列表",
+          "items": {
+            "$ref": "#/definitions/LocalStorage",
+            "originalRef": "LocalStorage"
+          }
+        },
+        "gzwServerConfig": {
+          "type": "string",
+          "description": "国资委配置信息"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "orgCode": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "orgName": {
+          "type": "string",
+          "description": "企业名称"
+        },
+        "sortNo": {
+          "type": "integer",
+          "format": "int32",
+          "description": "排序"
+        },
+        "sourceJson": {
+          "type": "string",
+          "description": "数据连接配置"
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "数据来源方式（db文件、视图、api接口、url等）",
+          "enum": [
+            "DB_CONNECTION",
+            "API_INTERFACE"
+          ]
+        },
+        "typeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "typeName": {
+          "type": "string",
+          "description": "业务类型名称"
+        },
+        "typeRuleConfig": {
+          "type": "string",
+          "description": "类型相关规则配置"
+        }
+      },
+      "title": "业务类型"
+    },
+    "委端任务": {
+      "type": "object",
+      "properties": {
+        "acquireType": {
+          "type": "string",
+          "description": "委端文件获取方式（枚举）",
+          "enum": [
+            "FRONT_PROCESSOR"
+          ]
+        },
+        "businessTypeCode": {
+          "type": "string",
+          "description": "业务类型编码"
+        },
+        "businessTypeName": {
+          "type": "string",
+          "description": "业务类型"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "任务结束时间"
+        },
+        "frontProcessorInfo": {
+          "type": "string",
+          "description": "前置机信息"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "insideTaskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委内任务id"
+        },
+        "reportTaskNum": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报任务数量"
+        },
+        "requestInterface": {
+          "type": "string",
+          "description": "获取文件请求接口"
+        },
+        "requestParams": {
+          "type": "string",
+          "description": "获取文件请求参数"
+        },
+        "resFileInfoId": {
+          "type": "string",
+          "description": "在本系统转存资源表文件ids，多个文件用英文逗号分割"
+        },
+        "resInfoId": {
+          "type": "string",
+          "description": "采集任务包含的资源表id列表"
+        },
+        "returnData": {
+          "type": "string",
+          "description": "获取文件接口返回结果"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "任务开始时间"
+        },
+        "systemCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "系统编码"
+        },
+        "taskCreateTime": {
+          "type": "string",
+          "description": "任务创建时间"
+        },
+        "taskDescription": {
+          "type": "string",
+          "description": "任务描述"
+        },
+        "taskFileName": {
+          "type": "string",
+          "description": "任务数据示例文件名称"
+        },
+        "taskFileNameId": {
+          "type": "string",
+          "description": "在本系统转存任务数据示例文件的资源表文件ids，多个文件用英文逗号分割"
+        },
+        "taskId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "委端任务id"
+        },
+        "taskName": {
+          "type": "string",
+          "description": "任务名称"
+        },
+        "taskStatus": {
+          "type": "string",
+          "description": "任务状态"
+        }
+      },
+      "title": "委端任务"
+    },
+    "异常跟踪": {
+      "type": "object",
+      "properties": {
+        "comanyCode": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "comanyName": {
+          "type": "string",
+          "description": "企业名称"
+        },
+        "dataTypeCode": {
+          "type": "string",
+          "description": "数据类型编码"
+        },
+        "dataTypeName": {
+          "type": "string",
+          "description": "数据类型名称"
+        },
+        "dataUid": {
+          "type": "integer",
+          "format": "int64",
+          "description": "主数据UID标识"
+        },
+        "dataUploadingId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报数据表的id"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "deliveryTime": {
+          "description": "下发时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "exceptionFeedbackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报异常信息反馈表id"
+        },
+        "exceptionInfo": {
+          "type": "string",
+          "description": "异常信息json"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "modeName": {
+          "type": "string",
+          "description": "指标项"
+        },
+        "modifyContent": {
+          "type": "string",
+          "description": "修改内容,修改类型为其他时必填"
+        },
+        "modifyContentTime": {
+          "description": "修改完成时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "modifyType": {
+          "type": "integer",
+          "format": "int32",
+          "description": "修改类型0-填写无误，校验不准确,1,问题属实本次填报修改,2,不属于实际管理企业、已注销、已申请注销、已划拨至其他企业管理,3-其他,4-不属于实际管理企业，5-已注销，6-已申请注销，7-已划拨至其他企业管理，8-问题属实本次填报修改"
+        },
+        "operater": {
+          "type": "string",
+          "description": "修改责任人"
+        },
+        "operationFlag": {
+          "type": "string",
+          "description": "数据操作标识"
+        },
+        "operationRecordList": {
+          "type": "string",
+          "description": "操作记录"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "resultJson": {
+          "type": "string",
+          "description": "异常处理结果JSON"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态(0待处理、1待确认、2已修复、3已过期、4-被驳回)"
+        },
+        "subterminalTaskName": {
+          "type": "string",
+          "description": "委端任务名称"
+        },
+        "typeCode": {
+          "type": "string",
+          "description": "业务编码"
+        },
+        "uploadingTaskName": {
+          "type": "string",
+          "description": "上报任务任务名称"
+        },
+        "validateType": {
+          "type": "string",
+          "description": "验证类型0-数据项不一致,1-数据范围不一致"
+        }
+      },
+      "title": "异常跟踪"
+    },
+    "数据指标表": {
+      "type": "object",
+      "properties": {
+        "columnName": {
+          "type": "string",
+          "description": "数据库列名"
+        },
+        "columnTag": {
+          "type": "string",
+          "description": "列标识",
+          "enum": [
+            "REGULAR",
+            "ORG_NAME",
+            "ORG_CODE",
+            "GROUP_CODE",
+            "UNIQUE_FLAG",
+            "UPDATE_TIME",
+            "DATA_NAME",
+            "OPERATION_FLAG"
+          ]
+        },
+        "dataSize": {
+          "type": "integer",
+          "format": "int32",
+          "description": "指标数据长度"
+        },
+        "dataType": {
+          "type": "string",
+          "description": "指标数据类型(number、text、longtext、boolean)",
+          "enum": [
+            "CHAR",
+            "INT",
+            "TEXT",
+            "FLOAT",
+            "DATE",
+            "ATTACHMENT"
+          ]
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "id"
+        },
+        "modeCode": {
+          "type": "string",
+          "description": "指标编码"
+        },
+        "modeDescribe": {
+          "type": "string",
+          "description": "指标说明"
+        },
+        "modeField": {
+          "type": "string",
+          "description": "指标标识"
+        },
+        "modeName": {
+          "type": "string",
+          "description": "指标名称"
+        },
+        "primaryKeyFlag": {
+          "type": "boolean",
+          "description": "是否表主键"
+        },
+        "requiredFlag": {
+          "type": "boolean",
+          "description": "是否必填（0否，1是）"
+        },
+        "typeId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数据类型id"
+        },
+        "uniqueFlag": {
+          "type": "boolean",
+          "description": "是否表内唯一"
+        },
+        "valueRules": {
+          "type": "string",
+          "description": "值约束"
+        }
+      },
+      "title": "数据指标表"
+    },
+    "数据浏览通用对象": {
+      "type": "object",
+      "properties": {
+        "associatedColumnVal": {
+          "type": "string",
+          "description": "关联字段值"
+        },
+        "dataJson": {
+          "type": "string",
+          "description": "数据类型json"
+        },
+        "dataName": {
+          "type": "string",
+          "description": "数据名称"
+        },
+        "dataUid": {
+          "type": "string",
+          "description": "数据唯一标识"
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "集团编码"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "jsonSchemaVerifyResult": {
+          "type": "string",
+          "description": "jsonSchema校验结果"
+        },
+        "operationFlag": {
+          "type": "string",
+          "description": "操作标识"
+        },
+        "orgCode": {
+          "type": "string",
+          "description": "企业编码"
+        },
+        "orgName": {
+          "type": "string",
+          "description": "企业名称"
+        },
+        "updateTime": {
+          "description": "更新时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        }
+      },
+      "title": "数据浏览通用对象"
+    },
+    "新增上报空间参数": {
+      "type": "object",
+      "properties": {
+        "dataIds": {
+          "type": "array",
+          "description": "选中上报的数据id列表",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "dataUploadingTypeId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "上报数据类型id"
+        }
+      },
+      "title": "新增上报空间参数"
+    },
+    "组织信息上报异常信息反馈": {
+      "type": "object",
+      "properties": {
+        "applyDescription": {
+          "type": "string",
+          "description": "申请说明"
+        },
+        "applyType": {
+          "type": "string",
+          "description": "申请类型"
+        },
+        "contrastData": {
+          "type": "string",
+          "description": "对比数据"
+        },
+        "dataSource": {
+          "type": "string",
+          "description": "数据来源"
+        },
+        "delFlag": {
+          "type": "boolean",
+          "description": "删除标识(0未删除、1已删除)"
+        },
+        "delTime": {
+          "description": "删除时间",
+          "$ref": "#/definitions/Timestamp",
+          "originalRef": "Timestamp"
+        },
+        "exceptionCode": {
+          "type": "string",
+          "description": "异常标识码"
+        },
+        "exceptionFeedbackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常信息反馈表id"
+        },
+        "exceptionTrackId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "异常信息跟踪表id"
+        },
+        "fillData": {
+          "type": "string",
+          "description": "填报数据"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "ID"
+        },
+        "modeName": {
+          "type": "string",
+          "description": "指标名称"
+        },
+        "operater": {
+          "type": "string",
+          "description": "修改责任人"
+        },
+        "remark": {
+          "type": "string",
+          "description": "备注"
+        },
+        "resourcesName": {
+          "type": "string",
+          "description": "资源名称"
+        },
+        "rowNo": {
+          "type": "string",
+          "description": "行号"
+        },
+        "sourceName": {
+          "type": "string",
+          "description": "来源名称"
+        },
+        "state": {
+          "type": "integer",
+          "format": "int32",
+          "description": "状态(0待提交、1已提交、2已确认)"
+        },
+        "validateType": {
+          "type": "string",
+          "description": "验证类型"
+        }
+      },
+      "title": "组织信息上报异常信息反馈"
+    }
+  }
+}

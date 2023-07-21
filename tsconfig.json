@@ -1,18 +1,28 @@
 {
-  "include": ["./src/*"],
+  "include": [
+    "./src/*",
+    "./test/*",
+  ],
   "compilerOptions": {
     "target": "esnext",
     "module": "ESNext",
     "moduleResolution": "node",
     "strict": true,
+    "allowJs": true,
     "esModuleInterop": true,
+    "noImplicitAny": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
+    "strictPropertyInitialization": false,
     "resolveJsonModule": true,
     "useUnknownInCatchVariables": false,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "types": ["jest"],
   "ts-node": {
