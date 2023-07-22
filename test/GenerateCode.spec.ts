@@ -17,7 +17,6 @@ const config = {
 let generateCode = new GenerateCode(config);
 
 beforeAll(() => {
-  console.log("beforeAll");
   //generateCode = new GenerateCode(config);
 });
 
