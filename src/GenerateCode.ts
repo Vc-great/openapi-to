@@ -179,17 +179,10 @@ export class GenerateCode {
     if (hasBracket) {
       const popItem = [...paths].pop();
 
-      return this.dashToUpperCase(popItem.slice(1, popItem.length - 1));
+      return _.camelCase(popItem.slice(1, popItem.length - 1));
     }
 
-    return this.dashToUpperCase(paths[paths.length - 1]);
-  }
-
-  //中划线参数转驼峰
-  public dashToUpperCase(path: string) {
-    let fullPath =
-      path[0] + path.slice(1).replace(/(-\w)/g, (m) => m[1].toUpperCase());
-    return _.upperFirst(fullPath);
+    return _.camelCase(paths[paths.length - 1]);
   }
 
   //最短路径为crud路径
@@ -214,10 +207,7 @@ export class GenerateCode {
 
     const part = pathParts[pathParts.length - 1];
     if (part.startsWith("{") && part.endsWith("}")) {
-      let fullPath = part
-        .slice(1, -1)
-        .replace(/(-\w)/g, (m) => m[1].toUpperCase());
-      return _.upperFirst(fullPath);
+      return _.upperFirst(_.camelCase(part.slice(1, -1)));
     } else {
       return part;
     }
@@ -273,13 +263,13 @@ export class GenerateCode {
   //遍历生成代码
   public run() {
     //遍历path,调用注册类的run方法
-    const result = _.reduce(
+    return _.reduce(
       this.openApi3FormatData,
       (result, apiItem, key) => {
-        result.push({
+        result[key] = {
           fileName: "",
           ...this.runByRegisterClass(apiItem),
-        });
+        };
         return result;
       },
       {}
@@ -287,5 +277,5 @@ export class GenerateCode {
   }
 
   //写入文件
-  wiriteFile() {}
+  //wiriteFile() {}
 }
