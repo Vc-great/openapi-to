@@ -1,0 +1,327 @@
+{
+  "query": {
+    "path": "tasks/all",
+    "method": "get",
+    "description": "Task Controller",
+    "tags": ["任务管理"],
+    "summary": "查询dataUploadingTask",
+    "operationId": "allUsingGET_13",
+    "parameters": [
+      {
+        "name": "businessTypeCode",
+        "in": "query",
+        "description": "业务类型",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "id",
+        "in": "query",
+        "description": "ID",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      {
+        "name": "startTime",
+        "in": "query",
+        "description": "启动时间",
+        "required": false,
+        "explode": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "description": "状态",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      {
+        "name": "taskId",
+        "in": "query",
+        "description": "委端任务id",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      {
+        "name": "taskName",
+        "in": "query",
+        "description": "任务名称",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "taskType",
+        "in": "query",
+        "description": "任务类型0.测试数据，1.正式数据",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "typeCode",
+        "in": "query",
+        "description": "业务类型编码",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "OK",
+        "content": {
+          "*/*": {
+            "schema": {
+              "$ref": "#/components/schemas/Response_Page_dataUploadingTask"
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Unauthorized"
+      },
+      "403": {
+        "description": "Forbidden"
+      },
+      "404": {
+        "description": "Not Found"
+      }
+    },
+    "security": [
+      {
+        "Authorization": ["global"]
+      }
+    ],
+    "deprecated": false,
+    "requestName": "All"
+  },
+  "query_path": {
+    "path": "tasks/{id}",
+    "method": "get",
+    "description": "Task Controller",
+    "tags": ["任务管理"],
+    "summary": "查询dataUploadingTask详情",
+    "operationId": "oneUsingGET_10",
+    "parameters": [
+      {
+        "name": "fields",
+        "in": "query",
+        "description": "fields",
+        "required": false,
+        "explode": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "id",
+        "in": "path",
+        "description": "id",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "OK",
+        "content": {
+          "*/*": {
+            "schema": {
+              "$ref": "#/components/schemas/Response_dataUploadingTask"
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Unauthorized"
+      },
+      "403": {
+        "description": "Forbidden"
+      },
+      "404": {
+        "description": "Not Found"
+      }
+    },
+    "security": [
+      {
+        "Authorization": ["global"]
+      }
+    ],
+    "deprecated": false,
+    "requestName": "detailById"
+  },
+  "body": {
+    "path": "tasks",
+    "method": "put",
+    "description": "Task Controller",
+    "tags": ["任务管理"],
+    "summary": "修改dataUploadingTask",
+    "operationId": "updateUsingPUT_10",
+    "requestBody": {
+      "$ref": "#/components/requestBodies/SzydDataUploadingTaskDto"
+    },
+    "responses": {
+      "200": {
+        "description": "OK",
+        "content": {
+          "*/*": {
+            "schema": {
+              "$ref": "#/components/schemas/Response_dataUploadingTask"
+            }
+          }
+        }
+      },
+      "201": {
+        "description": "Created"
+      },
+      "401": {
+        "description": "Unauthorized"
+      },
+      "403": {
+        "description": "Forbidden"
+      },
+      "404": {
+        "description": "Not Found"
+      }
+    },
+    "security": [
+      {
+        "Authorization": ["global"]
+      }
+    ],
+    "deprecated": false,
+    "requestName": "update"
+  },
+  "path_body": {
+    "path": "tasks/{task-id}/add-relateData",
+    "method": "put",
+    "description": "Task Controller",
+    "tags": ["任务管理"],
+    "summary": "追加关联上报数据",
+    "operationId": "addRelateDataUsingPUT",
+    "parameters": [
+      {
+        "name": "task-id",
+        "in": "path",
+        "description": "task-id",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    ],
+    "requestBody": {
+      "$ref": "#/components/requestBodies/deleteUsingDELETE_10List"
+    },
+    "responses": {
+      "200": {
+        "description": "OK",
+        "content": {
+          "*/*": {
+            "schema": {
+              "$ref": "#/components/schemas/Response_dataUploadingTask"
+            }
+          }
+        }
+      },
+      "201": {
+        "description": "Created"
+      },
+      "401": {
+        "description": "Unauthorized"
+      },
+      "403": {
+        "description": "Forbidden"
+      },
+      "404": {
+        "description": "Not Found"
+      }
+    },
+    "security": [
+      {
+        "Authorization": ["global"]
+      }
+    ],
+    "deprecated": false,
+    "requestName": "AddRelateData"
+  },
+  "path": {
+    "path": "tasks/{task-id}/create-db",
+    "method": "post",
+    "description": "Task Controller",
+    "tags": ["任务管理"],
+    "summary": "creatdb",
+    "operationId": "creatdbUsingPOST",
+    "parameters": [
+      {
+        "name": "task-id",
+        "in": "path",
+        "description": "task-id",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "OK",
+        "content": {
+          "*/*": {
+            "schema": {
+              "$ref": "#/components/schemas/Response_object"
+            }
+          }
+        }
+      },
+      "201": {
+        "description": "Created"
+      },
+      "401": {
+        "description": "Unauthorized"
+      },
+      "403": {
+        "description": "Forbidden"
+      },
+      "404": {
+        "description": "Not Found"
+      }
+    },
+    "security": [
+      {
+        "Authorization": ["global"]
+      }
+    ],
+    "deprecated": false,
+    "requestName": "CreateDb"
+  }
+}

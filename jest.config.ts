@@ -12,21 +12,16 @@ const config: JestConfigWithTsJest = {
   },
   testEnvironment: "node",
   transform: {
-    "^.+\\.(js|jsx|ts|tsx|mjs)?$": ["ts-jest", { useESM: true }],
+    "^.+\\.(js|jsx|ts|tsx|mjs)?$": [
+      "ts-jest",
+      {
+        useESM: true,
+        tsconfig: "tsconfig.test.json",
+      },
+    ],
   },
   testPathIgnorePatterns: ["./dist"],
-  transformIgnorePatterns: [
-    "node:http",
-    "node_modules/(?!" +
-      [
-        "node-fetch",
-        "fetch-blob",
-        "data-uri-to-buffer",
-        "jest-runtime",
-        "formdata-polyfill",
-      ].join("|") +
-      ")",
-  ],
+  transformIgnorePatterns: [],
 };
 
 export default config;

@@ -14,9 +14,7 @@
   "paths": {
     "tasks": {
       "get": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "查询dataUploadingTask",
         "operationId": "allUsingGET_14",
         "parameters": [
@@ -156,17 +154,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "post": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "新增dataUploadingTask",
         "operationId": "createUsingPOST_10",
         "requestBody": {
@@ -198,17 +192,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "put": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "修改dataUploadingTask",
         "operationId": "updateUsingPUT_10",
         "requestBody": {
@@ -240,17 +230,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "delete": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "删除dataUploadingTask",
         "operationId": "deleteUsingDELETE_10",
         "requestBody": {
@@ -279,9 +265,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -289,9 +273,7 @@
     },
     "tasks/all": {
       "get": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "查询dataUploadingTask",
         "operationId": "allUsingGET_13",
         "parameters": [
@@ -398,9 +380,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -408,9 +388,7 @@
     },
     "tasks/fork": {
       "post": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "复制（打开）dataUploadingTask",
         "operationId": "forkUsingPOST",
         "requestBody": {
@@ -442,9 +420,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -452,9 +428,7 @@
     },
     "tasks/sync-feedback": {
       "get": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "uploadTaskSyncFeedBack",
         "operationId": "uploadTaskSyncFeedBackUsingGET",
         "parameters": [
@@ -492,9 +466,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -502,9 +474,7 @@
     },
     "tasks/taskAndIdList": {
       "get": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "查询委端任务下拉，id：任务表id，taskName：委端任务名",
         "operationId": "taskAndIdListUsingGET",
         "parameters": [
@@ -541,9 +511,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -551,9 +519,7 @@
     },
     "tasks/{id}": {
       "get": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "查询dataUploadingTask详情",
         "operationId": "oneUsingGET_10",
         "parameters": [
@@ -604,9 +570,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -614,9 +578,7 @@
     },
     "tasks/{id}/data": {
       "get": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "查询上报任务关联的上报数据",
         "operationId": "getRelateDataUsingGET",
         "parameters": [
@@ -757,9 +719,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -767,9 +727,7 @@
     },
     "tasks/{task-id}/add-relateData": {
       "put": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "追加关联上报数据",
         "operationId": "addRelateDataUsingPUT",
         "parameters": [
@@ -813,9 +771,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -823,9 +779,7 @@
     },
     "tasks/{task-id}/create-db": {
       "post": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "creatdb",
         "operationId": "creatdbUsingPOST",
         "parameters": [
@@ -866,9 +820,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -876,9 +828,7 @@
     },
     "tasks/{task-id}/remove-relateData": {
       "delete": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "移除已关联的上报数据",
         "operationId": "removeUsingDELETE",
         "parameters": [
@@ -919,9 +869,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -929,9 +877,7 @@
     },
     "tasks/{task-id}/start-trigger": {
       "post": {
-        "tags": [
-          "任务管理"
-        ],
+        "tags": ["任务管理"],
         "summary": "startTrigge",
         "operationId": "startTriggeUsingPOST",
         "parameters": [
@@ -972,9 +918,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -1067,10 +1011,7 @@
           "sourceType": {
             "type": "string",
             "description": "数据来源方式（db文件、视图、api接口、url等）",
-            "enum": [
-              "DB_CONNECTION",
-              "API_INTERFACE"
-            ]
+            "enum": ["DB_CONNECTION", "API_INTERFACE"]
           },
           "typeCode": {
             "type": "string",
@@ -1228,9 +1169,7 @@
       },
       "DataUploadingModeDto": {
         "type": "object",
-        "required": [
-          "typeId"
-        ],
+        "required": ["typeId"],
         "properties": {
           "columnName": {
             "type": "string",
@@ -1258,14 +1197,7 @@
           "dataType": {
             "type": "string",
             "description": "指标数据类型(number、text、longtext、boolean)",
-            "enum": [
-              "CHAR",
-              "INT",
-              "TEXT",
-              "FLOAT",
-              "DATE",
-              "ATTACHMENT"
-            ]
+            "enum": ["CHAR", "INT", "TEXT", "FLOAT", "DATE", "ATTACHMENT"]
           },
           "id": {
             "type": "integer",
@@ -1382,10 +1314,7 @@
           "sourceType": {
             "type": "string",
             "description": "数据来源方式（db文件、视图、api接口、url等）",
-            "enum": [
-              "DB_CONNECTION",
-              "API_INTERFACE"
-            ]
+            "enum": ["DB_CONNECTION", "API_INTERFACE"]
           },
           "subType": {
             "type": "boolean",
@@ -1647,10 +1576,7 @@
       },
       "Page": {
         "type": "object",
-        "required": [
-          "page",
-          "size"
-        ],
+        "required": ["page", "size"],
         "properties": {
           "page": {
             "type": "integer",
@@ -1719,9 +1645,7 @@
           "acquireType": {
             "type": "string",
             "description": "委端文件获取方式（枚举）",
-            "enum": [
-              "FRONT_PROCESSOR"
-            ]
+            "enum": ["FRONT_PROCESSOR"]
           },
           "businessTypeCode": {
             "type": "string",
@@ -2342,10 +2266,7 @@
           "sourceType": {
             "type": "string",
             "description": "数据来源方式（db文件、视图、api接口、url等）",
-            "enum": [
-              "DB_CONNECTION",
-              "API_INTERFACE"
-            ]
+            "enum": ["DB_CONNECTION", "API_INTERFACE"]
           },
           "subType": {
             "type": "boolean",
@@ -2407,11 +2328,7 @@
           "operationFlag": {
             "type": "string",
             "description": "操作标识（add新增，edit修改，del删除）",
-            "enum": [
-              "add",
-              "edit",
-              "del"
-            ]
+            "enum": ["add", "edit", "del"]
           },
           "orgCode": {
             "type": "string",
@@ -2605,10 +2522,7 @@
           "sourceType": {
             "type": "string",
             "description": "数据来源方式（db文件、视图、api接口、url等）",
-            "enum": [
-              "DB_CONNECTION",
-              "API_INTERFACE"
-            ]
+            "enum": ["DB_CONNECTION", "API_INTERFACE"]
           },
           "typeCode": {
             "type": "string",
@@ -2631,9 +2545,7 @@
           "acquireType": {
             "type": "string",
             "description": "委端文件获取方式（枚举）",
-            "enum": [
-              "FRONT_PROCESSOR"
-            ]
+            "enum": ["FRONT_PROCESSOR"]
           },
           "businessTypeCode": {
             "type": "string",
@@ -2873,14 +2785,7 @@
           "dataType": {
             "type": "string",
             "description": "指标数据类型(number、text、longtext、boolean)",
-            "enum": [
-              "CHAR",
-              "INT",
-              "TEXT",
-              "FLOAT",
-              "DATE",
-              "ATTACHMENT"
-            ]
+            "enum": ["CHAR", "INT", "TEXT", "FLOAT", "DATE", "ATTACHMENT"]
           },
           "delFlag": {
             "type": "boolean",

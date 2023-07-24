@@ -45,3 +45,5 @@ jobs:
       - name: Running Test
         # 通过前面章节定义的命令行执行自动化测试
         run: pnpm test
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3

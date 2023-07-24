@@ -882,7 +882,7 @@ class ApiGenerator {
 
     if ("properties" in schema) {
       Object.keys(schema.properties).map((fieldName) => {
-        // eslint-disable-next-line @typescript-eslint/dot-notation
+        //
         schema.properties[fieldName]["required"] =
           schema.required?.includes(fieldName) ?? false;
       });

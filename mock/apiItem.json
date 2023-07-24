@@ -4,9 +4,7 @@
       "path": "/task",
       "method": "get",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "查询dataUploadingTask",
       "operationId": "allUsingGET_14",
       "parameters": [
@@ -146,9 +144,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -157,9 +153,7 @@
       "path": "/task",
       "method": "put",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "修改dataUploadingTask",
       "operationId": "updateUsingPUT_10",
       "requestBody": {
@@ -191,9 +185,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -202,9 +194,7 @@
       "path": "/task",
       "method": "post",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "新增dataUploadingTask",
       "operationId": "createUsingPOST_10",
       "requestBody": {
@@ -236,9 +226,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -247,9 +235,7 @@
       "path": "/task",
       "method": "delete",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "删除dataUploadingTask",
       "operationId": "deleteUsingDELETE_10",
       "requestBody": {
@@ -278,9 +264,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -289,9 +273,7 @@
       "path": "/task/all",
       "method": "get",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "查询dataUploadingTask",
       "operationId": "allUsingGET_13",
       "parameters": [
@@ -398,9 +380,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -409,9 +389,7 @@
       "path": "/task/fork",
       "method": "post",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "复制（打开）dataUploadingTask",
       "operationId": "forkUsingPOST",
       "requestBody": {
@@ -443,9 +421,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -454,9 +430,7 @@
       "path": "/task/sync-feedback",
       "method": "get",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "uploadTaskSyncFeedBack",
       "operationId": "uploadTaskSyncFeedBackUsingGET",
       "parameters": [
@@ -494,9 +468,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -505,9 +477,7 @@
       "path": "/task/taskAndIdList",
       "method": "get",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "查询委端任务下拉，id：任务表id，taskName：委端任务名",
       "operationId": "taskAndIdListUsingGET",
       "parameters": [
@@ -544,9 +514,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -555,9 +523,7 @@
       "path": "/task/{id}",
       "method": "get",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "查询dataUploadingTask详情",
       "operationId": "oneUsingGET_10",
       "parameters": [
@@ -608,9 +574,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -619,9 +583,7 @@
       "path": "/task/{id}/data",
       "method": "get",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "查询上报任务关联的上报数据",
       "operationId": "getRelateDataUsingGET",
       "parameters": [
@@ -762,9 +724,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -773,9 +733,7 @@
       "path": "/task/{task-id}/add-relateData",
       "method": "put",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "追加关联上报数据",
       "operationId": "addRelateDataUsingPUT",
       "parameters": [
@@ -819,9 +777,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -830,9 +786,7 @@
       "path": "/task/{task-id}/create-db",
       "method": "post",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "creatdb",
       "operationId": "creatdbUsingPOST",
       "parameters": [
@@ -873,9 +827,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -884,9 +836,7 @@
       "path": "/task/{task-id}/remove-relateData",
       "method": "delete",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "移除已关联的上报数据",
       "operationId": "removeUsingDELETE",
       "parameters": [
@@ -927,9 +877,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
@@ -938,9 +886,7 @@
       "path": "/task/{task-id}/start-trigger",
       "method": "post",
       "description": "Szyd Data Uploading Task Controller",
-      "tags": [
-        "上报任务管理"
-      ],
+      "tags": ["上报任务管理"],
       "summary": "startTrigge",
       "operationId": "startTriggeUsingPOST",
       "parameters": [
@@ -981,9 +927,7 @@
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "Authorization": ["global"]
         }
       ],
       "deprecated": false
