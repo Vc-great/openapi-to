@@ -19,12 +19,17 @@ export class GenerateApi implements GenerateCode {
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            const [funcParams, requestParams, typesName] =
+            const { funcParams, requestParams, typesName, paramsSerializer } =
               this.generatorArguments(apiItem);
             types.push(...typesName);
             return `
         ${this.generatorFuncJSDoc(apiItem)}
-        ${this.generatorFuncContent(apiItem, funcParams, requestParams)}`;
+        ${this.generatorFuncContent({
+          apiItem,
+          funcParams,
+          requestParams,
+          paramsSerializer,
+        })}`;
           })
           .join("")}
         }
@@ -48,7 +53,13 @@ export class GenerateApi implements GenerateCode {
            */`;
   }
 
-  generatorFuncContent(apiItem, funcParams, requestParams) {
+  generatorFuncContent({
+    apiItem,
+    funcParams,
+    requestParams,
+    paramsSerializer,
+  }) {
+    //todo 补充 responseType:'blob
     return ` ${
       apiItem.requestName
     }(${funcParams}):Promise<[object,${_.upperFirst(
@@ -57,9 +68,19 @@ export class GenerateApi implements GenerateCode {
       return request.${apiItem.method}({
         url:${this.generatorPath(apiItem)}${
       requestParams ? ",\n" : ""
-    }${requestParams}
+    }${requestParams}${
+      requestParams && paramsSerializer ? ",\n" : ""
+    }${paramsSerializer}
       })
     }`;
+  }
+
+  //summary中有下载或者导出 关键字 则增加type
+  generateResponseType(summary: string) {
+    const keys = ["下载", "导出"];
+    return _.some(keys, (x) => summary.includes(x))
+      ? `responseType:'blob'`
+      : "";
   }
 
   //函数参数
@@ -100,7 +121,21 @@ export class GenerateApi implements GenerateCode {
     const requestParams = `${query ? "params:query" : ""}${
       query && body ? ",\n" : ""
     }${body ? "data:body" : ""}`;
-    return [funcParams, requestParams, typesName];
+
+    const hasQueryArray = _.some(
+      apiItem.parameters,
+      (x) => x.schema.type === "array"
+    );
+    const paramsSerializer = `paramsSerializer(params) {
+                            return qs.stringify(params)
+                        }`;
+
+    return {
+      funcParams,
+      requestParams,
+      typesName,
+      paramsSerializer,
+    };
   }
 
   //生成path

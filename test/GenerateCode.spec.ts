@@ -28,7 +28,7 @@ describe("getOpenApiJson", () => {
     const config = {
       projectDir: "", //项目根目录
       title: "", //项目名称,用于生成目录
-      path: "http://121.37.237.10:36882/v2/api-docs", //项目路径
+      path: "https://petstore.swagger.io/v2/swagger.json", //项目路径
     };
 
     const generateCode = new GenerateCode(config);

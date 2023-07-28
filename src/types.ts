@@ -1,4 +1,9 @@
-import { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import {
+  OpenAPIV2,
+  OpenAPIV3,
+  OpenAPIV3_1,
+  ParameterBaseObject,
+} from "openapi-types";
 
 export type ConfigTemplate = {
   projects: Project[];
@@ -21,6 +26,15 @@ export interface ApiData extends OpenAPIV3.OperationObject {
   requestName: string;
 }
 
+export interface ParameterObject extends OpenAPIV3.ParameterBaseObject {
+  name: string;
+  in: string;
+}
+
+export type Parameters = (
+  | OpenAPIV3.ReferenceObject
+  | OpenAPIV3.ParameterObject
+)[];
 //export type TagApiData = Record<string, APIDataType[]>;
 
 export interface GenerateCode {

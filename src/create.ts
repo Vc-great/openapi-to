@@ -43,6 +43,23 @@ export const createCode = async () => {
   });
 };
 
+export function generateCode(config: ConfigTemplate) {
+  config.projects.map((item) => {
+    const generateCode = new GenerateCode({
+      ...item,
+      projectDir: cwd,
+    });
+    const { openApi3SourceData, openApi3FormatData } =
+      await generateCode.init();
+    generateCode.register(
+      [GenerateType, GenerateForm, GenerateTable, GenerateApi].map(
+        (item) => new item(config, openApi3SourceData, openApi3FormatData)
+      )
+    );
+    generateCode.run();
+  });
+}
+
 /***
  * 创建yapi配置文件
  * @returns {*}
