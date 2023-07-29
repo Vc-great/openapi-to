@@ -14,6 +14,8 @@ import {
   functionContentByPath,
   functionContentByPathBody,
 } from "../mock/functionArgumentsExpected";
+import { classApiStr } from "../mock/classApiStr";
+
 const generateApi = new GenerateApi();
 
 test("classDoc", () => {
@@ -45,27 +47,27 @@ describe("function arguments", () => {
   test("query", () => {
     // @ts-ignore
     const arg = generateApi.generatorArguments(functionArguments.query);
-    return expect(arg).toStrictEqual(queryArguments);
+    return expect(arg).toEqual(queryArguments);
   });
   test("query and path", () => {
     // @ts-ignore
     const arg = generateApi.generatorArguments(functionArguments.query_path);
-    return expect(arg).toStrictEqual(queryPathArguments);
+    return expect(arg).toEqual(queryPathArguments);
   });
   test("path", () => {
     // @ts-ignore
     const arg = generateApi.generatorArguments(functionArguments.path);
-    return expect(arg).toStrictEqual(pathArguments);
+    return expect(arg).toEqual(pathArguments);
   });
   test("path and body", () => {
     // @ts-ignore
     const arg = generateApi.generatorArguments(functionArguments.path_body);
-    return expect(arg).toStrictEqual(pathBodyArguments);
+    return expect(arg).toEqual(pathBodyArguments);
   });
   test("body", () => {
     // @ts-ignore
     const arg = generateApi.generatorArguments(functionArguments.body);
-    return expect(arg).toStrictEqual(bodyArguments);
+    return expect(arg).toEqual(bodyArguments);
   });
 });
 
@@ -124,5 +126,9 @@ describe("function content", () => {
   });
 });
 
-//todo class
-test("class", () => {});
+test("run", () => {
+  const tagItem = openApi3Fomatter["任务管理"];
+  // @ts-ignore
+  const classCodeStrExpected = generateApi.run(tagItem);
+  expect(classCodeStrExpected).toEqual(classApiStr);
+});

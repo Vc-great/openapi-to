@@ -4,7 +4,9 @@
       "path": "tasks",
       "method": "get",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询dataUploadingTask",
       "operationId": "allUsingGET_14",
       "parameters": [
@@ -144,7 +146,9 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
@@ -154,7 +158,9 @@
       "path": "tasks",
       "method": "put",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "修改dataUploadingTask",
       "operationId": "updateUsingPUT_10",
       "requestBody": {
@@ -186,7 +192,9 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
@@ -196,7 +204,9 @@
       "path": "tasks",
       "method": "post",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "新增dataUploadingTask",
       "operationId": "createUsingPOST_10",
       "requestBody": {
@@ -228,7 +238,9 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
@@ -238,7 +250,9 @@
       "path": "tasks",
       "method": "delete",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "删除dataUploadingTask",
       "operationId": "deleteUsingDELETE_10",
       "requestBody": {
@@ -267,7 +281,9 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
@@ -277,7 +293,9 @@
       "path": "tasks/all",
       "method": "get",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询dataUploadingTask",
       "operationId": "allUsingGET_13",
       "parameters": [
@@ -384,17 +402,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "All"
+      "requestName": "all"
     },
     {
       "path": "tasks/fork",
       "method": "post",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "复制（打开）dataUploadingTask",
       "operationId": "forkUsingPOST",
       "requestBody": {
@@ -426,17 +448,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "Fork"
+      "requestName": "fork"
     },
     {
       "path": "tasks/sync-feedback",
       "method": "get",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "uploadTaskSyncFeedBack",
       "operationId": "uploadTaskSyncFeedBackUsingGET",
       "parameters": [
@@ -474,17 +500,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "SyncFeedback"
+      "requestName": "syncFeedback"
     },
     {
       "path": "tasks/taskAndIdList",
       "method": "get",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询委端任务下拉，id：任务表id，taskName：委端任务名",
       "operationId": "taskAndIdListUsingGET",
       "parameters": [
@@ -521,17 +551,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "TaskAndIdList"
+      "requestName": "taskAndIdList"
     },
     {
       "path": "tasks/{id}",
       "method": "get",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询dataUploadingTask详情",
       "operationId": "oneUsingGET_10",
       "parameters": [
@@ -582,7 +616,9 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
@@ -592,7 +628,9 @@
       "path": "tasks/{id}/data",
       "method": "get",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询上报任务关联的上报数据",
       "operationId": "getRelateDataUsingGET",
       "parameters": [
@@ -733,17 +771,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "Data"
+      "requestName": "data"
     },
     {
       "path": "tasks/{task-id}/add-relateData",
       "method": "put",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "追加关联上报数据",
       "operationId": "addRelateDataUsingPUT",
       "parameters": [
@@ -787,17 +829,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "AddRelateData"
+      "requestName": "addRelateData"
     },
     {
       "path": "tasks/{task-id}/create-db",
       "method": "post",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "creatdb",
       "operationId": "creatdbUsingPOST",
       "parameters": [
@@ -838,17 +884,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "CreateDb"
+      "requestName": "createDb"
     },
     {
       "path": "tasks/{task-id}/remove-relateData",
       "method": "delete",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "移除已关联的上报数据",
       "operationId": "removeUsingDELETE",
       "parameters": [
@@ -889,17 +939,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "RemoveRelateData"
+      "requestName": "removeRelateData"
     },
     {
       "path": "tasks/{task-id}/start-trigger",
       "method": "post",
       "description": "Task Controller",
-      "tags": ["任务管理"],
+      "tags": [
+        "任务管理"
+      ],
       "summary": "startTrigge",
       "operationId": "startTriggeUsingPOST",
       "parameters": [
@@ -940,11 +994,13 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
       "deprecated": false,
-      "requestName": "StartTrigger"
+      "requestName": "startTrigger"
     }
   ]
 }

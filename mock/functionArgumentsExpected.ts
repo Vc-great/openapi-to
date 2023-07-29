@@ -5,7 +5,7 @@ export const queryArguments = [
 ];
 
 export const functionContentByQuery =
-  " list(query:AllQueryRequest):Promise<[object,listResponse]>{\n" +
+  " list(query:AllQueryRequest):Promise<[object,ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "params:query\n" +
@@ -13,13 +13,13 @@ export const functionContentByQuery =
   "    }";
 
 export const queryPathArguments = [
-  "id:detailByIdPathRequest,query:detailByIdQueryRequest",
+  "id:DetailByIdPathRequest,query:DetailByIdQueryRequest",
   "params:query",
-  ["detailByIdPathRequest", "detailByIdQueryRequest"],
+  ["DetailByIdPathRequest", "DetailByIdQueryRequest"],
 ];
 
 export const functionContentByQueryPath =
-  " list(id:detailByIdPathRequest,query:detailByIdQueryRequest):Promise<[object,listResponse]>{\n" +
+  " list(id:DetailByIdPathRequest,query:DetailByIdQueryRequest):Promise<[object,ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "params:query\n" +
@@ -27,38 +27,38 @@ export const functionContentByQueryPath =
   "    }";
 
 export const pathArguments = [
-  "task_id:CreateDbPathRequest",
+  "taskId:CreateDbPathRequest",
   "",
   ["CreateDbPathRequest"],
 ];
 
 export const functionContentByPath =
-  " list(task_id:CreateDbPathRequest):Promise<[object,listResponse]>{\n" +
+  " list(taskId:CreateDbPathRequest):Promise<[object,ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`\n" +
   "      })\n" +
   "    }";
 export const pathBodyArguments = [
-  "task_id:AddRelateDataPathRequest,body:AddRelateDataBodyRequest",
+  "taskId:AddRelateDataPathRequest,body:AddRelateDataBodyRequest",
   "data:body",
   ["AddRelateDataPathRequest", "AddRelateDataBodyRequest"],
 ];
 
 export const functionContentByPathBody =
-  " list(task_id:AddRelateDataPathRequest,body:AddRelateDataBodyRequest):Promise<[object,listResponse]>{\n" +
+  " list(taskId:AddRelateDataPathRequest,body:AddRelateDataBodyRequest):Promise<[object,ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "data:body\n" +
   "      })\n" +
   "    }";
 export const bodyArguments = [
-  "body:updateBodyRequest",
+  "body:UpdateBodyRequest",
   "data:body",
-  ["updateBodyRequest"],
+  ["UpdateBodyRequest"],
 ];
 
 export const functionContentByBody =
-  " list(body:updateBodyRequest):Promise<[object,listResponse]>{\n" +
+  " list(body:UpdateBodyRequest):Promise<[object,ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "data:body\n" +
