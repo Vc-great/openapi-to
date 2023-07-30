@@ -3,6 +3,8 @@ import {
   OpenAPIV3,
   OpenAPIV3_1,
   ParameterBaseObject,
+  ReferenceObject,
+  SchemaObject,
 } from "openapi-types";
 
 export type ConfigTemplate = {
@@ -24,6 +26,14 @@ export interface ApiData extends OpenAPIV3.OperationObject {
   path: string;
   method: string;
   requestName: string;
+}
+
+export interface OpenApi3FormatData {
+  [k: string]: ApiData;
+}
+
+export interface SchemaComponent {
+  [key: string]: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject;
 }
 
 export interface ParameterObject extends OpenAPIV3.ParameterBaseObject {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type {
   ContentObject,
   OpenAPIObject,
@@ -15,10 +16,11 @@ import fs from "fs";
 import path from "path";
 import { numberEnum } from "./enum";
 import prettier from "prettier";
-import { prettier as defaultPrettierOptions } from "@umijs/fabric";
-import ReservedDict from "reserved-words";
+//import { prettier as defaultPrettierOptions } from "@umijs/fabric";
+//import ReservedDict from "reserved-words";
 import type { ApiData, GenerateCode, Parameters } from "@/types";
 import { OpenAPIV3 } from "openapi-types";
+import { OpenApi3FormatData, SchemaComponent } from "@/types";
 export interface APIDataType extends OperationObject {
   path: string;
   method: string;
@@ -28,9 +30,9 @@ export interface APIDataType extends OperationObject {
 export type TagAPIDataType = Record<string, APIDataType[]>;
 // 类型声明过滤关键字
 const resolveTypeName = (typeName: string) => {
-  if (ReservedDict.check(typeName)) {
+  /*  if (ReservedDict.check(typeName)) {
     return `__openAPI__${typeName}`;
-  }
+  }*/
   const typeLastName = typeName.split("/").pop().split(".").pop();
 
   const name = typeLastName
@@ -81,8 +83,9 @@ const prettierFile = (content: string): [string, boolean] => {
   return [result, hasError];
 };
 
-class GenerateType implements GenerateCode {
-  openApi3SourceData: OpenAPIV3.Document;
+export class GenerateType implements GenerateCode {
+  //openApi3SourceData: OpenAPIV3.Document;
+  // openApi3FormatData:OpenApi3FormatData
   // protected openAPIData: object; //OpenAPIObject;
   // protected apiData: object; // TagAPIDataType = {};
   // protected components: object; //components
@@ -91,7 +94,11 @@ class GenerateType implements GenerateCode {
   protected config: {
     responseReturnIsArray: boolean;
   };
-  constructor(config, openApi3SourceData, openApi3FormatData) {
+  constructor(
+    public config,
+    public openApi3SourceData: OpenAPIV3.Document,
+    public openApi3FormatData: OpenApi3FormatData
+  ) {
     this.openApi3SourceData = openApi3SourceData;
     this.openApi3FormatData = openApi3FormatData;
     // this.apiData = apiData;
@@ -105,29 +112,39 @@ class GenerateType implements GenerateCode {
   }
 
   //
-  recursionType(
-    schemaComponent:
-      | OpenAPIV3.ReferenceObject
-      | OpenAPIV3.SchemaObject
-      | OpenAPIV3.RequestBodyObject
-      | undefined
-  ) {
+  recursionType(schemaComponent: SchemaComponent | undefined) {
     if (schemaComponent === undefined) {
       return "";
     }
+    let typeString = "";
+    if (schemaComponent.type === "object") {
+      typeString = _.reduce(
+        schemaComponent.properties,
+        (result, value, key) => {
+          result += `\n/** ${value.description}*/
+                  ${key}${
+            schemaComponent.required?.includes(key) ? "" : "?"
+          }:${this.getTypeContent(value)}`;
+          return result;
+        },
+        ""
+      );
+    }
+
     // 缓存$ref  遍历后清空
     const refSchemaCache = new Map();
 
     const typeStrByComponent = (
-      schemaComponent:
-        | OpenAPIV3.ReferenceObject
-        | OpenAPIV3.SchemaObject
-        | OpenAPIV3.RequestBodyObject,
+      schemaComponent: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
       typeStr: string
     ) => {
       const str = _.reduce(
         schemaComponent,
-        (result, value, key) => {
+        (
+          result,
+          value: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
+          key
+        ) => {
           if (_.isNil(value)) return result;
 
           const ref = value.$ref || value.items?.$ref || "";
@@ -204,6 +221,8 @@ class GenerateType implements GenerateCode {
       refTypeStr,
     };
   }
+
+  hanldeRequestBodies(component: OpenAPIV3.RequestBodyObject) {}
   //query参数
   getQueryParamsType(apiItem: ApiData) {
     const query = _.filter(apiItem.parameters, ["in", "query"]);
@@ -248,15 +267,39 @@ class GenerateType implements GenerateCode {
   }
   //body参数
   getBodyParamsType(apiItem: ApiData) {
-    const schemaName =
+    const requestBodiesName =
       _.get(apiItem, "requestBody.$ref", "").split("/").pop() || "";
-    const schemaComponent = _.get(
-      this.openApi3SourceData.components,
-      schemaName,
-      undefined
-    );
+    // this.openApi3SourceData.components.requestBodies
+    if (!requestBodiesName) {
+      return "";
+    }
+    const schemaComponent:
+      | OpenAPIV3.ReferenceObject
+      | OpenAPIV3.RequestBodyObject = _.chain(
+      this.openApi3SourceData.components?.requestBodies
+    )
+      .get(requestBodiesName, undefined)
+      .value();
+    let component;
+    if ("$ref" in schemaComponent) {
+      //todo 补充逻辑
+    } else {
+      const media: OpenAPIV3.MediaTypeObject = _.chain(schemaComponent.content)
+        .values()
+        .head()
+        .value();
 
-    const { typeStr, refTypeStr } = this.recursionType(schemaComponent);
+      component =
+        media.schema && "$ref" in media.schema
+          ? _.get(
+              this.openApi3SourceData,
+              media.schema.$ref.split("/").slice(1).join("."),
+              undefined
+            )
+          : media.schema || undefined;
+    }
+
+    const { typeStr, refTypeStr } = this.recursionType(component);
 
     const bodyType = `
             /** ${apiItem.summary} */
@@ -317,29 +360,6 @@ class GenerateType implements GenerateCode {
 
       return _.flow(filterEmpty, addType, addEslint)(types);
     });
-  }
-
-  //解析$ref
-  private resolveRefObject(refObject: any): any {
-    if (!refObject || !refObject.$ref) {
-      return refObject;
-    }
-    const refPaths = refObject.$ref.split("/");
-    if (refPaths[0] === "#") {
-      refPaths.shift();
-      let obj: any = this.openAPIData;
-      refPaths.forEach((node: any) => {
-        obj = obj[node];
-      });
-      if (!obj) {
-        throw new Error(`[GenSDK] Data Error! Notfoud: ${refObject.$ref}`);
-      }
-      return {
-        ...this.resolveRefObject(obj),
-        type: obj.$ref ? this.resolveRefObject(obj).type : obj,
-      };
-    }
-    return refObject;
   }
 
   private refType(ref) {
@@ -471,7 +491,8 @@ class GenerateType implements GenerateCode {
     if (!_.isObject(schemaObject)) return schemaObject;
 
     if ("$ref" in schemaObject) {
-      return [getRefName(schemaObject)].filter((s) => s).join(".");
+      const result = [getRefName(schemaObject)].filter((s) => s).join(".");
+      return result;
     }
 
     let { type } = schemaObject as any;

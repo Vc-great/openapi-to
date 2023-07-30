@@ -1,6 +1,7 @@
 // @ts-nocheck
 import _ from "lodash";
 import { ApiData, GenerateCode } from "./types";
+
 export class GenerateApi implements GenerateCode {
   //private apiItem: ApiData[];
 
