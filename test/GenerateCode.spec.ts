@@ -1,7 +1,7 @@
 //import * as assert from "assert";
 
 import { GenerateCode } from "@/GenerateCode";
-import swagger2Json from "../mock/swagger2.json";
+//import swagger2Json from "../mock/swagger2.json";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Fomatter.json";
 import apiItemMockData from "../mock/apiItem.json";
@@ -9,6 +9,7 @@ import generateCodeRunResult from "../mock/generateCodeRunResult.json";
 import path from "path";
 import { GenerateApi } from "@/GenerateApi";
 //import configMockData from "../mock/config";
+import testData from "./1.json";
 
 const config = {
   projectDir: "", //项目根目录
@@ -58,7 +59,7 @@ describe("apiData formatter", () => {
 
   const generateCode = new GenerateCode(config);
   test("swagger2ToOpenapi3", async () => {
-    const openApi3Data = await generateCode.swagger2ToOpenapi3(swagger2Json);
+    const openApi3Data = await generateCode.swagger2ToOpenapi3(testData);
     expect(openApi3Data).toEqual(openApi3);
   });
 

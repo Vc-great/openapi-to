@@ -1,6 +1,7 @@
 // @ts-nocheck
 import _ from "lodash";
 import { ApiData, GenerateCode } from "./types";
+import { OpenAPIV3, RequestBodyObject } from "openapi-types";
 
 export class GenerateApi implements GenerateCode {
   //private apiItem: ApiData[];
@@ -20,16 +21,13 @@ export class GenerateApi implements GenerateCode {
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            const { funcParams, requestParams, typesName, paramsSerializer } =
-              this.generatorArguments(apiItem);
-            types.push(...typesName);
+            const args = this.generatorArguments(apiItem);
+            types.push(...args.typesName);
             return `
         ${this.generatorFuncJSDoc(apiItem)}
         ${this.generatorFuncContent({
           apiItem,
-          funcParams,
-          requestParams,
-          paramsSerializer,
+          ...args,
         })}`;
           })
           .join("")}
@@ -59,19 +57,34 @@ export class GenerateApi implements GenerateCode {
     funcParams,
     requestParams,
     paramsSerializer,
+    formData,
+    formDataHeader,
   }) {
     //todo 补充 responseType:'blob
+    const contents = [
+      `url:${this.generatorPath(apiItem)}`,
+      requestParams,
+      paramsSerializer,
+      formDataHeader,
+    ];
+    const filterContents = (contents) => _.filter(contents, (x) => x);
+    const addContents = (contents) =>
+      _.reduce(
+        contents,
+        (result, value) => {
+          result += (result ? ",\n" : "") + value;
+          return result;
+        },
+        ""
+      );
+
     return ` ${
       apiItem.requestName
     }(${funcParams}):Promise<[object,${_.upperFirst(
       apiItem.requestName
-    )}Response]>{
+    )}Response]>{${formData ? "\n" + formData + "\n" : ""}
       return request.${apiItem.method}({
-        url:${this.generatorPath(apiItem)}${
-      requestParams ? ",\n" : ""
-    }${requestParams}${
-      requestParams && paramsSerializer ? ",\n" : ""
-    }${paramsSerializer}
+        ${_.flow([filterContents, addContents])(contents)}
       })
     }`;
   }
@@ -127,16 +140,65 @@ export class GenerateApi implements GenerateCode {
       apiItem.parameters,
       (x) => x.schema.type === "array"
     );
-    const paramsSerializer = `paramsSerializer(params) {
+    const paramsSerializer = hasQueryArray
+      ? `paramsSerializer(params) {
                             return qs.stringify(params)
-                        }`;
+                        }`
+      : "";
+    const { formDataHeader, formData } = this.generateFormData(apiItem);
+
+    //todo application/x-www-form-urlencoded 类型参数
 
     return {
       funcParams,
       requestParams,
       typesName,
       paramsSerializer,
+      formDataHeader,
+      formData,
     };
+  }
+
+  generateFormData(apiItem: ApiData) {
+    const formDataHeader = `headers: { 'Content-Type': 'multipart/form-data' }`;
+    const formData = `//todo 上传文件
+    const formData = new FormData();
+    formData.append("file", file);`;
+
+    if ("$ref" in apiItem.requestBody) {
+      const component: OpenAPIV3.RequestBodyObject = this.getComponentByRef(
+        apiItem.requestBody.$ref
+      );
+      if (component.content && "multipart/form-data" in component.content) {
+        return {
+          formDataHeader,
+          formData,
+        };
+      }
+    }
+
+    if (
+      "content" in apiItem.requestBody &&
+      "multipart/form-data" in apiItem.requestBody.content
+    ) {
+      return {
+        formDataHeader,
+        formData,
+      };
+    }
+
+    return {
+      formDataHeader: "",
+      formData: "",
+    };
+  }
+
+  getComponentByRef(ref) {
+    return _.get(
+      this.openApi3SourceData,
+      ref.split("/").slice(1).join("."),
+      undefined
+    );
   }
 
   //生成path
