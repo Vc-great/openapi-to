@@ -1835,7 +1835,7 @@
             "format": "number",
             "description": "number"
           },
-          "number": {
+          "number1": {
             "type": "number",
             "format": "double",
             "description": "double"

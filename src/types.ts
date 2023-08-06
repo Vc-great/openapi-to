@@ -1,11 +1,4 @@
-import {
-  OpenAPIV2,
-  OpenAPIV3,
-  OpenAPIV3_1,
-  ParameterBaseObject,
-  ReferenceObject,
-  SchemaObject,
-} from "openapi-types";
+import { OpenAPIV3 } from "openapi-types";
 
 export type ConfigTemplate = {
   projects: Project[];

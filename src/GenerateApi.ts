@@ -1,15 +1,27 @@
 // @ts-nocheck
 import _ from "lodash";
 import { ApiData, GenerateCode } from "./types";
-import { OpenAPIV3, RequestBodyObject } from "openapi-types";
+import { OpenAPIV3 } from "openapi-types";
+import path from "path";
+import fse from "fs-extra";
+import { prettierFile } from "./utils";
 
 export class GenerateApi implements GenerateCode {
   //private apiItem: ApiData[];
 
-  constructor() {}
+  constructor(
+    public config: object,
+    public openApi3SourceData: OpenAPIV3.Document,
+    public openApi3FormatData: OpenApi3FormatData
+  ) {
+    this.openApi3SourceData = openApi3SourceData;
+    this.openApi3FormatData = openApi3FormatData;
+    this.config = config;
+  }
   run(tagItem: ApiData[]) {
     return {
-      apiCode: this.generatorClass(tagItem),
+      title: _.get(_.head(tagItem), "tags[0]", ""),
+      codeString: prettierFile(this.generatorClass(tagItem)),
     };
   }
 
@@ -37,8 +49,8 @@ export class GenerateApi implements GenerateCode {
         export { apiName }
     `;
     const typeStr = `
-          \n//TODO: 修正引用
-        import type {${types.join()}} from './types'`;
+          \n//TODO: edit import
+        import type { ApiType } from './types'`;
 
     return typeStr + str;
   }
@@ -77,10 +89,11 @@ export class GenerateApi implements GenerateCode {
         },
         ""
       );
+    const tagName = "ApiType";
 
     return ` ${
       apiItem.requestName
-    }(${funcParams}):Promise<[object,${_.upperFirst(
+    }(${funcParams}):Promise<[object,${tagName}.${_.upperFirst(
       apiItem.requestName
     )}Response]>{${formData ? "\n" + formData + "\n" : ""}
       return request.${apiItem.method}({
@@ -112,9 +125,16 @@ export class GenerateApi implements GenerateCode {
     //data body参数
     const body = _.get(apiItem, "requestBody.$ref", "") ? "data" : "";
 
-    const pathRequest = `${_.upperFirst(apiItem.requestName)}PathRequest`;
-    const queryRequest = `${_.upperFirst(apiItem.requestName)}QueryRequest`;
-    const bodyRequest = `${_.upperFirst(apiItem.requestName)}BodyRequest`;
+    const tagName = "ApiType";
+    const pathRequest = `${tagName}.${_.upperFirst(
+      apiItem.requestName
+    )}PathRequest`;
+    const queryRequest = `${tagName}.${_.upperFirst(
+      apiItem.requestName
+    )}QueryRequest`;
+    const bodyRequest = `${tagName}.${_.upperFirst(
+      apiItem.requestName
+    )}BodyRequest`;
 
     const pathStr = path ? `${_.camelCase(path)}:${pathRequest}` : "";
 
@@ -165,7 +185,7 @@ export class GenerateApi implements GenerateCode {
     const formData = new FormData();
     formData.append("file", file);`;
 
-    if ("$ref" in apiItem.requestBody) {
+    if (apiItem.requestBody && "$ref" in apiItem.requestBody) {
       const component: OpenAPIV3.RequestBodyObject = this.getComponentByRef(
         apiItem.requestBody.$ref
       );
@@ -178,6 +198,7 @@ export class GenerateApi implements GenerateCode {
     }
 
     if (
+      apiItem.requestBody &&
       "content" in apiItem.requestBody &&
       "multipart/form-data" in apiItem.requestBody.content
     ) {
@@ -219,39 +240,8 @@ export class GenerateApi implements GenerateCode {
     */`;
   }
 
-  /* async formatterCode(codeData) {
-    const OPTION = {
-      text: "",
-      eslintConfig: {
-        parserOptions: {
-          ecmaVersion: 7,
-        },
-        rules: {
-          semi: ["error", "never"],
-        },
-      },
-      prettierOptions: {
-        bracketSpacing: true,
-        tabWidth: 4,
-        parser: "babel", //解析器，默认是babylon，与babel相同。
-      },
-      fallbackPrettierOptions: {
-        singleQuote: false,
-      },
-    };
-    const formatMap = _.map(codeData, async (item, index) => {
-      const option = _.cloneDeep(OPTION);
-      option.text = item.code;
-      return {
-        ...item,
-        code: await format(option),
-      };
-    });
-
-    return await Promise.all(formatMap).catch((err) => {
-      console.log("格式化错误", err);
-      console.log("-> 跳过格式化");
-      return codeData;
-    });
-  }*/
+  writeFile(title, codeString) {
+    const filePath = path.join(this.config.output, `${title}Api.ts`);
+    fse.outputFileSync(filePath, codeString);
+  }
 }

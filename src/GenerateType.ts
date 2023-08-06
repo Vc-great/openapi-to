@@ -1,9 +1,11 @@
 // @ts-nocheck
 import _ from "lodash";
-
+import fse from "fs-extra";
 import type { ApiData, GenerateCode } from "@/types";
 import { OpenApi3FormatData } from "@/types";
 import { OpenAPIV3 } from "openapi-types";
+import path from "path";
+import { prettierFile } from "./utils";
 
 export class GenerateType implements GenerateCode {
   pendingRefCache: Set<string>;
@@ -25,7 +27,7 @@ export class GenerateType implements GenerateCode {
     //缓存apiName
     this.apiNameCache = new Map();
     this.enumSchema = new Map();
-    this.config = {};
+    this.config = config;
   }
 
   //query参数
@@ -33,11 +35,8 @@ export class GenerateType implements GenerateCode {
     const query = _.filter(apiItem.parameters, ["in", "query"]);
     if (_.isEmpty(query)) return "";
 
-    return `/**
-            *@名称 ${apiItem.summary}
-            *@tag名称 ${_.get(apiItem, "tags[0]", "")}
-            */
-    export interface ${_.camelCase(apiItem.requestName)}QueryRequest {
+    return `/** ${apiItem.summary}*/
+    export interface ${_.upperFirst(apiItem.requestName)}QueryRequest {
                  ${this.handleParameters(query)}
             }`;
   }
@@ -50,7 +49,7 @@ export class GenerateType implements GenerateCode {
             *@名称 ${apiItem.summary}
             *@tag名称 ${_.get(apiItem, "tags[0]", "")}
             */
-          export  interface ${_.camelCase(apiItem.requestName)}PathRequest {
+          export interface ${_.upperFirst(apiItem.requestName)}PathRequest {
                 ${this.handleParameters(pathParams)}
             }`;
   }
@@ -73,9 +72,9 @@ export class GenerateType implements GenerateCode {
         }
 
         return `/** ${item.description ?? ""} */
-              ${item.name}${item.required ? "" : "?"}:${this.formatterBaseType(
-          item.schema
-        )}`;
+              ${item.name.includes("-") ? _.camelCase(item.name) : item.name}${
+          item.required ? "" : "?"
+        }:${this.formatterBaseType(item.schema)}`;
       });
     };
     const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
@@ -84,17 +83,18 @@ export class GenerateType implements GenerateCode {
   //body参数
   getBodyParamsType(apiItem: ApiData) {
     if (!apiItem.requestBody) {
-      return;
+      return "";
     }
-    const interfaceName = `${_.camelCase(apiItem.requestName)}BodyRequest`;
+    const interfaceName = `${_.upperFirst(apiItem.requestName)}BodyRequest`;
 
     //已经解析过采用继承的方式
     if (
       "$ref" in apiItem.requestBody &&
       this.apiNameCache.has(apiItem.requestBody.$ref)
     ) {
-      return `export interface ${interfaceName} extends ${this.apiNameCache.has(
-        interfaceName
+      return `/** ${apiItem.summary} */
+      export interface ${interfaceName} extends ${this.apiNameCache.get(
+        apiItem.requestBody.$ref
       )}{}`;
     }
 
@@ -103,6 +103,35 @@ export class GenerateType implements GenerateCode {
     if ("$ref" in apiItem.requestBody) {
       component = this.getRequestBodiesComponentByRef(apiItem.requestBody.$ref);
       this.apiNameCache.set(apiItem.requestBody.$ref, interfaceName);
+    }
+
+    if (!component && apiItem.requestBody.content) {
+      const media = _.chain(apiItem.requestBody.content)
+        .values()
+        .head()
+        .value();
+
+      if ("$ref" in media.schema) {
+        component = this.getRequestBodiesComponentByRef(media.schema.$ref);
+        this.apiNameCache.set(media.schema.$ref, interfaceName);
+      } else {
+        component = media.schema;
+      }
+    }
+
+    if (!component) {
+      return "";
+    }
+
+    if (
+      component.type === "array" &&
+      component.items &&
+      !component.items.$ref
+    ) {
+      return `  /** ${apiItem.summary} */
+      export type ${interfaceName} = ${this.formatterBaseType(
+        component.items
+      )}[]`;
     }
 
     const typeString = this.handleComponentSchema(component);
@@ -134,10 +163,13 @@ export class GenerateType implements GenerateCode {
       if (media.schema && "$ref" in media.schema) {
         return this.getRequestBodiesComponentByRef(media.schema.$ref);
       } else {
+        //todo 待补充
+        if (media.schema.items.$ref === "#/components/schemas/User") {
+        }
         return media.schema;
       }
     }
-    console.log("-> 存在异常");
+    return schemaComponent;
   }
 
   getComponentByRef(
@@ -166,9 +198,14 @@ export class GenerateType implements GenerateCode {
     //$refs.forEach((ref) => this.resolveRefCache.add(ref));
 
     const generateInterface = (component, index) => {
-      return ` export  interface ${_.upperFirst(
-        $refs[index].split("/").pop()
-      )} {
+      const interfaceName = _.upperFirst($refs[index].split("/").pop());
+      //没有properties
+      if (component.type === "object" && !component.properties) {
+        return `/**${component.title}*/
+      export type ${interfaceName} = object`;
+      }
+
+      return ` export  interface ${_.upperFirst(interfaceName)} {
               ${this.handleComponentSchema(component)}
              }`;
     };
@@ -210,24 +247,25 @@ export class GenerateType implements GenerateCode {
       $ref = _.get(_.values(head.content)[0], "schema.$ref", "");
     }
 
-    const interfaceName = `${_.camelCase(apiItem.requestName)}BodyRequest`;
+    const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
 
     //已经解析过采用继承的方式
     if (this.apiNameCache.has($ref)) {
-      return `export interface ${interfaceName} extends ${this.apiNameCache.has(
-        interfaceName
+      return `/** ${apiItem.summary} */
+      export interface ${interfaceName} extends ${this.apiNameCache.get(
+        $ref
       )}{}`;
     }
     this.apiNameCache.set($ref, interfaceName);
 
-    const typeString = this.handleComponentSchema(
-      this.getComponentByRef($ref) as OpenAPIV3.SchemaObject
-    );
+    const component = this.getComponentByRef($ref) as OpenAPIV3.SchemaObject;
+
+    const typeString = this.handleComponentSchema(component);
 
     //
     const bodyTypeStr = `
             /** ${apiItem.summary} */
-           export  interface ${_.upperFirst(apiItem.requestName)}Response {
+           export  interface ${interfaceName} {
               ${typeString}
             }`;
     return `${bodyTypeStr}`;
@@ -239,58 +277,78 @@ export class GenerateType implements GenerateCode {
     this.resolveRefCache.clear();
     this.apiNameCache.clear();
 
-    return tagItem.map((apiItem) => {
-      const types = [
-        this.getQueryParamsType(apiItem),
-        this.getBodyParamsType(apiItem),
-        this.getPathParamsType(apiItem),
-        this.getResponseType(apiItem),
-        this.getComponentTypeByRef([...this.pendingRefCache.keys()]),
-        this.getEnumOption(this.enumSchema.entries()),
-      ];
-      const filterEmpty = (types: string[]) => types.filter((type) => type);
-      const addType = (types: string[]) => types.join("\n");
+    const tagItemTypeString = tagItem
+      .map((apiItem) => {
+        const types = [
+          this.getQueryParamsType(apiItem),
+          this.getBodyParamsType(apiItem),
+          this.getPathParamsType(apiItem),
+          this.getResponseType(apiItem),
+          this.getComponentTypeByRef([...this.pendingRefCache.keys()]),
+        ];
+        const filterEmpty = (types: string[]) => types.filter((type) => type);
+        const addType = (types: string[]) => types.join("\n");
 
-      const addEslint = (typesStr: string) =>
-        `// eslint-disable-next-line @typescript-eslint/no-namespace` +
-        "\n" +
-        typesStr;
+        return _.flow([filterEmpty, addType])(types);
+      })
+      .join("\n");
 
-      return _.flow(filterEmpty, addType, addEslint)(types);
-    });
+    const addEslint = (tagItemTypeString: string) => `
+    //eslint-disable-next-line @typescript-eslint/no-namespace
+    /**
+     *@tag名称 ${_.get(tagItem, "[0].tags[0]", "")}
+     *@Description ${_.get(tagItem, "[0].description", "")}
+     */
+     //todo edit namespace name
+    export namespace ApiType {
+      ${tagItemTypeString}
+    }
+      ${this.getEnumOption(Array.from(this.enumSchema.entries()))}
+    `;
+    return {
+      title: _.get(_.head(tagItem), "tags[0]", ""),
+      codeString: prettierFile(addEslint(tagItemTypeString)),
+    };
   }
   //this.enumSchema.entries(),
   getEnumOption(enumSchema) {
+    this.enumSchema.clear();
     //todo 解析     this.enumSchema 生成label option
     return _.reduce(
-      enumSchema.entries(),
-      (result, [value, key]) => {
+      enumSchema,
+      (result, [key, value]) => {
         const labelName = `${_.upperFirst(_.camelCase(key))}Label`;
         const valueName = `${_.upperFirst(_.camelCase(key))}`;
 
-        const enumValue = `export const enum ${valueName} {
-                ${value.enum.map((item) => {
-                  return `${item} = ${item}`;
-                })}
-          }`;
-
-        const enumLabel = `export const enum ${labelName} {
+        result += `
+        /**${value.description}*/
+        export const enum ${labelName} {
                 ${value.enum.map((item) => {
                   return `${item} = ''`;
                 })}
           }`;
 
-        const enumOption = `export const ${_.upperFirst(
-          _.camelCase(key)
-        )}Option [
+        result += `
+          /**${value.description}*/
+         export const enum ${valueName} {
                 ${value.enum.map((item) => {
-                  return `{label:${labelName}.${item},value:${valueName}.${item}`;
+                  return `${item} = '${item}'`;
+                })}
+          }`;
+
+        result += `
+         /**${value.description}*/
+        export const ${_.upperFirst(_.camelCase(key))}Option = [
+                ${value.enum.map((item, index) => {
+                  return `${
+                    index === 0 ? "" : "\n"
+                  }{label:${labelName}.${item},value:${valueName}.${item}}`;
                 })}
           ]`;
 
-        return [...result, enumLabel, enumValue, enumOption];
+        return result;
       },
-      []
+      ""
     );
   }
 
@@ -309,17 +367,23 @@ export class GenerateType implements GenerateCode {
           schemaObject.items.$ref,
           false
         );
-        // return this.handleComponentSchema(component)
+
         return `/**${component.title}*/
         ${key}${parent.required?.includes(key) ? "" : "?"}:${
           _.upperFirst(schemaObject.items.$ref.split("/").pop()) + "[]"
         }`;
       }
 
-      return `/**${schemaObject.description}*/
-      ${key}${
-        parent.required?.includes(key) ? "" : "?"
+      return `/**${schemaObject.description ?? ""}*/
+      ${key ?? ""}${
+        parent?.required?.includes(key) ? "" : "?"
       }:${this.formatterBaseType(schemaObject.items)}[]`;
+    }
+
+    // 对象类型 properties 不存在
+    if (schemaObject.type === "object" && !schemaObject.properties) {
+      return `/**${schemaObject.description ?? ""}*/
+        ${key ?? ""}${parent?.required?.includes(key) ? "" : "?"}: object`;
     }
 
     // 对象类型
@@ -341,6 +405,7 @@ export class GenerateType implements GenerateCode {
 
       const component = this.getComponentByRef(schemaObject.$ref, false);
       const componentName = schemaObject.$ref.split("/").pop();
+
       return `/**${component.title}*/
       ${key}${parent.required?.includes(key) ? "" : "?"}:${_.upperFirst(
         componentName
@@ -442,6 +507,10 @@ export class GenerateType implements GenerateCode {
     if (type === "boolean") {
       return "boolean";
     }
+
+    if (type === "array") {
+      return `${schemaObject.items.type}[]`;
+    }
   }
 
   resolveEnumObject(schemaObject: OpenAPIV3.SchemaObject) {
@@ -457,5 +526,10 @@ export class GenerateType implements GenerateCode {
           ""
         )
       : "string";
+  }
+
+  writeFile(title, codeString) {
+    const filePath = path.join(this.config.output, `${title}Types.ts`);
+    fse.outputFileSync(filePath, codeString);
   }
 }

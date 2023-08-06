@@ -10,7 +10,7 @@ export const prettierFile = (content: string): string => {
       tabWidth: 4,
     });
   } catch (error) {
-    console.log("-> error", error);
+    console.log("->prettier error :", error);
   }
   return result;
 };

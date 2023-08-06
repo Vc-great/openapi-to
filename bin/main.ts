@@ -1,13 +1,13 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import packageJson from "../package.json";
-import { createCode, createFile } from "../lib/create";
+import { createCode, createFile } from "../src/create";
 
 const program = new Command();
 
 program
-  .name("yapi")
-  .description("根据yapi接口文档生成api请求")
+  .name("openapi-to")
+  .description("根据openAPI规范生成api请求")
   .usage("<command>")
   .version(packageJson.version, "-v, --version", "版本号");
 

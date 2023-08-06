@@ -10,6 +10,7 @@ import { APIDataType, TagAPIDataType } from "./GenerateType";
 //import { _.reduce, _.merge, has, keys, head } from "lodash-es";
 import _ from "lodash";
 import fetch from "node-fetch";
+
 /**
  * GenerateCode
  */
@@ -35,7 +36,8 @@ export class GenerateCode {
     return _.reduce(
       this.registerClass,
       (result, instance) => {
-        return _.merge(result, instance.run(apiItem));
+        const { title, codeString } = instance.run(apiItem);
+        instance.writeFile(title, codeString);
       },
       {}
     );
@@ -245,7 +247,7 @@ export class GenerateCode {
 
   //
   async init(): Promise<{
-    openApi3Data: TagAPIDataType;
+    openApi3SourceData: TagAPIDataType;
     openApi3FormatData: OpenAPIV3.Document;
   }> {
     //获取数据
@@ -255,7 +257,7 @@ export class GenerateCode {
     //格式化数据
     this.openApi3FormatData = this.openApi3DataFormatter(this.openApi3Data);
     return {
-      openApi3Data: this.openApi3Data,
+      openApi3SourceData: this.openApi3Data,
       openApi3FormatData: this.openApi3FormatData,
     };
   }
@@ -263,17 +265,9 @@ export class GenerateCode {
   //遍历生成代码
   public run() {
     //遍历path,调用注册类的run方法
-    return _.reduce(
-      this.openApi3FormatData,
-      (result, apiItem, key) => {
-        result[key] = {
-          fileName: "",
-          ...this.runByRegisterClass(apiItem),
-        };
-        return result;
-      },
-      {}
-    );
+    const map = _.map(this.openApi3FormatData, (apiItem, key) => {
+      return this.runByRegisterClass(apiItem);
+    });
   }
 
   //写入文件

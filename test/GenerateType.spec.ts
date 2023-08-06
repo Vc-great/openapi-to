@@ -2,7 +2,7 @@
 import { GenerateType } from "@/GenerateType";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Fomatter.json";
-//import apiItemMockData from "../mock/apiItem.json";
+import tagItem from "../mock/apiItem.json";
 import apiItemByGet from "../mock/apiItemByGet.json";
 import { queryParams } from "../mock/queryParams";
 import {
@@ -118,5 +118,39 @@ test("getComponentTypeByRef", () => {
   );
   // @ts-ignore
   const resultExpected = generateType.getComponentTypeByRef(refList);
+  expect(resultExpected).toBe(bodyResponseExpectedResult);
+});
+
+test("getEnumOption", () => {
+  const generateType = new GenerateType(
+    {},
+    // @ts-ignore
+    openApi3,
+    openApi3Formatter
+  );
+  const enumSchemas = [
+    [
+      "sourceType",
+      {
+        type: "string",
+        description: "数据来源方式（db文件、视图、api接口、url等）",
+        enum: ["DB_CONNECTION", "API_INTERFACE"],
+      },
+    ],
+  ];
+  // @ts-ignore
+  const resultExpected = generateType.getEnumOption(enumSchemas);
   expect(resultExpected).toBe("");
+});
+
+test("run", () => {
+  const generateType = new GenerateType(
+    {},
+    // @ts-ignore
+    openApi3,
+    openApi3Formatter
+  );
+  // @ts-ignore
+  const tagItemTypeString = generateType.run(tagItem.任务管理);
+  expect(tagItemTypeString).toBe("");
 });

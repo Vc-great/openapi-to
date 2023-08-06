@@ -1,10 +1,9 @@
-import typescript from 'rollup-plugin-typescript2'; // 处理typescript
-import babel from '@rollup/plugin-babel';
+
 import esbuild from 'rollup-plugin-esbuild'
 import json from '@rollup/plugin-json'
 export default [
     {
-        input: 'src/index.ts',
+        input: 'bin/main.ts',
         plugins: [
             json({
                 namedExports: false
@@ -14,17 +13,15 @@ export default [
                 sourceMap: true,
                 minify: false,
                 target: 'es2015'
-            }),
-/*            babel({
-                babelrc: false,
-                presets: [['@babel/preset-env', { modules: false, loose: true }]],
-                plugins: [['@babel/plugin-proposal-class-properties', { loose: true }]],
-                exclude: 'node_modules/!**',
-            })*/
+            })
         ],
         output: [
-            { file: 'dist/index.js', format: 'cjs' },
-            { file: 'dist/index.esm.js', format: 'es' }
+            {
+                file: 'dist/index.cjs',
+                format: 'cjs',
+                banner: '#!/usr/bin/env node'
+            },
+            { file: 'dist/index.js', format: 'es',   banner: '#!/usr/bin/env node', }
         ]
     }
 ];

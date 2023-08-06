@@ -1,10 +1,12 @@
 {
   "任务管理": [
     {
-      "path": "/task",
+      "path": "tasks",
       "method": "get",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询dataUploadingTask",
       "operationId": "allUsingGET_14",
       "parameters": [
@@ -127,7 +129,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_Page_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_Page_dataUploadingTask"
               }
             }
           }
@@ -144,16 +146,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "list"
     },
     {
-      "path": "/task",
+      "path": "tasks",
       "method": "put",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "修改dataUploadingTask",
       "operationId": "updateUsingPUT_10",
       "requestBody": {
@@ -165,7 +172,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_dataUploadingTask"
               }
             }
           }
@@ -185,16 +192,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "update"
     },
     {
-      "path": "/task",
+      "path": "tasks",
       "method": "post",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "新增dataUploadingTask",
       "operationId": "createUsingPOST_10",
       "requestBody": {
@@ -206,7 +218,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_dataUploadingTask"
               }
             }
           }
@@ -226,16 +238,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "create"
     },
     {
-      "path": "/task",
+      "path": "tasks",
       "method": "delete",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "删除dataUploadingTask",
       "operationId": "deleteUsingDELETE_10",
       "requestBody": {
@@ -247,7 +264,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_object_"
+                "$ref": "#/components/schemas/Response_object"
               }
             }
           }
@@ -264,16 +281,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "del"
     },
     {
-      "path": "/task/all",
+      "path": "tasks/all",
       "method": "get",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询dataUploadingTask",
       "operationId": "allUsingGET_13",
       "parameters": [
@@ -363,7 +385,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_Page_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_Page_dataUploadingTask"
               }
             }
           }
@@ -380,16 +402,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "all"
     },
     {
-      "path": "/task/fork",
+      "path": "tasks/fork",
       "method": "post",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "复制（打开）dataUploadingTask",
       "operationId": "forkUsingPOST",
       "requestBody": {
@@ -401,7 +428,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_dataUploadingTask"
               }
             }
           }
@@ -421,16 +448,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "fork"
     },
     {
-      "path": "/task/sync-feedback",
+      "path": "tasks/sync-feedback",
       "method": "get",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "uploadTaskSyncFeedBack",
       "operationId": "uploadTaskSyncFeedBackUsingGET",
       "parameters": [
@@ -451,7 +483,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_Void_"
+                "$ref": "#/components/schemas/Response_Void"
               }
             }
           }
@@ -468,16 +500,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "syncFeedback"
     },
     {
-      "path": "/task/taskAndIdList",
+      "path": "tasks/taskAndIdList",
       "method": "get",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询委端任务下拉，id：任务表id，taskName：委端任务名",
       "operationId": "taskAndIdListUsingGET",
       "parameters": [
@@ -497,7 +534,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_object_"
+                "$ref": "#/components/schemas/Response_object"
               }
             }
           }
@@ -514,16 +551,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "taskAndIdList"
     },
     {
-      "path": "/task/{id}",
+      "path": "tasks/{id}",
       "method": "get",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询dataUploadingTask详情",
       "operationId": "oneUsingGET_10",
       "parameters": [
@@ -557,7 +599,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_dataUploadingTask"
               }
             }
           }
@@ -574,16 +616,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "detailById"
     },
     {
-      "path": "/task/{id}/data",
+      "path": "tasks/{id}/data",
       "method": "get",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "查询上报任务关联的上报数据",
       "operationId": "getRelateDataUsingGET",
       "parameters": [
@@ -707,7 +754,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_List_2"
+                "$ref": "#/components/schemas/Response_List_上报空间"
               }
             }
           }
@@ -724,16 +771,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "data"
     },
     {
-      "path": "/task/{task-id}/add-relateData",
+      "path": "tasks/{task-id}/add-relateData",
       "method": "put",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "追加关联上报数据",
       "operationId": "addRelateDataUsingPUT",
       "parameters": [
@@ -757,7 +809,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_dataUploadingTask"
               }
             }
           }
@@ -777,16 +829,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "addRelateData"
     },
     {
-      "path": "/task/{task-id}/create-db",
+      "path": "tasks/{task-id}/create-db",
       "method": "post",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "creatdb",
       "operationId": "creatdbUsingPOST",
       "parameters": [
@@ -807,7 +864,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_object_"
+                "$ref": "#/components/schemas/Response_object"
               }
             }
           }
@@ -827,16 +884,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "createDb"
     },
     {
-      "path": "/task/{task-id}/remove-relateData",
+      "path": "tasks/{task-id}/remove-relateData",
       "method": "delete",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "移除已关联的上报数据",
       "operationId": "removeUsingDELETE",
       "parameters": [
@@ -860,7 +922,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask_"
+                "$ref": "#/components/schemas/Response_dataUploadingTask"
               }
             }
           }
@@ -877,16 +939,21 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "removeRelateData"
     },
     {
-      "path": "/task/{task-id}/start-trigger",
+      "path": "tasks/{task-id}/start-trigger",
       "method": "post",
-      "description": "Szyd Data Uploading Task Controller",
-      "tags": ["上报任务管理"],
+      "description": "Task Controller",
+      "tags": [
+        "任务管理"
+      ],
       "summary": "startTrigge",
       "operationId": "startTriggeUsingPOST",
       "parameters": [
@@ -907,7 +974,7 @@
           "content": {
             "*/*": {
               "schema": {
-                "$ref": "#/components/schemas/Response_object_"
+                "$ref": "#/components/schemas/Response_object"
               }
             }
           }
@@ -927,10 +994,13 @@
       },
       "security": [
         {
-          "Authorization": ["global"]
+          "Authorization": [
+            "global"
+          ]
         }
       ],
-      "deprecated": false
+      "deprecated": false,
+      "requestName": "startTrigger"
     }
   ]
 }
