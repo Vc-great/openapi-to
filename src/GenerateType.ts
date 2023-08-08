@@ -86,7 +86,6 @@ export class GenerateType implements GenerateCode {
       return "";
     }
     const interfaceName = `${_.upperFirst(apiItem.requestName)}BodyRequest`;
-
     //已经解析过采用继承的方式
     if (
       "$ref" in apiItem.requestBody &&
@@ -101,8 +100,13 @@ export class GenerateType implements GenerateCode {
     let component;
 
     if ("$ref" in apiItem.requestBody) {
-      component = this.getRequestBodiesComponentByRef(apiItem.requestBody.$ref);
-      this.apiNameCache.set(apiItem.requestBody.$ref, interfaceName);
+      const [resolveComponent, resolveRefs] =
+        this.getRequestBodiesComponentByRef(apiItem.requestBody.$ref);
+
+      component = resolveComponent;
+      [...resolveRefs, apiItem.requestBody.$ref].forEach((ref) =>
+        this.apiNameCache.set(ref, interfaceName)
+      );
     }
 
     if (!component && apiItem.requestBody.content) {
@@ -112,8 +116,12 @@ export class GenerateType implements GenerateCode {
         .value();
 
       if ("$ref" in media.schema) {
-        component = this.getRequestBodiesComponentByRef(media.schema.$ref);
-        this.apiNameCache.set(media.schema.$ref, interfaceName);
+        const [resolveComponent, resolveRefs] =
+          this.getRequestBodiesComponentByRef(media.schema.$ref);
+        component = resolveComponent;
+        [...resolveRefs, media.schema.$ref].forEach((ref) =>
+          this.apiNameCache.set(ref, interfaceName)
+        );
       } else {
         component = media.schema;
       }
@@ -145,31 +153,42 @@ export class GenerateType implements GenerateCode {
   }
 
   getRequestBodiesComponentByRef(
-    ref: string = ""
+    ref: string = "",
+    refsCache = []
   ): undefined | OpenAPIV3.SchemaObject {
     const schemaComponent = this.getComponentByRef(ref);
 
     if (schemaComponent === undefined) {
-      return undefined;
+      return [undefined, refsCache];
     }
 
     if ("$ref" in schemaComponent) {
-      return this.getRequestBodiesComponentByRef(schemaComponent.$ref);
+      return this.getRequestBodiesComponentByRef(schemaComponent.$ref, [
+        ...refsCache,
+        schemaComponent.$ref,
+      ]);
     }
 
     if ("content" in schemaComponent) {
       const media = _.chain(schemaComponent.content).values().head().value();
 
       if (media.schema && "$ref" in media.schema) {
-        return this.getRequestBodiesComponentByRef(media.schema.$ref);
-      } else {
-        //todo 待补充
-        if (media.schema.items.$ref === "#/components/schemas/User") {
-        }
-        return media.schema;
+        return this.getRequestBodiesComponentByRef(media.schema.$ref, [
+          ...refsCache,
+          media.schema.$ref,
+        ]);
       }
+
+      if (media.schema.type === "array" && media.schema?.items?.$ref) {
+        return this.getRequestBodiesComponentByRef(media.schema.items.$ref, [
+          ...refsCache,
+          media.schema.items.$ref,
+        ]);
+      }
+
+      return [media.schema, refsCache];
     }
-    return schemaComponent;
+    return [schemaComponent, refsCache];
   }
 
   getComponentByRef(
@@ -195,7 +214,6 @@ export class GenerateType implements GenerateCode {
   //
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
     this.pendingRefCache.clear();
-    //$refs.forEach((ref) => this.resolveRefCache.add(ref));
 
     const generateInterface = (component, index) => {
       const interfaceName = _.upperFirst($refs[index].split("/").pop());
@@ -248,6 +266,12 @@ export class GenerateType implements GenerateCode {
     }
 
     const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
+
+    if (!$ref) {
+      return `
+            /** ${apiItem.summary} */
+           export  interface ${interfaceName} {}`;
+    }
 
     //已经解析过采用继承的方式
     if (this.apiNameCache.has($ref)) {

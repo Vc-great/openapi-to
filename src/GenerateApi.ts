@@ -123,7 +123,7 @@ export class GenerateApi implements GenerateCode {
     const query = _.some(apiItem.parameters, ["in", "query"]);
 
     //data body参数
-    const body = _.get(apiItem, "requestBody.$ref", "") ? "data" : "";
+    const body = this.requestBodyParams(apiItem);
 
     const tagName = "ApiType";
     const pathRequest = `${tagName}.${_.upperFirst(
@@ -177,6 +177,18 @@ export class GenerateApi implements GenerateCode {
       formDataHeader,
       formData,
     };
+  }
+
+  requestBodyParams(apiItem: ApiData) {
+    if (_.get(apiItem, "requestBody.$ref", "")) {
+      return "data";
+    }
+
+    const media = _.chain(apiItem.requestBody?.content).values().head().value();
+    if (!_.isEmpty(media)) {
+      return "data";
+    }
+    return "";
   }
 
   generateFormData(apiItem: ApiData) {
