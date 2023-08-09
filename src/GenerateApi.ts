@@ -162,8 +162,8 @@ export class GenerateApi implements GenerateCode {
     );
     const paramsSerializer = hasQueryArray
       ? `paramsSerializer(params) {
-                            return qs.stringify(params)
-                        }`
+            return qs.stringify(params)
+        }`
       : "";
     const { formDataHeader, formData } = this.generateFormData(apiItem);
 

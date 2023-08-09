@@ -120,7 +120,7 @@ function createGitignore() {
     //文件不存在
     fse.writeFileSync(
       gitignorePath,
-      `# 根据openAPI接口文档生成api\n.yapi`,
+      `# 根据openAPI接口文档生成api\n.openAPI`,
       "utf8"
     );
     successLog("创建.gitignore文件成功");

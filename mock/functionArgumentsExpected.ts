@@ -5,12 +5,7 @@ export const queryArguments = [
 ];
 
 export const functionContentByQuery =
-  " list(query:AllQueryRequest):Promise<[object,ListResponse]>{\n" +
-  "      return request.get({\n" +
-  "        url:`tasks`,\n" +
-  "params:query\n" +
-  "      })\n" +
-  "    }";
+  " list(query:AllQueryRequest):Promise<[object,ApiType.ListResponse]>{\n      return request.get({\n        url:`tasks`,\nparams:query\n      })\n    }";
 
 export const queryPathArguments = [
   "id:DetailByIdPathRequest,query:DetailByIdQueryRequest",
@@ -19,7 +14,7 @@ export const queryPathArguments = [
 ];
 
 export const functionContentByQueryPath =
-  " list(id:DetailByIdPathRequest,query:DetailByIdQueryRequest):Promise<[object,ListResponse]>{\n" +
+  " list(id:DetailByIdPathRequest,query:DetailByIdQueryRequest):Promise<[object,ApiType.ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "params:query\n" +
@@ -33,7 +28,7 @@ export const pathArguments = [
 ];
 
 export const functionContentByPath =
-  " list(taskId:CreateDbPathRequest):Promise<[object,ListResponse]>{\n" +
+  " list(taskId:CreateDbPathRequest):Promise<[object,ApiType.ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`\n" +
   "      })\n" +
@@ -45,7 +40,7 @@ export const pathBodyArguments = [
 ];
 
 export const functionContentByPathBody =
-  " list(taskId:AddRelateDataPathRequest,body:AddRelateDataBodyRequest):Promise<[object,ListResponse]>{\n" +
+  " list(taskId:AddRelateDataPathRequest,body:AddRelateDataBodyRequest):Promise<[object,ApiType.ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "data:body\n" +
@@ -58,7 +53,7 @@ export const bodyArguments = [
 ];
 
 export const functionContentByBody =
-  " list(body:UpdateBodyRequest):Promise<[object,ListResponse]>{\n" +
+  " list(body:UpdateBodyRequest):Promise<[object,ApiType.ListResponse]>{\n" +
   "      return request.get({\n" +
   "        url:`tasks`,\n" +
   "data:body\n" +
