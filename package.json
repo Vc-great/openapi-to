@@ -1,6 +1,6 @@
 {
   "name": "openapi-to",
-  "version": "0.0.4-alpha.1",
+  "version": "0.0.4-alpha.2",
   "description": "",
   "main": "dist/index.js",
   "bin": {
@@ -23,7 +23,9 @@
   "homepage": "https://github.com/Vc-great/openapi-to",
   "author": "",
   "keywords": [
-    "swagger","openapi","typescript"
+    "swagger",
+    "openapi",
+    "typescript"
   ],
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.2",
