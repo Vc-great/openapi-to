@@ -1,7 +1,7 @@
-# openapi-to
-
 [![build status](https://github.com/Vc-great/openapi-to/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Vc-great/openapi-to/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/github/Vc-great/openapi-to/branch/main/graph/badge.svg?token=5UB04YYCEB)](https://codecov.io/github/Vc-great/openapi-to)
+
+# openapi-to
 
 根据openapi接口文档生成typescript接口及类型声明。
 
