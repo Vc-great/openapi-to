@@ -6,6 +6,7 @@ import { OpenApi3FormatData } from "@/types";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import { prettierFile } from "./utils";
+import { successLog } from "@/log";
 
 export class GenerateType implements GenerateCode {
   pendingRefCache: Set<string>;
@@ -329,6 +330,7 @@ export class GenerateType implements GenerateCode {
     }
       ${this.getEnumOption(Array.from(this.enumSchema.entries()))}
     `;
+
     return {
       title: _.get(_.head(tagItem), "tags[0]", ""),
       codeString: prettierFile(addEslint(tagItemTypeString)),
@@ -555,5 +557,6 @@ export class GenerateType implements GenerateCode {
   writeFile(title, codeString) {
     const filePath = path.join(this.config.output, `${title}Types.ts`);
     fse.outputFileSync(filePath, codeString);
+    successLog(`${title}类型写入成功!`);
   }
 }

@@ -235,7 +235,9 @@ export class GenerateCode {
     }
     //本地文件
     const [error, res] = await import(schemaPath).then(
-      (rest) => [undefined, rest.default],
+      (rest) => {
+        return [undefined, rest.default];
+      },
       (e) => [e, undefined]
     );
     if (error) {

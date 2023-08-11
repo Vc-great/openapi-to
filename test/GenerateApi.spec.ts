@@ -153,6 +153,7 @@ describe("function content", () => {
 
 test("run", () => {
   const tagItem = openApi3Fomatter["任务管理"];
+  const generateApi = new GenerateApi({}, openApi3, openApi3Formatter);
   // @ts-ignore
   const classCodeStrExpected = generateApi.run(tagItem);
   expect(classCodeStrExpected).toEqual(classApiStr);

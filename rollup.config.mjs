@@ -12,15 +12,11 @@ export default [
             esbuild({
                 sourceMap: true,
                 minify: false,
-                target: 'es2015'
-            })
+                target: 'es6'
+            }),
+
         ],
         output: [
-            {
-                file: 'dist/index.cjs',
-                format: 'cjs',
-                banner: '#!/usr/bin/env node'
-            },
             { file: 'dist/index.js', format: 'es',   banner: '#!/usr/bin/env node', }
         ]
     }

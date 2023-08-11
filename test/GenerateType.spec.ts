@@ -13,7 +13,6 @@ import {
 import {
   bodyRequestOpenApi3,
   bodyRequestOpenApi3Formatter,
-  bodyRequestExpectedResult,
 } from "../mock/bodyRequest";
 import {
   pathRequestOpenApi3,
@@ -24,14 +23,16 @@ import {
   bodyResponseOpenApi3,
   bodyResponseExpectedResult,
   bodyResponseOpenApi3Formatter,
+  ComponentTypeResponseExpectedResult,
 } from "../mock/bodyResponse";
 
 import { refList } from "../mock/ref";
+import { bodyParamsBodyResultExpected } from "../mock/getBodyParamsType";
+import { enumOption } from "../mock/enum";
+import { typeRunExpected } from "../mock/typeRun";
 
 // @ts-ignore
 let generateType = new GenerateType({}, openApi3, openApi3Formatter);
-
-describe("", () => {});
 
 test("getQueryParamsType", () => {
   const apiItem = apiItemByGet;
@@ -45,7 +46,7 @@ describe("getBodyParamsType", () => {
     const apiItem = apiItemByGet;
     // @ts-ignore
     const bodyParamsExpected = generateType.getBodyParamsType(apiItem);
-    expect(bodyParamsExpected).toBe(undefined);
+    expect(bodyParamsExpected).toBe("");
   });
 
   test(" have json body params", () => {
@@ -58,7 +59,7 @@ describe("getBodyParamsType", () => {
     const apiItem = bodyRequestOpenApi3Formatter;
     // @ts-ignore
     const bodyParamsResult = generateType.getBodyParamsType(apiItem);
-    expect(bodyParamsResult).toBe(bodyRequestExpectedResult);
+    expect(bodyParamsResult).toBe(bodyParamsBodyResultExpected);
   });
 
   test(" have upload  params", () => {
@@ -118,7 +119,7 @@ test("getComponentTypeByRef", () => {
   );
   // @ts-ignore
   const resultExpected = generateType.getComponentTypeByRef(refList);
-  expect(resultExpected).toBe(bodyResponseExpectedResult);
+  expect(resultExpected).toBe(ComponentTypeResponseExpectedResult);
 });
 
 test("getEnumOption", () => {
@@ -140,7 +141,7 @@ test("getEnumOption", () => {
   ];
   // @ts-ignore
   const resultExpected = generateType.getEnumOption(enumSchemas);
-  expect(resultExpected).toBe("");
+  expect(resultExpected).toBe(enumOption);
 });
 
 test("run", () => {
@@ -152,5 +153,5 @@ test("run", () => {
   );
   // @ts-ignore
   const tagItemTypeString = generateType.run(tagItem.任务管理);
-  expect(tagItemTypeString).toBe("");
+  expect(tagItemTypeString).toStrictEqual(typeRunExpected);
 });

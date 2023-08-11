@@ -52,7 +52,7 @@ export const uploadOpenApi3 = {
 export const uploadExpectedResult =
   "\n" +
   "            /** 新增dataUploadingTask */\n" +
-  "            export interface createBodyRequest {\n" +
+  "            export interface CreateBodyRequest {\n" +
   "              /**\n" +
   "      *@remark content transferred in binary (octet-stream)\n" +
   "      *@description file\n" +

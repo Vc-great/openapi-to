@@ -63,7 +63,7 @@ export const pathRequestExpectedResult =
   "            *@名称 新增dataUploadingTask\n" +
   "            *@tag名称 任务管理\n" +
   "            */\n" +
-  "          export  interface createPathRequest {\n" +
+  "          export interface CreatePathRequest {\n" +
   "                /** fields */\n" +
   "              fields?:number\n" +
   "/** id */\n" +

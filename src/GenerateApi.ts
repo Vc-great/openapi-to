@@ -5,6 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
 import { prettierFile } from "./utils";
+import { successLog } from "@/log";
 
 export class GenerateApi implements GenerateCode {
   //private apiItem: ApiData[];
@@ -255,5 +256,6 @@ export class GenerateApi implements GenerateCode {
   writeFile(title, codeString) {
     const filePath = path.join(this.config.output, `${title}Api.ts`);
     fse.outputFileSync(filePath, codeString);
+    successLog(`${title}接口写入成功!`);
   }
 }
