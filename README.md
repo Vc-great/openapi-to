@@ -3,9 +3,10 @@
 
 # openapi-to
 
-根据openapi接口文档生成typescript接口及类型声明。
+根据 openapi 接口文档生成 typescript 接口及类型声明。
 
 ## 文档
+
 ```js
 openapi -h
 Commands:
@@ -13,16 +14,20 @@ Commands:
   install         生成代码
   i               生成代码（简写形式）
 ```
+
 ## 使用
+
 安装
+
 ```ts
 //全局安装,不侵入项目
 npm i openapi-to -g
-//验证 
+//验证
 openapi -v
 ```
 
 使用
+
 ```ts
 //进⼊项⽬根⽬录下
 cd project
@@ -34,19 +39,20 @@ openapi init
 module.exports = {
     projects:[
         {
-            title:'测试',  //项目名称,用于生成目录 
+            title:'测试',  //项目名称,用于生成目录
             path:'https://petstore.swagger.io/v2/swagger.json'  //接口文档url
         }
     ]
 }
 
 //生成api
-openapi i  
+openapi i
 // or
 openapi install
 ```
 
 直接使用
+
 ```ts
 // 生成openAPI.config.js
 npx openapi-to init
@@ -54,13 +60,8 @@ npx openapi-to init
 npx openapi-to i
 ```
 
-## 生成目录结构
-```bazaar
-
-
-```
-
 ## api
+
 ```ts
 //TODO: edit import
 import type { ApiType } from "./types";
@@ -188,10 +189,10 @@ class ApiName {
 const apiName = new ApiName();
 
 export { apiName };
-
 ```
 
 ## interface
+
 ```ts
 //eslint-disable-next-line @typescript-eslint/no-namespace
 /**
@@ -340,5 +341,4 @@ export const StatusOption = [
   { label: StatusLabel.pending, value: Status.pending },
   { label: StatusLabel.sold, value: Status.sold },
 ];
-
 ```
