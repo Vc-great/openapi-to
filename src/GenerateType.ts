@@ -6,7 +6,7 @@ import { OpenApi3FormatData } from "@/types";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import { prettierFile } from "./utils";
-import { successLog } from "@/log";
+import { successLog } from "./log";
 
 export class GenerateType implements GenerateCode {
   pendingRefCache: Set<string>;

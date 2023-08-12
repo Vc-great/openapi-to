@@ -5,7 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
 import { prettierFile } from "./utils";
-import { successLog } from "@/log";
+import { successLog } from "./log";
 
 export class GenerateApi implements GenerateCode {
   //private apiItem: ApiData[];
