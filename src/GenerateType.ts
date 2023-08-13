@@ -46,10 +46,7 @@ export class GenerateType implements GenerateCode {
     const pathParams = _.filter(apiItem.parameters, ["in", "path"]);
     if (_.isEmpty(pathParams)) return "";
 
-    return `/**
-            *@名称 ${apiItem.summary}
-            *@tag名称 ${_.get(apiItem, "tags[0]", "")}
-            */
+    return `/** ${apiItem.summary}*/
           export interface ${_.upperFirst(apiItem.requestName)}PathRequest {
                 ${this.handleParameters(pathParams)}
             }`;
@@ -394,7 +391,7 @@ export class GenerateType implements GenerateCode {
           false
         );
 
-        return `/**${component.title}*/
+        return `/**${component.title ?? ""}*/
         ${key}${parent.required?.includes(key) ? "" : "?"}:${
           _.upperFirst(schemaObject.items.$ref.split("/").pop()) + "[]"
         }`;
@@ -432,7 +429,7 @@ export class GenerateType implements GenerateCode {
       const component = this.getComponentByRef(schemaObject.$ref, false);
       const componentName = schemaObject.$ref.split("/").pop();
 
-      return `/**${component.title}*/
+      return `/**${component.title ?? ""}*/
       ${key}${parent.required?.includes(key) ? "" : "?"}:${_.upperFirst(
         componentName
       )}${component.type === "array" ? "[]" : ""}`;

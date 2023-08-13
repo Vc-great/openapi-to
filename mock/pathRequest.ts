@@ -59,10 +59,7 @@ export const pathRequestOpenApi3Formatter = {
 };
 
 export const pathRequestExpectedResult =
-  "/**\n" +
-  "            *@名称 新增dataUploadingTask\n" +
-  "            *@tag名称 任务管理\n" +
-  "            */\n" +
+  "/** 新增dataUploadingTask*/\n" +
   "          export interface CreatePathRequest {\n" +
   "                /** fields */\n" +
   "              fields?:number\n" +
