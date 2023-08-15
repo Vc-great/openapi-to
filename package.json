@@ -1,6 +1,6 @@
 {
   "name": "openapi-to",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "根据 openapi 接口文档生成 typescript 接口及类型声明。",
   "main": "dist/index.js",
   "bin": {
