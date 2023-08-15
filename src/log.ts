@@ -6,7 +6,7 @@ export const infoLog = (log: string) => {
 };
 
 export const errorLog = (log: string) => {
-  const type = chalk.red("[SUCCESS]");
+  const type = chalk.red("[ERROR]");
   console.log(type + log);
 };
 export const warnLog = (log: string) => {

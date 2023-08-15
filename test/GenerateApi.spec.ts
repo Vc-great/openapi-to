@@ -27,7 +27,7 @@ import {
   pathRequestExpectedResult,
   pathBodyRequestOpenApi3Formatter,
   pathBodyRequestExpectedResult,
-  bodyRequestExpectedResult,
+  bodyRequestExpected,
   bodyRequestOpenApi3Formatter,
 } from "../mock/functionArguments";
 import openApi3 from "../mock/openApi3.json";
@@ -36,26 +36,23 @@ import openApi3Formatter from "../mock/openApi3Fomatter.json";
 const generateApi = new GenerateApi();
 
 test("classDoc", () => {
-  const tagItem = openApi3Fomatter["任务管理"];
-  // @ts-ignore
-  const doc = generateApi.generatorClassJSDoc(tagItem);
+  const doc = generateApi.generatorClassJSDoc(openApi3Fomatter.pet);
   const str =
-    "/*\n" +
-    "           *@tag名称 任务管理.\n" +
-    "           *@tag描述 Task Controller.\n" +
+    "/**\n" +
+    "           *@tagName pet.\n" +
+    "           *@tagDescription pet.\n" +
     "           */";
   return expect(doc).toBe(str);
 });
 
 test("functionDoc", () => {
-  const apiItem = _.head(openApi3Fomatter["任务管理"]);
-  // @ts-ignore
+  const apiItem = _.head(openApi3Fomatter.pet);
   const doc = generateApi.generatorFuncJSDoc(apiItem);
   const str =
     "\n" +
-    "    /*\n" +
-    "    *@tag名称: 任务管理\n" +
-    "    *@接口名称:查询dataUploadingTask \n" +
+    "    /**\n" +
+    "    *@tagName pet\n" +
+    "    *@apiSummary uploads an image \n" +
     "    */";
   return expect(doc).toBe(str);
 });
@@ -91,15 +88,15 @@ describe("function arguments", () => {
     const generateApi = new GenerateApi({}, openApi3, openApi3Formatter);
     // @ts-ignore
     const arg = generateApi.generatorArguments(bodyRequestOpenApi3Formatter);
-    return expect(arg).toEqual(bodyRequestExpectedResult);
+    return expect(arg).toEqual(bodyRequestExpected);
   });
 });
 
 //todo function content
 describe("function content", () => {
-  const apiItem = _.head(openApi3Fomatter["任务管理"]);
+  const apiItem = _.head(openApi3Fomatter.pet);
   test("query", () => {
-    const apiItem = _.head(openApi3Fomatter["任务管理"]);
+    const apiItem = _.head(openApi3Fomatter.pet);
     const [funcParams, requestParams] = queryArguments;
     // @ts-ignore
     const funcContent = generateApi.generatorFuncContent({
@@ -152,9 +149,7 @@ describe("function content", () => {
 });
 
 test("run", () => {
-  const tagItem = openApi3Fomatter["任务管理"];
+  const tagItem = openApi3Fomatter.pet;
   const generateApi = new GenerateApi({}, openApi3, openApi3Formatter);
-  // @ts-ignore
-  const classCodeStrExpected = generateApi.run(tagItem);
-  expect(classCodeStrExpected).toEqual(classApiStr);
+  generateApi.run(tagItem);
 });

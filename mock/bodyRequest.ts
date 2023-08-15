@@ -1,10 +1,10 @@
 export const bodyRequestOpenApi3 = {
   requestBodies: {
-    SzydDataUploadingTaskDto: {
+    bodyRequest: {
       content: {
         "application/json": {
           schema: {
-            $ref: "#/components/schemas/SzydDataUploadingTaskDto",
+            $ref: "#/components/schemas/bodyRequest",
           },
         },
       },
@@ -14,11 +14,11 @@ export const bodyRequestOpenApi3 = {
   },
   components: {
     requestBodies: {
-      SzydDataUploadingTaskDto: {
+      bodyRequest: {
         content: {
           "application/json": {
             schema: {
-              $ref: "#/components/schemas/SzydDataUploadingTaskDto",
+              $ref: "#/components/schemas/bodyRequest",
             },
           },
         },
@@ -27,13 +27,13 @@ export const bodyRequestOpenApi3 = {
       },
     },
     schemas: {
-      SzydDataUploadingTaskDto: {
+      bodyRequest: {
         type: "object",
         required: ["string", "byte"],
         properties: {
           string: {
             type: "string",
-            description: "上报文件附件id",
+            description: "文件",
           },
           byte: {
             type: "string",
@@ -60,20 +60,20 @@ export const bodyRequestOpenApi3 = {
             format: "password",
             description: "password",
           },
-          sourceType: {
+          enums: {
             type: "string",
-            description: "数据来源方式（db文件、视图、api接口、url等）",
-            enum: ["DB_CONNECTION", "API_INTERFACE"],
+            description: "enums",
+            enum: ["a", "b"],
           },
-          batchId: {
+          int32: {
             type: "integer",
             format: "int32",
-            description: "批次ID",
+            description: "id",
           },
-          exceptionIndexCount: {
+          int64: {
             type: "integer",
             format: "int64",
-            description: "异常指标数",
+            description: "int64",
           },
           number: {
             type: "number",
@@ -85,112 +85,68 @@ export const bodyRequestOpenApi3 = {
             format: "double",
             description: "double",
           },
-          dataIdList: {
+          arrayList: {
             type: "array",
-            description: "数据id集合",
+            description: "arrayList",
             items: {
               type: "integer",
               format: "int64",
             },
           },
-          dataUploadingModeDtoList: {
+          arrayRef: {
             type: "array",
-            description: "数据上报指标",
+            description: "arrayRef",
             items: {
-              $ref: "#/components/schemas/DataUploadingModeDto",
+              $ref: "#/components/schemas/arrayRef",
             },
           },
-          hasOrgInfo: {
+          boolean: {
             type: "boolean",
-            description: "是否有机构信息(0否、1是)",
+            description: "boolean",
           },
-          delTime: {
-            $ref: "#/components/schemas/Timestamp",
+          time: {
+            $ref: "#/components/schemas/time",
           },
-          firstReturnTime: {
-            $ref: "#/components/schemas/Timestamp",
+          time2: {
+            $ref: "#/components/schemas/time",
           },
         },
-        title: "SzydDataUploadingTaskDto",
+        title: "bodyRequest",
       },
-      DataUploadingModeDto: {
+      arrayRef: {
         type: "object",
-        required: ["typeId"],
+        required: ["boolean"],
         properties: {
-          columnName: {
+          name: {
             type: "string",
-            description: "数据库列名",
+            description: "name",
           },
-          columnTag: {
+          enums: {
             type: "string",
-            description:
-              "列标签(普通:REGULAR,所属企业:ORG_NAME,唯一标识:UNIQUE_FLAG,更新时间:UPDATE_TIME,数据名称:DATE_NAME)",
-            enum: [
-              "REGULAR",
-              "ORG_NAME",
-              "ORG_CODE",
-              "GROUP_CODE",
-              "UNIQUE_FLAG",
-              "UPDATE_TIME",
-              "DATA_NAME",
-              "OPERATION_FLAG",
-            ],
+            description: "enums",
+            enums: ["a", "v", "s", "q", "w", "e", "r", "t"],
           },
-          dataSize: {
+          int32: {
             type: "integer",
             format: "int32",
-            description: "指标数据长度",
+            description: "int32",
           },
-          dataType: {
-            type: "string",
-            description: "指标数据类型(number、text、longtext、boolean)",
-            enum: ["CHAR", "INT", "TEXT", "FLOAT", "DATE", "ATTACHMENT"],
-          },
-          id: {
+          int64: {
             type: "integer",
             format: "int64",
-          },
-          modeCode: {
-            type: "string",
-            description: "指标编码",
           },
           modeDescribe: {
             type: "string",
             description: "指标说明",
           },
-          modeField: {
-            type: "string",
-            description: "指标标识",
-          },
-          modeName: {
-            type: "string",
-            description: "指标名称",
-          },
-          primaryKeyFlag: {
+          boolean: {
             type: "boolean",
-            description: "是否表主键",
-          },
-          requiredFlag: {
-            type: "boolean",
-            description: "是否必填（0否，1是）",
-          },
-          typeId: {
-            type: "integer",
-            format: "int64",
-            description: "数据类型id",
-          },
-          uniqueFlag: {
-            type: "boolean",
-            description: "是否表内唯一",
-          },
-          valueRules: {
-            type: "string",
-            description: "值约束",
+            description: "boolean",
           },
         },
-        title: "DataUploadingModeDto",
+        title: "arrayRef",
       },
-      Timestamp: {
+      time: {
         type: "object",
         properties: {
           date: {
@@ -234,20 +190,20 @@ export const bodyRequestOpenApi3 = {
             format: "int32",
           },
         },
-        title: "Timestamp",
+        title: "time",
       },
     },
   },
 };
 export const bodyRequestOpenApi3Formatter = {
-  path: "tasks",
+  path: "pet",
   method: "post",
-  description: "Task Controller",
-  tags: ["任务管理"],
-  summary: "新增dataUploadingTask",
-  operationId: "createUsingPOST_10",
+  description: "pet",
+  tags: ["pet"],
+  summary: "pet",
+  operationId: "pet",
   requestBody: {
-    $ref: "#/components/requestBodies/SzydDataUploadingTaskDto",
+    $ref: "#/components/requestBodies/bodyRequest",
   },
   requestName: "create",
 };
@@ -286,12 +242,12 @@ export const bodyRequestExpectedResult =
   "      double?:number\n" +
   "/**数据id集合*/\n" +
   "      dataIdList?:number[]\n" +
-  "/**DataUploadingModeDto*/\n" +
-  "        dataUploadingModeDtoList?:DataUploadingModeDto[]\n" +
+  "/**arrayRef*/\n" +
+  "        dataUploadingModeDtoList?:arrayRef[]\n" +
   "/**是否有机构信息(0否、1是)*/\n" +
   "      hasOrgInfo?:boolean\n" +
-  "/**Timestamp*/\n" +
-  "      delTime?:Timestamp\n" +
-  "/**Timestamp*/\n" +
-  "      firstReturnTime?:Timestamp\n" +
+  "/**time*/\n" +
+  "      delTime?:time\n" +
+  "/**time*/\n" +
+  "      firstReturnTime?:time\n" +
   "            }";

@@ -1,8 +1,8 @@
 // @ts-nocheck
 import _ from "lodash";
 import fse from "fs-extra";
-import type { ApiData, GenerateCode } from "@/types";
-import { OpenApi3FormatData } from "@/types";
+import type { ApiData, GenerateCode, OpenApi3FormatData } from "./types";
+import { BaseType } from "./utils";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import { prettierFile } from "./utils";
@@ -134,16 +134,23 @@ export class GenerateType implements GenerateCode {
       component.items &&
       !component.items.$ref
     ) {
-      return `  /** ${apiItem.summary} */
+      return `/** ${apiItem.summary} */
       export type ${interfaceName} = ${this.formatterBaseType(
         component.items
       )}[]`;
     }
 
+    //容错 请求body不应该是基本类型
+    if (BaseType.includes(component.type)) {
+      return `/** ${apiItem.summary} */
+            export type ${interfaceName} = ${this.formatterBaseType(
+        component
+      )}`;
+    }
+
     const typeString = this.handleComponentSchema(component);
 
-    const bodyType = `
-            /** ${apiItem.summary} */
+    const bodyType = `/** ${apiItem.summary} */
             export interface ${interfaceName} {
               ${typeString}
             }`;
@@ -221,7 +228,8 @@ export class GenerateType implements GenerateCode {
       export type ${interfaceName} = object`;
       }
 
-      return ` export  interface ${_.upperFirst(interfaceName)} {
+      return `/**${component.title}*/
+      export  interface ${_.upperFirst(interfaceName)} {
               ${this.handleComponentSchema(component)}
              }`;
     };
@@ -266,8 +274,7 @@ export class GenerateType implements GenerateCode {
     const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
 
     if (!$ref) {
-      return `
-            /** ${apiItem.summary} */
+      return `/** ${apiItem.summary} */
            export  interface ${interfaceName} {}`;
     }
 
@@ -285,8 +292,7 @@ export class GenerateType implements GenerateCode {
     const typeString = this.handleComponentSchema(component);
 
     //
-    const bodyTypeStr = `
-            /** ${apiItem.summary} */
+    const bodyTypeStr = `/** ${apiItem.summary} */
            export  interface ${interfaceName} {
               ${typeString}
             }`;
@@ -318,8 +324,8 @@ export class GenerateType implements GenerateCode {
     const addEslint = (tagItemTypeString: string) => `
     //eslint-disable-next-line @typescript-eslint/no-namespace
     /**
-     *@tag名称 ${_.get(tagItem, "[0].tags[0]", "")}
-     *@Description ${_.get(tagItem, "[0].description", "")}
+     *@tagName ${_.get(tagItem, "[0].tags[0]", "")}
+     *@description ${_.get(tagItem, "[0].description", "")}
      */
      //todo edit namespace name
     export namespace ApiType {
@@ -381,6 +387,7 @@ export class GenerateType implements GenerateCode {
     parent?: OpenAPIV3.SchemaObject
   ) {
     if (_.isNil(schemaObject)) return undefined;
+
     // 数组类型
     if (schemaObject.type === "array") {
       if ("$ref" in schemaObject.items) {

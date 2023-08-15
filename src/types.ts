@@ -47,5 +47,3 @@ export interface GenerateCode {
 export type HttpMethods = ["get", "put", "post", "delete", "patch"];
 
 export type HttpMethod = "get" | "put" | "post" | "delete" | "patch";
-
-export const BaseType = ["boolean", "number", "string", "integer"];

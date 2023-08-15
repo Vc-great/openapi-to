@@ -166,12 +166,12 @@ export const pathRequestExpectedResult = {
 };
 
 export const pathBodyRequestOpenApi3Formatter = {
-  path: "tasks",
+  path: "pet",
   method: "post",
-  description: "Task Controller",
-  tags: ["任务管理"],
-  summary: "新增dataUploadingTask",
-  operationId: "createUsingPOST_10",
+  description: "pet",
+  tags: ["pet"],
+  summary: "pet",
+  operationId: "pet",
   parameters: [
     {
       name: "id",
@@ -185,7 +185,7 @@ export const pathBodyRequestOpenApi3Formatter = {
     },
   ],
   requestBody: {
-    $ref: "#/components/requestBodies/deleteUsingDELETE_10List",
+    $ref: "#/components/requestBodies/UserArray",
   },
   requestName: "create",
 };
@@ -200,24 +200,24 @@ export const pathBodyRequestExpectedResult = {
 };
 
 export const bodyRequestOpenApi3Formatter = {
-  path: "tasks",
+  path: "pet",
   method: "post",
-  description: "Task Controller",
-  tags: ["任务管理"],
-  summary: "新增dataUploadingTask",
-  operationId: "createUsingPOST_10",
+  description: "pet",
+  tags: ["pet"],
+  summary: "pet",
+  operationId: "pet",
   parameters: [],
   requestBody: {
-    $ref: "#/components/requestBodies/deleteUsingDELETE_10List",
+    $ref: "#/components/requestBodies/UserArray",
   },
   requestName: "create",
 };
 
-export const bodyRequestExpectedResult = {
-  formData: "",
-  formDataHeader: "",
+export const bodyRequestExpected = {
   funcParams: "body:ApiType.CreateBodyRequest",
-  paramsSerializer: "",
   requestParams: "data:body",
   typesName: ["ApiType.CreateBodyRequest"],
+  paramsSerializer: "",
+  formDataHeader: "",
+  formData: "",
 };

@@ -5,7 +5,12 @@ export const queryArguments = [
 ];
 
 export const functionContentByQuery =
-  " list(query:AllQueryRequest):Promise<[object,ApiType.ListResponse]>{\n      return request.get({\n        url:`tasks`,\nparams:query\n      })\n    }";
+  " uploadImage(query:AllQueryRequest):Promise<[object,ApiType.UploadImageResponse]>{\n" +
+  "      return request.post({\n" +
+  "        url:`/pet/${petId}/uploadImage`,\n" +
+  "params:query\n" +
+  "      })\n" +
+  "    }";
 
 export const queryPathArguments = [
   "id:DetailByIdPathRequest,query:DetailByIdQueryRequest",
@@ -14,9 +19,9 @@ export const queryPathArguments = [
 ];
 
 export const functionContentByQueryPath =
-  " list(id:DetailByIdPathRequest,query:DetailByIdQueryRequest):Promise<[object,ApiType.ListResponse]>{\n" +
-  "      return request.get({\n" +
-  "        url:`tasks`,\n" +
+  " uploadImage(id:DetailByIdPathRequest,query:DetailByIdQueryRequest):Promise<[object,ApiType.UploadImageResponse]>{\n" +
+  "      return request.post({\n" +
+  "        url:`/pet/${petId}/uploadImage`,\n" +
   "params:query\n" +
   "      })\n" +
   "    }";
@@ -28,9 +33,9 @@ export const pathArguments = [
 ];
 
 export const functionContentByPath =
-  " list(taskId:CreateDbPathRequest):Promise<[object,ApiType.ListResponse]>{\n" +
-  "      return request.get({\n" +
-  "        url:`tasks`\n" +
+  " uploadImage(taskId:CreateDbPathRequest):Promise<[object,ApiType.UploadImageResponse]>{\n" +
+  "      return request.post({\n" +
+  "        url:`/pet/${petId}/uploadImage`\n" +
   "      })\n" +
   "    }";
 export const pathBodyArguments = [
@@ -40,9 +45,9 @@ export const pathBodyArguments = [
 ];
 
 export const functionContentByPathBody =
-  " list(taskId:AddRelateDataPathRequest,body:AddRelateDataBodyRequest):Promise<[object,ApiType.ListResponse]>{\n" +
-  "      return request.get({\n" +
-  "        url:`tasks`,\n" +
+  " uploadImage(taskId:AddRelateDataPathRequest,body:AddRelateDataBodyRequest):Promise<[object,ApiType.UploadImageResponse]>{\n" +
+  "      return request.post({\n" +
+  "        url:`/pet/${petId}/uploadImage`,\n" +
   "data:body\n" +
   "      })\n" +
   "    }";
@@ -53,9 +58,9 @@ export const bodyArguments = [
 ];
 
 export const functionContentByBody =
-  " list(body:UpdateBodyRequest):Promise<[object,ApiType.ListResponse]>{\n" +
-  "      return request.get({\n" +
-  "        url:`tasks`,\n" +
+  " uploadImage(body:UpdateBodyRequest):Promise<[object,ApiType.UploadImageResponse]>{\n" +
+  "      return request.post({\n" +
+  "        url:`/pet/${petId}/uploadImage`,\n" +
   "data:body\n" +
   "      })\n" +
   "    }";

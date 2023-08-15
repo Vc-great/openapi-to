@@ -1,12 +1,12 @@
 export const uploadOpenApi3Formatter = {
-  path: "tasks",
+  path: "pet",
   method: "post",
-  description: "Task Controller",
-  tags: ["任务管理"],
-  summary: "新增dataUploadingTask",
-  operationId: "createUsingPOST_10",
+  description: "pet",
+  tags: ["a"],
+  summary: "pet",
+  operationId: "pet",
   requestBody: {
-    $ref: "#/components/requestBodies/createFileUsingPOST",
+    $ref: "#/components/requestBodies/uploadOpenApi",
   },
   requestName: "create",
 };
@@ -14,7 +14,7 @@ export const uploadOpenApi3Formatter = {
 export const uploadOpenApi3 = {
   components: {
     requestBodies: {
-      createFileUsingPOST: {
+      uploadOpenApi: {
         content: {
           "multipart/form-data": {
             schema: {
@@ -49,9 +49,8 @@ export const uploadOpenApi3 = {
   },
 };
 
-export const uploadExpectedResult =
-  "\n" +
-  "            /** 新增dataUploadingTask */\n" +
+export const uploadExpected =
+  "/** pet */\n" +
   "            export interface CreateBodyRequest {\n" +
   "              /**\n" +
   "      *@remark content transferred in binary (octet-stream)\n" +

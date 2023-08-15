@@ -1,328 +1,209 @@
 {
-  "任务管理": [
+  "pet": [
     {
-      "path": "tasks",
-      "method": "get",
-      "description": "Task Controller",
+      "path": "/pet/{petId}/uploadImage",
+      "method": "post",
+      "description": "pet",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "查询dataUploadingTask",
-      "operationId": "allUsingGET_14",
+      "summary": "uploads an image",
+      "operationId": "uploadFile",
       "parameters": [
         {
-          "name": "businessTypeCode",
-          "in": "query",
-          "description": "业务类型",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "id",
-          "in": "query",
-          "description": "ID",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "page",
-          "in": "query",
-          "description": "页码 (0..N)，默认为0",
+          "name": "petId",
+          "in": "path",
+          "description": "ID of pet to update",
           "required": true,
           "schema": {
             "type": "integer",
-            "format": "int32"
-          }
-        },
-        {
-          "name": "size",
-          "in": "query",
-          "description": "每页显示的数目,默认为10",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        {
-          "name": "sort",
-          "in": "query",
-          "description": "以下列格式排序标准：property[,asc | desc]。 默认排序顺序为升序。 支持多种排序条件：如：id,asc",
-          "required": false,
-          "explode": true,
-          "schema": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        {
-          "name": "startTime",
-          "in": "query",
-          "description": "启动时间",
-          "required": false,
-          "explode": true,
-          "schema": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        {
-          "name": "state",
-          "in": "query",
-          "description": "状态",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        {
-          "name": "taskId",
-          "in": "query",
-          "description": "委端任务id",
-          "required": false,
-          "schema": {
-            "type": "integer",
             "format": "int64"
-          }
-        },
-        {
-          "name": "taskName",
-          "in": "query",
-          "description": "任务名称",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "taskType",
-          "in": "query",
-          "description": "任务类型0.测试数据，1.正式数据",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "typeCode",
-          "in": "query",
-          "description": "业务类型编码",
-          "required": false,
-          "schema": {
-            "type": "string"
           }
         }
       ],
-      "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_Page_dataUploadingTask"
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "additionalMetadata": {
+                  "description": "Additional data to pass to server",
+                  "type": "string"
+                },
+                "file": {
+                  "description": "file to upload",
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           }
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        },
-        "404": {
-          "description": "Not Found"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "successful operation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResponse"
+              }
+            }
+          }
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
           ]
         }
       ],
-      "deprecated": false,
-      "requestName": "list"
+      "requestName": "uploadImage"
     },
     {
-      "path": "tasks",
+      "path": "/pet",
       "method": "put",
-      "description": "Task Controller",
+      "description": "",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "修改dataUploadingTask",
-      "operationId": "updateUsingPUT_10",
+      "summary": "Update an existing pet",
+      "operationId": "updatePet",
       "requestBody": {
-        "$ref": "#/components/requestBodies/SzydDataUploadingTaskDto"
+        "$ref": "#/components/requestBodies/Pet"
       },
       "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask"
-              }
-            }
-          }
-        },
-        "201": {
-          "description": "Created"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid ID supplied"
         },
         "404": {
-          "description": "Not Found"
+          "description": "Pet not found"
+        },
+        "405": {
+          "description": "Validation exception"
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
           ]
         }
       ],
-      "deprecated": false,
       "requestName": "update"
     },
     {
-      "path": "tasks",
+      "path": "/pet",
       "method": "post",
-      "description": "Task Controller",
+      "description": "",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "新增dataUploadingTask",
-      "operationId": "createUsingPOST_10",
+      "summary": "Add a new pet to the store",
+      "operationId": "addPet",
       "requestBody": {
-        "$ref": "#/components/requestBodies/SzydDataUploadingTaskDto"
+        "$ref": "#/components/requestBodies/Pet"
       },
       "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask"
-              }
-            }
-          }
-        },
-        "201": {
-          "description": "Created"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        },
-        "404": {
-          "description": "Not Found"
+        "405": {
+          "description": "Invalid input"
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
           ]
         }
       ],
-      "deprecated": false,
       "requestName": "create"
     },
     {
-      "path": "tasks",
-      "method": "delete",
-      "description": "Task Controller",
+      "path": "/pet/findByStatus",
+      "method": "get",
+      "description": "Multiple status values can be provided with comma separated strings",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "删除dataUploadingTask",
-      "operationId": "deleteUsingDELETE_10",
-      "requestBody": {
-        "$ref": "#/components/requestBodies/deleteUsingDELETE_10List"
-      },
+      "summary": "Finds Pets by status",
+      "operationId": "findPetsByStatus",
+      "parameters": [
+        {
+          "name": "status",
+          "in": "query",
+          "description": "Status values that need to be considered for filter",
+          "required": true,
+          "explode": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "available",
+                "pending",
+                "sold"
+              ],
+              "default": "available"
+            }
+          }
+        }
+      ],
       "responses": {
         "200": {
-          "description": "OK",
+          "description": "successful operation",
           "content": {
-            "*/*": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Response_object"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Pet"
+                }
               }
             }
           }
         },
-        "204": {
-          "description": "No Content"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid status value"
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
           ]
         }
       ],
-      "deprecated": false,
-      "requestName": "del"
+      "requestName": "findByStatus"
     },
     {
-      "path": "tasks/all",
+      "path": "/pet/findByTags",
       "method": "get",
-      "description": "Task Controller",
+      "description": "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "查询dataUploadingTask",
-      "operationId": "allUsingGET_13",
+      "summary": "Finds Pets by tags",
+      "operationId": "findPetsByTags",
       "parameters": [
         {
-          "name": "businessTypeCode",
+          "name": "tags",
           "in": "query",
-          "description": "业务类型",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "id",
-          "in": "query",
-          "description": "ID",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "startTime",
-          "in": "query",
-          "description": "启动时间",
-          "required": false,
+          "description": "Tags to filter by",
+          "required": true,
           "explode": true,
           "schema": {
             "type": "array",
@@ -330,262 +211,173 @@
               "type": "string"
             }
           }
-        },
-        {
-          "name": "state",
-          "in": "query",
-          "description": "状态",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int32"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "successful operation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            }
           }
         },
+        "400": {
+          "description": "Invalid tag value"
+        }
+      },
+      "security": [
         {
-          "name": "taskId",
-          "in": "query",
-          "description": "委端任务id",
-          "required": false,
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
+          ]
+        }
+      ],
+      "deprecated": true,
+      "requestName": "findByTags"
+    },
+    {
+      "path": "/pet/{petId}",
+      "method": "get",
+      "description": "Returns a single pet",
+      "tags": [
+        "pet"
+      ],
+      "summary": "Find pet by ID",
+      "operationId": "getPetById",
+      "parameters": [
+        {
+          "name": "petId",
+          "in": "path",
+          "description": "ID of pet to return",
+          "required": true,
           "schema": {
             "type": "integer",
             "format": "int64"
-          }
-        },
-        {
-          "name": "taskName",
-          "in": "query",
-          "description": "任务名称",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "taskType",
-          "in": "query",
-          "description": "任务类型0.测试数据，1.正式数据",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "typeCode",
-          "in": "query",
-          "description": "业务类型编码",
-          "required": false,
-          "schema": {
-            "type": "string"
           }
         }
       ],
       "responses": {
         "200": {
-          "description": "OK",
+          "description": "successful operation",
           "content": {
-            "*/*": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Response_Page_dataUploadingTask"
+                "$ref": "#/components/schemas/Pet"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/Pet"
               }
             }
           }
         },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid ID supplied"
         },
         "404": {
-          "description": "Not Found"
+          "description": "Pet not found"
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "api_key": []
         }
       ],
-      "deprecated": false,
-      "requestName": "all"
+      "requestName": "detailByPetId"
     },
     {
-      "path": "tasks/fork",
+      "path": "/pet/{petId}",
       "method": "post",
-      "description": "Task Controller",
+      "description": "",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "复制（打开）dataUploadingTask",
-      "operationId": "forkUsingPOST",
+      "summary": "Updates a pet in the store with form data",
+      "operationId": "updatePetWithForm",
+      "parameters": [
+        {
+          "name": "petId",
+          "in": "path",
+          "description": "ID of pet that needs to be updated",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ],
       "requestBody": {
-        "$ref": "#/components/requestBodies/SzydDataUploadingTaskDto"
-      },
-      "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask"
+        "content": {
+          "application/x-www-form-urlencoded": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "description": "Updated name of the pet",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Updated status of the pet",
+                  "type": "string"
+                }
               }
             }
           }
-        },
-        "201": {
-          "description": "Created"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        },
-        "404": {
-          "description": "Not Found"
+        }
+      },
+      "responses": {
+        "405": {
+          "description": "Invalid input"
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
           ]
         }
       ],
-      "deprecated": false,
-      "requestName": "fork"
+      "requestName": "petId"
     },
     {
-      "path": "tasks/sync-feedback",
-      "method": "get",
-      "description": "Task Controller",
+      "path": "/pet/{petId}",
+      "method": "delete",
+      "description": "",
       "tags": [
-        "任务管理"
+        "pet"
       ],
-      "summary": "uploadTaskSyncFeedBack",
-      "operationId": "uploadTaskSyncFeedBackUsingGET",
+      "summary": "Deletes a pet",
+      "operationId": "deletePet",
       "parameters": [
         {
-          "name": "id",
-          "in": "query",
-          "description": "id",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_Void"
-              }
-            }
-          }
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        },
-        "404": {
-          "description": "Not Found"
-        }
-      },
-      "security": [
-        {
-          "Authorization": [
-            "global"
-          ]
-        }
-      ],
-      "deprecated": false,
-      "requestName": "syncFeedback"
-    },
-    {
-      "path": "tasks/taskAndIdList",
-      "method": "get",
-      "description": "Task Controller",
-      "tags": [
-        "任务管理"
-      ],
-      "summary": "查询委端任务下拉，id：任务表id，taskName：委端任务名",
-      "operationId": "taskAndIdListUsingGET",
-      "parameters": [
-        {
-          "name": "businessTypeCode",
-          "in": "query",
-          "description": "businessTypeCode",
-          "required": true,
+          "name": "api_key",
+          "in": "header",
+          "required": false,
           "schema": {
             "type": "string"
           }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_object"
-              }
-            }
-          }
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        },
-        "404": {
-          "description": "Not Found"
-        }
-      },
-      "security": [
-        {
-          "Authorization": [
-            "global"
-          ]
-        }
-      ],
-      "deprecated": false,
-      "requestName": "taskAndIdList"
-    },
-    {
-      "path": "tasks/{id}",
-      "method": "get",
-      "description": "Task Controller",
-      "tags": [
-        "任务管理"
-      ],
-      "summary": "查询dataUploadingTask详情",
-      "operationId": "oneUsingGET_10",
-      "parameters": [
-        {
-          "name": "fields",
-          "in": "query",
-          "description": "fields",
-          "required": false,
-          "explode": true,
-          "schema": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
         },
         {
-          "name": "id",
+          "name": "petId",
           "in": "path",
-          "description": "id",
+          "description": "Pet id to delete",
           "required": true,
           "schema": {
             "type": "integer",
@@ -594,413 +386,444 @@
         }
       ],
       "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask"
-              }
-            }
-          }
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid ID supplied"
         },
         "404": {
-          "description": "Not Found"
+          "description": "Pet not found"
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
+          "petstore_auth": [
+            "write:pets",
+            "read:pets"
           ]
         }
       ],
-      "deprecated": false,
-      "requestName": "detailById"
+      "requestName": "petId"
+    }
+  ],
+  "store": [
+    {
+      "path": "/store/order",
+      "method": "post",
+      "description": "",
+      "tags": [
+        "store"
+      ],
+      "summary": "Place an order for a pet",
+      "operationId": "placeOrder",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Order"
+            }
+          }
+        },
+        "description": "order placed for purchasing the pet",
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "successful operation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Order"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/Order"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid Order"
+        }
+      },
+      "requestName": "create"
     },
     {
-      "path": "tasks/{id}/data",
+      "path": "/store/order/{orderId}",
       "method": "get",
-      "description": "Task Controller",
+      "description": "For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions",
       "tags": [
-        "任务管理"
+        "store"
       ],
-      "summary": "查询上报任务关联的上报数据",
-      "operationId": "getRelateDataUsingGET",
+      "summary": "Find purchase order by ID",
+      "operationId": "getOrderById",
       "parameters": [
         {
-          "name": "dataName",
-          "in": "query",
-          "description": "数据名称",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "dataUniqueCode",
-          "in": "query",
-          "description": "数据唯一标识",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "dataUploadingTypeId",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "id",
+          "name": "orderId",
           "in": "path",
-          "description": "id",
+          "description": "ID of pet that needs to be fetched",
           "required": true,
           "schema": {
             "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "id",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "operationFlag",
-          "in": "query",
-          "description": "操作标识（add新增，edit修改，del删除）",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "orgId",
-          "in": "query",
-          "description": "所属企业",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "orgName",
-          "in": "query",
-          "description": "所属企业名称",
-          "required": false,
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "pid",
-          "in": "query",
-          "description": "父id",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        {
-          "name": "state",
-          "in": "query",
-          "description": "状态(待关联0 待上报1 已上报2)",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        {
-          "name": "subType",
-          "in": "query",
-          "description": "是否是子类型",
-          "required": false,
-          "schema": {
-            "type": "boolean"
-          }
-        },
-        {
-          "name": "taskId",
-          "in": "query",
-          "description": "委端任务id",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 10
           }
         }
       ],
       "responses": {
         "200": {
-          "description": "OK",
+          "description": "successful operation",
           "content": {
-            "*/*": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Response_List_上报空间"
+                "$ref": "#/components/schemas/Order"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/Order"
               }
             }
           }
         },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid ID supplied"
         },
         "404": {
-          "description": "Not Found"
+          "description": "Order not found"
+        }
+      },
+      "requestName": "detailByOrderId"
+    },
+    {
+      "path": "/store/order/{orderId}",
+      "method": "delete",
+      "description": "For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors",
+      "tags": [
+        "store"
+      ],
+      "summary": "Delete purchase order by ID",
+      "operationId": "deleteOrder",
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "description": "ID of the order that needs to be deleted",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      ],
+      "responses": {
+        "400": {
+          "description": "Invalid ID supplied"
+        },
+        "404": {
+          "description": "Order not found"
+        }
+      },
+      "requestName": "orderId"
+    },
+    {
+      "path": "/store/inventory",
+      "method": "get",
+      "description": "Returns a map of status codes to quantities",
+      "tags": [
+        "store"
+      ],
+      "summary": "Returns pet inventories by status",
+      "operationId": "getInventory",
+      "responses": {
+        "200": {
+          "description": "successful operation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
         }
       },
       "security": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "api_key": []
         }
       ],
-      "deprecated": false,
-      "requestName": "data"
+      "requestName": "inventory"
+    }
+  ],
+  "user": [
+    {
+      "path": "/user/createWithArray",
+      "method": "post",
+      "description": "",
+      "tags": [
+        "user"
+      ],
+      "summary": "Creates list of users with given input array",
+      "operationId": "createUsersWithArrayInput",
+      "requestBody": {
+        "$ref": "#/components/requestBodies/UserArray"
+      },
+      "responses": {
+        "default": {
+          "description": "successful operation"
+        }
+      },
+      "requestName": "createWithArray"
     },
     {
-      "path": "tasks/{task-id}/add-relateData",
+      "path": "/user/createWithList",
+      "method": "post",
+      "description": "",
+      "tags": [
+        "user"
+      ],
+      "summary": "Creates list of users with given input array",
+      "operationId": "createUsersWithListInput",
+      "requestBody": {
+        "$ref": "#/components/requestBodies/UserArray"
+      },
+      "responses": {
+        "default": {
+          "description": "successful operation"
+        }
+      },
+      "requestName": "createWithList"
+    },
+    {
+      "path": "/user/{username}",
+      "method": "get",
+      "description": "",
+      "tags": [
+        "user"
+      ],
+      "summary": "Get user by user name",
+      "operationId": "getUserByName",
+      "parameters": [
+        {
+          "name": "username",
+          "in": "path",
+          "description": "The name that needs to be fetched. Use user1 for testing. ",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "successful operation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid username supplied"
+        },
+        "404": {
+          "description": "User not found"
+        }
+      },
+      "requestName": "detailByUsername"
+    },
+    {
+      "path": "/user/{username}",
       "method": "put",
-      "description": "Task Controller",
+      "description": "This can only be done by the logged in user.",
       "tags": [
-        "任务管理"
+        "user"
       ],
-      "summary": "追加关联上报数据",
-      "operationId": "addRelateDataUsingPUT",
+      "summary": "Updated user",
+      "operationId": "updateUser",
       "parameters": [
         {
-          "name": "task-id",
+          "name": "username",
           "in": "path",
-          "description": "task-id",
+          "description": "name that need to be updated",
           "required": true,
           "schema": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string"
           }
         }
       ],
       "requestBody": {
-        "$ref": "#/components/requestBodies/deleteUsingDELETE_10List"
-      },
-      "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask"
-              }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/User"
             }
           }
         },
-        "201": {
-          "description": "Created"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        },
-        "404": {
-          "description": "Not Found"
-        }
+        "description": "Updated user object",
+        "required": true
       },
-      "security": [
-        {
-          "Authorization": [
-            "global"
-          ]
-        }
-      ],
-      "deprecated": false,
-      "requestName": "addRelateData"
-    },
-    {
-      "path": "tasks/{task-id}/create-db",
-      "method": "post",
-      "description": "Task Controller",
-      "tags": [
-        "任务管理"
-      ],
-      "summary": "creatdb",
-      "operationId": "creatdbUsingPOST",
-      "parameters": [
-        {
-          "name": "task-id",
-          "in": "path",
-          "description": "task-id",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      ],
       "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_object"
-              }
-            }
-          }
-        },
-        "201": {
-          "description": "Created"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid user supplied"
         },
         "404": {
-          "description": "Not Found"
+          "description": "User not found"
         }
       },
-      "security": [
-        {
-          "Authorization": [
-            "global"
-          ]
-        }
-      ],
-      "deprecated": false,
-      "requestName": "createDb"
+      "requestName": "username"
     },
     {
-      "path": "tasks/{task-id}/remove-relateData",
+      "path": "/user/{username}",
       "method": "delete",
-      "description": "Task Controller",
+      "description": "This can only be done by the logged in user.",
       "tags": [
-        "任务管理"
+        "user"
       ],
-      "summary": "移除已关联的上报数据",
-      "operationId": "removeUsingDELETE",
+      "summary": "Delete user",
+      "operationId": "deleteUser",
       "parameters": [
         {
-          "name": "task-id",
+          "name": "username",
           "in": "path",
-          "description": "task-id",
+          "description": "The name that needs to be deleted",
           "required": true,
           "schema": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      ],
-      "requestBody": {
-        "$ref": "#/components/requestBodies/deleteUsingDELETE_10List"
-      },
-      "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_dataUploadingTask"
-              }
-            }
-          }
-        },
-        "204": {
-          "description": "No Content"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
-        }
-      },
-      "security": [
-        {
-          "Authorization": [
-            "global"
-          ]
-        }
-      ],
-      "deprecated": false,
-      "requestName": "removeRelateData"
-    },
-    {
-      "path": "tasks/{task-id}/start-trigger",
-      "method": "post",
-      "description": "Task Controller",
-      "tags": [
-        "任务管理"
-      ],
-      "summary": "startTrigge",
-      "operationId": "startTriggeUsingPOST",
-      "parameters": [
-        {
-          "name": "task-id",
-          "in": "path",
-          "description": "task-id",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string"
           }
         }
       ],
       "responses": {
-        "200": {
-          "description": "OK",
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/Response_object"
-              }
-            }
-          }
-        },
-        "201": {
-          "description": "Created"
-        },
-        "401": {
-          "description": "Unauthorized"
-        },
-        "403": {
-          "description": "Forbidden"
+        "400": {
+          "description": "Invalid username supplied"
         },
         "404": {
-          "description": "Not Found"
+          "description": "User not found"
         }
       },
-      "security": [
+      "requestName": "username"
+    },
+    {
+      "path": "/user/login",
+      "method": "get",
+      "description": "",
+      "tags": [
+        "user"
+      ],
+      "summary": "Logs user into the system",
+      "operationId": "loginUser",
+      "parameters": [
         {
-          "Authorization": [
-            "global"
-          ]
+          "name": "username",
+          "in": "query",
+          "description": "The user name for login",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "password",
+          "in": "query",
+          "description": "The password for login in clear text",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
         }
       ],
-      "deprecated": false,
-      "requestName": "startTrigger"
+      "responses": {
+        "200": {
+          "description": "successful operation",
+          "headers": {
+            "X-Expires-After": {
+              "description": "date in UTC when token expires",
+              "schema": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "X-Rate-Limit": {
+              "description": "calls per hour allowed by the user",
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid username/password supplied"
+        }
+      },
+      "requestName": "login"
+    },
+    {
+      "path": "/user/logout",
+      "method": "get",
+      "description": "",
+      "tags": [
+        "user"
+      ],
+      "summary": "Logs out current logged in user session",
+      "operationId": "logoutUser",
+      "responses": {
+        "default": {
+          "description": "successful operation"
+        }
+      },
+      "requestName": "logout"
+    },
+    {
+      "path": "/user",
+      "method": "post",
+      "description": "This can only be done by the logged in user.",
+      "tags": [
+        "user"
+      ],
+      "summary": "Create user",
+      "operationId": "createUser",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/User"
+            }
+          }
+        },
+        "description": "Created user object",
+        "required": true
+      },
+      "responses": {
+        "default": {
+          "description": "successful operation"
+        }
+      },
+      "requestName": "create"
     }
   ]
 }

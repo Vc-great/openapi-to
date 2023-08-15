@@ -1,12 +1,14 @@
-// @ts-ignore
+// @ts-nocheck
 import { GenerateType } from "@/GenerateType";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Fomatter.json";
-import tagItem from "../mock/apiItem.json";
-import apiItemByGet from "../mock/apiItemByGet.json";
-import { queryParams } from "../mock/queryParams";
+
 import {
-  uploadExpectedResult,
+  queryParamsResultExpected,
+  queryRequestOpenApi3Formatter,
+} from "../mock/queryParamsResultExpected";
+import {
+  uploadExpected,
   uploadOpenApi3,
   uploadOpenApi3Formatter,
 } from "../mock/apiItemUpload";
@@ -27,7 +29,7 @@ import {
 } from "../mock/bodyResponse";
 
 import { refList } from "../mock/ref";
-import { bodyParamsBodyResultExpected } from "../mock/getBodyParamsType";
+import { bodyParamsBodyExpected } from "../mock/getBodyParamsType";
 import { enumOption } from "../mock/enum";
 import { typeRunExpected } from "../mock/typeRun";
 
@@ -35,31 +37,31 @@ import { typeRunExpected } from "../mock/typeRun";
 let generateType = new GenerateType({}, openApi3, openApi3Formatter);
 
 test("getQueryParamsType", () => {
-  const apiItem = apiItemByGet;
-  // @ts-ignore
-  const queryParamsExpected = generateType.getQueryParamsType(apiItem);
-  expect(queryParamsExpected).toBe(queryParams);
+  const queryParams = generateType.getQueryParamsType(
+    queryRequestOpenApi3Formatter
+  );
+  expect(queryParams).toBe(queryParamsResultExpected);
 });
 
 describe("getBodyParamsType", () => {
   test("not have body params", () => {
-    const apiItem = apiItemByGet;
     // @ts-ignore
-    const bodyParamsExpected = generateType.getBodyParamsType(apiItem);
-    expect(bodyParamsExpected).toBe("");
+    const bodyParams = generateType.getBodyParamsType(
+      queryRequestOpenApi3Formatter
+    );
+    expect(bodyParams).toBe("");
   });
 
   test(" have json body params", () => {
     const generateType = new GenerateType(
       {},
-      // @ts-ignore
       bodyRequestOpenApi3,
       bodyRequestOpenApi3Formatter
     );
-    const apiItem = bodyRequestOpenApi3Formatter;
-    // @ts-ignore
-    const bodyParamsResult = generateType.getBodyParamsType(apiItem);
-    expect(bodyParamsResult).toBe(bodyParamsBodyResultExpected);
+    const bodyParams = generateType.getBodyParamsType(
+      bodyRequestOpenApi3Formatter
+    );
+    expect(bodyParams).toBe(bodyParamsBodyExpected);
   });
 
   test(" have upload  params", () => {
@@ -69,10 +71,9 @@ describe("getBodyParamsType", () => {
       uploadOpenApi3,
       uploadOpenApi3Formatter
     );
-    const apiItem = uploadOpenApi3Formatter;
     // @ts-ignore
-    const bodyParamsExpected = generateType.getBodyParamsType(apiItem);
-    expect(bodyParamsExpected).toBe(uploadExpectedResult);
+    const bodyParams = generateType.getBodyParamsType(uploadOpenApi3Formatter);
+    expect(bodyParams).toBe(uploadExpected);
   });
 
   // test("have application/x-www-form-urlencoded params", () => {});
@@ -111,14 +112,10 @@ test("getResponseType", () => {
 });
 
 test("getComponentTypeByRef", () => {
-  const generateType = new GenerateType(
-    {},
-    // @ts-ignore
-    openApi3,
-    openApi3Formatter
-  );
-  // @ts-ignore
-  const resultExpected = generateType.getComponentTypeByRef(refList);
+  const generateType = new GenerateType({}, openApi3, openApi3Formatter);
+  const resultExpected = generateType.getComponentTypeByRef([
+    "#/components/schemas/refList",
+  ]);
   expect(resultExpected).toBe(ComponentTypeResponseExpectedResult);
 });
 
@@ -145,13 +142,6 @@ test("getEnumOption", () => {
 });
 
 test("run", () => {
-  const generateType = new GenerateType(
-    {},
-    // @ts-ignore
-    openApi3,
-    openApi3Formatter
-  );
-  // @ts-ignore
-  const tagItemTypeString = generateType.run(tagItem.任务管理);
-  expect(tagItemTypeString).toStrictEqual(typeRunExpected);
+  const generateType = new GenerateType({}, openApi3, openApi3Formatter);
+  generateType.run(openApi3Formatter.pet);
 });

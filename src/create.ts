@@ -2,7 +2,7 @@
 import path from "path";
 import fse from "fs-extra";
 import { configTemplate } from "./configTemplate";
-import { successLog } from "./log";
+import { errorLog, successLog } from "./log";
 import { GenerateCode } from "./GenerateCode";
 import { GenerateType } from "./GenerateType";
 import { GenerateApi } from "./GenerateApi";
@@ -29,7 +29,8 @@ export const createCode = async () => {
     (err) => [err, undefined]
   );
   if (e) {
-    return e;
+    errorLog(`读取配置文件出错,请检查!,${e}`);
+    return;
   }
   successLog("读取配置文件成功。");
   //todo 增加容错处理

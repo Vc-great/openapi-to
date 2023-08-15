@@ -14,3 +14,5 @@ export const prettierFile = (content: string): string => {
   }
   return result;
 };
+
+export const BaseType = ["boolean", "number", "string", "integer"];

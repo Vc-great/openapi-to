@@ -1,14 +1,9 @@
-//import * as assert from "assert";
-
+// @ts-nocheck
 import { GenerateCode } from "@/GenerateCode";
-//import swagger2Json from "../mock/swagger2.json";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Fomatter.json";
-import apiItemMockData from "../mock/apiItem.json";
-//import generateCodeRunResult from "../mock/generateCodeRunResult.json";
 import path from "path";
 import { GenerateApi } from "@/GenerateApi";
-//import configMockData from "../mock/config";
 import swagger2 from "../mock/swagger2.json";
 import openApi3SourceDataExpectedResult from "../mock/openApi3SourceData.json";
 import openApi3FormatDataExpectedResult from "../mock/openApi3FormatData.json";
@@ -62,7 +57,6 @@ describe("apiData formatter", () => {
   const generateCode = new GenerateCode(config);
   test("swagger2ToOpenapi3", async () => {
     await generateCode.swagger2ToOpenapi3(swagger2);
-    //expect(openApi3Data).toEqual(openApi3);
   });
 
   test("openApi3DataFormatter", () => {
@@ -74,8 +68,8 @@ describe("apiData formatter", () => {
 describe("getRequestName", () => {
   describe("get CRUD path", () => {
     test("has path", () => {
-      const path = generateCode.getCrudRequestPath(apiItemMockData["任务管理"]);
-      expect(path).toBe("tasks");
+      const path = generateCode.getCrudRequestPath(openApi3Formatter.pet);
+      expect(path).toBe("/pet");
     });
   });
 

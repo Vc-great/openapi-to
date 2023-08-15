@@ -59,9 +59,9 @@ export class GenerateApi implements GenerateCode {
   generatorClassJSDoc(tagItem: ApiData[]) {
     const name = _.get(_.head(tagItem), "tags[0]", "");
     const description = _.get(_.head(tagItem), "description", "");
-    return `/*
-           *@tag名称 ${name}.
-           *@tag描述 ${description}.
+    return `/**
+           *@tagName ${name}.
+           *@tagDescription ${description}.
            */`;
   }
 
@@ -247,9 +247,9 @@ export class GenerateApi implements GenerateCode {
   //函数注释
   generatorFuncJSDoc(apiItem: ApiData) {
     return `
-    /*
-    *@tag名称: ${_.get(apiItem, "tags[0]", "")}
-    *@接口名称:${apiItem.summary} 
+    /**
+    *@tagName ${_.get(apiItem, "tags[0]", "")}
+    *@apiSummary ${apiItem.summary} 
     */`;
   }
 
