@@ -5,7 +5,7 @@ import type { ApiData, GenerateCode, OpenApi3FormatData } from "./types";
 import { BaseType } from "./utils";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
-import { prettierFile } from "./utils";
+import { prettierFile, numberEnum, stringEnum } from "./utils";
 import { successLog } from "./log";
 
 export class GenerateType implements GenerateCode {
@@ -221,6 +221,9 @@ export class GenerateType implements GenerateCode {
     this.pendingRefCache.clear();
 
     const generateInterface = (component, index) => {
+      if (!component) {
+        return undefined;
+      }
       const interfaceName = _.upperFirst($refs[index].split("/").pop());
       //没有properties
       if (component.type === "object" && !component.properties) {
@@ -238,10 +241,10 @@ export class GenerateType implements GenerateCode {
       (typeString ? "\n" : "") +
       _.chain($refs)
         .map((ref) => this.getComponentByRef(ref))
-        .filter((component) => !!component)
-        .map((component: OpenAPIV3.SchemaObject, index) =>
+        .map((component: OpenAPIV3.SchemaObject | undefined, index) =>
           generateInterface(component, index)
         )
+        .filter((component) => !!component)
 
         .join("\n");
 
@@ -507,20 +510,6 @@ export class GenerateType implements GenerateCode {
 
   formatterBaseType(schemaObject) {
     let type = schemaObject.type;
-    const numberEnum = [
-      "int32",
-      "int64",
-      "float",
-      "double",
-      "integer",
-      "long",
-      "number",
-      "int",
-    ];
-
-    //const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
-
-    const stringEnum = ["string", "email", "password", "url", "byte", "binary"];
 
     if (numberEnum.includes(type) || numberEnum.includes(schemaObject.format)) {
       return "number";
@@ -540,6 +529,10 @@ export class GenerateType implements GenerateCode {
 
     if (type === "array") {
       return `${schemaObject.items.type}[]`;
+    }
+
+    //todo
+    if (type === "object") {
     }
   }
 
@@ -561,6 +554,6 @@ export class GenerateType implements GenerateCode {
   writeFile(title, codeString) {
     const filePath = path.join(this.config.output, `${title}Types.ts`);
     fse.outputFileSync(filePath, codeString);
-    successLog(`${title}类型写入成功!`);
+    successLog(`${title} interface write succeeded!`);
   }
 }

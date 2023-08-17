@@ -139,7 +139,7 @@ export class GenerateCode {
       {}
     );
   }
-
+  //todo delete /pet/{petId}
   // 生成请求名称
   private generateRequestName(
     openApi3FormatData,

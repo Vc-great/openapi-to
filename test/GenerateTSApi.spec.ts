@@ -1,10 +1,10 @@
 // @ts-nocheck
-import { GenerateApi } from "@/GenerateApi";
-import openApi3Fomatter from "../mock/openApi3Fomatter.json";
+import { GenerateTSApi } from "@/GenerateTSApi";
+import openApi3Fomatter from "../mock/openApi3Formatter.json";
 import _ from "lodash";
 import functionArguments from "../mock/functionArguments.json";
 import openApi3 from "../mock/openApi3.json";
-import openApi3Formatter from "../mock/openApi3Fomatter.json";
+import openApi3Formatter from "../mock/openApi3Formatter.json";
 import {
   queryArguments,
   queryPathArguments,
@@ -17,7 +17,7 @@ import {
   functionContentByPath,
   functionContentByPathBody,
 } from "../mock/functionArgumentsExpected";
-import { classApiStr } from "../mock/classApiStr";
+
 import {
   queryRequestOpenApi3Formatter,
   queryRequestExpectedResult,
@@ -31,9 +31,9 @@ import {
   bodyRequestOpenApi3Formatter,
 } from "../mock/functionArguments";
 import openApi3 from "../mock/openApi3.json";
-import openApi3Formatter from "../mock/openApi3Fomatter.json";
+import openApi3Formatter from "../mock/openApi3Formatter.json";
 
-const generateApi = new GenerateApi();
+const generateApi = new GenerateTSApi();
 
 test("classDoc", () => {
   const doc = generateApi.generatorClassJSDoc(openApi3Fomatter.pet);
@@ -77,7 +77,7 @@ describe("function arguments", () => {
     return expect(arg).toEqual(pathRequestExpectedResult);
   });
   test("path and body", () => {
-    const generateApi = new GenerateApi({}, openApi3, openApi3Formatter);
+    const generateApi = new GenerateTSApi({}, openApi3, openApi3Formatter);
     // @ts-ignore
     const arg = generateApi.generatorArguments(
       pathBodyRequestOpenApi3Formatter
@@ -85,7 +85,7 @@ describe("function arguments", () => {
     return expect(arg).toEqual(pathBodyRequestExpectedResult);
   });
   test("body", () => {
-    const generateApi = new GenerateApi({}, openApi3, openApi3Formatter);
+    const generateApi = new GenerateTSApi({}, openApi3, openApi3Formatter);
     // @ts-ignore
     const arg = generateApi.generatorArguments(bodyRequestOpenApi3Formatter);
     return expect(arg).toEqual(bodyRequestExpected);
@@ -150,6 +150,6 @@ describe("function content", () => {
 
 test("run", () => {
   const tagItem = openApi3Fomatter.pet;
-  const generateApi = new GenerateApi({}, openApi3, openApi3Formatter);
+  const generateApi = new GenerateTSApi({}, openApi3, openApi3Formatter);
   generateApi.run(tagItem);
 });

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { GenerateType } from "@/GenerateType";
 import openApi3 from "../mock/openApi3.json";
-import openApi3Formatter from "../mock/openApi3Fomatter.json";
+import openApi3Formatter from "../mock/openApi3Formatter.json";
 
 import {
   queryParamsResultExpected,

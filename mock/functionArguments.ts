@@ -135,17 +135,27 @@ export const queryPathRequestExpectedResult = {
 };
 
 export const pathRequestOpenApi3Formatter = {
-  path: "tasks",
+  path: "pet",
   method: "post",
-  description: "Task Controller",
-  tags: ["任务管理"],
-  summary: "新增dataUploadingTask",
-  operationId: "createUsingPOST_10",
+  description: "pet",
+  tags: ["pet"],
+  summary: "pet",
+  operationId: "pet",
   parameters: [
     {
       name: "id",
       in: "path",
       description: "id",
+      required: true,
+      schema: {
+        type: "integer",
+        format: "int64",
+      },
+    },
+    {
+      name: "id2",
+      in: "path",
+      description: "id2",
       required: true,
       schema: {
         type: "integer",

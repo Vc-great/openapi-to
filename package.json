@@ -11,10 +11,12 @@
     "dev": "rimraf dist && rollup -c rollup.config.mjs -w",
     "build": "rimraf dist && rollup -c rollup.config.mjs",
     "test-watch": "jest --watch",
+    "test-unit": "jest --verbose -u",
     "test": "jest --coverage --verbose -u",
     "format": "prettier --write \"./**/*.{ts,js,json,md}\"",
     "lint": "eslint . --ext .js,.ts --fix ",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "publish": "rimraf dist && rimraf output && pnpm run test && pnpm run build"
   },
   "repository": {
     "type": "git",

@@ -16,3 +16,25 @@ export const prettierFile = (content: string): string => {
 };
 
 export const BaseType = ["boolean", "number", "string", "integer"];
+
+export const numberEnum = [
+  "int32",
+  "int64",
+  "float",
+  "double",
+  "integer",
+  "long",
+  "number",
+  "int",
+];
+
+export const stringEnum = [
+  "string",
+  "email",
+  "password",
+  "url",
+  "byte",
+  "binary",
+];
+
+export const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];

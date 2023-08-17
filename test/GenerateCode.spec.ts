@@ -1,9 +1,9 @@
 // @ts-nocheck
 import { GenerateCode } from "@/GenerateCode";
 import openApi3 from "../mock/openApi3.json";
-import openApi3Formatter from "../mock/openApi3Fomatter.json";
+import openApi3Formatter from "../mock/openApi3Formatter.json";
 import path from "path";
-import { GenerateApi } from "@/GenerateApi";
+import { GenerateTSApi } from "@/GenerateTSApi";
 import swagger2 from "../mock/swagger2.json";
 import openApi3SourceDataExpectedResult from "../mock/openApi3SourceData.json";
 import openApi3FormatDataExpectedResult from "../mock/openApi3FormatData.json";
@@ -106,7 +106,7 @@ describe("init && run", () => {
 
   test("register", () => {
     // @ts-ignore
-    const instanceList = [new GenerateApi({}, openApi3, openApi3Formatter)];
+    const instanceList = [new GenerateTSApi({}, openApi3, openApi3Formatter)];
     // @ts-ignore
     generateCode.register(instanceList);
     const instance = generateCode.registerClass;
