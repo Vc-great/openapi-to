@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { GenerateType } from "@/GenerateType";
+//@ts-nocheck
+import { GenerateType } from "../src/GenerateType";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 
@@ -17,21 +17,18 @@ import {
   bodyRequestOpenApi3Formatter,
 } from "../mock/bodyRequest";
 import {
+  pathRequestExpectedResult,
   pathRequestOpenApi3,
   pathRequestOpenApi3Formatter,
-  pathRequestExpectedResult,
 } from "../mock/pathRequest";
 import {
-  bodyResponseOpenApi3,
   bodyResponseExpectedResult,
+  bodyResponseOpenApi3,
   bodyResponseOpenApi3Formatter,
   ComponentTypeResponseExpectedResult,
 } from "../mock/bodyResponse";
-
-import { refList } from "../mock/ref";
 import { bodyParamsBodyExpected } from "../mock/getBodyParamsType";
 import { enumOption } from "../mock/enum";
-import { typeRunExpected } from "../mock/typeRun";
 
 // @ts-ignore
 let generateType = new GenerateType({}, openApi3, openApi3Formatter);

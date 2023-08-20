@@ -1,13 +1,15 @@
+// @ts-nocheck
 import { execSync } from "child_process";
 import chalk from "chalk";
+
 /**
- * 比较插件的两个版本v1,v2大小
- * .e.g '3.1.7-alpha.19'
+ * 比较插件的两个版本v1,v2大小.v1是否大于v2
+ *
  * @param v1 { string } {major}.{minor}.{patch}-{pre-release}
  * @param v2 { string } {major}.{minor}.{patch}-{pre-release}
  * @return {number} 1大 0相等 -1小
  */
-function compareVersionLatest(v1, v2) {
+function compareVersionLatest(v1: string, v2: string) {
   const [v1Main, v1PreRelease] = v1.split("-");
   const [v2Main, v2PreRelease] = v2.split("-");
 
@@ -59,49 +61,46 @@ function compareVersionLatest(v1, v2) {
   return 0;
 }
 
-function getLocalVersion() {
-  try {
-    const res = execSync("npm ls openapi-to");
-    const version = res.toString().split("openapi-to@")[1].split(" ")[0];
-    return [undefined, version];
-  } catch (e) {
-    return [e, undefined];
-  }
-}
-//查看本地全局版本
-function getLocalGlobalVersion() {
-  try {
-    const res = execSync("npm ls openapi-to -g");
-    const version = res.toString().split("openapi-to@")[1].split(" ")[0];
-    return [undefined, version];
-  } catch (e) {
-    return [e, undefined];
-  }
-}
-
-function getRemoteVersion() {
-  const res = execSync("npm view openapi-to version");
-  return res.toString();
+function getRemoteVersion(): string {
+  const versionsString = execSync("npm view openapi-to versions", {
+    encoding: "utf-8",
+  })
+    .replace(/\[32m/g, "")
+    .replace(/\[39m/g, "");
+  const eval2 = eval;
+  const version = eval2(versionsString)
+    .filter((x: string) => !x.includes("-"))
+    .pop();
+  return version ? version : "";
 }
 
 function getVersion() {
-  let [, localVersion] = getLocalVersion();
-  let [, localGlobalVersion] = getLocalGlobalVersion();
-  return localVersion || localGlobalVersion;
+  try {
+    const versionsString = execSync("openapi -v", {
+      encoding: "utf-8",
+    }).replace(/\n/, "");
+    return versionsString.includes("-") ? "" : versionsString;
+  } catch (e) {
+    console.log(e);
+    return "";
+  }
 }
 
-function message(localVersion: string, remoteVersion: string) {
-  const log = chalk.hex("#ffcb6b");
-  return log.bold(`
+export function message(localVersion: string, remoteVersion: string) {
+  const text = chalk.hex("#ffcb6b").bold(`
  New version! ${localVersion} → ${remoteVersion}
  Run npm install -g openapi-to to update! 
 `);
+  console.log(text);
 }
 
+/**
+ * 本地版本和远程对比,判断是否需要更新
+ */
 export function updateVersionMessage() {
   const localVersion = getVersion();
   const remoteVersion = getRemoteVersion();
-  const result = compareVersionLatest(localVersion, remoteVersion);
+  const result = compareVersionLatest(remoteVersion, localVersion);
 
   return result === 1 ? message(localVersion, remoteVersion) : "";
 }

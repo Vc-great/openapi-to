@@ -2,10 +2,9 @@
 import _ from "lodash";
 import fse from "fs-extra";
 import type { ApiData, GenerateCode, OpenApi3FormatData } from "./types";
-import { BaseType } from "./utils";
+import { BaseType, numberEnum, prettierFile, stringEnum } from "./utils";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
-import { prettierFile, numberEnum, stringEnum } from "./utils";
 import { successLog } from "./log";
 
 export class GenerateType implements GenerateCode {

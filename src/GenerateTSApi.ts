@@ -1,24 +1,80 @@
-// @ts-nocheck
 import _ from "lodash";
-import { ApiData, GenerateCode } from "./types";
+import type {
+  ApiData,
+  Config,
+  GenerateCode,
+  OpenApi3FormatData,
+} from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
-import { prettierFile } from "./utils";
-import { successLog } from "./log";
+import { numberEnum, prettierFile, stringEnum } from "./utils";
+import { errorLog, successLog } from "./log";
+import { GenerateApi } from "./GenerateApi";
 
-export class GenerateTSApi implements GenerateCode {
-  //private apiItem: ApiData[];
-
+export class GenerateTSApi extends GenerateApi implements GenerateCode {
+  private readonly namespaceName: string;
   constructor(
-    public config: object,
-    public openApi3SourceData: OpenAPIV3.Document,
+    public config: Config,
+    openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
-    this.openApi3SourceData = openApi3SourceData;
-    this.openApi3FormatData = openApi3FormatData;
+    super(openApi3SourceData);
     this.config = config;
+    this.openApi3FormatData = openApi3FormatData;
+    this.namespaceName = "ApiType";
   }
+
+  get queryRequest() {
+    return `${this.namespaceName}.${_.upperFirst(
+      this.apiItem.requestName
+    )}QueryRequest`;
+  }
+
+  get pathParams() {
+    const formatterBaseType = (
+      schemaObject:
+        | OpenAPIV3.ReferenceObject
+        | OpenAPIV3.SchemaObject
+        | undefined
+    ) => {
+      if (!schemaObject) {
+        return "";
+      }
+      if ("$ref" in schemaObject) {
+        //todo
+        errorLog("pathParams");
+        return "";
+      }
+
+      let type = schemaObject.type || "";
+      if (
+        numberEnum.includes(type) ||
+        numberEnum.includes(schemaObject.format || "")
+      ) {
+        return "number";
+      }
+      if (stringEnum.includes(type)) {
+        return "string";
+      }
+      return type;
+    };
+
+    return _.chain(this.apiItem.parameters || [])
+      .filter(["in", "path"])
+      .map((parameter) => {
+        if ("$ref" in parameter) return "";
+        return `${parameter.name}:${formatterBaseType(parameter.schema)}`;
+      })
+      .join()
+      .value();
+  }
+  get bodyRequest() {
+    return `${this.namespaceName}.${_.upperFirst(
+      this.apiItem.requestName
+    )}BodyRequest`;
+  }
+
   run(tagItem: ApiData[]) {
     return {
       title: _.get(_.head(tagItem), "tags[0]", ""),
@@ -27,21 +83,16 @@ export class GenerateTSApi implements GenerateCode {
   }
 
   generatorClass(tagItem: ApiData[]) {
-    const types: string[] = [];
     const str = `
     import request from '@/api/request'
     ${this.generatorClassJSDoc(tagItem)}
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            const args = this.generatorArguments(apiItem);
-            types.push(...args.typesName);
+            super.setApiItem(apiItem);
             return `
         ${this.generatorFuncJSDoc(apiItem)}
-        ${this.generatorFuncContent({
-          apiItem,
-          ...args,
-        })}`;
+        ${this.generatorFuncContent(apiItem)}`;
           })
           .join("")}
         }
@@ -65,187 +116,44 @@ export class GenerateTSApi implements GenerateCode {
            */`;
   }
 
-  generatorFuncContent({
-    apiItem,
-    funcParams,
-    requestParams,
-    paramsSerializer,
-    formData,
-    formDataHeader,
-  }) {
-    //todo 补充 responseType:'blob
-    const contents = [
-      `url:${this.generatorPath(apiItem)}`,
-      requestParams,
-      paramsSerializer,
-      formDataHeader,
-    ];
-    const filterContents = (contents) => _.filter(contents, (x) => x);
-    const addContents = (contents) =>
-      _.reduce(
-        contents,
-        (result, value) => {
-          result += (result ? ",\n" : "") + value;
-          return result;
-        },
-        ""
-      );
-    const tagName = "ApiType";
+  generatorFuncContent(apiItem: ApiData) {
+    const { formDataHeader, uploadFormData } = super.generateUploadFormData(
+      apiItem
+    );
 
-    return ` ${
-      apiItem.requestName
-    }(${funcParams}):Promise<[object,${tagName}.${_.upperFirst(
-      apiItem.requestName
-    )}Response]>{${formData ? "\n" + formData + "\n" : ""}
-      return request.${apiItem.method}({
-        ${_.flow([filterContents, addContents])(contents)}
-      })
-    }`;
-  }
-
-  //summary中有下载或者导出 关键字 则增加type
-  generateResponseType(summary: string) {
-    const keys = ["下载", "导出"];
-    return _.some(keys, (x) => summary.includes(x))
-      ? `responseType:'blob'`
-      : "";
-  }
-
-  //函数参数
-  generatorArguments(apiItem: ApiData) {
-    const tagName = "ApiType";
-    const pathRequest = `${tagName}.${_.upperFirst(
-      apiItem.requestName
-    )}PathRequest`;
-    const queryRequest = `${tagName}.${_.upperFirst(
-      apiItem.requestName
-    )}QueryRequest`;
-    const bodyRequest = `${tagName}.${_.upperFirst(
-      apiItem.requestName
-    )}BodyRequest`;
-
-    //params路径参数
-    const path = _.chain(apiItem.parameters)
-      .filter(["in", "path"])
-      .map("name")
-      .map(
-        (name) =>
-          `${_.camelCase(name)}:${pathRequest}By${_.upperFirst(
-            _.camelCase(name)
-          )}`
-      )
-      .join()
-      .value();
-
-    //query 查询参数
-    const query = _.some(apiItem.parameters, ["in", "query"]);
-
-    //data body参数
-    const body = this.requestBodyParams(apiItem);
-
-    const typesName = [
-      path ? `${pathRequest}` : "",
-      query ? `${queryRequest}` : "",
-      body ? `${bodyRequest}` : "",
-    ].filter((x) => x);
-
+    //函数参数
     const funcParams = [
-      path ? path : "",
-      query ? `query:${queryRequest}` : "",
-      body ? `body:${bodyRequest}` : "",
+      super.hasPathParameters ? this.pathParams : "",
+      super.hasQueryParameters ? `query:${this.queryRequest}` : "",
+      super.hasRequestBodyParams ? `body:${this.bodyRequest}` : "",
     ]
       .filter((x) => x)
       .join();
 
-    const requestParams = [query ? "params:query" : "", body ? "data:body" : ""]
-      .filter((x) => x)
-      .join();
-
-    const hasQueryArray = _.some(
-      apiItem.parameters,
-      (x) => x.schema.type === "array"
-    );
-    const paramsSerializer = hasQueryArray
-      ? `paramsSerializer(params) {
-            return qs.stringify(params)
-        }`
-      : "";
-    const { formDataHeader, formData } = this.generateFormData(apiItem);
-
-    //todo application/x-www-form-urlencoded 类型参数
-
-    return {
-      funcParams,
-      requestParams,
-      typesName,
-      paramsSerializer,
+    //todo 补充 responseType:'blob
+    const contents = [
+      `url:${super.generatorPath(apiItem)}`,
+      super.hasQueryParameters ? "params:query" : "",
+      super.hasRequestBodyParams ? "data:body" : "",
+      super.getParamsSerializer(this.queryRequest),
+      // this.downLoadResponseType(),
       formDataHeader,
-      formData,
-    };
-  }
-
-  requestBodyParams(apiItem: ApiData) {
-    if (_.get(apiItem, "requestBody.$ref", "")) {
-      return "data";
+    ];
+    return ` ${apiItem.requestName}(${funcParams}):Promise<[object,${
+      this.namespaceName
+    }.${_.upperFirst(apiItem.requestName)}Response]>{${
+      uploadFormData ? "\n" + uploadFormData + "\n" : ""
     }
-
-    const media = _.chain(apiItem.requestBody?.content).values().head().value();
-    if (!_.isEmpty(media)) {
-      return "data";
-    }
-    return "";
-  }
-
-  generateFormData(apiItem: ApiData) {
-    const formDataHeader = `headers: { 'Content-Type': 'multipart/form-data' }`;
-    const formData = `//todo 上传文件
-    const formData = new FormData();
-    formData.append("file", file);`;
-
-    if (apiItem.requestBody && "$ref" in apiItem.requestBody) {
-      const component: OpenAPIV3.RequestBodyObject = this.getComponentByRef(
-        apiItem.requestBody.$ref
-      );
-      if (component.content && "multipart/form-data" in component.content) {
-        return {
-          formDataHeader,
-          formData,
-        };
-      }
-    }
-
-    if (
-      apiItem.requestBody &&
-      "content" in apiItem.requestBody &&
-      "multipart/form-data" in apiItem.requestBody.content
-    ) {
-      return {
-        formDataHeader,
-        formData,
-      };
-    }
-
-    return {
-      formDataHeader: "",
-      formData: "",
-    };
-  }
-
-  getComponentByRef(ref) {
-    return _.get(
-      this.openApi3SourceData,
-      ref.split("/").slice(1).join("."),
-      undefined
-    );
-  }
-
-  //生成path
-  generatorPath(apiItem: ApiData) {
-    const path = apiItem.path.replace(/{([\w-]+)}/g, (matchData, params) => {
-      return "${" + _.camelCase(params) + "}";
-    });
-
-    return "`" + path + "`";
+      return request.${apiItem.method}({
+        ${_.chain(contents)
+          .filter((x) => !!x)
+          .reduce((result, value) => {
+            result += (result ? ",\n" : "") + value;
+            return result;
+          }, "")
+          .value()}
+      })
+    }`;
   }
 
   //函数注释
@@ -257,7 +165,7 @@ export class GenerateTSApi implements GenerateCode {
     */`;
   }
 
-  writeFile(title, codeString) {
+  writeFile(title: string, codeString: string) {
     const filePath = path.join(this.config.output, `${title}Api.ts`);
     fse.outputFileSync(filePath, codeString);
     successLog(`${title} ts api write succeeded!`);

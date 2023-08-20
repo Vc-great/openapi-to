@@ -1,5 +1,6 @@
-import axios, { AxiosRequestConfig, AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import _ from "lodash-es";
+
 class Http {
   baseURL: string;
   timeout: number;

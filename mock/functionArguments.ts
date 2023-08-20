@@ -58,16 +58,16 @@ export const queryRequestExpectedResult = {
   paramsSerializer:
     "paramsSerializer(params) {\n            return qs.stringify(params)\n        }",
   formDataHeader: "",
-  formData: "",
+  uploadFormData: "",
 };
 
 export const queryPathRequestOpenApi3Formatter = {
-  path: "tasks",
+  path: "/pet",
   method: "post",
-  description: "Task Controller",
-  tags: ["任务管理"],
-  summary: "新增dataUploadingTask",
-  operationId: "createUsingPOST_10",
+  description: "pet",
+  tags: ["pet"],
+  summary: "pet",
+  operationId: "pet",
   parameters: [
     {
       name: "fields",
@@ -120,18 +120,18 @@ export const queryPathRequestOpenApi3Formatter = {
         format: "int64",
       },
     },
+    {
+      name: "id2",
+      in: "path",
+      description: "id2",
+      required: true,
+      schema: {
+        type: "integer",
+        format: "int64",
+      },
+    },
   ],
   requestName: "create",
-};
-
-export const queryPathRequestExpectedResult = {
-  funcParams: "id:ApiType.CreatePathRequest,query:ApiType.CreateQueryRequest",
-  requestParams: "params:query",
-  typesName: ["ApiType.CreatePathRequest", "ApiType.CreateQueryRequest"],
-  paramsSerializer:
-    "paramsSerializer(params) {\n            return qs.stringify(params)\n        }",
-  formDataHeader: "",
-  formData: "",
 };
 
 export const pathRequestOpenApi3Formatter = {
@@ -166,15 +166,6 @@ export const pathRequestOpenApi3Formatter = {
   requestName: "create",
 };
 
-export const pathRequestExpectedResult = {
-  formData: "",
-  formDataHeader: "",
-  funcParams: "id:ApiType.CreatePathRequest",
-  paramsSerializer: "",
-  requestParams: "",
-  typesName: ["ApiType.CreatePathRequest"],
-};
-
 export const pathBodyRequestOpenApi3Formatter = {
   path: "pet",
   method: "post",
@@ -206,7 +197,7 @@ export const pathBodyRequestExpectedResult = {
   typesName: ["ApiType.CreatePathRequest", "ApiType.CreateBodyRequest"],
   paramsSerializer: "",
   formDataHeader: "",
-  formData: "",
+  uploadFormData: "",
 };
 
 export const bodyRequestOpenApi3Formatter = {
@@ -229,5 +220,5 @@ export const bodyRequestExpected = {
   typesName: ["ApiType.CreateBodyRequest"],
   paramsSerializer: "",
   formDataHeader: "",
-  formData: "",
+  uploadFormData: "",
 };

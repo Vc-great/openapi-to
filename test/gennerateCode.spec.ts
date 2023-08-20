@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { generateApiCode } from "../src/create";
 import path from "path";
 const config = {
@@ -10,7 +11,7 @@ const config = {
   ],
 };
 
-test("", async () => {
+test("generateApiCode", async () => {
   await generateApiCode(config);
   console.log("完成");
 });

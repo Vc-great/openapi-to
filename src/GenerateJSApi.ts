@@ -1,24 +1,23 @@
-// @ts-nocheck
 import _ from "lodash";
 import { ApiData, GenerateCode, OpenApi3FormatData } from "./types";
-import { OpenAPIV3, ParameterObject } from "openapi-types";
+import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
-import { prettierFile, numberEnum, stringEnum, BaseType } from "./utils";
-import { successLog } from "./log";
+import { BaseType, numberEnum, prettierFile, stringEnum } from "./utils";
+import { errorLog, successLog } from "./log";
 import { GenerateApi } from "./GenerateApi";
 
 export class GenerateJSApi extends GenerateApi implements GenerateCode {
-  //private apiItem: ApiData[];
   public globalDoc: string[];
+  public pendingRefCache: Set<string>;
+  public resolveRefCache: Set<string>;
+  public apiNameCache: Map<string, unknown>;
   constructor(
     public config: object,
-    public openApi3SourceData: OpenAPIV3.Document,
+    openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
-    super(config, openApi3SourceData, openApi3FormatData);
-    this.openApi3SourceData = openApi3SourceData;
-    this.openApi3FormatData = openApi3FormatData;
+    super(openApi3SourceData);
     this.config = config;
 
     //缓存$ref
@@ -29,6 +28,18 @@ export class GenerateJSApi extends GenerateApi implements GenerateCode {
     this.apiNameCache = new Map();
     this.globalDoc = [];
   }
+
+  get pathParams() {
+    return _.chain(this.apiItem.parameters || [])
+      .filter(["in", "path"])
+      .map((parameter) => {
+        if ("$ref" in parameter) return "";
+        return `${parameter.name}`;
+      })
+      .join()
+      .value();
+  }
+
   run(tagItem: ApiData[]) {
     //每一轮tag 清空cache
     this.globalDoc = [];
@@ -47,13 +58,10 @@ ${this.generatorClassJSDoc(tagItem)}
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            const args = this.generatorArguments(apiItem);
+            super.setApiItem(apiItem);
             return `
         ${this.generatorFuncJSDoc(apiItem)}
-        ${this.generatorFuncContent({
-          apiItem,
-          ...args,
-        })}`;
+        ${this.generatorFuncContent(apiItem)}`;
           })
           .join("")}
         }
@@ -80,88 +88,42 @@ ${this.generatorClassJSDoc(tagItem)}
            */`;
   }
 
-  generatorFuncContent({
-    apiItem,
-    funcParams,
-    requestParams,
-    paramsSerializer,
-    formData,
-    formDataHeader,
-  }) {
-    //todo 补充 responseType:'blob
-    const contents = [
-      `url:${super.generatorPath(apiItem)}`,
-      requestParams,
-      paramsSerializer,
-      formDataHeader,
-    ];
-    const filterContents = (contents) => _.filter(contents, (x) => x);
-    const addContents = (contents) =>
-      _.reduce(
-        contents,
-        (result, value) => {
-          result += (result ? ",\n" : "") + value;
-          return result;
-        },
-        ""
-      );
-    return ` ${apiItem.requestName}(${funcParams}){${
-      formData ? "\n" + formData + "\n" : ""
-    }
-      return request.${apiItem.method}({
-        ${_.flow([filterContents, addContents])(contents)}
-      })
-    }`;
-  }
+  generatorFuncContent(apiItem: ApiData) {
+    const { formDataHeader, uploadFormData } = super.generateUploadFormData(
+      apiItem
+    );
 
-  //函数参数
-  generatorArguments(apiItem: ApiData) {
-    //params路径参数
-    const path = _.chain(apiItem.parameters)
-      .filter(["in", "path"])
-      .map("name")
-      .map((name) => _.camelCase(name))
-      .join()
-      .value();
-
-    //query 查询参数
-    const query = _.some(apiItem.parameters, ["in", "query"]);
-
-    //data body参数
-    const body = this.requestBodyParams(apiItem);
-
+    //函数参数
     const funcParams = [
-      path ? `${path}` : "",
-      query ? `query` : "",
-      body ? `body` : "",
+      super.hasPathParameters ? this.pathParams : "",
+      super.hasQueryParameters ? `query` : "",
+      super.hasRequestBodyParams ? `body` : "",
     ]
       .filter((x) => x)
       .join();
 
-    const requestParams = [query ? "params:query" : "", body ? "data:body" : ""]
-      .filter((x) => x)
-      .join();
-
-    const hasQueryArray = _.some(
-      apiItem.parameters,
-      (x) => x.schema.type === "array"
-    );
-    const paramsSerializer = hasQueryArray
-      ? `paramsSerializer(params) {
-            return qs.stringify(params)
-        }`
-      : "";
-    const { formDataHeader, formData } = this.generateFormData(apiItem);
-
-    //todo application/x-www-form-urlencoded 类型参数
-
-    return {
-      funcParams,
-      requestParams,
-      paramsSerializer,
+    //todo 补充 responseType:'blob
+    const contents = [
+      `url:${super.generatorPath(apiItem)}`,
+      super.hasQueryParameters ? "params:query" : "",
+      super.hasRequestBodyParams ? "data:body" : "",
+      super.getParamsSerializer(),
+      // this.downLoadResponseType(),
       formDataHeader,
-      formData,
-    };
+    ];
+    return ` ${apiItem.requestName}(${funcParams}){${
+      uploadFormData ? "\n" + uploadFormData + "\n" : ""
+    }
+     return request.${apiItem.method}({
+        ${_.chain(contents)
+          .filter((x) => !!x)
+          .reduce((result, value) => {
+            result += (result ? ",\n" : "") + value;
+            return result;
+          }, "")
+          .value()}
+      })
+    }`;
   }
 
   generateQueryParams(apiItem: ApiData) {
@@ -178,7 +140,7 @@ ${this.generatorClassJSDoc(tagItem)}
 
   handleParameters(
     parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[],
-    namespace: string | undefined
+    namespace?: string
   ) {
     const itemTypeMap = (
       parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]
@@ -197,7 +159,7 @@ ${this.generatorClassJSDoc(tagItem)}
         return `*@param ${this.parametersType(item)} ${this.optionalParameters(
           item,
           namespace
-        )} -${item.description}`;
+        )} ${item.description}`;
       });
     };
     const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
@@ -216,11 +178,16 @@ ${this.generatorClassJSDoc(tagItem)}
   }
 
   parametersType(parameters: OpenAPIV3.ParameterObject) {
-    let type = parameters.schema.type;
+    if (parameters.schema && "$ref" in parameters.schema) {
+      errorLog("parametersType");
+      return "";
+    }
+
+    let type = parameters.schema?.type ?? "";
 
     if (
       numberEnum.includes(type) ||
-      numberEnum.includes(parameters.schema.format)
+      numberEnum.includes(parameters.schema?.format || "")
     ) {
       return "{number}";
     }
@@ -233,12 +200,24 @@ ${this.generatorClassJSDoc(tagItem)}
       return "{boolean}";
     }
     //todo
-    if (type === "array") {
+    if (
+      parameters.schema?.type === "array" &&
+      !("$ref" in parameters.schema.items)
+    ) {
       return `{${parameters.schema.items.type}[]}`;
     }
     //todo
+    if (
+      parameters.schema?.type === "array" &&
+      "$ref" in parameters.schema.items
+    ) {
+      errorLog("parametersType");
+      return ``;
+    }
+
+    //todo
     if (type === "object") {
-      return `${parameters.schema.type}`;
+      return `${parameters.schema?.type}`;
     }
   }
 
@@ -260,17 +239,24 @@ ${this.generatorClassJSDoc(tagItem)}
       );
     }
 
-    if (!component && apiItem.requestBody.content) {
+    if (
+      !component &&
+      "content" in apiItem.requestBody &&
+      apiItem.requestBody.content
+    ) {
       const media = _.chain(apiItem.requestBody.content)
         .values()
         .head()
         .value();
 
-      if ("$ref" in media.schema) {
-        const resolveComponent = this.getRequestBodiesComponentByRef(
-          media.schema.$ref
-        );
+      if (media.schema && "$ref" in media.schema) {
+        const [resolveComponent, resolveRefs] =
+          this.getRequestBodiesComponentByRef(media.schema.$ref);
         component = resolveComponent;
+
+        [...resolveRefs, apiItem.requestBody.$ref].forEach((ref) =>
+          this.apiNameCache.set(ref, interfaceName)
+        );
       } else {
         component = media.schema;
       }
@@ -287,14 +273,18 @@ ${this.generatorClassJSDoc(tagItem)}
     ) {
       return `*@param {${this.formatterBaseType(
         component.items
-      )}[]} body -${_.upperFirst(apiItem.requestName)}`;
+      )}[]} body ${_.upperFirst(apiItem.requestName)}`;
     }
 
     //容错 请求body不应该是基本类型
     if (BaseType.includes(component.type)) {
       return `*@param {${this.formatterBaseType(
         component
-      )}} body -${interfaceName}`;
+      )}} body ${interfaceName}`;
+    }
+
+    if (_.isArray(component)) {
+      debugger;
     }
 
     const typeString = this.handleComponentSchema(component, "param", "body.");
@@ -325,10 +315,10 @@ ${this.generatorClassJSDoc(tagItem)}
         const isRequired = parent.required?.includes(key);
         const type = _.upperFirst(schemaObject.items.$ref.split("/").pop());
         return isRequired
-          ? `*@${typeName} {${type}[]} [${namespace}${key}] -${
+          ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
               component.title ?? ""
             }`
-          : `*@${typeName} {${type}[]} ${namespace}${key} -${
+          : `*@${typeName} {${type}[]} ${namespace}${key} ${
               component.title ?? ""
             }`;
       }
@@ -336,10 +326,10 @@ ${this.generatorClassJSDoc(tagItem)}
       const isRequired = parent.required?.includes(key);
       const type = this.formatterBaseType(schemaObject.items);
       return isRequired
-        ? `*@${typeName} {${type}[]} [${namespace}${key}] -${
+        ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
             schemaObject.description ?? ""
           }`
-        : `*@${typeName} {${type}[]} ${namespace}${key} -${
+        : `*@${typeName} {${type}[]} ${namespace}${key} ${
             schemaObject.description ?? ""
           }`;
     }
@@ -348,10 +338,10 @@ ${this.generatorClassJSDoc(tagItem)}
     if (schemaObject.type === "object" && !schemaObject.properties) {
       const isRequired = parent.required?.includes(key);
       return isRequired
-        ? `*@${typeName} {object} [${namespace}${key}] -${
+        ? `*@${typeName} {object} [${namespace}${key}] ${
             schemaObject.description ?? ""
           }`
-        : `*@${typeName} {object} ${namespace}${key} -${
+        : `*@${typeName} {object} ${namespace}${key} ${
             schemaObject.description ?? ""
           }`;
     }
@@ -386,22 +376,20 @@ ${this.generatorClassJSDoc(tagItem)}
       const type =
         _.upperFirst(componentName) + (component.type === "array" ? "[]" : "");
       return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] -${
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
             component.title ?? ""
           }`
-        : `*@${typeName} {${type}} ${namespace}${key} -${
-            component.title ?? ""
-          }`;
+        : `*@${typeName} {${type}} ${namespace}${key} ${component.title ?? ""}`;
     }
     // 枚举类型
     if (schemaObject.enum) {
       const isRequired = parent.required?.includes(key);
       const type = schemaObject.enum.map((x) => `'${x}'`).join("|");
       return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] -${
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
             schemaObject.description ?? ""
           }`
-        : `*@${typeName} {${type}} ${namespace}${key} -${
+        : `*@${typeName} {${type}} ${namespace}${key} ${
             schemaObject.description ?? ""
           }`;
       //todo
@@ -421,10 +409,10 @@ ${this.generatorClassJSDoc(tagItem)}
       const isRequired = parent.required?.includes(key);
       const type = this.formatterBaseType(schemaObject);
       return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] -${
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
             schemaObject.description ?? ""
           }`
-        : `*@${typeName} {${type}} ${namespace}${key} -${
+        : `*@${typeName} {${type}} ${namespace}${key} ${
             schemaObject.description ?? ""
           }`;
     }
@@ -433,10 +421,10 @@ ${this.generatorClassJSDoc(tagItem)}
       const isRequired = parent.required?.includes(key);
       const type = this.formatterBaseType(schemaObject);
       return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] -${
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
             schemaObject.description ?? ""
           }`
-        : `*@${typeName} {${type}} ${namespace}${key} -${
+        : `*@${typeName} {${type}} ${namespace}${key} ${
             schemaObject.description ?? ""
           }`;
     }
@@ -445,10 +433,10 @@ ${this.generatorClassJSDoc(tagItem)}
       const isRequired = parent.required?.includes(key);
       const type = this.formatterBaseType(schemaObject);
       return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] -${
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
             schemaObject.description ?? ""
           }`
-        : `*@${typeName} {${type}} ${namespace}${key} -${
+        : `*@${typeName} {${type}} ${namespace}${key} ${
             schemaObject.description ?? ""
           }`;
     }
@@ -571,18 +559,6 @@ ${this.generatorClassJSDoc(tagItem)}
 
   generateResponseParams(apiIem: ApiData) {}
 
-  requestBodyParams(apiItem: ApiData) {
-    if (_.get(apiItem, "requestBody.$ref", "")) {
-      return "data";
-    }
-
-    const media = _.chain(apiItem.requestBody?.content).values().head().value();
-    if (!_.isEmpty(media)) {
-      return "data";
-    }
-    return "";
-  }
-
   generateFormData(apiItem: ApiData) {
     const formDataHeader = `headers: { 'Content-Type': 'multipart/form-data' }`;
     const formData = `//todo 上传文件
@@ -597,7 +573,7 @@ ${this.generatorClassJSDoc(tagItem)}
       if (component.content && "multipart/form-data" in component.content) {
         return {
           formDataHeader,
-          formData,
+          formData: uploadFormData,
         };
       }
     }
@@ -609,13 +585,13 @@ ${this.generatorClassJSDoc(tagItem)}
     ) {
       return {
         formDataHeader,
-        formData,
+        formData: uploadFormData,
       };
     }
 
     return {
       formDataHeader: "",
-      formData: "",
+      uploadFormData: "",
     };
   }
 
@@ -704,6 +680,6 @@ ${this.generatorClassJSDoc(tagItem)}
   writeFile(title, codeString) {
     const filePath = path.join(this.config.output, `${title}JSApi.js`);
     fse.outputFileSync(filePath, codeString);
-    successLog(`${title}ts api write succeeded!`);
+    successLog(`${title} js api write succeeded!`);
   }
 }

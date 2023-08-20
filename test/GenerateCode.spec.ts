@@ -1,12 +1,12 @@
-// @ts-nocheck
-import { GenerateCode } from "@/GenerateCode";
+//@ts-nocheck
+import { GenerateCode } from "../src/GenerateCode";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 import path from "path";
-import { GenerateTSApi } from "@/GenerateTSApi";
+import { GenerateTSApi } from "../src/GenerateTSApi";
 import swagger2 from "../mock/swagger2.json";
 import openApi3SourceDataExpectedResult from "../mock/openApi3SourceData.json";
-import openApi3FormatDataExpectedResult from "../mock/openApi3FormatData.json";
+import openApi3FormatDataExpectedResult from "../mock/openApi3Formatter.json";
 
 const config = {
   projectDir: "", //项目根目录

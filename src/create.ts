@@ -9,7 +9,7 @@ import { GenerateTSApi } from "./GenerateTSApi";
 import { GenerateJSApi } from "./GenerateJSApi";
 import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
-import { updateVersionMessage } from "@/version";
+import { updateVersionMessage } from "./version";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -68,7 +68,7 @@ export async function generateApiCode(config: ConfigTemplate) {
           )
       )
     );
-    generateCode.run();
+    generateCode.allRun();
   });
   await Promise.all(map);
   updateVersionMessage();

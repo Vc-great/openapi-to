@@ -1,4 +1,5 @@
 import prettier from "prettier";
+import type { HttpMethods } from "./types";
 
 export const prettierFile = (content: string): string => {
   let result = content;
@@ -38,3 +39,11 @@ export const stringEnum = [
 ];
 
 export const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
+
+export const httpMethods: HttpMethods = [
+  "get",
+  "put",
+  "post",
+  "delete",
+  "patch",
+];
