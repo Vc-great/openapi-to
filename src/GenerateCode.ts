@@ -92,15 +92,15 @@ export class GenerateCode {
 
         (operationObject.tags || []).forEach((tagString) => {
           // @ts-ignore
-          openApi3FormatData[tagString] ??= [];
+          openApi3FormatData[tagString] = openApi3FormatData[tagString] ?? [];
+
           // @ts-ignore
           openApi3FormatData[tagString].push({
             path: `${basePath}${p}`,
             method,
-            description:
-              // @ts-ignore
-              openApi3SourceData.tags.find((x) => x.name === tagString)
-                ?.description || "",
+            tagDescription: openApi3SourceData.tags?.find(
+              (x) => x.name === tagString
+            )?.description,
             ...operationObject,
           });
         });
@@ -141,7 +141,7 @@ export class GenerateCode {
     const tag = _.head(apiItem.tags) || "";
     const crudPath = this.getCrudRequestPath(openApi3FormatData[tag]);
     const methodUpperCase = method.toUpperCase();
-
+    const lasePathParams = this.getPathLastParams(path);
     const name = new Map([
       ["GET", "list"],
       ["POST", "create"],
@@ -157,6 +157,11 @@ export class GenerateCode {
       return name.get(methodUpperCase);
     }
 
+    //单个删除
+    if (methodUpperCase === "DELETE" && lasePathParams) {
+      return `delBy${_.upperFirst(_.camelCase(lasePathParams))}`;
+    }
+
     const paths = path.split("/").filter((x) => x);
     const hasBracket = paths[paths.length - 1].includes("{");
 
@@ -166,11 +171,11 @@ export class GenerateCode {
 
     //detail
     if (hasBracket && isDetail) {
-      return name.get("DETAIL") + "By" + this.getPathLastParams(path);
+      return name.get("DETAIL") + "By" + lasePathParams;
     }
     //其他带括号
     if (hasBracket) {
-      const popItem = [...paths].pop();
+      const popItem = _.last(paths) || "";
 
       return _.camelCase(popItem.slice(1, popItem.length - 1));
     }

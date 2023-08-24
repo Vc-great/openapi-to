@@ -1,11 +1,20 @@
-// @ts-nocheck
 import _ from "lodash";
 import fse from "fs-extra";
-import type { ApiData, GenerateCode, OpenApi3FormatData } from "./types";
-import { BaseType, numberEnum, prettierFile, stringEnum } from "./utils";
+import type {
+  ApiData,
+  Config,
+  GenerateCode,
+  OpenApi3FormatData,
+} from "./types";
+import {
+  BaseType,
+  getResponseRef,
+  prettierFile,
+  formatterBaseType,
+} from "./utils";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
-import { successLog } from "./log";
+import { errorLog, successLog } from "./log";
 
 export class GenerateType implements GenerateCode {
   pendingRefCache: Set<string>;
@@ -13,7 +22,7 @@ export class GenerateType implements GenerateCode {
   apiNameCache: Map<string, string>;
   enumSchema: Map<string, object>;
   constructor(
-    public config: object,
+    public config: Config,
     public openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
@@ -35,19 +44,9 @@ export class GenerateType implements GenerateCode {
     const query = _.filter(apiItem.parameters, ["in", "query"]);
     if (_.isEmpty(query)) return "";
 
-    return `/** ${apiItem.summary}*/
+    return `/** ${apiItem.summary ?? ""}*/
     export interface ${_.upperFirst(apiItem.requestName)}QueryRequest {
                  ${this.handleParameters(query)}
-            }`;
-  }
-  //路径参数
-  getPathParamsType(apiItem: ApiData) {
-    const pathParams = _.filter(apiItem.parameters, ["in", "path"]);
-    if (_.isEmpty(pathParams)) return "";
-
-    return `/** ${apiItem.summary}*/
-          export interface ${_.upperFirst(apiItem.requestName)}PathRequest {
-                ${this.handleParameters(pathParams)}
             }`;
   }
 
@@ -71,7 +70,7 @@ export class GenerateType implements GenerateCode {
         return `/** ${item.description ?? ""} */
               ${item.name.includes("-") ? _.camelCase(item.name) : item.name}${
           item.required ? "" : "?"
-        }:${this.formatterBaseType(item.schema)}`;
+        }:${formatterBaseType(item.schema)}`;
       });
     };
     const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
@@ -88,7 +87,7 @@ export class GenerateType implements GenerateCode {
       "$ref" in apiItem.requestBody &&
       this.apiNameCache.has(apiItem.requestBody.$ref)
     ) {
-      return `/** ${apiItem.summary} */
+      return `/** ${apiItem.summary ?? ""} */
       export interface ${interfaceName} extends ${this.apiNameCache.get(
         apiItem.requestBody.$ref
       )}{}`;
@@ -106,13 +105,17 @@ export class GenerateType implements GenerateCode {
       );
     }
 
-    if (!component && apiItem.requestBody.content) {
+    if (
+      !component &&
+      "content" in apiItem.requestBody &&
+      apiItem.requestBody.content
+    ) {
       const media = _.chain(apiItem.requestBody.content)
         .values()
         .head()
         .value();
 
-      if ("$ref" in media.schema) {
+      if (media.schema && "$ref" in media.schema) {
         const [resolveComponent, resolveRefs] =
           this.getRequestBodiesComponentByRef(media.schema.$ref);
         component = resolveComponent;
@@ -131,25 +134,21 @@ export class GenerateType implements GenerateCode {
     if (
       component.type === "array" &&
       component.items &&
-      !component.items.$ref
+      !("$ref" in component.items)
     ) {
       return `/** ${apiItem.summary} */
-      export type ${interfaceName} = ${this.formatterBaseType(
-        component.items
-      )}[]`;
+      export type ${interfaceName} = ${formatterBaseType(component.items)}[]`;
     }
 
     //容错 请求body不应该是基本类型
-    if (BaseType.includes(component.type)) {
+    if (BaseType.includes(component.type || "")) {
       return `/** ${apiItem.summary} */
-            export type ${interfaceName} = ${this.formatterBaseType(
-        component
-      )}`;
+            export type ${interfaceName} = ${formatterBaseType(component)}`;
     }
 
     const typeString = this.handleComponentSchema(component);
 
-    const bodyType = `/** ${apiItem.summary} */
+    const bodyType = `/** ${apiItem.summary ?? ""} */
             export interface ${interfaceName} {
               ${typeString}
             }`;
@@ -158,8 +157,8 @@ export class GenerateType implements GenerateCode {
 
   getRequestBodiesComponentByRef(
     ref: string = "",
-    refsCache = []
-  ): undefined | OpenAPIV3.SchemaObject {
+    refsCache: Array<string> = []
+  ): [undefined | OpenAPIV3.SchemaObject, string[]] {
     const schemaComponent = this.getComponentByRef(ref);
 
     if (schemaComponent === undefined) {
@@ -183,7 +182,11 @@ export class GenerateType implements GenerateCode {
         ]);
       }
 
-      if (media.schema.type === "array" && media.schema?.items?.$ref) {
+      if (
+        media.schema &&
+        media.schema.type === "array" &&
+        "$ref" in media.schema.items
+      ) {
         return this.getRequestBodiesComponentByRef(media.schema.items.$ref, [
           ...refsCache,
           media.schema.items.$ref,
@@ -219,7 +222,10 @@ export class GenerateType implements GenerateCode {
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
     this.pendingRefCache.clear();
 
-    const generateInterface = (component, index) => {
+    const generateInterface = (
+      component: OpenAPIV3.SchemaObject | undefined,
+      index: number
+    ) => {
       if (!component) {
         return undefined;
       }
@@ -230,7 +236,7 @@ export class GenerateType implements GenerateCode {
       export type ${interfaceName} = object`;
       }
 
-      return `/**${component.title}*/
+      return `/**${component.title ?? ""}*/
       export  interface ${_.upperFirst(interfaceName)} {
               ${this.handleComponentSchema(component)}
              }`;
@@ -253,43 +259,26 @@ export class GenerateType implements GenerateCode {
   }
 
   getResponseType(apiItem: ApiData) {
-    let responses = _.values(_.get(apiItem, "responses", {}));
-
-    let $ref = "";
-    while (!$ref && !_.isEmpty(responses)) {
-      const head = responses.shift();
-      if (!head) {
-        break;
-      }
-
-      if ("$ref" in head) {
-        $ref = head.$ref;
-        break;
-      }
-      //下一轮循环
-      if (_.isEmpty(head.content)) {
-        continue;
-      }
-      $ref = _.get(_.values(head.content)[0], "schema.$ref", "");
-    }
-
+    const responseRef = getResponseRef(apiItem);
     const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
 
-    if (!$ref) {
+    if (!responseRef) {
       return `/** ${apiItem.summary} */
            export  interface ${interfaceName} {}`;
     }
 
     //已经解析过采用继承的方式
-    if (this.apiNameCache.has($ref)) {
+    if (this.apiNameCache.has(responseRef)) {
       return `/** ${apiItem.summary} */
       export interface ${interfaceName} extends ${this.apiNameCache.get(
-        $ref
+        responseRef
       )}{}`;
     }
-    this.apiNameCache.set($ref, interfaceName);
+    this.apiNameCache.set(responseRef, interfaceName);
 
-    const component = this.getComponentByRef($ref) as OpenAPIV3.SchemaObject;
+    const component = this.getComponentByRef(
+      responseRef
+    ) as OpenAPIV3.SchemaObject;
 
     const typeString = this.handleComponentSchema(component);
 
@@ -312,7 +301,6 @@ export class GenerateType implements GenerateCode {
         const types = [
           this.getQueryParamsType(apiItem),
           this.getBodyParamsType(apiItem),
-          this.getPathParamsType(apiItem),
           this.getResponseType(apiItem),
           this.getComponentTypeByRef([...this.pendingRefCache.keys()]),
         ];
@@ -327,11 +315,14 @@ export class GenerateType implements GenerateCode {
     //eslint-disable-next-line @typescript-eslint/no-namespace
     /**
      *@tagName ${_.get(tagItem, "[0].tags[0]", "")}
-     *@description ${_.get(tagItem, "[0].description", "")}
+     *@description ${_.get(tagItem, "[0].tagDescription", "")}
      */
      //todo edit namespace name
     export namespace ApiType {
+      /**error response*/
+       export interface ErrorResponse {}
       ${tagItemTypeString}
+  
     }
       ${this.getEnumOption(Array.from(this.enumSchema.entries()))}
     `;
@@ -342,7 +333,7 @@ export class GenerateType implements GenerateCode {
     };
   }
   //this.enumSchema.entries(),
-  getEnumOption(enumSchema) {
+  getEnumOption(enumSchema: [string, OpenAPIV3.SchemaObject][]) {
     this.enumSchema.clear();
     //todo 解析     this.enumSchema 生成label option
     return _.reduce(
@@ -354,7 +345,7 @@ export class GenerateType implements GenerateCode {
         result += `
         /**${value.description}*/
         export const enum ${labelName} {
-                ${value.enum.map((item) => {
+                ${value.enum?.map((item) => {
                   return `${item} = ''`;
                 })}
           }`;
@@ -362,7 +353,7 @@ export class GenerateType implements GenerateCode {
         result += `
           /**${value.description}*/
          export const enum ${valueName} {
-                ${value.enum.map((item) => {
+                ${value.enum?.map((item) => {
                   return `${item} = '${item}'`;
                 })}
           }`;
@@ -370,7 +361,7 @@ export class GenerateType implements GenerateCode {
         result += `
          /**${value.description}*/
         export const ${_.upperFirst(_.camelCase(key))}Option = [
-                ${value.enum.map((item, index) => {
+                ${value.enum?.map((item, index) => {
                   return `${
                     index === 0 ? "" : "\n"
                   }{label:${labelName}.${item},value:${valueName}.${item}}`;
@@ -384,12 +375,29 @@ export class GenerateType implements GenerateCode {
   }
 
   handleComponentSchema(
-    schemaObject: OpenAPIV3.SchemaObject | undefined,
+    schemaObject:
+      | OpenAPIV3.SchemaObject
+      | OpenAPIV3.ReferenceObject
+      | undefined,
     key?: string,
     parent?: OpenAPIV3.SchemaObject
   ) {
     if (_.isNil(schemaObject)) return undefined;
+    // 引用类型
+    if ("$ref" in schemaObject) {
+      this.pendingRefCache.add(schemaObject.$ref);
 
+      const component = this.getComponentByRef(
+        schemaObject.$ref,
+        false
+      ) as OpenAPIV3.SchemaObject;
+      const componentName = schemaObject.$ref.split("/").pop();
+
+      return `/**${component.title ?? ""}*/
+      ${key}${parent?.required?.includes(key || "") ? "" : "?"}:${_.upperFirst(
+        componentName
+      )}${component.type === "array" ? "[]" : ""}`;
+    }
     // 数组类型
     if (schemaObject.type === "array") {
       if ("$ref" in schemaObject.items) {
@@ -398,24 +406,26 @@ export class GenerateType implements GenerateCode {
         const component = this.getComponentByRef(
           schemaObject.items.$ref,
           false
-        );
+        ) as OpenAPIV3.SchemaObject;
 
         return `/**${component.title ?? ""}*/
-        ${key}${parent.required?.includes(key) ? "" : "?"}:${
+        ${key}${parent?.required?.includes(key || "") ? "" : "?"}:${
           _.upperFirst(schemaObject.items.$ref.split("/").pop()) + "[]"
         }`;
       }
 
       return `/**${schemaObject.description ?? ""}*/
       ${key ?? ""}${
-        parent?.required?.includes(key) ? "" : "?"
-      }:${this.formatterBaseType(schemaObject.items)}[]`;
+        parent?.required?.includes(key || "") ? "" : "?"
+      }:${formatterBaseType(schemaObject.items)}[]`;
     }
 
     // 对象类型 properties 不存在
     if (schemaObject.type === "object" && !schemaObject.properties) {
       return `/**${schemaObject.description ?? ""}*/
-        ${key ?? ""}${parent?.required?.includes(key) ? "" : "?"}: object`;
+        ${key ?? ""}${
+        parent?.required?.includes(key || "") ? "" : "?"
+      }: object`;
     }
 
     // 对象类型
@@ -431,59 +441,50 @@ export class GenerateType implements GenerateCode {
         ""
       );
     }
-    // 引用类型
-    if (schemaObject.$ref) {
-      this.pendingRefCache.add(schemaObject.$ref);
 
-      const component = this.getComponentByRef(schemaObject.$ref, false);
-      const componentName = schemaObject.$ref.split("/").pop();
-
-      return `/**${component.title ?? ""}*/
-      ${key}${parent.required?.includes(key) ? "" : "?"}:${_.upperFirst(
-        componentName
-      )}${component.type === "array" ? "[]" : ""}`;
-    }
     // 枚举类型
-    if (schemaObject.enum) {
+    if (key && schemaObject.enum) {
       this.enumSchema.set(key, schemaObject);
 
       return `/**${schemaObject.description ?? ""}*/
       ${key}${
-        parent.required?.includes(key) ? "" : "?"
+        parent?.required?.includes(key) ? "" : "?"
       }:${this.resolveEnumObject(schemaObject)}`;
     }
     // 继承类型
     if (schemaObject.allOf && schemaObject.allOf.length) {
       //todo 待补充
+      errorLog("TS interface schemaObject.allOf");
+      return "";
     }
 
     //基本类型
-    if (["integer", "number"].includes(schemaObject.type)) {
+    if (["integer", "number"].includes(schemaObject.type || "")) {
       return `/**${schemaObject.description ?? ""}*/
       ${key}${
-        parent.required?.includes(key) ? "" : "?"
-      }:${this.formatterBaseType(schemaObject)}`;
+        parent?.required?.includes(key || "") ? "" : "?"
+      }:${formatterBaseType(schemaObject)}`;
     }
 
     if (schemaObject.type === "string") {
       return `${this.getStringDescription(schemaObject)}
       ${key}${
-        parent.required?.includes(key) ? "" : "?"
-      }:${this.formatterBaseType(schemaObject)}`;
+        parent?.required?.includes(key || "") ? "" : "?"
+      }:${formatterBaseType(schemaObject)}`;
     }
 
     if (schemaObject.type === "boolean") {
       return `/**${schemaObject.description ?? ""}*/
       ${key}${
-        parent.required?.includes(key) ? "" : "?"
-      }:${this.formatterBaseType(schemaObject)}`;
+        parent?.required?.includes(key || "") ? "" : "?"
+      }:${formatterBaseType(schemaObject)}`;
     }
-    console.log("-> 存在异常", schemaObject.type);
+    errorLog("TS interface schemaObject.type");
     return "";
   }
 
   getStringDescription(schemaObject: OpenAPIV3.SchemaObject) {
-    if (["date", "date-time"].includes(schemaObject.format)) {
+    if (["date", "date-time"].includes(schemaObject.format || "")) {
       return `/**
       *@remark RFC 3339 yyyy-MM-dd HH:mm:ss
       *@description ${schemaObject.description ?? ""}
@@ -506,42 +507,13 @@ export class GenerateType implements GenerateCode {
 
     return `/**${schemaObject.description ?? ""}*/`;
   }
-
-  formatterBaseType(schemaObject) {
-    let type = schemaObject.type;
-
-    if (numberEnum.includes(type) || numberEnum.includes(schemaObject.format)) {
-      return "number";
-    }
-
-    /*   if (dateEnum.includes(type)) {
-      return "Date";
-    }*/
-
-    if (stringEnum.includes(type)) {
-      return "string";
-    }
-
-    if (type === "boolean") {
-      return "boolean";
-    }
-
-    if (type === "array") {
-      return `${schemaObject.items.type}[]`;
-    }
-
-    //todo
-    if (type === "object") {
-    }
-  }
-
   resolveEnumObject(schemaObject: OpenAPIV3.SchemaObject) {
     return Array.isArray(schemaObject.enum)
       ? _.reduce(
           schemaObject.enum,
           (result, value, index) => {
             result += `'${value}'${
-              schemaObject.enum.length === index + 1 ? "" : "|"
+              schemaObject.enum?.length === index + 1 ? "" : "|"
             }`;
             return result;
           },
@@ -550,7 +522,7 @@ export class GenerateType implements GenerateCode {
       : "string";
   }
 
-  writeFile(title, codeString) {
+  writeFile(title: string, codeString: string) {
     const filePath = path.join(this.config.output, `${title}Types.ts`);
     fse.outputFileSync(filePath, codeString);
     successLog(`${title} interface write succeeded!`);

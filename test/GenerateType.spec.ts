@@ -17,11 +17,6 @@ import {
   bodyRequestOpenApi3Formatter,
 } from "../mock/bodyRequest";
 import {
-  pathRequestExpectedResult,
-  pathRequestOpenApi3,
-  pathRequestOpenApi3Formatter,
-} from "../mock/pathRequest";
-import {
   bodyResponseExpectedResult,
   bodyResponseOpenApi3,
   bodyResponseOpenApi3Formatter,
@@ -76,21 +71,6 @@ describe("getBodyParamsType", () => {
   // test("have application/x-www-form-urlencoded params", () => {});
 
   //test("have $ref params", () => {});
-});
-
-test("getPathParamsType", () => {
-  const generateType = new GenerateType(
-    {},
-    // @ts-ignore
-    pathRequestOpenApi3,
-    uploadOpenApi3Formatter
-  );
-  // @ts-ignore
-  const bodyParamsExpected = generateType.getPathParamsType(
-    // @ts-ignore
-    pathRequestOpenApi3Formatter
-  );
-  expect(bodyParamsExpected).toBe(pathRequestExpectedResult);
 });
 
 test("getResponseType", () => {

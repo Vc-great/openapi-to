@@ -10,6 +10,9 @@ import chalk from "chalk";
  * @return {number} 1大 0相等 -1小
  */
 function compareVersionLatest(v1: string, v2: string) {
+  if (!v1 || !v2) {
+    return undefined;
+  }
   const [v1Main, v1PreRelease] = v1.split("-");
   const [v2Main, v2PreRelease] = v2.split("-");
 
@@ -81,7 +84,6 @@ function getVersion() {
     }).replace(/\n/, "");
     return versionsString.includes("-") ? "" : versionsString;
   } catch (e) {
-    console.log(e);
     return "";
   }
 }
@@ -91,7 +93,6 @@ export function message(localVersion: string, remoteVersion: string) {
  New version! ${localVersion} → ${remoteVersion}
  Run npm install -g openapi-to to update! 
 `);
-  console.log(text);
 }
 
 /**

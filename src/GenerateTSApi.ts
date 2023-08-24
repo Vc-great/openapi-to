@@ -64,7 +64,9 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
       .filter(["in", "path"])
       .map((parameter) => {
         if ("$ref" in parameter) return "";
-        return `${parameter.name}:${formatterBaseType(parameter.schema)}`;
+        return `${_.camelCase(parameter.name)}:${formatterBaseType(
+          parameter.schema
+        )}`;
       })
       .join()
       .value();
@@ -109,10 +111,10 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
 
   generatorClassJSDoc(tagItem: ApiData[]) {
     const name = _.get(_.head(tagItem), "tags[0]", "");
-    const description = _.get(_.head(tagItem), "description", "");
+    const tagDescription = _.get(_.head(tagItem), "tagDescription", "");
     return `/**
            *@tagName ${name}.
-           *@tagDescription ${description}.
+           *@tagDescription ${tagDescription}.
            */`;
   }
 
@@ -130,16 +132,17 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
       .filter((x) => x)
       .join();
 
-    //todo 补充 responseType:'blob
     const contents = [
       `url:${super.generatorPath(apiItem)}`,
       super.hasQueryParameters ? "params:query" : "",
       super.hasRequestBodyParams ? "data:body" : "",
       super.getParamsSerializer(this.queryRequest),
-      // this.downLoadResponseType(),
+      this.downLoadResponseType(),
       formDataHeader,
     ];
-    return ` ${apiItem.requestName}(${funcParams}):Promise<[object,${
+    return ` ${
+      apiItem.requestName
+    }(${funcParams}):Promise<[ApiType.ErrorResponse,${
       this.namespaceName
     }.${_.upperFirst(apiItem.requestName)}Response]>{${
       uploadFormData ? "\n" + uploadFormData + "\n" : ""
@@ -158,9 +161,7 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
 
   //函数注释
   generatorFuncJSDoc(apiItem: ApiData) {
-    return `
-    /**
-    *@tagName ${_.get(apiItem, "tags[0]", "")}
+    return `/**
     *@apiSummary ${apiItem.summary} 
     */`;
   }

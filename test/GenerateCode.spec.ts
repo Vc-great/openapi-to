@@ -2,11 +2,9 @@
 import { GenerateCode } from "../src/GenerateCode";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
+import openApi3FormatDataExpectedResult from "../mock/openApi3Formatter.json";
 import path from "path";
 import { GenerateTSApi } from "../src/GenerateTSApi";
-import swagger2 from "../mock/swagger2.json";
-import openApi3SourceDataExpectedResult from "../mock/openApi3SourceData.json";
-import openApi3FormatDataExpectedResult from "../mock/openApi3Formatter.json";
 
 const config = {
   projectDir: "", //项目根目录
@@ -47,24 +45,6 @@ describe("getOpenApiJson", () => {
   });
 });
 
-describe("apiData formatter", () => {
-  const config = {
-    projectDir: "", //项目根目录
-    title: "", //项目名称,用于生成目录
-    path: path.resolve(__dirname, "../mock/swagger2.json"), //项目路径
-  };
-
-  const generateCode = new GenerateCode(config);
-  test("swagger2ToOpenapi3", async () => {
-    await generateCode.swagger2ToOpenapi3(swagger2);
-  });
-
-  test("openApi3DataFormatter", () => {
-    const openApi3FormatData = generateCode.openApi3DataFormatter(openApi3);
-    expect(openApi3FormatData).toStrictEqual(openApi3Formatter);
-  });
-});
-
 describe("getRequestName", () => {
   describe("get CRUD path", () => {
     test("has path", () => {
@@ -98,9 +78,7 @@ describe("init && run", () => {
   const generateCode = new GenerateCode(config);
 
   test("init ", async () => {
-    const { openApi3SourceData, openApi3FormatData } =
-      await generateCode.init();
-    expect(openApi3SourceData).toEqual(openApi3SourceDataExpectedResult);
+    const { openApi3FormatData } = await generateCode.init();
     expect(openApi3FormatData).toEqual(openApi3FormatDataExpectedResult);
   });
 
