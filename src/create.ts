@@ -5,9 +5,11 @@ import { configTemplate } from "./configTemplate";
 import { errorLog, successLog } from "./log";
 import { GenerateCode } from "./GenerateCode";
 import { GenerateType } from "./GenerateType";
-import { GenerateApi } from "./GenerateApi";
+import { GenerateTSApi } from "./GenerateTSApi";
+import { GenerateJSApi } from "./GenerateJSApi";
 import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
+import { updateVersionMessage } from "./version";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -53,7 +55,7 @@ export async function generateApiCode(config: ConfigTemplate) {
     const { openApi3SourceData, openApi3FormatData } =
       await generateCode.init();
     generateCode.register(
-      [GenerateType, GenerateApi].map(
+      [GenerateType, GenerateTSApi, GenerateJSApi].map(
         (item) =>
           new item(
             {
@@ -66,9 +68,10 @@ export async function generateApiCode(config: ConfigTemplate) {
           )
       )
     );
-    generateCode.run();
+    generateCode.allRun();
   });
-  const result = await Promise.all(map);
+  await Promise.all(map);
+  updateVersionMessage();
 }
 
 /***

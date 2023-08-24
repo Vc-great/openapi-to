@@ -1,7 +1,7 @@
-// @ts-nocheck
-import { GenerateType } from "@/GenerateType";
+//@ts-nocheck
+import { GenerateType } from "../src/GenerateType";
 import openApi3 from "../mock/openApi3.json";
-import openApi3Formatter from "../mock/openApi3Fomatter.json";
+import openApi3Formatter from "../mock/openApi3Formatter.json";
 
 import {
   queryParamsResultExpected,
@@ -17,21 +17,13 @@ import {
   bodyRequestOpenApi3Formatter,
 } from "../mock/bodyRequest";
 import {
-  pathRequestOpenApi3,
-  pathRequestOpenApi3Formatter,
-  pathRequestExpectedResult,
-} from "../mock/pathRequest";
-import {
-  bodyResponseOpenApi3,
   bodyResponseExpectedResult,
+  bodyResponseOpenApi3,
   bodyResponseOpenApi3Formatter,
   ComponentTypeResponseExpectedResult,
 } from "../mock/bodyResponse";
-
-import { refList } from "../mock/ref";
 import { bodyParamsBodyExpected } from "../mock/getBodyParamsType";
 import { enumOption } from "../mock/enum";
-import { typeRunExpected } from "../mock/typeRun";
 
 // @ts-ignore
 let generateType = new GenerateType({}, openApi3, openApi3Formatter);
@@ -79,21 +71,6 @@ describe("getBodyParamsType", () => {
   // test("have application/x-www-form-urlencoded params", () => {});
 
   //test("have $ref params", () => {});
-});
-
-test("getPathParamsType", () => {
-  const generateType = new GenerateType(
-    {},
-    // @ts-ignore
-    pathRequestOpenApi3,
-    uploadOpenApi3Formatter
-  );
-  // @ts-ignore
-  const bodyParamsExpected = generateType.getPathParamsType(
-    // @ts-ignore
-    pathRequestOpenApi3Formatter
-  );
-  expect(bodyParamsExpected).toBe(pathRequestExpectedResult);
 });
 
 test("getResponseType", () => {

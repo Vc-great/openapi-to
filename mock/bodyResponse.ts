@@ -110,7 +110,7 @@ export const ComponentTypeResponseExpectedResult =
   "/**type*/\n" +
   "      type?:string\n" +
   "             }\n" +
-  "/**undefined*/\n" +
+  "/***/\n" +
   "      export  interface ApiResponse {\n" +
   "              /***/\n" +
   "      code?:number\n" +

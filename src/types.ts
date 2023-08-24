@@ -11,6 +11,7 @@ export interface Project {
 
 export interface Config {
   projectDir: string;
+  output: string;
   title: string;
   path: string;
 }
@@ -22,7 +23,7 @@ export interface ApiData extends OpenAPIV3.OperationObject {
 }
 
 export interface OpenApi3FormatData {
-  [k: string]: ApiData;
+  [k: string]: ApiData[];
 }
 
 export interface SchemaComponent {
@@ -41,7 +42,7 @@ export type Parameters = (
 //export type TagApiData = Record<string, APIDataType[]>;
 
 export interface GenerateCode {
-  run: (apiItem: ApiData) => any;
+  run: (tagItem: ApiData[]) => void;
 }
 
 export type HttpMethods = ["get", "put", "post", "delete", "patch"];

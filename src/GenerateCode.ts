@@ -1,13 +1,14 @@
-// @ts-nocheck
 import http from "http";
 import https from "https";
-//import fetch from "node-fetch";
-import { OpenAPIV2, OpenAPIV3 } from "openapi-types";
+import type { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import converter from "do-swagger2openapi";
-//import { infoLog } from "./log";
-import type { Config, HttpMethod, HttpMethods } from "./types";
-import { APIDataType, TagAPIDataType } from "./GenerateType";
-//import { _.reduce, _.merge, has, keys, head } from "lodash-es";
+import type {
+  Config,
+  HttpMethod,
+  HttpMethods,
+  OpenApi3FormatData,
+} from "./types";
+import { ApiData } from "./types";
 import _ from "lodash";
 import fetch from "node-fetch";
 
@@ -17,8 +18,8 @@ import fetch from "node-fetch";
 export class GenerateCode {
   public registerClass: unknown[];
   public openApiJson: OpenAPIV2.Document | OpenAPIV3.Document;
-  public openApi3Data: OpenAPIV3.Document;
-  public openApi3FormatData: TagAPIDataType;
+  public openApi3SourceData: OpenAPIV3.Document;
+  public openApi3FormatData: OpenApi3FormatData;
   constructor(public config: Config) {
     this.config = config;
     // this.openApiJson = {};
@@ -32,18 +33,16 @@ export class GenerateCode {
     this.registerClass = instance;
   }
 
-  public runByRegisterClass(apiItem: APIDataType) {
-    return _.reduce(
-      this.registerClass,
-      (result, instance) => {
-        const { title, codeString } = instance.run(apiItem);
-        instance.writeFile(title, codeString);
-      },
-      {}
-    );
+  public runByRegisterClass(apiItem: ApiData[]) {
+    _.forEach(this.registerClass, (instance: any) => {
+      const { title, codeString } = instance.run(apiItem);
+      instance.writeFile(title, codeString);
+    });
   }
 
-  public async swagger2ToOpenapi3(openApiJson) {
+  public async swagger2ToOpenapi3(
+    openApiJson: OpenAPIV2.Document | OpenAPIV3.Document
+  ) {
     if (!_.has(openApiJson, "swagger")) {
       return openApiJson;
     }
@@ -62,14 +61,11 @@ export class GenerateCode {
   }
 
   //数据转换
-  public openApi3DataFormatter(openApi3Data) {
-    // const { info } = this.openApi3Data;
+  public openApi3DataFormatter(openApi3SourceData: OpenAPIV3.Document) {
     const basePath = "";
-    //const version = info.version;
     const openApi3FormatData = {};
-    _.keys(openApi3Data.paths).forEach((p) => {
-      const pathItem = openApi3Data.paths[p] as OpenAPIV3.PathItemObject;
-      //OpenAPIV3.HttpMethods
+    _.keys(openApi3SourceData.paths).forEach((p) => {
+      const pathItem = openApi3SourceData.paths[p] as OpenAPIV3.PathItemObject;
       const httpMethods: HttpMethods = [
         "get",
         "put",
@@ -83,37 +79,28 @@ export class GenerateCode {
         if (!operationObject) {
           return;
         }
-
-        // const tags = pathItem['x-swagger-router-controller']
-        //   ? [pathItem['x-swagger-router-controller']]
-        //   : operationObject.tags || [operationObject.operationId] || [
-        //       p.replace('/', '').split('/')[1],
-        //     ];
-
-        const tags = operationObject["x-swagger-router-controller"]
+        /**
+         *x-swagger-router-controller：这个值需要设置成响应 API 请求的 controller 文件的名字。比如 controller 文件为hello_world.js， 那么关键词的值就是 hello_world。
+         *operationId：这个值需要设置成响应 API 请求的 controller 文件中相应的方法。
+         */
+        //todo
+        /*        const tags = operationObject["x-swagger-router-controller"]
           ? [operationObject["x-swagger-router-controller"]]
           : operationObject.tags || [operationObject.operationId] || [
               p.replace("/", "").split("/")[1],
-            ];
+            ];*/
 
-        tags.forEach((tagString) => {
-          // const tag = resolveTypeName(tagString);
-          const tag = tagString;
+        (operationObject.tags || []).forEach((tagString) => {
+          // @ts-ignore
+          openApi3FormatData[tagString] = openApi3FormatData[tagString] ?? [];
 
-          if (!openApi3FormatData[tag]) {
-            openApi3FormatData[tag] = [];
-          }
-          const path = `${basePath}${p}`;
-          openApi3FormatData[tag].push({
+          // @ts-ignore
+          openApi3FormatData[tagString].push({
             path: `${basePath}${p}`,
             method,
-            /* requestName: this.generateRequestName(
-              operationObject,
-              path,
-              method
-            ),*/
-            description:
-              openApi3Data.tags.find((x) => x.name === tag)?.description || "",
+            tagDescription: openApi3SourceData.tags?.find(
+              (x) => x.name === tagString
+            )?.description,
             ...operationObject,
           });
         });
@@ -122,15 +109,19 @@ export class GenerateCode {
     //获取requestname
     return _.reduce(
       openApi3FormatData,
-      (result, value, tag) => {
+      (result: OpenApi3FormatData, value, tag) => {
         result[tag] = _.map(value, (item) => {
           return {
+            // @ts-ignore
             ...item,
             requestName: this.generateRequestName(
               openApi3FormatData,
+              // @ts-ignore
               item,
+              // @ts-ignore
               item.path,
-              item.method
+              // @ts-ignore
+              <"get" | "put" | "post" | "delete" | "patch">item.method
             ),
           };
         });
@@ -139,10 +130,10 @@ export class GenerateCode {
       {}
     );
   }
-
+  //todo delete /pet/{petId}
   // 生成请求名称
   private generateRequestName(
-    openApi3FormatData,
+    openApi3FormatData: OpenApi3FormatData,
     apiItem: OpenAPIV3.OperationObject,
     path: string,
     method: HttpMethod
@@ -150,7 +141,7 @@ export class GenerateCode {
     const tag = _.head(apiItem.tags) || "";
     const crudPath = this.getCrudRequestPath(openApi3FormatData[tag]);
     const methodUpperCase = method.toUpperCase();
-
+    const lasePathParams = this.getPathLastParams(path);
     const name = new Map([
       ["GET", "list"],
       ["POST", "create"],
@@ -166,6 +157,11 @@ export class GenerateCode {
       return name.get(methodUpperCase);
     }
 
+    //单个删除
+    if (methodUpperCase === "DELETE" && lasePathParams) {
+      return `delBy${_.upperFirst(_.camelCase(lasePathParams))}`;
+    }
+
     const paths = path.split("/").filter((x) => x);
     const hasBracket = paths[paths.length - 1].includes("{");
 
@@ -175,11 +171,11 @@ export class GenerateCode {
 
     //detail
     if (hasBracket && isDetail) {
-      return name.get("DETAIL") + "By" + this.getPathLastParams(path);
+      return name.get("DETAIL") + "By" + lasePathParams;
     }
     //其他带括号
     if (hasBracket) {
-      const popItem = [...paths].pop();
+      const popItem = _.last(paths) || "";
 
       return _.camelCase(popItem.slice(1, popItem.length - 1));
     }
@@ -188,7 +184,7 @@ export class GenerateCode {
   }
 
   //最短路径为crud路径
-  public getCrudRequestPath(list: APIDataType[]) {
+  public getCrudRequestPath(list: ApiData[]) {
     const obj = {
       path: "",
       length: Number.MAX_SAFE_INTEGER,
@@ -249,26 +245,28 @@ export class GenerateCode {
 
   //
   async init(): Promise<{
-    openApi3SourceData: TagAPIDataType;
-    openApi3FormatData: OpenAPIV3.Document;
+    openApi3SourceData: OpenAPIV3.Document;
+    openApi3FormatData: OpenApi3FormatData;
   }> {
     //获取数据
     this.openApiJson = await this.getSchema();
     //数据转换
-    this.openApi3Data = await this.swagger2ToOpenapi3(this.openApiJson);
+    this.openApi3SourceData = await this.swagger2ToOpenapi3(this.openApiJson);
     //格式化数据
-    this.openApi3FormatData = this.openApi3DataFormatter(this.openApi3Data);
+    this.openApi3FormatData = this.openApi3DataFormatter(
+      this.openApi3SourceData
+    );
     return {
-      openApi3SourceData: this.openApi3Data,
+      openApi3SourceData: this.openApi3SourceData,
       openApi3FormatData: this.openApi3FormatData,
     };
   }
 
   //遍历生成代码
-  public run() {
+  public allRun() {
     //遍历path,调用注册类的run方法
-    const map = _.map(this.openApi3FormatData, (apiItem, key) => {
-      return this.runByRegisterClass(apiItem);
+    _.map(this.openApi3FormatData, (tagItem: ApiData[]) => {
+      return this.runByRegisterClass(tagItem);
     });
   }
 

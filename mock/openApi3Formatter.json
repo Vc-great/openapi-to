@@ -1,31 +1,26 @@
 {
   "pet": [
     {
-      "path": "/pet/{petId}/uploadImage",
+      "description": "",
       "method": "post",
-      "description": "pet",
-      "tags": [
-        "pet"
-      ],
-      "summary": "uploads an image",
       "operationId": "uploadFile",
       "parameters": [
         {
-          "name": "petId",
-          "in": "path",
           "description": "ID of pet to update",
+          "in": "path",
+          "name": "petId",
           "required": true,
           "schema": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           }
         }
       ],
+      "path": "/pet/{petId}/uploadImage",
       "requestBody": {
         "content": {
           "multipart/form-data": {
             "schema": {
-              "type": "object",
               "properties": {
                 "additionalMetadata": {
                   "description": "Additional data to pass to server",
@@ -33,24 +28,26 @@
                 },
                 "file": {
                   "description": "file to upload",
-                  "type": "string",
-                  "format": "binary"
+                  "format": "binary",
+                  "type": "string"
                 }
-              }
+              },
+              "type": "object"
             }
           }
         }
       },
+      "requestName": "uploadImage",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ApiResponse"
               }
             }
-          }
+          },
+          "description": "successful operation"
         }
       },
       "security": [
@@ -61,20 +58,21 @@
           ]
         }
       ],
-      "requestName": "uploadImage"
-    },
-    {
-      "path": "/pet",
-      "method": "put",
-      "description": "",
+      "summary": "uploads an image",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Update an existing pet",
+      ]
+    },
+    {
+      "description": "",
+      "method": "put",
       "operationId": "updatePet",
+      "path": "/pet",
       "requestBody": {
         "$ref": "#/components/requestBodies/Pet"
       },
+      "requestName": "update",
       "responses": {
         "400": {
           "description": "Invalid ID supplied"
@@ -94,20 +92,21 @@
           ]
         }
       ],
-      "requestName": "update"
-    },
-    {
-      "path": "/pet",
-      "method": "post",
-      "description": "",
+      "summary": "Update an existing pet",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Add a new pet to the store",
+      ]
+    },
+    {
+      "description": "",
+      "method": "post",
       "operationId": "addPet",
+      "path": "/pet",
       "requestBody": {
         "$ref": "#/components/requestBodies/Pet"
       },
+      "requestName": "create",
       "responses": {
         "405": {
           "description": "Invalid input"
@@ -121,59 +120,60 @@
           ]
         }
       ],
-      "requestName": "create"
-    },
-    {
-      "path": "/pet/findByStatus",
-      "method": "get",
-      "description": "Multiple status values can be provided with comma separated strings",
+      "summary": "Add a new pet to the store",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Finds Pets by status",
+      ]
+    },
+    {
+      "description": "Multiple status values can be provided with comma separated strings",
+      "method": "get",
       "operationId": "findPetsByStatus",
       "parameters": [
         {
-          "name": "status",
-          "in": "query",
           "description": "Status values that need to be considered for filter",
-          "required": true,
           "explode": true,
+          "in": "query",
+          "name": "status",
+          "required": true,
           "schema": {
-            "type": "array",
             "items": {
-              "type": "string",
+              "default": "available",
               "enum": [
                 "available",
                 "pending",
                 "sold"
               ],
-              "default": "available"
-            }
+              "type": "string"
+            },
+            "type": "array"
           }
         }
       ],
+      "path": "/pet/findByStatus",
+      "requestName": "findByStatus",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
-                "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/Pet"
-                }
+                },
+                "type": "array"
               }
             },
             "application/xml": {
               "schema": {
-                "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/Pet"
-                }
+                },
+                "type": "array"
               }
             }
-          }
+          },
+          "description": "successful operation"
         },
         "400": {
           "description": "Invalid status value"
@@ -187,53 +187,55 @@
           ]
         }
       ],
-      "requestName": "findByStatus"
-    },
-    {
-      "path": "/pet/findByTags",
-      "method": "get",
-      "description": "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
+      "summary": "Finds Pets by status",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Finds Pets by tags",
+      ]
+    },
+    {
+      "deprecated": true,
+      "description": "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
+      "method": "get",
       "operationId": "findPetsByTags",
       "parameters": [
         {
-          "name": "tags",
-          "in": "query",
           "description": "Tags to filter by",
-          "required": true,
           "explode": true,
+          "in": "query",
+          "name": "tags",
+          "required": true,
           "schema": {
-            "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "type": "array"
           }
         }
       ],
+      "path": "/pet/findByTags",
+      "requestName": "findByTags",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
-                "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/Pet"
-                }
+                },
+                "type": "array"
               }
             },
             "application/xml": {
               "schema": {
-                "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/Pet"
-                }
+                },
+                "type": "array"
               }
             }
-          }
+          },
+          "description": "successful operation"
         },
         "400": {
           "description": "Invalid tag value"
@@ -247,33 +249,32 @@
           ]
         }
       ],
-      "deprecated": true,
-      "requestName": "findByTags"
-    },
-    {
-      "path": "/pet/{petId}",
-      "method": "get",
-      "description": "Returns a single pet",
+      "summary": "Finds Pets by tags",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Find pet by ID",
+      ]
+    },
+    {
+      "description": "Returns a single pet",
+      "method": "get",
       "operationId": "getPetById",
       "parameters": [
         {
-          "name": "petId",
-          "in": "path",
           "description": "ID of pet to return",
+          "in": "path",
+          "name": "petId",
           "required": true,
           "schema": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           }
         }
       ],
+      "path": "/pet/{petId}",
+      "requestName": "detailByPetId",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
@@ -285,7 +286,8 @@
                 "$ref": "#/components/schemas/Pet"
               }
             }
-          }
+          },
+          "description": "successful operation"
         },
         "400": {
           "description": "Invalid ID supplied"
@@ -299,34 +301,33 @@
           "api_key": []
         }
       ],
-      "requestName": "detailByPetId"
-    },
-    {
-      "path": "/pet/{petId}",
-      "method": "post",
-      "description": "",
+      "summary": "Find pet by ID",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Updates a pet in the store with form data",
+      ]
+    },
+    {
+      "description": "",
+      "method": "post",
       "operationId": "updatePetWithForm",
       "parameters": [
         {
-          "name": "petId",
-          "in": "path",
           "description": "ID of pet that needs to be updated",
+          "in": "path",
+          "name": "petId",
           "required": true,
           "schema": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           }
         }
       ],
+      "path": "/pet/{petId}",
       "requestBody": {
         "content": {
           "application/x-www-form-urlencoded": {
             "schema": {
-              "type": "object",
               "properties": {
                 "name": {
                   "description": "Updated name of the pet",
@@ -336,11 +337,13 @@
                   "description": "Updated status of the pet",
                   "type": "string"
                 }
-              }
+              },
+              "type": "object"
             }
           }
         }
       },
+      "requestName": "petId",
       "responses": {
         "405": {
           "description": "Invalid input"
@@ -354,37 +357,38 @@
           ]
         }
       ],
-      "requestName": "petId"
-    },
-    {
-      "path": "/pet/{petId}",
-      "method": "delete",
-      "description": "",
+      "summary": "Updates a pet in the store with form data",
+      "tagDescription": "Everything about your Pets",
       "tags": [
         "pet"
-      ],
-      "summary": "Deletes a pet",
+      ]
+    },
+    {
+      "description": "",
+      "method": "delete",
       "operationId": "deletePet",
       "parameters": [
         {
-          "name": "api_key",
           "in": "header",
+          "name": "api_key",
           "required": false,
           "schema": {
             "type": "string"
           }
         },
         {
-          "name": "petId",
-          "in": "path",
           "description": "Pet id to delete",
+          "in": "path",
+          "name": "petId",
           "required": true,
           "schema": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "type": "integer"
           }
         }
       ],
+      "path": "/pet/{petId}",
+      "requestName": "delByPetId",
       "responses": {
         "400": {
           "description": "Invalid ID supplied"
@@ -401,19 +405,19 @@
           ]
         }
       ],
-      "requestName": "petId"
+      "summary": "Deletes a pet",
+      "tagDescription": "Everything about your Pets",
+      "tags": [
+        "pet"
+      ]
     }
   ],
   "store": [
     {
-      "path": "/store/order",
-      "method": "post",
       "description": "",
-      "tags": [
-        "store"
-      ],
-      "summary": "Place an order for a pet",
+      "method": "post",
       "operationId": "placeOrder",
+      "path": "/store/order",
       "requestBody": {
         "content": {
           "application/json": {
@@ -425,9 +429,9 @@
         "description": "order placed for purchasing the pet",
         "required": true
       },
+      "requestName": "create",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
@@ -439,40 +443,41 @@
                 "$ref": "#/components/schemas/Order"
               }
             }
-          }
+          },
+          "description": "successful operation"
         },
         "400": {
           "description": "Invalid Order"
         }
       },
-      "requestName": "create"
-    },
-    {
-      "path": "/store/order/{orderId}",
-      "method": "get",
-      "description": "For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions",
+      "summary": "Place an order for a pet",
+      "tagDescription": "Access to Petstore orders",
       "tags": [
         "store"
-      ],
-      "summary": "Find purchase order by ID",
+      ]
+    },
+    {
+      "description": "For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions",
+      "method": "get",
       "operationId": "getOrderById",
       "parameters": [
         {
-          "name": "orderId",
-          "in": "path",
           "description": "ID of pet that needs to be fetched",
+          "in": "path",
+          "name": "orderId",
           "required": true,
           "schema": {
-            "type": "integer",
             "format": "int64",
+            "maximum": 10,
             "minimum": 1,
-            "maximum": 10
+            "type": "integer"
           }
         }
       ],
+      "path": "/store/order/{orderId}",
+      "requestName": "detailByOrderId",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
@@ -484,7 +489,8 @@
                 "$ref": "#/components/schemas/Order"
               }
             }
-          }
+          },
+          "description": "successful operation"
         },
         "400": {
           "description": "Invalid ID supplied"
@@ -493,30 +499,31 @@
           "description": "Order not found"
         }
       },
-      "requestName": "detailByOrderId"
-    },
-    {
-      "path": "/store/order/{orderId}",
-      "method": "delete",
-      "description": "For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors",
+      "summary": "Find purchase order by ID",
+      "tagDescription": "Access to Petstore orders",
       "tags": [
         "store"
-      ],
-      "summary": "Delete purchase order by ID",
+      ]
+    },
+    {
+      "description": "For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors",
+      "method": "delete",
       "operationId": "deleteOrder",
       "parameters": [
         {
-          "name": "orderId",
-          "in": "path",
           "description": "ID of the order that needs to be deleted",
+          "in": "path",
+          "name": "orderId",
           "required": true,
           "schema": {
-            "type": "integer",
             "format": "int64",
-            "minimum": 1
+            "minimum": 1,
+            "type": "integer"
           }
         }
       ],
+      "path": "/store/order/{orderId}",
+      "requestName": "delByOrderId",
       "responses": {
         "400": {
           "description": "Invalid ID supplied"
@@ -525,31 +532,32 @@
           "description": "Order not found"
         }
       },
-      "requestName": "orderId"
-    },
-    {
-      "path": "/store/inventory",
-      "method": "get",
-      "description": "Returns a map of status codes to quantities",
+      "summary": "Delete purchase order by ID",
+      "tagDescription": "Access to Petstore orders",
       "tags": [
         "store"
-      ],
-      "summary": "Returns pet inventories by status",
+      ]
+    },
+    {
+      "description": "Returns a map of status codes to quantities",
+      "method": "get",
       "operationId": "getInventory",
+      "path": "/store/inventory",
+      "requestName": "inventory",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
                 "additionalProperties": {
-                  "type": "integer",
-                  "format": "int32"
-                }
+                  "format": "int32",
+                  "type": "integer"
+                },
+                "type": "object"
               }
             }
-          }
+          },
+          "description": "successful operation"
         }
       },
       "security": [
@@ -557,71 +565,73 @@
           "api_key": []
         }
       ],
-      "requestName": "inventory"
+      "summary": "Returns pet inventories by status",
+      "tagDescription": "Access to Petstore orders",
+      "tags": [
+        "store"
+      ]
     }
   ],
   "user": [
     {
-      "path": "/user/createWithArray",
-      "method": "post",
       "description": "",
-      "tags": [
-        "user"
-      ],
-      "summary": "Creates list of users with given input array",
+      "method": "post",
       "operationId": "createUsersWithArrayInput",
+      "path": "/user/createWithArray",
       "requestBody": {
         "$ref": "#/components/requestBodies/UserArray"
       },
+      "requestName": "createWithArray",
       "responses": {
         "default": {
           "description": "successful operation"
         }
       },
-      "requestName": "createWithArray"
-    },
-    {
-      "path": "/user/createWithList",
-      "method": "post",
-      "description": "",
-      "tags": [
-        "user"
-      ],
       "summary": "Creates list of users with given input array",
+      "tagDescription": "Operations about user",
+      "tags": [
+        "user"
+      ]
+    },
+    {
+      "description": "",
+      "method": "post",
       "operationId": "createUsersWithListInput",
+      "path": "/user/createWithList",
       "requestBody": {
         "$ref": "#/components/requestBodies/UserArray"
       },
+      "requestName": "createWithList",
       "responses": {
         "default": {
           "description": "successful operation"
         }
       },
-      "requestName": "createWithList"
-    },
-    {
-      "path": "/user/{username}",
-      "method": "get",
-      "description": "",
+      "summary": "Creates list of users with given input array",
+      "tagDescription": "Operations about user",
       "tags": [
         "user"
-      ],
-      "summary": "Get user by user name",
+      ]
+    },
+    {
+      "description": "",
+      "method": "get",
       "operationId": "getUserByName",
       "parameters": [
         {
-          "name": "username",
-          "in": "path",
           "description": "The name that needs to be fetched. Use user1 for testing. ",
+          "in": "path",
+          "name": "username",
           "required": true,
           "schema": {
             "type": "string"
           }
         }
       ],
+      "path": "/user/{username}",
+      "requestName": "detailByUsername",
       "responses": {
         "200": {
-          "description": "successful operation",
           "content": {
             "application/json": {
               "schema": {
@@ -633,7 +643,8 @@
                 "$ref": "#/components/schemas/User"
               }
             }
-          }
+          },
+          "description": "successful operation"
         },
         "400": {
           "description": "Invalid username supplied"
@@ -642,28 +653,28 @@
           "description": "User not found"
         }
       },
-      "requestName": "detailByUsername"
-    },
-    {
-      "path": "/user/{username}",
-      "method": "put",
-      "description": "This can only be done by the logged in user.",
+      "summary": "Get user by user name",
+      "tagDescription": "Operations about user",
       "tags": [
         "user"
-      ],
-      "summary": "Updated user",
+      ]
+    },
+    {
+      "description": "This can only be done by the logged in user.",
+      "method": "put",
       "operationId": "updateUser",
       "parameters": [
         {
-          "name": "username",
-          "in": "path",
           "description": "name that need to be updated",
+          "in": "path",
+          "name": "username",
           "required": true,
           "schema": {
             "type": "string"
           }
         }
       ],
+      "path": "/user/{username}",
       "requestBody": {
         "content": {
           "application/json": {
@@ -675,6 +686,7 @@
         "description": "Updated user object",
         "required": true
       },
+      "requestName": "username",
       "responses": {
         "400": {
           "description": "Invalid user supplied"
@@ -683,28 +695,29 @@
           "description": "User not found"
         }
       },
-      "requestName": "username"
-    },
-    {
-      "path": "/user/{username}",
-      "method": "delete",
-      "description": "This can only be done by the logged in user.",
+      "summary": "Updated user",
+      "tagDescription": "Operations about user",
       "tags": [
         "user"
-      ],
-      "summary": "Delete user",
+      ]
+    },
+    {
+      "description": "This can only be done by the logged in user.",
+      "method": "delete",
       "operationId": "deleteUser",
       "parameters": [
         {
-          "name": "username",
-          "in": "path",
           "description": "The name that needs to be deleted",
+          "in": "path",
+          "name": "username",
           "required": true,
           "schema": {
             "type": "string"
           }
         }
       ],
+      "path": "/user/{username}",
+      "requestName": "delByUsername",
       "responses": {
         "400": {
           "description": "Invalid username supplied"
@@ -713,56 +726,40 @@
           "description": "User not found"
         }
       },
-      "requestName": "username"
-    },
-    {
-      "path": "/user/login",
-      "method": "get",
-      "description": "",
+      "summary": "Delete user",
+      "tagDescription": "Operations about user",
       "tags": [
         "user"
-      ],
-      "summary": "Logs user into the system",
+      ]
+    },
+    {
+      "description": "",
+      "method": "get",
       "operationId": "loginUser",
       "parameters": [
         {
-          "name": "username",
-          "in": "query",
           "description": "The user name for login",
+          "in": "query",
+          "name": "username",
           "required": true,
           "schema": {
             "type": "string"
           }
         },
         {
-          "name": "password",
-          "in": "query",
           "description": "The password for login in clear text",
+          "in": "query",
+          "name": "password",
           "required": true,
           "schema": {
             "type": "string"
           }
         }
       ],
+      "path": "/user/login",
+      "requestName": "login",
       "responses": {
         "200": {
-          "description": "successful operation",
-          "headers": {
-            "X-Expires-After": {
-              "description": "date in UTC when token expires",
-              "schema": {
-                "type": "string",
-                "format": "date-time"
-              }
-            },
-            "X-Rate-Limit": {
-              "description": "calls per hour allowed by the user",
-              "schema": {
-                "type": "integer",
-                "format": "int32"
-              }
-            }
-          },
           "content": {
             "application/json": {
               "schema": {
@@ -774,39 +771,57 @@
                 "type": "string"
               }
             }
+          },
+          "description": "successful operation",
+          "headers": {
+            "X-Expires-After": {
+              "description": "date in UTC when token expires",
+              "schema": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "X-Rate-Limit": {
+              "description": "calls per hour allowed by the user",
+              "schema": {
+                "format": "int32",
+                "type": "integer"
+              }
+            }
           }
         },
         "400": {
           "description": "Invalid username/password supplied"
         }
       },
-      "requestName": "login"
-    },
-    {
-      "path": "/user/logout",
-      "method": "get",
-      "description": "",
+      "summary": "Logs user into the system",
+      "tagDescription": "Operations about user",
       "tags": [
         "user"
-      ],
-      "summary": "Logs out current logged in user session",
+      ]
+    },
+    {
+      "description": "",
+      "method": "get",
       "operationId": "logoutUser",
+      "path": "/user/logout",
+      "requestName": "logout",
       "responses": {
         "default": {
           "description": "successful operation"
         }
       },
-      "requestName": "logout"
-    },
-    {
-      "path": "/user",
-      "method": "post",
-      "description": "This can only be done by the logged in user.",
+      "summary": "Logs out current logged in user session",
+      "tagDescription": "Operations about user",
       "tags": [
         "user"
-      ],
-      "summary": "Create user",
+      ]
+    },
+    {
+      "description": "This can only be done by the logged in user.",
+      "method": "post",
       "operationId": "createUser",
+      "path": "/user",
       "requestBody": {
         "content": {
           "application/json": {
@@ -818,12 +833,17 @@
         "description": "Created user object",
         "required": true
       },
+      "requestName": "create",
       "responses": {
         "default": {
           "description": "successful operation"
         }
       },
-      "requestName": "create"
+      "summary": "Create user",
+      "tagDescription": "Operations about user",
+      "tags": [
+        "user"
+      ]
     }
   ]
 }

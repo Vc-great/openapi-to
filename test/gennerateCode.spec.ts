@@ -1,5 +1,7 @@
+//@ts-nocheck
 import { generateApiCode } from "../src/create";
 import path from "path";
+
 const config = {
   output: path.resolve("./output"), //不使用命令行需要填写
   projects: [
@@ -10,7 +12,6 @@ const config = {
   ],
 };
 
-test("", async () => {
+test("generateApiCode", async () => {
   await generateApiCode(config);
-  console.log("完成");
 });

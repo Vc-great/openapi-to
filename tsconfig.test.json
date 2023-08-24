@@ -1,13 +1,16 @@
 {
-  "include": ["./src/*", "./test/*"],
+  "include": ["./src/*"],
+  "exclude": [
+    "**/*.spec.ts"
+  ],
   "compilerOptions": {
     "target": "esnext",
     "module": "ESNext",
     "moduleResolution": "node",
-    "strict": false,
+    "strict": true,
     "allowJs": true,
     "esModuleInterop": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "strictPropertyInitialization": false,
@@ -18,7 +21,6 @@
     "typeRoots": ["./types", "./node_modules/@types"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
     }
   },
   "types": ["jest"],
