@@ -15,7 +15,7 @@
     "format": "prettier --write \"./**/*.{ts,js,json,md}\"",
     "lint": "eslint . --ext .js,.ts --fix ",
     "prepare": "husky install",
-    "publish": "rimraf output coverage && jest --verbose -u && pnpm run build"
+    "build:publish": "jest --verbose -u&& rimraf output coverage && && pnpm run build"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,8 @@
   "keywords": [
     "swagger",
     "openapi",
-    "typescript"
+    "typescript",
+    "javascript"
   ],
   "devDependencies": {
     "@commitlint/config-conventional": "^17.6.6",
