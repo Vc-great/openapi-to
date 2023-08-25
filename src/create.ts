@@ -10,6 +10,8 @@ import { GenerateJSApi } from "./GenerateJSApi";
 import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
 import { updateVersionMessage } from "./version";
+import { ParameterPath } from "./ParameterPath";
+import { ParameterQuery } from "./ParameterQuery";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -73,7 +75,6 @@ export async function generateApiCode(config: ConfigTemplate) {
   await Promise.all(map);
   updateVersionMessage();
 }
-
 /***
  * 创建yapi配置文件
  * @returns {*}

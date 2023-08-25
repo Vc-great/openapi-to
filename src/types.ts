@@ -1,4 +1,7 @@
 import { OpenAPIV3 } from "openapi-types";
+import { ParameterPath } from "./ParameterPath";
+import { ParameterQuery } from "./ParameterQuery";
+import { RequestBody } from "./RequestBody";
 
 export type ConfigTemplate = {
   projects: Project[];
@@ -48,3 +51,9 @@ export interface GenerateCode {
 export type HttpMethods = ["get", "put", "post", "delete", "patch"];
 
 export type HttpMethod = "get" | "put" | "post" | "delete" | "patch";
+
+export interface Register {
+  parameterPath: ParameterPath;
+  parameterQuery: ParameterQuery;
+  requestBody: RequestBody;
+}

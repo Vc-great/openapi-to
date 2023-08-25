@@ -52,17 +52,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "uploads an image",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "description": "",
@@ -86,17 +81,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "Update an existing pet",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "description": "",
@@ -114,17 +104,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "Add a new pet to the store",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "description": "Multiple status values can be provided with comma separated strings",
@@ -140,11 +125,7 @@
           "schema": {
             "items": {
               "default": "available",
-              "enum": [
-                "available",
-                "pending",
-                "sold"
-              ],
+              "enum": ["available", "pending", "sold"],
               "type": "string"
             },
             "type": "array"
@@ -181,17 +162,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "Finds Pets by status",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "deprecated": true,
@@ -243,17 +219,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "Finds Pets by tags",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "description": "Returns a single pet",
@@ -303,9 +274,7 @@
       ],
       "summary": "Find pet by ID",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "description": "",
@@ -351,17 +320,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "Updates a pet in the store with form data",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     },
     {
       "description": "",
@@ -399,17 +363,12 @@
       },
       "security": [
         {
-          "petstore_auth": [
-            "write:pets",
-            "read:pets"
-          ]
+          "petstore_auth": ["write:pets", "read:pets"]
         }
       ],
       "summary": "Deletes a pet",
       "tagDescription": "Everything about your Pets",
-      "tags": [
-        "pet"
-      ]
+      "tags": ["pet"]
     }
   ],
   "store": [
@@ -452,9 +411,7 @@
       },
       "summary": "Place an order for a pet",
       "tagDescription": "Access to Petstore orders",
-      "tags": [
-        "store"
-      ]
+      "tags": ["store"]
     },
     {
       "description": "For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions",
@@ -501,9 +458,7 @@
       },
       "summary": "Find purchase order by ID",
       "tagDescription": "Access to Petstore orders",
-      "tags": [
-        "store"
-      ]
+      "tags": ["store"]
     },
     {
       "description": "For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors",
@@ -534,9 +489,7 @@
       },
       "summary": "Delete purchase order by ID",
       "tagDescription": "Access to Petstore orders",
-      "tags": [
-        "store"
-      ]
+      "tags": ["store"]
     },
     {
       "description": "Returns a map of status codes to quantities",
@@ -567,9 +520,7 @@
       ],
       "summary": "Returns pet inventories by status",
       "tagDescription": "Access to Petstore orders",
-      "tags": [
-        "store"
-      ]
+      "tags": ["store"]
     }
   ],
   "user": [
@@ -589,9 +540,7 @@
       },
       "summary": "Creates list of users with given input array",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "",
@@ -609,9 +558,7 @@
       },
       "summary": "Creates list of users with given input array",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "",
@@ -655,9 +602,7 @@
       },
       "summary": "Get user by user name",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "This can only be done by the logged in user.",
@@ -697,9 +642,7 @@
       },
       "summary": "Updated user",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "This can only be done by the logged in user.",
@@ -728,9 +671,7 @@
       },
       "summary": "Delete user",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "",
@@ -796,9 +737,7 @@
       },
       "summary": "Logs user into the system",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "",
@@ -813,9 +752,7 @@
       },
       "summary": "Logs out current logged in user session",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     },
     {
       "description": "This can only be done by the logged in user.",
@@ -841,9 +778,7 @@
       },
       "summary": "Create user",
       "tagDescription": "Operations about user",
-      "tags": [
-        "user"
-      ]
+      "tags": ["user"]
     }
   ]
 }

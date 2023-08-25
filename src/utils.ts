@@ -116,3 +116,68 @@ export function formatterBaseType(
 
   errorLog("interface type");
 }
+
+/**
+ *query参数为array时,需要转换
+ * @param type ts传递类型,js不传
+ */
+export function getParamsSerializer(type?: string) {
+  return `paramsSerializer(params${type ? ":" + type : ""}) {
+            return qs.stringify(params)
+        }`;
+}
+
+/**
+ * UploadFormData
+ * @param apiItem
+ * @param openApi3SourceData
+ */
+export function generateUploadFormData(
+  apiItem: ApiData,
+  openApi3SourceData: OpenAPIV3.Document
+) {
+  const uploadFormDataHeader = `headers: { 'Content-Type': 'multipart/form-data' }`;
+  const uploadFormData = `//todo 上传文件
+    const formData = new FormData();
+    formData.append("file", file);`;
+
+  if (apiItem.requestBody && "$ref" in apiItem.requestBody) {
+    const component: OpenAPIV3.RequestBodyObject = _.get(
+      openApi3SourceData,
+      apiItem.requestBody.$ref.split("/").slice(1).join(".")
+    );
+    if (component.content && "multipart/form-data" in component.content) {
+      return {
+        formDataHeader: uploadFormDataHeader,
+        uploadFormData,
+      };
+    }
+  }
+
+  if (
+    apiItem.requestBody &&
+    "content" in apiItem.requestBody &&
+    "multipart/form-data" in apiItem.requestBody.content
+  ) {
+    return {
+      formDataHeader: uploadFormDataHeader,
+      uploadFormData,
+    };
+  }
+
+  return {
+    formDataHeader: "",
+    uploadFormData: "",
+  };
+}
+
+/**
+ * summary中有下载或者导出 关键字 则增加type
+ * @param apiItem
+ */
+export function downLoadResponseType(apiItem: ApiData) {
+  const keys = ["下载", "导出"];
+  return _.some(keys, (x) => apiItem.summary?.includes(x))
+    ? `responseType:'blob'`
+    : "";
+}

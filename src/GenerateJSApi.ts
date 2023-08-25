@@ -8,21 +8,22 @@ import {
   numberEnum,
   prettierFile,
   stringEnum,
-  getResponseRef,
   formatterBaseType,
+  getParamsSerializer,
+  generateUploadFormData,
+  downLoadResponseType,
 } from "./utils";
 import { errorLog, successLog } from "./log";
-import { GenerateApi } from "./GenerateApi";
+import { BaseData } from "./BaseData";
 
 const errorInterface = `/**
  * error response
  * @typedef {Object} ErrorResponse error
  */`;
 
-export class GenerateJSApi extends GenerateApi implements GenerateCode {
+export class GenerateJSApi extends BaseData implements GenerateCode {
   public globalDoc: string[];
   public pendingRefCache: Set<string>;
-  public resolveRefCache: Set<string>;
   public apiNameCache: Map<string, unknown>;
   constructor(
     public config: Config,
@@ -34,23 +35,11 @@ export class GenerateJSApi extends GenerateApi implements GenerateCode {
 
     //缓存$ref
     this.pendingRefCache = new Set();
-    //已解析过的ref
-    this.resolveRefCache = new Set();
+
     //缓存apiName
     this.apiNameCache = new Map();
     //初始化
     this.initGlobalDoc();
-  }
-
-  get pathParams() {
-    return _.chain(this.apiItem.parameters || [])
-      .filter(["in", "path"])
-      .map((parameter) => {
-        if ("$ref" in parameter) return "";
-        return `${_.camelCase(parameter.name)}`;
-      })
-      .join()
-      .value();
   }
 
   initGlobalDoc() {
@@ -61,7 +50,7 @@ export class GenerateJSApi extends GenerateApi implements GenerateCode {
     //每一轮tag 清空cache
     this.initGlobalDoc();
     this.pendingRefCache.clear();
-    this.resolveRefCache.clear();
+    this.component.clearCache();
     this.apiNameCache.clear();
     return {
       title: _.get(_.head(tagItem), "tags[0]", ""),
@@ -103,25 +92,26 @@ ${this.generatorClassJSDoc(tagItem)}
   }
 
   generatorFuncContent(apiItem: ApiData) {
-    const { formDataHeader, uploadFormData } = super.generateUploadFormData(
-      apiItem
+    const { formDataHeader, uploadFormData } = generateUploadFormData(
+      apiItem,
+      this.openApi3SourceData
     );
 
     //函数参数
     const funcParams = [
-      super.hasPathParameters ? this.pathParams : "",
-      super.hasQueryParameters ? `query` : "",
-      super.hasRequestBodyParams ? `body` : "",
+      this.path.hasPathParameters ? this.path.parametersName : "",
+      this.query.hasQueryParameters ? `query` : "",
+      this.requestBody.hasRequestBodyParams ? `body` : "",
     ]
       .filter((x) => x)
       .join();
 
     const contents = [
-      `url:${super.generatorPath(apiItem)}`,
-      super.hasQueryParameters ? "params:query" : "",
-      super.hasRequestBodyParams ? "data:body" : "",
-      super.getParamsSerializer(),
-      this.downLoadResponseType(),
+      `url:${this.path.url}`,
+      this.query.hasQueryParameters ? "params:query" : "",
+      this.requestBody.hasRequestBodyParams ? "data:body" : "",
+      this.query.hasQueryArrayParameters ? getParamsSerializer() : "",
+      downLoadResponseType(apiItem),
       formDataHeader,
     ];
     return ` ${apiItem.requestName}(${funcParams}){${
@@ -140,15 +130,13 @@ ${this.generatorClassJSDoc(tagItem)}
   }
 
   generateQueryParams(apiItem: ApiData) {
-    const query = _.filter(apiItem.parameters, ["in", "query"]);
-    if (_.isEmpty(query)) return "";
-    return `*@param query
-            ${this.handleParameters(query, "query")}`;
+    return _.isEmpty(this.query.parameters)
+      ? ""
+      : `*@param query
+            ${this.handleParameters(this.query.parameters, "query")}`;
   }
   generatePathParams(apiItem: ApiData) {
-    const pathParams = _.filter(apiItem.parameters, ["in", "path"]);
-    if (_.isEmpty(pathParams)) return "";
-    return this.handleParameters(pathParams);
+    return this.handleParameters(this.path.parameters);
   }
 
   handleParameters(
@@ -185,7 +173,9 @@ ${this.generatorClassJSDoc(tagItem)}
     namespace: string | undefined
   ) {
     const handleName = () => {
-      return this.pathParams.split(",").includes(_.camelCase(parameters.name))
+      return this.path.parametersName
+        .split(",")
+        .includes(_.camelCase(parameters.name))
         ? _.camelCase(parameters.name)
         : parameters.name;
     };
@@ -260,8 +250,9 @@ ${this.generatorClassJSDoc(tagItem)}
     }
 
     if ("$ref" in apiItem.requestBody) {
-      const [resolveComponent, resolveRefs] =
-        this.getRequestBodiesComponentByRef(apiItem.requestBody.$ref);
+      const [resolveComponent, resolveRefs] = this.requestBody.component(
+        apiItem.requestBody.$ref
+      );
 
       component = resolveComponent;
       [...resolveRefs, apiItem.requestBody.$ref].forEach((ref) =>
@@ -280,8 +271,9 @@ ${this.generatorClassJSDoc(tagItem)}
         .value();
 
       if (media.schema && "$ref" in media.schema) {
-        const [resolveComponent, resolveRefs] =
-          this.getRequestBodiesComponentByRef(media.schema.$ref);
+        const [resolveComponent, resolveRefs] = this.requestBody.component(
+          media.schema.$ref
+        );
         component = resolveComponent;
 
         [...resolveRefs, media.schema.$ref].forEach((ref) =>
@@ -292,6 +284,7 @@ ${this.generatorClassJSDoc(tagItem)}
       }
     }
 
+    //todo 优化
     if (!component) {
       errorLog("JSAPI-> not find component");
       return "";
@@ -335,10 +328,10 @@ ${this.generatorClassJSDoc(tagItem)}
     if ("$ref" in schemaObject) {
       this.pendingRefCache.add(schemaObject.$ref);
 
-      const component = this.getComponentByRef(
-        schemaObject.$ref,
-        false
-      ) as OpenAPIV3.SchemaObject;
+      const [component] = this.component.getComponent(schemaObject.$ref) as [
+        OpenAPIV3.SchemaObject,
+        boolean
+      ];
       const componentName = schemaObject.$ref.split("/").pop();
 
       const isRequired = parent?.required?.includes(key || "");
@@ -356,18 +349,16 @@ ${this.generatorClassJSDoc(tagItem)}
       if ("$ref" in schemaObject.items) {
         this.pendingRefCache.add(schemaObject.items.$ref);
 
-        const component = this.getComponentByRef(
-          schemaObject.items.$ref,
-          false
+        const [component] = this.component.getComponent(
+          schemaObject.items.$ref
         );
 
         if (component && "$ref" in component) {
           this.pendingRefCache.add(component.$ref);
 
-          const componentByRef = this.getComponentByRef(
-            component.$ref,
-            false
-          ) as OpenAPIV3.SchemaObject;
+          const [componentByRef] = this.component.getComponent(
+            component.$ref
+          ) as [OpenAPIV3.SchemaObject, boolean];
           const componentName = component.$ref.split("/").pop();
 
           const isRequired = parent?.required?.includes(key || "");
@@ -496,7 +487,7 @@ ${this.generatorClassJSDoc(tagItem)}
 
   generateResponseType(apiItem: ApiData) {
     const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
-    const responseRef = getResponseRef(apiItem);
+    const responseRef = this.response.ref;
     if (!responseRef) {
       return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
     }
@@ -509,9 +500,10 @@ ${this.generatorClassJSDoc(tagItem)}
     }
     this.apiNameCache.set(responseRef, interfaceName);
 
-    const component = this.getComponentByRef(
-      responseRef
-    ) as OpenAPIV3.SchemaObject;
+    const [component] = this.component.getComponent(responseRef) as [
+      OpenAPIV3.SchemaObject,
+      boolean
+    ];
 
     const typeString = this.handleComponentSchema(component, "property");
 
@@ -521,49 +513,6 @@ ${this.generatorClassJSDoc(tagItem)}
       ${typeString}
     */`);
     return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
-  }
-
-  getRequestBodiesComponentByRef(
-    ref: string = "",
-    refsCache: Array<string> = []
-  ): [undefined | OpenAPIV3.SchemaObject, string[]] {
-    const schemaComponent = this.getComponentByRef(ref, false);
-
-    if (schemaComponent === undefined) {
-      return [undefined, refsCache];
-    }
-
-    if ("$ref" in schemaComponent) {
-      return this.getRequestBodiesComponentByRef(schemaComponent.$ref, [
-        ...refsCache,
-        schemaComponent.$ref,
-      ]);
-    }
-
-    if ("content" in schemaComponent) {
-      const media = _.chain(schemaComponent.content).values().head().value();
-
-      if (media.schema && "$ref" in media.schema) {
-        return this.getRequestBodiesComponentByRef(media.schema.$ref, [
-          ...refsCache,
-          media.schema.$ref,
-        ]);
-      }
-
-      if (
-        media.schema &&
-        media.schema.type === "array" &&
-        "$ref" in media.schema.items
-      ) {
-        return this.getRequestBodiesComponentByRef(media.schema.items.$ref, [
-          ...refsCache,
-          media.schema.items.$ref,
-        ]);
-      }
-
-      return [media.schema, refsCache];
-    }
-    return [schemaComponent, refsCache];
   }
 
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
@@ -594,7 +543,7 @@ ${this.generatorClassJSDoc(tagItem)}
     typeString +=
       (typeString ? "\n" : "") +
       _.chain($refs)
-        .map((ref) => this.getComponentByRef(ref))
+        .map((ref) => this.component.getComponent(ref)[0])
         .map((component: OpenAPIV3.SchemaObject, index) =>
           generateInterface(component, index)
         )
@@ -624,23 +573,6 @@ ${this.generatorClassJSDoc(tagItem)}
     *@apiSummary ${apiItem.summary ?? ""}
     ${paramString}
     */`;
-  }
-
-  getComponentByRef(
-    ref: string = "",
-    isCache: boolean = true
-  ):
-    | OpenAPIV3.ReferenceObject
-    | OpenAPIV3.RequestBodyObject
-    | OpenAPIV3.SchemaObject
-    | undefined {
-    //查看是否解析过,已经解析过直接return
-    if (isCache && this.resolveRefCache.has(ref)) {
-      return undefined;
-    }
-    //添加到已解析 用于去重
-    isCache && this.resolveRefCache.add(ref);
-    return _.get(this.openApi3SourceData, ref.split("/").slice(1).join("."));
   }
 
   writeFile(title: string, codeString: string) {

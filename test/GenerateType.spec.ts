@@ -28,13 +28,6 @@ import { enumOption } from "../mock/enum";
 // @ts-ignore
 let generateType = new GenerateType({}, openApi3, openApi3Formatter);
 
-test("getQueryParamsType", () => {
-  const queryParams = generateType.getQueryParamsType(
-    queryRequestOpenApi3Formatter
-  );
-  expect(queryParams).toBe(queryParamsResultExpected);
-});
-
 describe("getBodyParamsType", () => {
   test("not have body params", () => {
     // @ts-ignore

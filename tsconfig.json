@@ -1,8 +1,6 @@
 {
   "include": ["./src/*"],
-  "exclude": [
-    "**/*.spec.ts"
-  ],
+  "exclude": ["**/*.spec.ts"],
   "compilerOptions": {
     "target": "esnext",
     "module": "ESNext",
@@ -20,8 +18,7 @@
     "experimentalDecorators": true,
     "typeRoots": ["./types", "./node_modules/@types"],
     "baseUrl": ".",
-    "paths": {
-    }
+    "paths": {}
   },
   "types": ["jest"],
   "ts-node": {
