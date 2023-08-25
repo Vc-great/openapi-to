@@ -5,6 +5,10 @@
 
 根据OpenAPI规范接口文档生成 js-api(jsDoc),ts-api,ts-interface。
 
+openapi规范已支持:
+ - swagger2.0
+ - openapi3.0
+
 ## 文档
 
 ```js
