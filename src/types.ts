@@ -1,7 +1,4 @@
 import { OpenAPIV3 } from "openapi-types";
-import { ParameterPath } from "./ParameterPath";
-import { ParameterQuery } from "./ParameterQuery";
-import { RequestBody } from "./RequestBody";
 
 export type ConfigTemplate = {
   projects: Project[];
@@ -52,8 +49,24 @@ export type HttpMethods = ["get", "put", "post", "delete", "patch"];
 
 export type HttpMethod = "get" | "put" | "post" | "delete" | "patch";
 
-export interface Register {
-  parameterPath: ParameterPath;
-  parameterQuery: ParameterQuery;
-  requestBody: RequestBody;
+export type ApiNameCache = Map<string, string>;
+
+export type RefHasCache = (typeName: string, $ref: string) => string;
+export type ArrayItems = (
+  typeName: string,
+  items: OpenAPIV3.SchemaObject
+) => string;
+export type BaseType = (
+  typeName: string,
+  component: OpenAPIV3.SchemaObject
+) => string;
+export type HandleComponent = (
+  typeName: string,
+  component: OpenAPIV3.SchemaObject
+) => string;
+export interface RequestBodyParams {
+  refHasCache: RefHasCache;
+  arrayItems: ArrayItems;
+  baseType: BaseType;
+  handleComponent: HandleComponent;
 }

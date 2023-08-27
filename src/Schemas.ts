@@ -1,12 +1,13 @@
 import { ApiData } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import _ from "lodash";
+import { BaseData } from "./BaseData";
 
-export class Component {
-  public resolveRefCache: Set<string>;
+export class Schemas {
   public apiItem: ApiData;
-  constructor(public openApi3SourceData: OpenAPIV3.Document) {
-    this.openApi3SourceData = openApi3SourceData;
+  public resolveRefCache: Set<string>;
+  constructor(public baseData: BaseData) {
+    this.baseData = baseData;
     //已解析过的ref
     this.resolveRefCache = new Set();
   }
@@ -28,7 +29,7 @@ export class Component {
   ] {
     this.resolveRefCache.add(ref);
     const component = _.get(
-      this.openApi3SourceData,
+      this.baseData.openApi3SourceData,
       ref.split("/").slice(1).join(".")
     );
     return [component, this.resolveRefCache.has(ref)];

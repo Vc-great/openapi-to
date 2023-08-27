@@ -4,14 +4,14 @@ import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
 import {
-  BaseType,
+  baseDataType,
+  downLoadResponseType,
+  formatterBaseType,
+  generateUploadFormData,
+  getParamsSerializer,
   numberEnum,
   prettierFile,
   stringEnum,
-  formatterBaseType,
-  getParamsSerializer,
-  generateUploadFormData,
-  downLoadResponseType,
 } from "./utils";
 import { errorLog, successLog } from "./log";
 import { BaseData } from "./BaseData";
@@ -24,7 +24,6 @@ const errorInterface = `/**
 export class GenerateJSApi extends BaseData implements GenerateCode {
   public globalDoc: string[];
   public pendingRefCache: Set<string>;
-  public apiNameCache: Map<string, unknown>;
   constructor(
     public config: Config,
     openApi3SourceData: OpenAPIV3.Document,
@@ -50,7 +49,7 @@ export class GenerateJSApi extends BaseData implements GenerateCode {
     //每一轮tag 清空cache
     this.initGlobalDoc();
     this.pendingRefCache.clear();
-    this.component.clearCache();
+    this.schemas.clearCache();
     this.apiNameCache.clear();
     return {
       title: _.get(_.head(tagItem), "tags[0]", ""),
@@ -250,7 +249,7 @@ ${this.generatorClassJSDoc(tagItem)}
     }
 
     if ("$ref" in apiItem.requestBody) {
-      const [resolveComponent, resolveRefs] = this.requestBody.component(
+      const [resolveComponent, resolveRefs] = this.requestBody.getComponent(
         apiItem.requestBody.$ref
       );
 
@@ -271,7 +270,7 @@ ${this.generatorClassJSDoc(tagItem)}
         .value();
 
       if (media.schema && "$ref" in media.schema) {
-        const [resolveComponent, resolveRefs] = this.requestBody.component(
+        const [resolveComponent, resolveRefs] = this.requestBody.getComponent(
           media.schema.$ref
         );
         component = resolveComponent;
@@ -297,7 +296,7 @@ ${this.generatorClassJSDoc(tagItem)}
     }
 
     //容错 请求body不应该是基本类型
-    if (BaseType.includes(component.type || "")) {
+    if (baseDataType.includes(component.type || "")) {
       return `*@param {${formatterBaseType(component)}} body ${interfaceName}`;
     }
 
@@ -328,7 +327,7 @@ ${this.generatorClassJSDoc(tagItem)}
     if ("$ref" in schemaObject) {
       this.pendingRefCache.add(schemaObject.$ref);
 
-      const [component] = this.component.getComponent(schemaObject.$ref) as [
+      const [component] = this.schemas.getComponent(schemaObject.$ref) as [
         OpenAPIV3.SchemaObject,
         boolean
       ];
@@ -349,14 +348,12 @@ ${this.generatorClassJSDoc(tagItem)}
       if ("$ref" in schemaObject.items) {
         this.pendingRefCache.add(schemaObject.items.$ref);
 
-        const [component] = this.component.getComponent(
-          schemaObject.items.$ref
-        );
+        const [component] = this.schemas.getComponent(schemaObject.items.$ref);
 
         if (component && "$ref" in component) {
           this.pendingRefCache.add(component.$ref);
 
-          const [componentByRef] = this.component.getComponent(
+          const [componentByRef] = this.schemas.getComponent(
             component.$ref
           ) as [OpenAPIV3.SchemaObject, boolean];
           const componentName = component.$ref.split("/").pop();
@@ -500,7 +497,7 @@ ${this.generatorClassJSDoc(tagItem)}
     }
     this.apiNameCache.set(responseRef, interfaceName);
 
-    const [component] = this.component.getComponent(responseRef) as [
+    const [component] = this.schemas.getComponent(responseRef) as [
       OpenAPIV3.SchemaObject,
       boolean
     ];
@@ -543,13 +540,18 @@ ${this.generatorClassJSDoc(tagItem)}
     typeString +=
       (typeString ? "\n" : "") +
       _.chain($refs)
-        .map((ref) => this.component.getComponent(ref)[0])
+        .map((ref) => this.schemas.getComponent(ref)[0])
         .map((component: OpenAPIV3.SchemaObject, index) =>
           generateInterface(component, index)
         )
         .filter((component) => !!component)
 
         .join("\n");
+
+    //循环引用
+    this.pendingRefCache = new Set(
+      _.without([...this.pendingRefCache], ...$refs)
+    );
 
     return this.pendingRefCache.size
       ? this.getComponentTypeByRef([...this.pendingRefCache.keys()], typeString)

@@ -1,25 +1,21 @@
 import _ from "lodash";
-import { ApiData } from "./types";
+import { BaseData } from "./BaseData";
 
 export class ParameterPath {
-  public apiItem: ApiData;
-  constructor() {}
-
-  setApiItem(apiItem: ApiData) {
-    this.apiItem = apiItem;
+  constructor(public baseData: BaseData) {
+    this.baseData = baseData;
   }
-
   // params路径参数
   get hasPathParameters() {
-    return _.some(this.apiItem.parameters, ["in", "path"]);
+    return _.some(this.baseData.apiItem.parameters, ["in", "path"]);
   }
 
   get parameters() {
-    return _.filter(this.apiItem.parameters, ["in", "path"]);
+    return _.filter(this.baseData.apiItem.parameters, ["in", "path"]);
   }
 
   get parametersName() {
-    return _.chain(this.apiItem.parameters || [])
+    return _.chain(this.baseData.apiItem.parameters || [])
       .filter(["in", "path"])
       .map((parameter) => {
         if ("$ref" in parameter) return "";
@@ -30,7 +26,7 @@ export class ParameterPath {
   }
 
   get url() {
-    const path = this.apiItem.path.replace(
+    const path = this.baseData.apiItem.path.replace(
       /{([\w-]+)}/g,
       (matchData, params) => {
         return "${" + _.camelCase(params) + "}";

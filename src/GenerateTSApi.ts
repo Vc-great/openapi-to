@@ -18,6 +18,7 @@ import {
 } from "./utils";
 import { errorLog, successLog } from "./log";
 import { BaseData } from "./BaseData";
+
 export class GenerateTSApi extends BaseData implements GenerateCode {
   private readonly namespaceName: string;
   constructor(
@@ -139,6 +140,7 @@ export class GenerateTSApi extends BaseData implements GenerateCode {
       .filter((x) => x)
       .join();
 
+    //todo application/x-www-form-urlencoded
     const contents = [
       `url:${this.path.url}`,
       this.query.hasQueryParameters ? "params:query" : "",

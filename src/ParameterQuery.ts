@@ -1,25 +1,22 @@
-import { ApiData } from "./types";
 import _ from "lodash";
+import { BaseData } from "./BaseData";
 
 export class ParameterQuery {
-  public apiItem: ApiData;
-  constructor() {}
-
-  setApiItem(apiItem: ApiData) {
-    this.apiItem = apiItem;
+  constructor(public baseData: BaseData) {
+    this.baseData = baseData;
   }
 
   get hasQueryParameters() {
-    return _.some(this.apiItem.parameters || [], ["in", "query"]);
+    return _.some(this.baseData.apiItem.parameters || [], ["in", "query"]);
   }
 
   get parameters() {
-    return _.filter(this.apiItem.parameters || [], ["in", "query"]);
+    return _.filter(this.baseData.apiItem.parameters || [], ["in", "query"]);
   }
 
   get hasQueryArrayParameters() {
     return _.some(
-      this.apiItem.parameters,
+      this.baseData.apiItem.parameters,
       (parameter) =>
         "schema" in parameter &&
         parameter.schema &&

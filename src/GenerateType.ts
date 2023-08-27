@@ -2,16 +2,15 @@ import _ from "lodash";
 import fse from "fs-extra";
 import type {
   ApiData,
+  ArrayItems,
+  BaseType,
   Config,
   GenerateCode,
+  HandleComponent,
   OpenApi3FormatData,
+  RefHasCache,
 } from "./types";
-import {
-  BaseType,
-  getResponseRef,
-  prettierFile,
-  formatterBaseType,
-} from "./utils";
+import { formatterBaseType, getResponseRef, prettierFile } from "./utils";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import { errorLog, successLog } from "./log";
@@ -19,8 +18,6 @@ import { BaseData } from "./BaseData";
 
 export class GenerateType extends BaseData implements GenerateCode {
   pendingRefCache: Set<string>;
-
-  apiNameCache: Map<string, string>;
   enumSchema: Map<string, object>;
   constructor(
     public config: Config,
@@ -33,8 +30,7 @@ export class GenerateType extends BaseData implements GenerateCode {
 
     //缓存$ref
     this.pendingRefCache = new Set();
-    //缓存apiName
-    this.apiNameCache = new Map();
+
     this.enumSchema = new Map();
     this.config = config;
   }
@@ -73,85 +69,39 @@ export class GenerateType extends BaseData implements GenerateCode {
     const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
     return _.flow(itemTypeMap, joinItem)(parameters);
   }
-  //body参数
-  getBodyParamsType(apiItem: ApiData) {
-    if (!apiItem.requestBody) {
-      return "";
-    }
-    const interfaceName = `${_.upperFirst(apiItem.requestName)}BodyRequest`;
-    //已经解析过采用继承的方式
-    if (
-      "$ref" in apiItem.requestBody &&
-      this.apiNameCache.has(apiItem.requestBody.$ref)
-    ) {
-      return `/** ${apiItem.summary ?? ""} */
-      export interface ${interfaceName} extends ${this.apiNameCache.get(
-        apiItem.requestBody.$ref
-      )}{}`;
-    }
 
-    let component;
+  getBodyParamsType() {
+    const refHasCache: RefHasCache = (typeName, $ref) => {
+      return `/** ${this.apiItem.summary ?? ""} */
+      export interface ${typeName} extends ${this.apiNameCache.get($ref)}{}`;
+    };
 
-    if ("$ref" in apiItem.requestBody) {
-      const [resolveComponent, resolveRefs] = this.requestBody.component(
-        apiItem.requestBody.$ref
-      );
+    const arrayItems: ArrayItems = (typeName, items) => {
+      return `/** ${this.apiItem.summary} */
+      export type ${typeName} = ${formatterBaseType(items)}[]`;
+    };
 
-      component = resolveComponent;
-      [...resolveRefs, apiItem.requestBody.$ref].forEach((ref) =>
-        this.apiNameCache.set(ref, interfaceName)
-      );
-    }
+    const baseType: BaseType = (typeName, component) => {
+      return `/** ${this.apiItem.summary} */
+            export type ${typeName} = ${formatterBaseType(component)}`;
+    };
 
-    if (
-      !component &&
-      "content" in apiItem.requestBody &&
-      apiItem.requestBody.content
-    ) {
-      const media = _.chain(apiItem.requestBody.content)
-        .values()
-        .head()
-        .value();
+    const handleComponent: HandleComponent = (typeName, component) => {
+      const typeString = this.handleComponentSchema(component);
 
-      if (media.schema && "$ref" in media.schema) {
-        const [resolveComponent, resolveRefs] = this.requestBody.component(
-          media.schema.$ref
-        );
-        component = resolveComponent;
-        [...resolveRefs, media.schema.$ref].forEach((ref) =>
-          this.apiNameCache.set(ref, interfaceName)
-        );
-      } else {
-        component = media.schema;
-      }
-    }
-    //todo 优化
-    if (!component) {
-      return "";
-    }
-
-    if (
-      component.type === "array" &&
-      component.items &&
-      !("$ref" in component.items)
-    ) {
-      return `/** ${apiItem.summary} */
-      export type ${interfaceName} = ${formatterBaseType(component.items)}[]`;
-    }
-
-    //容错 请求body不应该是基本类型
-    if (BaseType.includes(component.type || "")) {
-      return `/** ${apiItem.summary} */
-            export type ${interfaceName} = ${formatterBaseType(component)}`;
-    }
-
-    const typeString = this.handleComponentSchema(component);
-
-    const bodyType = `/** ${apiItem.summary ?? ""} */
-            export interface ${interfaceName} {
+      const bodyType = `/** ${this.apiItem.summary ?? ""} */
+            export interface ${typeName} {
               ${typeString}
             }`;
-    return `${bodyType}`;
+      return `${bodyType}`;
+    };
+
+    return this.requestBody.getParams({
+      refHasCache,
+      arrayItems,
+      baseType,
+      handleComponent,
+    });
   }
   //
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
@@ -180,13 +130,16 @@ export class GenerateType extends BaseData implements GenerateCode {
     typeString +=
       (typeString ? "\n" : "") +
       _.chain($refs)
-        .map((ref) => this.component.getComponent(ref)[0])
+        .map((ref) => this.schemas.getComponent(ref)[0])
         .map((component: OpenAPIV3.SchemaObject | undefined, index) =>
           generateInterface(component, index)
         )
         .filter((component) => !!component)
-
         .join("\n");
+    //循环引用
+    this.pendingRefCache = new Set(
+      _.without([...this.pendingRefCache], ...$refs)
+    );
 
     return this.pendingRefCache.size
       ? this.getComponentTypeByRef([...this.pendingRefCache.keys()], typeString)
@@ -211,7 +164,7 @@ export class GenerateType extends BaseData implements GenerateCode {
     }
     this.apiNameCache.set(responseRef, interfaceName);
 
-    const [component] = this.component.getComponent(responseRef) as [
+    const [component] = this.schemas.getComponent(responseRef) as [
       OpenAPIV3.SchemaObject,
       boolean
     ];
@@ -229,7 +182,7 @@ export class GenerateType extends BaseData implements GenerateCode {
   public run(tagItem: ApiData[]) {
     //每一轮tag 清空cache
     this.pendingRefCache.clear();
-    this.component.clearCache();
+    this.schemas.clearCache();
     this.apiNameCache.clear();
 
     const tagItemTypeString = tagItem
@@ -237,7 +190,7 @@ export class GenerateType extends BaseData implements GenerateCode {
         this.setApiItem(apiItem);
         const types = [
           this.getQueryParamsType(apiItem),
-          this.getBodyParamsType(apiItem),
+          this.getBodyParamsType(),
           this.getResponseType(apiItem),
           this.getComponentTypeByRef([...this.pendingRefCache.keys()]),
         ];
@@ -324,7 +277,7 @@ export class GenerateType extends BaseData implements GenerateCode {
     if ("$ref" in schemaObject) {
       this.pendingRefCache.add(schemaObject.$ref);
 
-      const [component] = this.component.getComponent(schemaObject.$ref) as [
+      const [component] = this.schemas.getComponent(schemaObject.$ref) as [
         OpenAPIV3.SchemaObject,
         boolean
       ];
@@ -340,7 +293,7 @@ export class GenerateType extends BaseData implements GenerateCode {
       if ("$ref" in schemaObject.items) {
         this.pendingRefCache.add(schemaObject.items.$ref);
 
-        const [component] = this.component.getComponent(
+        const [component] = this.schemas.getComponent(
           schemaObject.items.$ref
         ) as [OpenAPIV3.SchemaObject, boolean];
 

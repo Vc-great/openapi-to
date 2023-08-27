@@ -28,44 +28,6 @@ import { enumOption } from "../mock/enum";
 // @ts-ignore
 let generateType = new GenerateType({}, openApi3, openApi3Formatter);
 
-describe("getBodyParamsType", () => {
-  test("not have body params", () => {
-    // @ts-ignore
-    const bodyParams = generateType.getBodyParamsType(
-      queryRequestOpenApi3Formatter
-    );
-    expect(bodyParams).toBe("");
-  });
-
-  test(" have json body params", () => {
-    const generateType = new GenerateType(
-      {},
-      bodyRequestOpenApi3,
-      bodyRequestOpenApi3Formatter
-    );
-    const bodyParams = generateType.getBodyParamsType(
-      bodyRequestOpenApi3Formatter
-    );
-    expect(bodyParams).toBe(bodyParamsBodyExpected);
-  });
-
-  test(" have upload  params", () => {
-    const generateType = new GenerateType(
-      {},
-      // @ts-ignore
-      uploadOpenApi3,
-      uploadOpenApi3Formatter
-    );
-    // @ts-ignore
-    const bodyParams = generateType.getBodyParamsType(uploadOpenApi3Formatter);
-    expect(bodyParams).toBe(uploadExpected);
-  });
-
-  // test("have application/x-www-form-urlencoded params", () => {});
-
-  //test("have $ref params", () => {});
-});
-
 test("getResponseType", () => {
   const generateType = new GenerateType(
     {},

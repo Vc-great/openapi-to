@@ -10,8 +10,7 @@ import { GenerateJSApi } from "./GenerateJSApi";
 import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
 import { updateVersionMessage } from "./version";
-import { ParameterPath } from "./ParameterPath";
-import { ParameterQuery } from "./ParameterQuery";
+import { GenerateRequestObject } from "./GenerateRequestObject";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -57,7 +56,7 @@ export async function generateApiCode(config: ConfigTemplate) {
     const { openApi3SourceData, openApi3FormatData } =
       await generateCode.init();
     generateCode.register(
-      [GenerateType, GenerateTSApi, GenerateJSApi].map(
+      [GenerateType, GenerateTSApi, GenerateJSApi, GenerateRequestObject].map(
         (item) =>
           new item(
             {

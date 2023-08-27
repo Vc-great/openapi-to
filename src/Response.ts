@@ -1,16 +1,13 @@
-import { ApiData } from "./types";
 import _ from "lodash";
+import { BaseData } from "./BaseData";
 
 export class Response {
-  public apiItem: ApiData;
-  constructor() {}
-
-  setApiItem(apiItem: ApiData) {
-    this.apiItem = apiItem;
+  constructor(public baseData: BaseData) {
+    this.baseData = baseData;
   }
 
   get ref() {
-    let responses = _.values(_.get(this.apiItem, "responses", {}));
+    let responses = _.values(_.get(this.baseData.apiItem, "responses", {}));
 
     let $ref = "";
     while (!$ref && !_.isEmpty(responses)) {
