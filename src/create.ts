@@ -4,12 +4,13 @@ import fse from "fs-extra";
 import { configTemplate } from "./configTemplate";
 import { errorLog, successLog } from "./log";
 import { GenerateCode } from "./GenerateCode";
-import { GenerateType } from "./GenerateType";
-import { GenerateTSApi } from "./GenerateTSApi";
-import { GenerateJSApi } from "./GenerateJSApi";
+import { GenerateTSInterface } from "./GenerateTSInterface";
+import { GenerateTSRequest } from "./GenerateTSRequest";
+import { GenerateJSRequest } from "./GenerateJSRequest";
 import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
 import { updateVersionMessage } from "./version";
+import { GenerateRequestObject } from "./GenerateRequestObject";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -45,7 +46,7 @@ export async function generateApiCode(config: ConfigTemplate) {
       ? path.join(config.output, item.title)
       : path.join(cwd, `.openAPI/${item.title}`);
     //创建目录
-    const dir = fse.ensureDirSync(output);
+    fse.ensureDirSync(output);
     //
     const generateCode = new GenerateCode({
       ...item,
@@ -55,7 +56,12 @@ export async function generateApiCode(config: ConfigTemplate) {
     const { openApi3SourceData, openApi3FormatData } =
       await generateCode.init();
     generateCode.register(
-      [GenerateType, GenerateTSApi, GenerateJSApi].map(
+      [
+        GenerateTSInterface,
+        GenerateTSRequest,
+        GenerateJSRequest,
+        GenerateRequestObject,
+      ].map(
         (item) =>
           new item(
             {
@@ -73,7 +79,6 @@ export async function generateApiCode(config: ConfigTemplate) {
   await Promise.all(map);
   updateVersionMessage();
 }
-
 /***
  * 创建yapi配置文件
  * @returns {*}

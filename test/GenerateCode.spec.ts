@@ -4,7 +4,7 @@ import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 import openApi3FormatDataExpectedResult from "../mock/openApi3Formatter.json";
 import path from "path";
-import { GenerateTSApi } from "../src/GenerateTSApi";
+import { GenerateTSRequest } from "../src/GenerateTSRequest";
 
 const config = {
   projectDir: "", //项目根目录
@@ -84,7 +84,9 @@ describe("init && run", () => {
 
   test("register", () => {
     // @ts-ignore
-    const instanceList = [new GenerateTSApi({}, openApi3, openApi3Formatter)];
+    const instanceList = [
+      new GenerateTSRequest({}, openApi3, openApi3Formatter),
+    ];
     // @ts-ignore
     generateCode.register(instanceList);
     const instance = generateCode.registerClass;

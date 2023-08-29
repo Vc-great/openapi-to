@@ -48,7 +48,7 @@ export class GenerateCode {
     }
     // infoLog("💺 将 Swagger 转化为 openAPI");
     const [err, options] = await converter
-      .convertObj(<OpenAPIV2.Document<{}>>openApiJson, {})
+      .convertObj(<OpenAPIV2.Document>openApiJson, {})
       .then(
         (options) => [undefined, options],
         (err) => [err, undefined]

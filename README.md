@@ -3,11 +3,20 @@
 
 # openapi-to
 
-根据OpenAPI规范接口文档生成 js-api(jsDoc),ts-api,ts-interface。
+根据 OpenAPI 规范接口文档生成:
 
-openapi规范已支持:
- - swagger2.0
- - openapi3.0
+- [x] js request(jsDoc)
+- [x] ts request
+- [x] ts interface
+- [x] request object
+- [ ] json schema form
+- [ ] nestjs controller
+- [ ] nestjs dto
+
+openapi 规范已支持:
+
+- swagger 2.0
+- openapi 3.0
 
 ## 文档
 
@@ -43,7 +52,7 @@ openapi init
 module.exports = {
     projects:[
         {
-            title:'测试',  //项目名称,用于生成目录
+            title:'test',  //项目名称,用于生成目录
             path:'https://petstore.swagger.io/v2/swagger.json'  //接口文档url
         }
     ]
@@ -55,119 +64,123 @@ openapi i
 openapi install
 ```
 
-直接使用
-
-```ts
-// 生成openAPI.config.js
-npx openapi-to init
-// 根据openAPI.config.js生成文件
-npx openapi-to i
-```
-
-## ts-api
+## ts request
 
 ```ts
 //TODO: edit import
-import type { ApiType } from './types';
-import request from '@/api/request';
+import type { ApiType } from "./types";
+import request from "@/api/request";
 /**
  *@tagName pet.
  *@tagDescription Everything about your Pets.
  */
 class ApiName {
-    /**
-     *@apiSummary uploads an image
-     */
-    uploadImage(
-        petId: number,
-        body: ApiType.UploadImageBodyRequest
-    ): Promise<[ApiType.ErrorResponse, ApiType.UploadImageResponse]> {
-        //todo 上传文件
-        const formData = new FormData();
-        formData.append('file', file);
+  /**
+   *@apiSummary uploads an image
+   */
+  uploadImage(
+    petId: number,
+    body: ApiType.UploadImageBodyRequest
+  ): Promise<[ApiType.ErrorResponse, ApiType.UploadImageResponse]> {
+    //todo 上传文件
+    const formData = new FormData();
+    formData.append("file", file);
 
-        return request.post({
-            url: `/pet/${petId}/uploadImage`,
-            data: body,
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-    }
-    /**
-     *@apiSummary Update an existing pet
-     */
-    update(body: ApiType.UpdateBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.UpdateResponse]> {
-        return request.put({
-            url: `/pet`,
-            data: body,
-        });
-    }
-    /**
-     *@apiSummary Add a new pet to the store
-     */
-    create(body: ApiType.CreateBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.CreateResponse]> {
-        return request.post({
-            url: `/pet`,
-            data: body,
-        });
-    }
-    /**
-     *@apiSummary Finds Pets by status
-     */
-    findByStatus(
-        query: ApiType.FindByStatusQueryRequest
-    ): Promise<[ApiType.ErrorResponse, ApiType.FindByStatusResponse]> {
-        return request.get({
-            url: `/pet/findByStatus`,
-            params: query,
-            paramsSerializer(params: ApiType.FindByStatusQueryRequest) {
-                return qs.stringify(params);
-            },
-        });
-    }
-    /**
-     *@apiSummary Finds Pets by tags
-     */
-    findByTags(query: ApiType.FindByTagsQueryRequest): Promise<[ApiType.ErrorResponse, ApiType.FindByTagsResponse]> {
-        return request.get({
-            url: `/pet/findByTags`,
-            params: query,
-            paramsSerializer(params: ApiType.FindByTagsQueryRequest) {
-                return qs.stringify(params);
-            },
-        });
-    }
-    /**
-     *@apiSummary Find pet by ID
-     */
-    detailByPetId(petId: number): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {
-        return request.get({
-            url: `/pet/${petId}`,
-        });
-    }
-    /**
-     *@apiSummary Updates a pet in the store with form data
-     */
-    petId(petId: number, body: ApiType.PetIdBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.PetIdResponse]> {
-        return request.post({
-            url: `/pet/${petId}`,
-            data: body,
-        });
-    }
-    /**
-     *@apiSummary Deletes a pet
-     */
-    delByPetId(petId: number): Promise<[ApiType.ErrorResponse, ApiType.DelByPetIdResponse]> {
-        return request.delete({
-            url: `/pet/${petId}`,
-        });
-    }
+    return request.post({
+      url: `/pet/${petId}/uploadImage`,
+      data: body,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+  /**
+   *@apiSummary Update an existing pet
+   */
+  update(
+    body: ApiType.UpdateBodyRequest
+  ): Promise<[ApiType.ErrorResponse, ApiType.UpdateResponse]> {
+    return request.put({
+      url: `/pet`,
+      data: body,
+    });
+  }
+  /**
+   *@apiSummary Add a new pet to the store
+   */
+  create(
+    body: ApiType.CreateBodyRequest
+  ): Promise<[ApiType.ErrorResponse, ApiType.CreateResponse]> {
+    return request.post({
+      url: `/pet`,
+      data: body,
+    });
+  }
+  /**
+   *@apiSummary Finds Pets by status
+   */
+  findByStatus(
+    query: ApiType.FindByStatusQueryRequest
+  ): Promise<[ApiType.ErrorResponse, ApiType.FindByStatusResponse]> {
+    return request.get({
+      url: `/pet/findByStatus`,
+      params: query,
+      paramsSerializer(params: ApiType.FindByStatusQueryRequest) {
+        return qs.stringify(params);
+      },
+    });
+  }
+  /**
+   *@apiSummary Finds Pets by tags
+   */
+  findByTags(
+    query: ApiType.FindByTagsQueryRequest
+  ): Promise<[ApiType.ErrorResponse, ApiType.FindByTagsResponse]> {
+    return request.get({
+      url: `/pet/findByTags`,
+      params: query,
+      paramsSerializer(params: ApiType.FindByTagsQueryRequest) {
+        return qs.stringify(params);
+      },
+    });
+  }
+  /**
+   *@apiSummary Find pet by ID
+   */
+  detailByPetId(
+    petId: number
+  ): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {
+    return request.get({
+      url: `/pet/${petId}`,
+    });
+  }
+  /**
+   *@apiSummary Updates a pet in the store with form data
+   */
+  petId(
+    petId: number,
+    body: ApiType.PetIdBodyRequest
+  ): Promise<[ApiType.ErrorResponse, ApiType.PetIdResponse]> {
+    return request.post({
+      url: `/pet/${petId}`,
+      data: body,
+    });
+  }
+  /**
+   *@apiSummary Deletes a pet
+   */
+  delByPetId(
+    petId: number
+  ): Promise<[ApiType.ErrorResponse, ApiType.DelByPetIdResponse]> {
+    return request.delete({
+      url: `/pet/${petId}`,
+    });
+  }
 }
 const apiName = new ApiName();
 
 export { apiName };
 ```
 
-## interface
+## ts interface
 
 ```ts
 //eslint-disable-next-line @typescript-eslint/no-namespace
@@ -177,114 +190,115 @@ export { apiName };
  */
 //todo edit namespace name
 export namespace ApiType {
-    /**error response*/
-    export interface ErrorResponse {}
-    /** uploads an image */
-    export interface UploadImageBodyRequest {
-        /**Additional data to pass to server*/
-        additionalMetadata?: string;
-        /**
-         *@remark content transferred in binary (octet-stream)
-         *@description file to upload
-         */
-        file?: string;
-    }
-    /** uploads an image */
-    export interface UploadImageResponse {
-        /***/
-        code?: number;
-        /***/
-        type?: string;
-        /***/
-        message?: string;
-    }
-    /** Update an existing pet */
-    export interface UpdateBodyRequest {
-        /***/
-        id?: number;
-        /***/
-        category?: Category;
-        /***/
-        name: string;
-        /***/
-        photoUrls: string[];
-        /***/
-        tags?: Tag[];
-        /**pet status in the store*/
-        status?: 'available' | 'pending' | 'sold';
-    }
-    /** Update an existing pet */
-    export interface UpdateResponse {}
+  /**error response*/
+  export interface ErrorResponse {}
+  /** uploads an image */
+  export interface UploadImageBodyRequest {
+    /**Additional data to pass to server*/
+    additionalMetadata?: string;
+    /**
+     *@remark content transferred in binary (octet-stream)
+     *@description file to upload
+     */
+    file?: string;
+  }
+  /** uploads an image */
+  export interface UploadImageResponse {
     /***/
-    export interface Category {
-        /***/
-        id?: number;
-        /***/
-        name?: string;
-    }
+    code?: number;
     /***/
-    export interface Tag {
-        /***/
-        id?: number;
-        /***/
-        name?: string;
-    }
-    /** Add a new pet to the store */
-    export interface CreateBodyRequest extends UpdateBodyRequest {}
-    /** Add a new pet to the store */
-    export interface CreateResponse {}
-    /** Finds Pets by status*/
-    export interface FindByStatusQueryRequest {
-        /** Status values that need to be considered for filter */
-        status: string[];
-    }
-    /** Finds Pets by status */
-    export interface FindByStatusResponse {}
-    /** Finds Pets by tags*/
-    export interface FindByTagsQueryRequest {
-        /** Tags to filter by */
-        tags: string[];
-    }
-    /** Finds Pets by tags */
-    export interface FindByTagsResponse {}
-    /** Find pet by ID */
-    export interface DetailByPetIdResponse extends UpdateBodyRequest {}
-    /** Updates a pet in the store with form data */
-    export interface PetIdBodyRequest {
-        /**Updated name of the pet*/
-        name?: string;
-        /**Updated status of the pet*/
-        status?: string;
-    }
-    /** Updates a pet in the store with form data */
-    export interface PetIdResponse {}
-    /** Deletes a pet */
-    export interface DelByPetIdResponse {}
+    type?: string;
+    /***/
+    message?: string;
+  }
+  /** Update an existing pet */
+  export interface UpdateBodyRequest {
+    /***/
+    id?: number;
+    /***/
+    category?: Category;
+    /***/
+    name: string;
+    /***/
+    photoUrls: string[];
+    /***/
+    tags?: Tag[];
+    /**pet status in the store*/
+    status?: "available" | "pending" | "sold";
+  }
+  /** Update an existing pet */
+  export interface UpdateResponse {}
+  /***/
+  export interface Category {
+    /***/
+    id?: number;
+    /***/
+    name?: string;
+  }
+  /***/
+  export interface Tag {
+    /***/
+    id?: number;
+    /***/
+    name?: string;
+  }
+  /** Add a new pet to the store */
+  export interface CreateBodyRequest extends UpdateBodyRequest {}
+  /** Add a new pet to the store */
+  export interface CreateResponse {}
+  /** Finds Pets by status*/
+  export interface FindByStatusQueryRequest {
+    /** Status values that need to be considered for filter */
+    status: string[];
+  }
+  /** Finds Pets by status */
+  export interface FindByStatusResponse {}
+  /** Finds Pets by tags*/
+  export interface FindByTagsQueryRequest {
+    /** Tags to filter by */
+    tags: string[];
+  }
+  /** Finds Pets by tags */
+  export interface FindByTagsResponse {}
+  /** Find pet by ID */
+  export interface DetailByPetIdResponse extends UpdateBodyRequest {}
+  /** Updates a pet in the store with form data */
+  export interface PetIdBodyRequest {
+    /**Updated name of the pet*/
+    name?: string;
+    /**Updated status of the pet*/
+    status?: string;
+  }
+  /** Updates a pet in the store with form data */
+  export interface PetIdResponse {}
+  /** Deletes a pet */
+  export interface DelByPetIdResponse {}
 }
 
 /**pet status in the store*/
 export const enum StatusLabel {
-    available = '',
-    pending = '',
-    sold = '',
+  available = "",
+  pending = "",
+  sold = "",
 }
 /**pet status in the store*/
 export const enum Status {
-    available = 'available',
-    pending = 'pending',
-    sold = 'sold',
+  available = "available",
+  pending = "pending",
+  sold = "sold",
 }
 /**pet status in the store*/
 export const StatusOption = [
-    { label: StatusLabel.available, value: Status.available },
-    { label: StatusLabel.pending, value: Status.pending },
-    { label: StatusLabel.sold, value: Status.sold },
+  { label: StatusLabel.available, value: Status.available },
+  { label: StatusLabel.pending, value: Status.pending },
+  { label: StatusLabel.sold, value: Status.sold },
 ];
-
 ```
-## js-api
+
+## js request
+
 ```js
-import request from '@/api/request';
+import request from "@/api/request";
 /**
  * error response
  * @typedef {Object} ErrorResponse error
@@ -336,110 +350,154 @@ import request from '@/api/request';
  *@tagDescription Everything about your Pets.
  */
 class ApiName {
-    /**
-     *@apiSummary uploads an image
-     *@param {number} petId ID of pet to update
-     *@param {UploadImageBodyRequest} body
-     *@returns {Promise<[ErrorResponse, UploadImageResponse]>}
-     */
-    uploadImage(petId, body) {
-        //todo 上传文件
-        const formData = new FormData();
-        formData.append('file', file);
+  /**
+   *@apiSummary uploads an image
+   *@param {number} petId ID of pet to update
+   *@param {UploadImageBodyRequest} body
+   *@returns {Promise<[ErrorResponse, UploadImageResponse]>}
+   */
+  uploadImage(petId, body) {
+    //todo 上传文件
+    const formData = new FormData();
+    formData.append("file", file);
 
-        return request.post({
-            url: `/pet/${petId}/uploadImage`,
-            data: body,
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-    }
-    /**
-     *@apiSummary Update an existing pet
-     *@param {UpdateBodyRequest} body
-     *@returns {Promise<[ErrorResponse, UpdateResponse]>}
-     */
-    update(body) {
-        return request.put({
-            url: `/pet`,
-            data: body,
-        });
-    }
-    /**
-     *@apiSummary Add a new pet to the store
-     *@param {UpdateBodyRequest} body
-     *@returns {Promise<[ErrorResponse, CreateResponse]>}
-     */
-    create(body) {
-        return request.post({
-            url: `/pet`,
-            data: body,
-        });
-    }
-    /**
-     *@apiSummary Finds Pets by status
-     *@param query
-     *@param {string[]} query.status Status values that need to be considered for filter
-     *@returns {Promise<[ErrorResponse, FindByStatusResponse]>}
-     */
-    findByStatus(query) {
-        return request.get({
-            url: `/pet/findByStatus`,
-            params: query,
-            paramsSerializer(params) {
-                return qs.stringify(params);
-            },
-        });
-    }
-    /**
-     *@apiSummary Finds Pets by tags
-     *@param query
-     *@param {string[]} query.tags Tags to filter by
-     *@returns {Promise<[ErrorResponse, FindByTagsResponse]>}
-     */
-    findByTags(query) {
-        return request.get({
-            url: `/pet/findByTags`,
-            params: query,
-            paramsSerializer(params) {
-                return qs.stringify(params);
-            },
-        });
-    }
-    /**
-     *@apiSummary Find pet by ID
-     *@param {number} petId ID of pet to return
-     *@returns {Promise<[ErrorResponse, UpdateBodyRequest]>}
-     */
-    detailByPetId(petId) {
-        return request.get({
-            url: `/pet/${petId}`,
-        });
-    }
-    /**
-     *@apiSummary Updates a pet in the store with form data
-     *@param {number} petId ID of pet that needs to be updated
-     *@param {PetIdBodyRequest} body
-     *@returns {Promise<[ErrorResponse, PetIdResponse]>}
-     */
-    petId(petId, body) {
-        return request.post({
-            url: `/pet/${petId}`,
-            data: body,
-        });
-    }
-    /**
-     *@apiSummary Deletes a pet
-     *@param {number} petId Pet id to delete
-     *@returns {Promise<[ErrorResponse, DelByPetIdResponse]>}
-     */
-    delByPetId(petId) {
-        return request.delete({
-            url: `/pet/${petId}`,
-        });
-    }
+    return request.post({
+      url: `/pet/${petId}/uploadImage`,
+      data: body,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+  /**
+   *@apiSummary Update an existing pet
+   *@param {UpdateBodyRequest} body
+   *@returns {Promise<[ErrorResponse, UpdateResponse]>}
+   */
+  update(body) {
+    return request.put({
+      url: `/pet`,
+      data: body,
+    });
+  }
+  /**
+   *@apiSummary Add a new pet to the store
+   *@param {UpdateBodyRequest} body
+   *@returns {Promise<[ErrorResponse, CreateResponse]>}
+   */
+  create(body) {
+    return request.post({
+      url: `/pet`,
+      data: body,
+    });
+  }
+  /**
+   *@apiSummary Finds Pets by status
+   *@param query
+   *@param {string[]} query.status Status values that need to be considered for filter
+   *@returns {Promise<[ErrorResponse, FindByStatusResponse]>}
+   */
+  findByStatus(query) {
+    return request.get({
+      url: `/pet/findByStatus`,
+      params: query,
+      paramsSerializer(params) {
+        return qs.stringify(params);
+      },
+    });
+  }
+  /**
+   *@apiSummary Finds Pets by tags
+   *@param query
+   *@param {string[]} query.tags Tags to filter by
+   *@returns {Promise<[ErrorResponse, FindByTagsResponse]>}
+   */
+  findByTags(query) {
+    return request.get({
+      url: `/pet/findByTags`,
+      params: query,
+      paramsSerializer(params) {
+        return qs.stringify(params);
+      },
+    });
+  }
+  /**
+   *@apiSummary Find pet by ID
+   *@param {number} petId ID of pet to return
+   *@returns {Promise<[ErrorResponse, UpdateBodyRequest]>}
+   */
+  detailByPetId(petId) {
+    return request.get({
+      url: `/pet/${petId}`,
+    });
+  }
+  /**
+   *@apiSummary Updates a pet in the store with form data
+   *@param {number} petId ID of pet that needs to be updated
+   *@param {PetIdBodyRequest} body
+   *@returns {Promise<[ErrorResponse, PetIdResponse]>}
+   */
+  petId(petId, body) {
+    return request.post({
+      url: `/pet/${petId}`,
+      data: body,
+    });
+  }
+  /**
+   *@apiSummary Deletes a pet
+   *@param {number} petId Pet id to delete
+   *@returns {Promise<[ErrorResponse, DelByPetIdResponse]>}
+   */
+  delByPetId(petId) {
+    return request.delete({
+      url: `/pet/${petId}`,
+    });
+  }
 }
 const apiName = new ApiName();
 
 export { apiName };
+```
 
+## request object
+
+```ts
+/** uploads an image */
+const UploadImageBodyRequest = {
+  /**Additional data to pass to server*/
+  additionalMetadata: "",
+  /**file to upload*/
+  file: "",
+};
+/** Update an existing pet */
+const UpdateBodyRequest = {
+  /***/
+  id: 0,
+  /***/
+  category: "",
+  /***/
+  name: "",
+  /***/
+  photoUrls: [],
+  /***/
+  tags: [],
+  /**pet status in the store*/
+  status: "",
+};
+/** Add a new pet to the store */
+const CreateBodyRequest = UpdateBodyRequest;
+const FindByStatusQueryRequest = {
+  /** Status values that need to be considered for filter */
+  status: "",
+};
+const FindByTagsQueryRequest = {
+  /** Tags to filter by */
+  tags: "",
+};
+
+/** Updates a pet in the store with form data */
+const PetIdBodyRequest = {
+  /**Updated name of the pet*/
+  name: "",
+  /**Updated status of the pet*/
+  status: "",
+};
 ```

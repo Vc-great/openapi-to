@@ -8,11 +8,18 @@ import type {
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
-import { numberEnum, prettierFile, stringEnum } from "./utils";
+import {
+  downLoadResponseType,
+  generateUploadFormData,
+  getParamsSerializer,
+  numberEnum,
+  prettierFile,
+  stringEnum,
+} from "./utils";
 import { errorLog, successLog } from "./log";
-import { GenerateApi } from "./GenerateApi";
+import { OpenAPI } from "./OpenAPI";
 
-export class GenerateTSApi extends GenerateApi implements GenerateCode {
+export class GenerateTSRequest extends OpenAPI implements GenerateCode {
   private readonly namespaceName: string;
   constructor(
     public config: Config,
@@ -31,7 +38,13 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
     )}QueryRequest`;
   }
 
-  get pathParams() {
+  get bodyRequest() {
+    return `${this.namespaceName}.${_.upperFirst(
+      this.apiItem.requestName
+    )}BodyRequest`;
+  }
+
+  get pathParametersType() {
     const formatterBaseType = (
       schemaObject:
         | OpenAPIV3.ReferenceObject
@@ -60,8 +73,7 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
       return type;
     };
 
-    return _.chain(this.apiItem.parameters || [])
-      .filter(["in", "path"])
+    return _.chain(this.path.parameters)
       .map((parameter) => {
         if ("$ref" in parameter) return "";
         return `${_.camelCase(parameter.name)}:${formatterBaseType(
@@ -70,11 +82,6 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
       })
       .join()
       .value();
-  }
-  get bodyRequest() {
-    return `${this.namespaceName}.${_.upperFirst(
-      this.apiItem.requestName
-    )}BodyRequest`;
   }
 
   run(tagItem: ApiData[]) {
@@ -91,7 +98,7 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            super.setApiItem(apiItem);
+            this.apiItem = apiItem;
             return `
         ${this.generatorFuncJSDoc(apiItem)}
         ${this.generatorFuncContent(apiItem)}`;
@@ -119,25 +126,29 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
   }
 
   generatorFuncContent(apiItem: ApiData) {
-    const { formDataHeader, uploadFormData } = super.generateUploadFormData(
-      apiItem
+    const { formDataHeader, uploadFormData } = generateUploadFormData(
+      apiItem,
+      this.openApi3SourceData
     );
 
     //函数参数
     const funcParams = [
-      super.hasPathParameters ? this.pathParams : "",
-      super.hasQueryParameters ? `query:${this.queryRequest}` : "",
-      super.hasRequestBodyParams ? `body:${this.bodyRequest}` : "",
+      this.path.hasPathParameters ? this.pathParametersType : "",
+      this.query.hasQueryParameters ? `query:${this.queryRequest}` : "",
+      this.requestBody.hasRequestBodyParams ? `body:${this.bodyRequest}` : "",
     ]
       .filter((x) => x)
       .join();
 
+    //todo application/x-www-form-urlencoded
     const contents = [
-      `url:${super.generatorPath(apiItem)}`,
-      super.hasQueryParameters ? "params:query" : "",
-      super.hasRequestBodyParams ? "data:body" : "",
-      super.getParamsSerializer(this.queryRequest),
-      this.downLoadResponseType(),
+      `url:${this.path.url}`,
+      this.query.hasQueryParameters ? "params:query" : "",
+      this.requestBody.hasRequestBodyParams ? "data:body" : "",
+      this.query.hasQueryArrayParameters
+        ? getParamsSerializer(this.queryRequest)
+        : "",
+      downLoadResponseType(apiItem),
       formDataHeader,
     ];
     return ` ${
@@ -169,6 +180,6 @@ export class GenerateTSApi extends GenerateApi implements GenerateCode {
   writeFile(title: string, codeString: string) {
     const filePath = path.join(this.config.output, `${title}Api.ts`);
     fse.outputFileSync(filePath, codeString);
-    successLog(`${title} ts api write succeeded!`);
+    successLog(`${title} ts request write succeeded!`);
   }
 }
