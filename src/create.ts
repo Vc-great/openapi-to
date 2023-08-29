@@ -4,9 +4,9 @@ import fse from "fs-extra";
 import { configTemplate } from "./configTemplate";
 import { errorLog, successLog } from "./log";
 import { GenerateCode } from "./GenerateCode";
-import { GenerateType } from "./GenerateType";
-import { GenerateTSApi } from "./GenerateTSApi";
-import { GenerateJSApi } from "./GenerateJSApi";
+import { GenerateTSInterface } from "./GenerateTSInterface";
+import { GenerateTSRequest } from "./GenerateTSRequest";
+import { GenerateJSRequest } from "./GenerateJSRequest";
 import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
 import { updateVersionMessage } from "./version";
@@ -56,7 +56,12 @@ export async function generateApiCode(config: ConfigTemplate) {
     const { openApi3SourceData, openApi3FormatData } =
       await generateCode.init();
     generateCode.register(
-      [GenerateType, GenerateTSApi, GenerateJSApi, GenerateRequestObject].map(
+      [
+        GenerateTSInterface,
+        GenerateTSRequest,
+        GenerateJSRequest,
+        GenerateRequestObject,
+      ].map(
         (item) =>
           new item(
             {

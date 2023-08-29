@@ -2,23 +2,23 @@ import { RequestBodyParams } from "./types";
 import _ from "lodash";
 import { OpenAPIV3 } from "openapi-types";
 import { baseDataType } from "./utils";
-import { BaseData } from "./BaseData";
+import { OpenAPI } from "./OpenAPI";
 
 export class RequestBody {
-  constructor(public baseData: BaseData) {
-    this.baseData = baseData;
+  constructor(public openAPI: OpenAPI) {
+    this.openAPI = openAPI;
   }
 
   get apiItem() {
-    return this.baseData.apiItem;
+    return this.openAPI.apiItem;
   }
 
   get apiNameCache() {
-    return this.baseData.apiNameCache;
+    return this.openAPI.apiNameCache;
   }
 
   get openApi3SourceData() {
-    return this.baseData.openApi3SourceData;
+    return this.openAPI.openApi3SourceData;
   }
 
   get hasRequestBodyParams() {

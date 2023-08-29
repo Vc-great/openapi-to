@@ -1,9 +1,17 @@
-import { ApiData, Config, GenerateCode, OpenApi3FormatData } from "./types";
+import {
+  ApiData,
+  ArrayItems,
+  BaseType,
+  Config,
+  GenerateCode,
+  HandleComponent,
+  OpenApi3FormatData,
+  RefHasCache,
+} from "./types";
 import { OpenAPIV3 } from "openapi-types";
-import { BaseData } from "./BaseData";
+import { OpenAPI } from "./OpenAPI";
 import _ from "lodash";
 import {
-  baseDataType,
   formatterBaseType,
   numberEnum,
   prettierFile,
@@ -13,9 +21,7 @@ import { errorLog, successLog } from "./log";
 import fse from "fs-extra";
 import path from "path";
 
-export class GenerateRequestObject extends BaseData implements GenerateCode {
-  pendingRefCache: Set<string>;
-
+export class GenerateRequestObject extends OpenAPI implements GenerateCode {
   enumSchema: Map<string, object>;
   constructor(
     public config: Config,
@@ -26,10 +32,6 @@ export class GenerateRequestObject extends BaseData implements GenerateCode {
     this.openApi3SourceData = openApi3SourceData;
     this.openApi3FormatData = openApi3FormatData;
 
-    //缓存$ref
-    this.pendingRefCache = new Set();
-    //缓存apiName
-    this.apiNameCache = new Map();
     this.enumSchema = new Map();
     this.config = config;
   }
@@ -42,7 +44,7 @@ export class GenerateRequestObject extends BaseData implements GenerateCode {
 
     const tagItemTypeString = tagItem
       .map((apiItem) => {
-        this.setApiItem(apiItem);
+        this.apiItem = apiItem;
         const types = [
           this.getQueryParams(apiItem),
           this.getRequestBodyParams(apiItem),
@@ -137,83 +139,40 @@ export class GenerateRequestObject extends BaseData implements GenerateCode {
     errorLog("requestObject formatterBaseType");
   }
   getRequestBodyParams(apiItem: ApiData) {
-    if (!apiItem.requestBody || !["post", "put"].includes(apiItem.method)) {
+    if (!["post", "put"].includes(apiItem.method)) {
       return "";
     }
-    const interfaceName = `${_.upperFirst(apiItem.requestName)}BodyRequest`;
-    //已经解析过采用继承的方式
-    if (
-      "$ref" in apiItem.requestBody &&
-      this.apiNameCache.has(apiItem.requestBody.$ref)
-    ) {
+    const refHasCache: RefHasCache = (interfaceName, $ref) => {
       return `/** ${apiItem.summary ?? ""} */
-      const ${interfaceName} = ${this.apiNameCache.get(
-        apiItem.requestBody.$ref
-      )}`;
-    }
+      const ${interfaceName} = ${this.apiNameCache.get($ref)}`;
+    };
 
-    let component;
-
-    if ("$ref" in apiItem.requestBody) {
-      const [resolveComponent, resolveRefs] = this.requestBody.getComponent(
-        apiItem.requestBody.$ref
-      );
-
-      component = resolveComponent;
-      [...resolveRefs, apiItem.requestBody.$ref].forEach((ref) =>
-        this.apiNameCache.set(ref, interfaceName)
-      );
-    }
-
-    if (
-      !component &&
-      "content" in apiItem.requestBody &&
-      apiItem.requestBody.content
-    ) {
-      const media = _.chain(apiItem.requestBody.content)
-        .values()
-        .head()
-        .value();
-
-      if (media.schema && "$ref" in media.schema) {
-        const [resolveComponent, resolveRefs] = this.requestBody.getComponent(
-          media.schema.$ref
-        );
-        component = resolveComponent;
-        [...resolveRefs, media.schema.$ref].forEach((ref) =>
-          this.apiNameCache.set(ref, interfaceName)
-        );
-      } else {
-        component = media.schema;
-      }
-    }
-    //todo 优化
-    if (!component) {
-      return "";
-    }
-
-    if (
-      component.type === "array" &&
-      component.items &&
-      !("$ref" in component.items)
-    ) {
+    const arrayItems: ArrayItems = (interfaceName, items) => {
       return `/** ${apiItem.summary} */
       const ${interfaceName} = []`;
-    }
+    };
 
-    //容错 请求body不应该是基本类型
-    if (baseDataType.includes(component.type || "")) {
+    const baseType: BaseType = (interfaceName, component) => {
       return `/** ${apiItem.summary} */
             const ${interfaceName} = ${formatterBaseType(component)}`;
-    }
+    };
 
-    const typeString = this.handleComponentSchema(component);
+    const handleComponent: HandleComponent = (interfaceName, component) => {
+      const typeString = this.handleComponentSchema(component);
 
-    const bodyType = `/** ${apiItem.summary ?? ""} */
+      const bodyType = `/** ${apiItem.summary ?? ""} */
             const ${interfaceName} = {
               ${typeString}
             }`;
-    return `${bodyType}`;
+      return `${bodyType}`;
+    };
+
+    return this.requestBody.getParams({
+      refHasCache,
+      arrayItems,
+      baseType,
+      handleComponent,
+    });
   }
 
   handleComponentSchema(

@@ -3,12 +3,19 @@
 
 # openapi-to
 
-根据 OpenAPI 规范接口文档生成 js-api(jsDoc),ts-api,ts-interface。
+根据 OpenAPI 规范接口文档生成:
+- [x] js request(jsDoc)
+- [x] ts request
+- [x] ts interface
+- [x] request object
+- [ ] json schema form
+- [ ] nestjs controller
+- [ ] nestjs dto
+
 
 openapi 规范已支持:
-
-- swagger2.0
-- openapi3.0
+- swagger 2.0
+- openapi 3.0
 
 ## 文档
 
@@ -44,7 +51,7 @@ openapi init
 module.exports = {
     projects:[
         {
-            title:'测试',  //项目名称,用于生成目录
+            title:'test',  //项目名称,用于生成目录
             path:'https://petstore.swagger.io/v2/swagger.json'  //接口文档url
         }
     ]
@@ -56,16 +63,7 @@ openapi i
 openapi install
 ```
 
-直接使用
-
-```ts
-// 生成openAPI.config.js
-npx openapi-to init
-// 根据openAPI.config.js生成文件
-npx openapi-to i
-```
-
-## ts-api
+## ts request
 
 ```ts
 //TODO: edit import
@@ -181,7 +179,7 @@ const apiName = new ApiName();
 export { apiName };
 ```
 
-## interface
+## ts interface
 
 ```ts
 //eslint-disable-next-line @typescript-eslint/no-namespace
@@ -296,7 +294,7 @@ export const StatusOption = [
 ];
 ```
 
-## js-api
+## js request
 
 ```js
 import request from "@/api/request";
@@ -456,4 +454,48 @@ class ApiName {
 const apiName = new ApiName();
 
 export { apiName };
+```
+## request object
+```ts
+/** uploads an image */
+const UploadImageBodyRequest = {
+    /**Additional data to pass to server*/
+    additionalMetadata: '',
+    /**file to upload*/
+    file: '',
+};
+/** Update an existing pet */
+const UpdateBodyRequest = {
+    /***/
+    id: 0,
+    /***/
+    category: '',
+    /***/
+    name: '',
+    /***/
+    photoUrls: [],
+    /***/
+    tags: [],
+    /**pet status in the store*/
+    status: '',
+};
+/** Add a new pet to the store */
+const CreateBodyRequest = UpdateBodyRequest;
+const FindByStatusQueryRequest = {
+    /** Status values that need to be considered for filter */
+    status: '',
+};
+const FindByTagsQueryRequest = {
+    /** Tags to filter by */
+    tags: '',
+};
+
+/** Updates a pet in the store with form data */
+const PetIdBodyRequest = {
+    /**Updated name of the pet*/
+    name: '',
+    /**Updated status of the pet*/
+    status: '',
+};
+
 ```

@@ -1,10 +1,32 @@
 import _ from "lodash";
-import { ApiData, Config, GenerateCode, OpenApi3FormatData } from "./types";
+import type {
+  ApiData,
+  ArrayItems,
+  ArrayItemsHas$ref,
+  BaseType,
+  Config,
+  GenerateCode,
+  HandleComponent,
+  NotHaveApiNameCache,
+  NotHaveResponseRef,
+  OpenApi3FormatData,
+  RefHasCache,
+  SchemaObjectHas$Ref,
+} from "./types";
+import {
+  ArrayItemsNo$ref,
+  ArraySchemaObjectItemsHas$Ref,
+  BaseOfBoolean,
+  BaseOfNumber,
+  BaseOfString,
+  HasEnum,
+  ObjectHasProperties,
+  ObjectNotHaveProperties,
+} from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import fse from "fs-extra";
 import {
-  baseDataType,
   downLoadResponseType,
   formatterBaseType,
   generateUploadFormData,
@@ -14,16 +36,15 @@ import {
   stringEnum,
 } from "./utils";
 import { errorLog, successLog } from "./log";
-import { BaseData } from "./BaseData";
+import { OpenAPI } from "./OpenAPI";
 
 const errorInterface = `/**
  * error response
  * @typedef {Object} ErrorResponse error
  */`;
 
-export class GenerateJSApi extends BaseData implements GenerateCode {
+export class GenerateJSRequest extends OpenAPI implements GenerateCode {
   public globalDoc: string[];
-  public pendingRefCache: Set<string>;
   constructor(
     public config: Config,
     openApi3SourceData: OpenAPIV3.Document,
@@ -31,12 +52,6 @@ export class GenerateJSApi extends BaseData implements GenerateCode {
   ) {
     super(openApi3SourceData);
     this.config = config;
-
-    //缓存$ref
-    this.pendingRefCache = new Set();
-
-    //缓存apiName
-    this.apiNameCache = new Map();
     //初始化
     this.initGlobalDoc();
   }
@@ -63,7 +78,7 @@ ${this.generatorClassJSDoc(tagItem)}
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            super.setApiItem(apiItem);
+            this.apiItem = apiItem;
             return `
         ${this.generatorFuncJSDoc(apiItem)}
         ${this.generatorFuncContent(apiItem)}`;
@@ -230,85 +245,42 @@ ${this.generatorClassJSDoc(tagItem)}
   }
 
   generateBodyParams(apiItem: ApiData) {
-    if (!apiItem.requestBody) {
-      return "";
-    }
+    const refHasCache: RefHasCache = (interfaceName, $ref) => {
+      return `*@param {${this.apiNameCache.get($ref)}} body`;
+    };
 
-    const interfaceName = `${_.upperFirst(apiItem.requestName)}BodyRequest`;
+    const arrayItems: ArrayItems = (interfaceName, items) => {
+      return `*@param {${formatterBaseType(items)}[]} body ${_.upperFirst(
+        this.apiItem.requestName
+      )}`;
+    };
 
-    let component;
-
-    //查看缓存
-    if (
-      "$ref" in apiItem.requestBody &&
-      this.apiNameCache.has(apiItem.requestBody.$ref)
-    ) {
-      return `*@param {${this.apiNameCache.get(
-        apiItem.requestBody.$ref
-      )}} body`;
-    }
-
-    if ("$ref" in apiItem.requestBody) {
-      const [resolveComponent, resolveRefs] = this.requestBody.getComponent(
-        apiItem.requestBody.$ref
-      );
-
-      component = resolveComponent;
-      [...resolveRefs, apiItem.requestBody.$ref].forEach((ref) =>
-        this.apiNameCache.set(ref, interfaceName)
-      );
-    }
-
-    if (
-      !component &&
-      "content" in apiItem.requestBody &&
-      apiItem.requestBody.content
-    ) {
-      const media = _.chain(apiItem.requestBody.content)
-        .values()
-        .head()
-        .value();
-
-      if (media.schema && "$ref" in media.schema) {
-        const [resolveComponent, resolveRefs] = this.requestBody.getComponent(
-          media.schema.$ref
-        );
-        component = resolveComponent;
-
-        [...resolveRefs, media.schema.$ref].forEach((ref) =>
-          this.apiNameCache.set(ref, interfaceName)
-        );
-      } else {
-        component = media.schema;
-      }
-    }
-
-    //todo 优化
-    if (!component) {
-      errorLog("JSAPI-> not find component");
-      return "";
-    }
-
-    if (component.type === "array" && !("$ref" in component.items)) {
-      return `*@param {${formatterBaseType(
-        component.items
-      )}[]} body ${_.upperFirst(apiItem.requestName)}`;
-    }
-
-    //容错 请求body不应该是基本类型
-    if (baseDataType.includes(component.type || "")) {
+    const baseType: BaseType = (interfaceName, component) => {
       return `*@param {${formatterBaseType(component)}} body ${interfaceName}`;
-    }
+    };
 
-    const typeString = this.handleComponentSchema(component, "param", "body.");
+    const handleComponent: HandleComponent = (interfaceName, component) => {
+      const typeString = this.handleComponentSchema(
+        component,
+        "param",
+        "body."
+      );
 
-    this.globalDoc.push(`/**
-    *@apiSummary ${apiItem.summary}
+      this.globalDoc.push(`/**
+    *@apiSummary ${this.apiItem.summary}
     *@typedef {Object} ${interfaceName}
       ${typeString}
     */`);
 
-    return `*@param {${interfaceName}} body`;
+      return `*@param {${interfaceName}} body`;
+    };
+
+    return this.requestBody.getParams({
+      refHasCache,
+      arrayItems,
+      baseType,
+      handleComponent,
+    });
   }
   //property
   handleComponentSchema(
@@ -321,7 +293,177 @@ ${this.generatorClassJSDoc(tagItem)}
     key?: string,
     parent?: OpenAPIV3.SchemaObject
   ) {
-    if (_.isNil(schemaObject)) return undefined;
+    const schemaObjectHas$Ref: SchemaObjectHas$Ref = ({
+      schemaObject,
+      component,
+      parent,
+      key,
+    }) => {
+      const componentName = schemaObject.$ref.split("/").pop();
+
+      const isRequired = parent?.required?.includes(key || "");
+      const type =
+        _.upperFirst(componentName) + (component.type === "array" ? "[]" : "");
+      return isRequired
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
+            component.title ?? ""
+          }`
+        : `*@${typeName} {${type}} ${namespace}${key} ${component.title ?? ""}`;
+    };
+    const arrayItemsHas$ref: ArrayItemsHas$ref = ({
+      componentBySchemaObjectItemsRef,
+      component,
+      parent,
+      key,
+    }) => {
+      const componentName = componentBySchemaObjectItemsRef.$ref
+        .split("/")
+        .pop();
+
+      const isRequired = parent?.required?.includes(key || "");
+      const type =
+        _.upperFirst(componentName) + (component?.type === "array" ? "[]" : "");
+      return isRequired
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
+            component?.title ?? ""
+          }`
+        : `*@${typeName} {${type}} ${namespace}${key} ${
+            component?.title ?? ""
+          }`;
+    };
+    //todo
+
+    const arraySchemaObjectItemsHas$Ref: ArraySchemaObjectItemsHas$Ref = ({
+      $ref,
+      schemaObjectTitle,
+    }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      const type = _.upperFirst($ref.split("/").pop());
+      return isRequired
+        ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
+            schemaObjectTitle ? schemaObjectTitle : ""
+          }`
+        : `*@${typeName} {${type}[]} ${namespace}${key} ${
+            schemaObjectTitle ? schemaObjectTitle : ""
+          }`;
+    };
+    const arrayItemsNo$ref: ArrayItemsNo$ref = ({
+      schemaObjectDescription,
+      schemaObjectItems,
+      parent,
+      key,
+    }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      const type = formatterBaseType(schemaObjectItems);
+      return isRequired
+        ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
+            schemaObjectDescription ?? ""
+          }`
+        : `*@${typeName} {${type}[]} ${namespace}${key} ${
+            schemaObjectDescription ?? ""
+          }`;
+    };
+    const objectNotHaveProperties: ObjectNotHaveProperties = ({
+      schemaObjectDescription,
+      parent,
+      key,
+    }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      return isRequired
+        ? `*@${typeName} {object} [${namespace}${key}] ${
+            schemaObjectDescription ?? ""
+          }`
+        : `*@${typeName} {object} ${namespace}${key} ${
+            schemaObjectDescription ?? ""
+          }`;
+    };
+    const objectHasProperties: ObjectHasProperties = ({ schemaObject }) => {
+      return _.reduce(
+        schemaObject.properties,
+        (result, value, key) => {
+          result +=
+            (result ? "\n" : "") +
+            this.handleComponentSchema(
+              value,
+              typeName,
+              namespace,
+              key,
+              schemaObject
+            );
+          return result;
+        },
+        ""
+      );
+    };
+
+    const hasEnum: HasEnum = ({
+      schemaObjectEnum,
+      schemaObjectDescription,
+      parent,
+      key,
+    }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      const type = schemaObjectEnum.map((x) => `'${x}'`).join("|");
+      return isRequired
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
+            schemaObjectDescription ?? ""
+          }`
+        : `*@${typeName} {${type}} ${namespace}${key} ${
+            schemaObjectDescription ?? ""
+          }`;
+    };
+    const baseOfNumber: BaseOfNumber = ({ schemaObject, parent, key }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      const type = formatterBaseType(schemaObject);
+      return isRequired
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
+            schemaObject.description ?? ""
+          }`
+        : `*@${typeName} {${type}} ${namespace}${key} ${
+            schemaObject.description ?? ""
+          }`;
+    };
+    const baseOfString: BaseOfString = ({ schemaObject, parent, key }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      const type = formatterBaseType(schemaObject);
+      return isRequired
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
+            schemaObject.description ?? ""
+          }`
+        : `*@${typeName} {${type}} ${namespace}${key} ${
+            schemaObject.description ?? ""
+          }`;
+    };
+    const baseOfBoolean: BaseOfBoolean = ({ schemaObject, parent, key }) => {
+      const isRequired = parent?.required?.includes(key || "");
+      const type = formatterBaseType(schemaObject);
+      return isRequired
+        ? `*@${typeName} {${type}} [${namespace}${key}] ${
+            schemaObject.description ?? ""
+          }`
+        : `*@${typeName} {${type}} ${namespace}${key} ${
+            schemaObject.description ?? ""
+          }`;
+    };
+
+    return this.schemas.handleComponentSchema(
+      { schemaObject, key, parent },
+      {
+        schemaObjectHas$Ref,
+        arrayItemsHas$ref,
+        arraySchemaObjectItemsHas$Ref,
+        arrayItemsNo$ref,
+        objectNotHaveProperties,
+        objectHasProperties,
+        hasEnum,
+        baseOfNumber,
+        baseOfString,
+        baseOfBoolean,
+      }
+    );
+
+    //--------------------------------------------
+    /* if (_.isNil(schemaObject)) return undefined;
 
     // 引用类型
     if ("$ref" in schemaObject) {
@@ -479,11 +621,41 @@ ${this.generatorClassJSDoc(tagItem)}
           }`;
     }
     errorLog("JSAPI-> handleComponentSchema schemaObject.type");
-    return "";
+    return "";*/
   }
 
   generateResponseType(apiItem: ApiData) {
-    const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
+    const notHaveResponseRef: NotHaveResponseRef = (interfaceName) => {
+      return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
+    };
+
+    const notHaveApiNameCache: NotHaveApiNameCache = (
+      responseRef,
+      interfaceName
+    ) => {
+      return `*@returns {Promise<[ErrorResponse, ${this.apiNameCache.get(
+        responseRef
+      )}]>}`;
+    };
+
+    const handleComponent: HandleComponent = (interfaceName, component) => {
+      const typeString = this.handleComponentSchema(component, "property");
+
+      this.globalDoc.push(`/**
+    *@apiSummary ${apiItem.summary}
+    *@typedef {Object} ${interfaceName}
+      ${typeString}
+    */`);
+      return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
+    };
+
+    return this.response.getComponent({
+      notHaveResponseRef,
+      notHaveApiNameCache,
+      handleComponent,
+    });
+
+    /*    const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
     const responseRef = this.response.ref;
     if (!responseRef) {
       return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
@@ -504,12 +676,12 @@ ${this.generatorClassJSDoc(tagItem)}
 
     const typeString = this.handleComponentSchema(component, "property");
 
-    this.globalDoc.push(`/**
+    this.globalDoc.push(`/!**
     *@apiSummary ${apiItem.summary}
     *@typedef {Object} ${interfaceName}
       ${typeString}
-    */`);
-    return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
+    *!/`);
+    return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;*/
   }
 
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
@@ -580,6 +752,6 @@ ${this.generatorClassJSDoc(tagItem)}
   writeFile(title: string, codeString: string) {
     const filePath = path.join(this.config.output, `${title}JSApi.js`);
     fse.outputFileSync(filePath, codeString);
-    successLog(`${title} js api write succeeded!`);
+    successLog(`${title} js request write succeeded!`);
   }
 }

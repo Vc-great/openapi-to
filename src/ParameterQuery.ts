@@ -1,22 +1,22 @@
 import _ from "lodash";
-import { BaseData } from "./BaseData";
+import { OpenAPI } from "./OpenAPI";
 
 export class ParameterQuery {
-  constructor(public baseData: BaseData) {
-    this.baseData = baseData;
+  constructor(public openAPI: OpenAPI) {
+    this.openAPI = openAPI;
   }
 
   get hasQueryParameters() {
-    return _.some(this.baseData.apiItem.parameters || [], ["in", "query"]);
+    return _.some(this.openAPI.apiItem.parameters || [], ["in", "query"]);
   }
 
   get parameters() {
-    return _.filter(this.baseData.apiItem.parameters || [], ["in", "query"]);
+    return _.filter(this.openAPI.apiItem.parameters || [], ["in", "query"]);
   }
 
   get hasQueryArrayParameters() {
     return _.some(
-      this.baseData.apiItem.parameters,
+      this.openAPI.apiItem.parameters,
       (parameter) =>
         "schema" in parameter &&
         parameter.schema &&

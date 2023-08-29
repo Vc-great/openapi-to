@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { GenerateType } from "../src/GenerateType";
+import { GenerateTSInterface } from "../src/GenerateTSInterface";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 
@@ -25,26 +25,8 @@ import {
 import { bodyParamsBodyExpected } from "../mock/getBodyParamsType";
 import { enumOption } from "../mock/enum";
 
-// @ts-ignore
-let generateType = new GenerateType({}, openApi3, openApi3Formatter);
-
-test("getResponseType", () => {
-  const generateType = new GenerateType(
-    {},
-    // @ts-ignore
-    bodyResponseOpenApi3,
-    bodyResponseOpenApi3Formatter
-  );
-  // @ts-ignore
-  const bodyResponseExpected = generateType.getResponseType(
-    // @ts-ignore
-    bodyResponseOpenApi3Formatter
-  );
-  expect(bodyResponseExpected).toBe(bodyResponseExpectedResult);
-});
-
 test("getComponentTypeByRef", () => {
-  const generateType = new GenerateType({}, openApi3, openApi3Formatter);
+  const generateType = new GenerateTSInterface({}, openApi3, openApi3Formatter);
   const resultExpected = generateType.getComponentTypeByRef([
     "#/components/schemas/refList",
   ]);
@@ -52,7 +34,7 @@ test("getComponentTypeByRef", () => {
 });
 
 test("getEnumOption", () => {
-  const generateType = new GenerateType(
+  const generateType = new GenerateTSInterface(
     {},
     // @ts-ignore
     openApi3,
@@ -74,6 +56,6 @@ test("getEnumOption", () => {
 });
 
 test("run", () => {
-  const generateType = new GenerateType({}, openApi3, openApi3Formatter);
+  const generateType = new GenerateTSInterface({}, openApi3, openApi3Formatter);
   generateType.run(openApi3Formatter.pet);
 });

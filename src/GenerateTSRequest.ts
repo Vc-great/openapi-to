@@ -17,9 +17,9 @@ import {
   stringEnum,
 } from "./utils";
 import { errorLog, successLog } from "./log";
-import { BaseData } from "./BaseData";
+import { OpenAPI } from "./OpenAPI";
 
-export class GenerateTSApi extends BaseData implements GenerateCode {
+export class GenerateTSRequest extends OpenAPI implements GenerateCode {
   private readonly namespaceName: string;
   constructor(
     public config: Config,
@@ -98,7 +98,7 @@ export class GenerateTSApi extends BaseData implements GenerateCode {
     class ApiName {
         ${tagItem
           .map((apiItem) => {
-            super.setApiItem(apiItem);
+            this.apiItem = apiItem;
             return `
         ${this.generatorFuncJSDoc(apiItem)}
         ${this.generatorFuncContent(apiItem)}`;
@@ -180,6 +180,6 @@ export class GenerateTSApi extends BaseData implements GenerateCode {
   writeFile(title: string, codeString: string) {
     const filePath = path.join(this.config.output, `${title}Api.ts`);
     fse.outputFileSync(filePath, codeString);
-    successLog(`${title} ts api write succeeded!`);
+    successLog(`${title} ts request write succeeded!`);
   }
 }

@@ -1,5 +1,10 @@
 import { OpenAPIV3 } from "openapi-types";
 
+/*//所选属性变必选
+type WithRequiredProperty<Type, Key extends keyof Type> = Type & {
+  [Property in Key]-?: Type[Property];
+};*/
+
 export type ConfigTemplate = {
   projects: Project[];
 };
@@ -51,17 +56,17 @@ export type HttpMethod = "get" | "put" | "post" | "delete" | "patch";
 
 export type ApiNameCache = Map<string, string>;
 
-export type RefHasCache = (typeName: string, $ref: string) => string;
+export type RefHasCache = (interfaceName: string, $ref: string) => string;
 export type ArrayItems = (
-  typeName: string,
+  interfaceName: string,
   items: OpenAPIV3.SchemaObject
 ) => string;
 export type BaseType = (
-  typeName: string,
+  interfaceName: string,
   component: OpenAPIV3.SchemaObject
 ) => string;
 export type HandleComponent = (
-  typeName: string,
+  interfaceName: string,
   component: OpenAPIV3.SchemaObject
 ) => string;
 export interface RequestBodyParams {
@@ -69,4 +74,158 @@ export interface RequestBodyParams {
   arrayItems: ArrayItems;
   baseType: BaseType;
   handleComponent: HandleComponent;
+}
+
+export type NotHaveResponseRef = (interfaceName: string) => string;
+
+export type NotHaveApiNameCache = (
+  responseRef: string,
+  interfaceName: string
+) => string;
+
+export interface ResponseComponent {
+  notHaveResponseRef: NotHaveResponseRef;
+  notHaveApiNameCache: NotHaveApiNameCache;
+  handleComponent: HandleComponent;
+}
+
+export type SchemaCallBack<
+  T = OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
+  M = OpenAPIV3.SchemaObject
+> = ({
+  schemaObject,
+  component,
+  parent,
+  key,
+}: {
+  schemaObject: T;
+  component: M;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type SchemaObjectHas$Ref = SchemaCallBack<OpenAPIV3.ReferenceObject>;
+
+/*interface ArraySchemaObject extends OpenAPIV3.BaseSchemaObject {
+  type: OpenAPIV3.ArraySchemaObjectType;
+  items: OpenAPIV3.ReferenceObject;
+}*/
+
+export type ArraySchemaObjectHasRef = Omit<
+  OpenAPIV3.ArraySchemaObject,
+  "items"
+> & {
+  items: OpenAPIV3.ReferenceObject;
+};
+
+export type ArraySchemaObject = Omit<OpenAPIV3.ArraySchemaObject, "items"> & {
+  items: OpenAPIV3.SchemaObject;
+};
+
+export type ArrayItemsHas$ref = ({
+  componentBySchemaObjectItemsRef,
+  component,
+  parent,
+  key,
+}: {
+  componentBySchemaObjectItemsRef: OpenAPIV3.ReferenceObject;
+  component: OpenAPIV3.SchemaObject;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type ArrayItemSchemaCallBack = SchemaCallBack<OpenAPIV3.SchemaObject>;
+
+export type ArraySchemaObjectItemsHas$Ref = ({
+  $ref,
+  schemaObjectTitle,
+  parent,
+  key,
+}: {
+  $ref: string;
+  schemaObjectTitle: string | undefined;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type ArrayItemsNo$ref = ({
+  schemaObjectItems,
+  schemaObjectDescription,
+  parent,
+  key,
+}: {
+  schemaObjectDescription: string | undefined;
+  schemaObjectItems: OpenAPIV3.SchemaObject;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type ObjectNotHaveProperties = ({
+  schemaObjectDescription,
+  parent,
+  key,
+}: {
+  schemaObjectDescription: string | undefined;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type ObjectHasProperties = ({
+  schemaObject,
+}: {
+  schemaObject: OpenAPIV3.SchemaObject;
+}) => string;
+
+export type HasEnum = ({
+  schemaObjectEnum,
+  schemaObjectDescription,
+  parent,
+  key,
+}: {
+  schemaObjectEnum: any[];
+  schemaObjectDescription: string | undefined;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string;
+}) => string;
+
+export type BaseOfNumber = ({
+  schemaObject,
+  parent,
+  key,
+}: {
+  schemaObject: OpenAPIV3.SchemaObject;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type BaseOfString = ({
+  schemaObject,
+  parent,
+  key,
+}: {
+  schemaObject: OpenAPIV3.SchemaObject;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+
+export type BaseOfBoolean = ({
+  schemaObject,
+  parent,
+  key,
+}: {
+  schemaObject: OpenAPIV3.SchemaObject;
+  parent: OpenAPIV3.SchemaObject | undefined;
+  key: string | undefined;
+}) => string;
+export interface SchemaCallBackGather {
+  schemaObjectHas$Ref: SchemaObjectHas$Ref;
+  arrayItemsHas$ref: ArrayItemsHas$ref;
+  arraySchemaObjectItemsHas$Ref: ArraySchemaObjectItemsHas$Ref;
+  arrayItemsNo$ref: ArrayItemsNo$ref;
+  objectNotHaveProperties: ObjectNotHaveProperties;
+  objectHasProperties: ObjectHasProperties;
+  hasEnum: HasEnum;
+  baseOfNumber: BaseOfNumber;
+  baseOfString: BaseOfString;
+  baseOfBoolean: BaseOfBoolean;
 }

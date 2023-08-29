@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { GenerateTSApi } from "../src/GenerateTSApi";
+import { GenerateTSRequest } from "../src/GenerateTSRequest";
 import _ from "lodash";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 import { tsApiExpected } from "../mock/tsApiExpected";
 
-const generateApi = new GenerateTSApi({}, {}, {});
+const generateApi = new GenerateTSRequest({}, {}, {});
 
 test("classDoc", () => {
   const doc = generateApi.generatorClassJSDoc(openApi3Formatter.pet);
@@ -26,7 +26,7 @@ test("functionDoc", () => {
 });
 test("run", () => {
   const tagItem = openApi3Formatter.pet;
-  const generateApi = new GenerateTSApi({}, openApi3, openApi3Formatter);
+  const generateApi = new GenerateTSRequest({}, openApi3, openApi3Formatter);
   const result = generateApi.run(tagItem);
   return expect(result.codeString).toBe(tsApiExpected);
 });
