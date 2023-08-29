@@ -89,7 +89,7 @@ function getVersion() {
 }
 
 export function message(localVersion: string, remoteVersion: string) {
-  const text = chalk.hex("#ffcb6b").bold(`
+  chalk.hex("#ffcb6b").bold(`
  New version! ${localVersion} → ${remoteVersion}
  Run npm install -g openapi-to to update! 
 `);

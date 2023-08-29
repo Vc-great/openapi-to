@@ -44,7 +44,7 @@ class Http {
         ) {
           const reader = new FileReader();
           reader.readAsText(error.response.data, "utf-8");
-          reader.onload = function (e) {
+          reader.onload = function () {
             const errorMsg = JSON.parse(reader.result as string).message;
             ElMessage.error(errorMsg);
           };

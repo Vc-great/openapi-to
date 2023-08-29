@@ -2,26 +2,14 @@ import _ from "lodash";
 import type {
   ApiData,
   ArrayItems,
-  ArrayItemsHas$ref,
   BaseType,
   Config,
   GenerateCode,
   HandleComponent,
-  NotHaveApiNameCache,
-  NotHaveResponseRef,
   OpenApi3FormatData,
   RefHasCache,
-  SchemaObjectHas$Ref,
-} from "./types";
-import {
-  ArrayItemsNo$ref,
-  ArraySchemaObjectItemsHas$Ref,
-  BaseOfBoolean,
-  BaseOfNumber,
-  BaseOfString,
-  HasEnum,
-  ObjectHasProperties,
-  ObjectNotHaveProperties,
+  ResponseType,
+  ComponentSchema,
 } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
@@ -143,13 +131,13 @@ ${this.generatorClassJSDoc(tagItem)}
     }`;
   }
 
-  generateQueryParams(apiItem: ApiData) {
+  generateQueryParams() {
     return _.isEmpty(this.query.parameters)
       ? ""
       : `*@param query
             ${this.handleParameters(this.query.parameters, "query")}`;
   }
-  generatePathParams(apiItem: ApiData) {
+  generatePathParams() {
     return this.handleParameters(this.path.parameters);
   }
 
@@ -293,7 +281,7 @@ ${this.generatorClassJSDoc(tagItem)}
     key?: string,
     parent?: OpenAPIV3.SchemaObject
   ) {
-    const schemaObjectHas$Ref: SchemaObjectHas$Ref = ({
+    const schemaObjectHas$Ref: ComponentSchema.SchemaObjectHas$Ref = ({
       schemaObject,
       component,
       parent,
@@ -310,44 +298,39 @@ ${this.generatorClassJSDoc(tagItem)}
           }`
         : `*@${typeName} {${type}} ${namespace}${key} ${component.title ?? ""}`;
     };
-    const arrayItemsHas$ref: ArrayItemsHas$ref = ({
-      componentBySchemaObjectItemsRef,
-      component,
-      parent,
-      key,
-    }) => {
-      const componentName = componentBySchemaObjectItemsRef.$ref
-        .split("/")
-        .pop();
+    const arraySchemaObjectItemsHas$RefOfComponent: ComponentSchema.ArraySchemaObjectItemsHas$RefOfComponent =
+      ({ componentBySchemaObjectItemsRef, component, parent, key }) => {
+        const componentName = componentBySchemaObjectItemsRef.$ref
+          .split("/")
+          .pop();
 
-      const isRequired = parent?.required?.includes(key || "");
-      const type =
-        _.upperFirst(componentName) + (component?.type === "array" ? "[]" : "");
-      return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] ${
-            component?.title ?? ""
-          }`
-        : `*@${typeName} {${type}} ${namespace}${key} ${
-            component?.title ?? ""
-          }`;
-    };
+        const isRequired = parent?.required?.includes(key || "");
+        const type =
+          _.upperFirst(componentName) +
+          (component?.type === "array" ? "[]" : "");
+        return isRequired
+          ? `*@${typeName} {${type}} [${namespace}${key}] ${
+              component?.title ?? ""
+            }`
+          : `*@${typeName} {${type}} ${namespace}${key} ${
+              component?.title ?? ""
+            }`;
+      };
     //todo
 
-    const arraySchemaObjectItemsHas$Ref: ArraySchemaObjectItemsHas$Ref = ({
-      $ref,
-      schemaObjectTitle,
-    }) => {
-      const isRequired = parent?.required?.includes(key || "");
-      const type = _.upperFirst($ref.split("/").pop());
-      return isRequired
-        ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
-            schemaObjectTitle ? schemaObjectTitle : ""
-          }`
-        : `*@${typeName} {${type}[]} ${namespace}${key} ${
-            schemaObjectTitle ? schemaObjectTitle : ""
-          }`;
-    };
-    const arrayItemsNo$ref: ArrayItemsNo$ref = ({
+    const arraySchemaObjectItemsHas$Ref: ComponentSchema.ArraySchemaObjectItemsHas$Ref =
+      ({ $ref, schemaObjectTitle }) => {
+        const isRequired = parent?.required?.includes(key || "");
+        const type = _.upperFirst($ref.split("/").pop());
+        return isRequired
+          ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
+              schemaObjectTitle ? schemaObjectTitle : ""
+            }`
+          : `*@${typeName} {${type}[]} ${namespace}${key} ${
+              schemaObjectTitle ? schemaObjectTitle : ""
+            }`;
+      };
+    const arrayItemsNo$ref: ComponentSchema.ArrayItemsNo$ref = ({
       schemaObjectDescription,
       schemaObjectItems,
       parent,
@@ -363,7 +346,7 @@ ${this.generatorClassJSDoc(tagItem)}
             schemaObjectDescription ?? ""
           }`;
     };
-    const objectNotHaveProperties: ObjectNotHaveProperties = ({
+    const objectNotHaveProperties: ComponentSchema.ObjectNotHaveProperties = ({
       schemaObjectDescription,
       parent,
       key,
@@ -377,7 +360,9 @@ ${this.generatorClassJSDoc(tagItem)}
             schemaObjectDescription ?? ""
           }`;
     };
-    const objectHasProperties: ObjectHasProperties = ({ schemaObject }) => {
+    const objectHasProperties: ComponentSchema.ObjectHasProperties = ({
+      schemaObject,
+    }) => {
       return _.reduce(
         schemaObject.properties,
         (result, value, key) => {
@@ -396,7 +381,7 @@ ${this.generatorClassJSDoc(tagItem)}
       );
     };
 
-    const hasEnum: HasEnum = ({
+    const hasEnum: ComponentSchema.HasEnum = ({
       schemaObjectEnum,
       schemaObjectDescription,
       parent,
@@ -412,7 +397,11 @@ ${this.generatorClassJSDoc(tagItem)}
             schemaObjectDescription ?? ""
           }`;
     };
-    const baseOfNumber: BaseOfNumber = ({ schemaObject, parent, key }) => {
+    const baseOfNumber: ComponentSchema.BaseOfNumber = ({
+      schemaObject,
+      parent,
+      key,
+    }) => {
       const isRequired = parent?.required?.includes(key || "");
       const type = formatterBaseType(schemaObject);
       return isRequired
@@ -423,7 +412,11 @@ ${this.generatorClassJSDoc(tagItem)}
             schemaObject.description ?? ""
           }`;
     };
-    const baseOfString: BaseOfString = ({ schemaObject, parent, key }) => {
+    const baseOfString: ComponentSchema.BaseOfString = ({
+      schemaObject,
+      parent,
+      key,
+    }) => {
       const isRequired = parent?.required?.includes(key || "");
       const type = formatterBaseType(schemaObject);
       return isRequired
@@ -434,7 +427,11 @@ ${this.generatorClassJSDoc(tagItem)}
             schemaObject.description ?? ""
           }`;
     };
-    const baseOfBoolean: BaseOfBoolean = ({ schemaObject, parent, key }) => {
+    const baseOfBoolean: ComponentSchema.BaseOfBoolean = ({
+      schemaObject,
+      parent,
+      key,
+    }) => {
       const isRequired = parent?.required?.includes(key || "");
       const type = formatterBaseType(schemaObject);
       return isRequired
@@ -450,7 +447,7 @@ ${this.generatorClassJSDoc(tagItem)}
       { schemaObject, key, parent },
       {
         schemaObjectHas$Ref,
-        arrayItemsHas$ref,
+        arraySchemaObjectItemsHas$RefOfComponent,
         arraySchemaObjectItemsHas$Ref,
         arrayItemsNo$ref,
         objectNotHaveProperties,
@@ -461,177 +458,17 @@ ${this.generatorClassJSDoc(tagItem)}
         baseOfBoolean,
       }
     );
-
-    //--------------------------------------------
-    /* if (_.isNil(schemaObject)) return undefined;
-
-    // 引用类型
-    if ("$ref" in schemaObject) {
-      this.pendingRefCache.add(schemaObject.$ref);
-
-      const [component] = this.schemas.getComponent(schemaObject.$ref) as [
-        OpenAPIV3.SchemaObject,
-        boolean
-      ];
-      const componentName = schemaObject.$ref.split("/").pop();
-
-      const isRequired = parent?.required?.includes(key || "");
-      const type =
-        _.upperFirst(componentName) + (component.type === "array" ? "[]" : "");
-      return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] ${
-            component.title ?? ""
-          }`
-        : `*@${typeName} {${type}} ${namespace}${key} ${component.title ?? ""}`;
-    }
-
-    // 数组类型
-    if (schemaObject.type === "array") {
-      if ("$ref" in schemaObject.items) {
-        this.pendingRefCache.add(schemaObject.items.$ref);
-
-        const [component] = this.schemas.getComponent(schemaObject.items.$ref);
-
-        if (component && "$ref" in component) {
-          this.pendingRefCache.add(component.$ref);
-
-          const [componentByRef] = this.schemas.getComponent(
-            component.$ref
-          ) as [OpenAPIV3.SchemaObject, boolean];
-          const componentName = component.$ref.split("/").pop();
-
-          const isRequired = parent?.required?.includes(key || "");
-          const type =
-            _.upperFirst(componentName) +
-            (componentByRef?.type === "array" ? "[]" : "");
-          return isRequired
-            ? `*@${typeName} {${type}} [${namespace}${key}] ${
-                componentByRef?.title ?? ""
-              }`
-            : `*@${typeName} {${type}} ${namespace}${key} ${
-                componentByRef?.title ?? ""
-              }`;
-        }
-
-        const isRequired = parent?.required?.includes(key || "");
-        const type = _.upperFirst(schemaObject.items.$ref.split("/").pop());
-        return isRequired
-          ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
-              component && "title" in component ? component.title : ""
-            }`
-          : `*@${typeName} {${type}[]} ${namespace}${key} ${
-              component && "title" in component ? component.title : ""
-            }`;
-      }
-
-      const isRequired = parent?.required?.includes(key || "");
-      const type = formatterBaseType(schemaObject.items);
-      return isRequired
-        ? `*@${typeName} {${type}[]} [${namespace}${key}] ${
-            schemaObject.description ?? ""
-          }`
-        : `*@${typeName} {${type}[]} ${namespace}${key} ${
-            schemaObject.description ?? ""
-          }`;
-    }
-
-    // 对象类型 properties 不存在
-    if (schemaObject.type === "object" && !schemaObject.properties) {
-      const isRequired = parent?.required?.includes(key || "");
-      return isRequired
-        ? `*@${typeName} {object} [${namespace}${key}] ${
-            schemaObject.description ?? ""
-          }`
-        : `*@${typeName} {object} ${namespace}${key} ${
-            schemaObject.description ?? ""
-          }`;
-    }
-
-    // 对象类型
-    if (schemaObject.type === "object") {
-      return _.reduce(
-        schemaObject.properties,
-        (result, value, key) => {
-          result +=
-            (result ? "\n" : "") +
-            this.handleComponentSchema(
-              value,
-              typeName,
-              namespace,
-              key,
-              schemaObject
-            );
-          return result;
-        },
-        ""
-      );
-    }
-    // 枚举类型
-    if (schemaObject.enum) {
-      const isRequired = parent?.required?.includes(key || "");
-      const type = schemaObject.enum.map((x) => `'${x}'`).join("|");
-      return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] ${
-            schemaObject.description ?? ""
-          }`
-        : `*@${typeName} {${type}} ${namespace}${key} ${
-            schemaObject.description ?? ""
-          }`;
-    }
-    // 继承类型
-    if (schemaObject.allOf && schemaObject.allOf.length) {
-      //todo 待补充
-      errorLog("JSAPI-> schemaObject.allOf");
-    }
-
-    //基本类型
-    if (["integer", "number"].includes(schemaObject.type || "")) {
-      const isRequired = parent?.required?.includes(key || "");
-      const type = formatterBaseType(schemaObject);
-      return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] ${
-            schemaObject.description ?? ""
-          }`
-        : `*@${typeName} {${type}} ${namespace}${key} ${
-            schemaObject.description ?? ""
-          }`;
-    }
-
-    if (schemaObject.type === "string") {
-      const isRequired = parent?.required?.includes(key || "");
-      const type = formatterBaseType(schemaObject);
-      return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] ${
-            schemaObject.description ?? ""
-          }`
-        : `*@${typeName} {${type}} ${namespace}${key} ${
-            schemaObject.description ?? ""
-          }`;
-    }
-
-    if (schemaObject.type === "boolean") {
-      const isRequired = parent?.required?.includes(key || "");
-      const type = formatterBaseType(schemaObject);
-      return isRequired
-        ? `*@${typeName} {${type}} [${namespace}${key}] ${
-            schemaObject.description ?? ""
-          }`
-        : `*@${typeName} {${type}} ${namespace}${key} ${
-            schemaObject.description ?? ""
-          }`;
-    }
-    errorLog("JSAPI-> handleComponentSchema schemaObject.type");
-    return "";*/
   }
 
   generateResponseType(apiItem: ApiData) {
-    const notHaveResponseRef: NotHaveResponseRef = (interfaceName) => {
+    const notHaveResponseRef: ResponseType.NotHaveResponseRef = (
+      interfaceName
+    ) => {
       return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
     };
 
-    const notHaveApiNameCache: NotHaveApiNameCache = (
-      responseRef,
-      interfaceName
+    const notHaveApiNameCache: ResponseType.NotHaveApiNameCache = (
+      responseRef
     ) => {
       return `*@returns {Promise<[ErrorResponse, ${this.apiNameCache.get(
         responseRef
@@ -735,8 +572,8 @@ ${this.generatorClassJSDoc(tagItem)}
   //函数注释
   generatorFuncJSDoc(apiItem: ApiData) {
     const paramString = [
-      this.generateQueryParams(apiItem),
-      this.generatePathParams(apiItem),
+      this.generateQueryParams(),
+      this.generatePathParams(),
       this.generateBodyParams(apiItem),
       this.generateResponseType(apiItem),
     ]

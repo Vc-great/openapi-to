@@ -1,7 +1,8 @@
-import {
+import type {
   ApiData,
   ArrayItems,
   BaseType,
+  ComponentSchema,
   Config,
   GenerateCode,
   HandleComponent,
@@ -46,13 +47,13 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
       .map((apiItem) => {
         this.apiItem = apiItem;
         const types = [
-          this.getQueryParams(apiItem),
+          this.getQueryParams(),
           this.getRequestBodyParams(apiItem),
         ];
         const filterEmpty = (types: string[]) => types.filter((type) => type);
-        const addlineFeed = (types: string[]) => types.join("\n");
+        const addLineFeed = (types: string[]) => types.join("\n");
 
-        return _.flow([filterEmpty, addlineFeed])(types);
+        return _.flow([filterEmpty, addLineFeed])(types);
       })
       .join("\n");
 
@@ -62,7 +63,7 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
     };
   }
 
-  getQueryParams(apiItem: ApiData) {
+  getQueryParams() {
     if (_.isEmpty(this.query.parameters)) {
       return "";
     }
@@ -147,7 +148,7 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
       const ${interfaceName} = ${this.apiNameCache.get($ref)}`;
     };
 
-    const arrayItems: ArrayItems = (interfaceName, items) => {
+    const arrayItems: ArrayItems = (interfaceName) => {
       return `/** ${apiItem.summary} */
       const ${interfaceName} = []`;
     };
@@ -183,44 +184,35 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
     key?: string,
     parent?: OpenAPIV3.SchemaObject
   ) {
-    if (_.isNil(schemaObject)) return undefined;
-    // 引用类型
-    if ("$ref" in schemaObject) {
-      this.pendingRefCache.add(schemaObject.$ref);
-
-      const [component] = this.schemas.getComponent(schemaObject.$ref) as [
-        OpenAPIV3.SchemaObject,
-        boolean
-      ];
-
+    const schemaObjectHas$Ref: ComponentSchema.SchemaObjectHas$Ref = ({
+      component,
+      key,
+    }) => {
       return `/**${component.title ?? ""}*/
       ${key}:${component.type === "array" ? "[]," : "'',"}`;
-    }
-    // 数组类型
-    if (schemaObject.type === "array") {
-      if ("$ref" in schemaObject.items) {
-        this.pendingRefCache.add(schemaObject.items.$ref);
-
-        const [component] = this.schemas.getComponent(
-          schemaObject.items.$ref
-        ) as [OpenAPIV3.SchemaObject, boolean];
-
-        return `/**${component.title ?? ""}*/
+    };
+    const arraySchemaObjectItemsHas$Ref: ComponentSchema.ArraySchemaObjectItemsHas$Ref =
+      ({ componentBySchemaObjectItemsRef }) => {
+        return `/**${componentBySchemaObjectItemsRef.title ?? ""}*/
         ${key}:[],`;
-      }
-
-      return `/**${schemaObject.description ?? ""}*/
+      };
+    const arrayItemsNo$ref: ComponentSchema.ArrayItemsNo$ref = ({
+      schemaObjectDescription,
+      key,
+    }) => {
+      return `/**${schemaObjectDescription ?? ""}*/
       ${key ?? ""}:[],`;
-    }
-
-    // 对象类型 properties 不存在
-    if (schemaObject.type === "object" && !schemaObject.properties) {
-      return `/**${schemaObject.description ?? ""}*/
+    };
+    const objectNotHaveProperties: ComponentSchema.ObjectNotHaveProperties = ({
+      schemaObjectDescription,
+      key,
+    }) => {
+      return `/**${schemaObjectDescription ?? ""}*/
         ${key ?? ""}: {},`;
-    }
-
-    // 对象类型
-    if (schemaObject.type === "object") {
+    };
+    const objectHasProperties: ComponentSchema.ObjectHasProperties = ({
+      schemaObject,
+    }) => {
       return _.reduce(
         schemaObject.properties,
         (result, value, key) => {
@@ -231,39 +223,52 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
         },
         ""
       );
-    }
+    };
 
-    // 枚举类型
-    if (key && schemaObject.enum) {
-      this.enumSchema.set(key, schemaObject);
-
-      return `/**${schemaObject.description ?? ""}*/
+    const hasEnum: ComponentSchema.HasEnum = ({
+      schemaObjectDescription,
+      key,
+    }) => {
+      return `/**${schemaObjectDescription ?? ""}*/
       ${key}:'',`;
-    }
-    // 继承类型
-    if (schemaObject.allOf && schemaObject.allOf.length) {
-      //todo 待补充
-      errorLog("request Object schemaObject.allOf");
-      return "";
-    }
+    };
 
-    //基本类型
-    if (["integer", "number"].includes(schemaObject.type || "")) {
+    const baseOfNumber: ComponentSchema.BaseOfNumber = ({
+      schemaObject,
+      key,
+    }) => {
       return `/**${schemaObject.description ?? ""}*/
       ${key}:0,`;
-    }
-
-    if (schemaObject.type === "string") {
+    };
+    const baseOfString: ComponentSchema.BaseOfString = ({
+      schemaObject,
+      key,
+    }) => {
       return `/**${schemaObject.description ?? ""}*/
       ${key}:'',`;
-    }
-
-    if (schemaObject.type === "boolean") {
+    };
+    const baseOfBoolean: ComponentSchema.BaseOfBoolean = ({
+      schemaObject,
+      key,
+    }) => {
       return `/**${schemaObject.description ?? ""}*/
       ${key}:false,`;
-    }
-    errorLog("TS interface schemaObject.type");
-    return "";
+    };
+
+    return this.schemas.handleComponentSchema(
+      { schemaObject, key, parent },
+      {
+        schemaObjectHas$Ref,
+        arraySchemaObjectItemsHas$Ref,
+        arrayItemsNo$ref,
+        objectNotHaveProperties,
+        objectHasProperties,
+        hasEnum,
+        baseOfNumber,
+        baseOfString,
+        baseOfBoolean,
+      }
+    );
   }
 
   writeFile(title: string, codeString: string) {

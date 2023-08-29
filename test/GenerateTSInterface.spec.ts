@@ -2,27 +2,7 @@
 import { GenerateTSInterface } from "../src/GenerateTSInterface";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
-
-import {
-  queryParamsResultExpected,
-  queryRequestOpenApi3Formatter,
-} from "../mock/queryParamsResultExpected";
-import {
-  uploadExpected,
-  uploadOpenApi3,
-  uploadOpenApi3Formatter,
-} from "../mock/apiItemUpload";
-import {
-  bodyRequestOpenApi3,
-  bodyRequestOpenApi3Formatter,
-} from "../mock/bodyRequest";
-import {
-  bodyResponseExpectedResult,
-  bodyResponseOpenApi3,
-  bodyResponseOpenApi3Formatter,
-  ComponentTypeResponseExpectedResult,
-} from "../mock/bodyResponse";
-import { bodyParamsBodyExpected } from "../mock/getBodyParamsType";
+import { ComponentTypeResponseExpectedResult } from "../mock/bodyResponse";
 import { enumOption } from "../mock/enum";
 
 test("getComponentTypeByRef", () => {

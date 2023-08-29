@@ -46,7 +46,7 @@ export async function generateApiCode(config: ConfigTemplate) {
       ? path.join(config.output, item.title)
       : path.join(cwd, `.openAPI/${item.title}`);
     //创建目录
-    const dir = fse.ensureDirSync(output);
+    fse.ensureDirSync(output);
     //
     const generateCode = new GenerateCode({
       ...item,

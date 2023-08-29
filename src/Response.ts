@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { OpenAPI } from "./OpenAPI";
 import { OpenAPIV3 } from "openapi-types";
-import { ResponseComponent } from "./types";
+import type { ResponseType } from "./types";
 
 export class Response {
   constructor(public openAPI: OpenAPI) {
@@ -47,7 +47,7 @@ export class Response {
     notHaveResponseRef,
     notHaveApiNameCache,
     handleComponent,
-  }: ResponseComponent) {
+  }: ResponseType.ResponseComponent) {
     const responseRef = this.ref;
     const interfaceName = `${_.upperFirst(this.apiItem.requestName)}Response`;
 

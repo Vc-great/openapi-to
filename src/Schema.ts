@@ -1,4 +1,4 @@
-import { ApiData, SchemaCallBackGather } from "./types";
+import { ApiData, ComponentSchema } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import _ from "lodash";
 import { OpenAPI } from "./OpenAPI";
@@ -45,7 +45,7 @@ export class Schema {
     { schemaObject, key, parent }: SchemaParams,
     {
       schemaObjectHas$Ref,
-      arrayItemsHas$ref,
+      arraySchemaObjectItemsHas$RefOfComponent,
       arraySchemaObjectItemsHas$Ref,
       arrayItemsNo$ref,
       objectNotHaveProperties,
@@ -54,7 +54,7 @@ export class Schema {
       baseOfNumber,
       baseOfString,
       baseOfBoolean,
-    }: SchemaCallBackGather
+    }: ComponentSchema.SchemaCallBackGather
   ) {
     if (_.isNil(schemaObject)) return undefined;
     // 引用类型
@@ -82,7 +82,7 @@ export class Schema {
       if (
         componentBySchemaObjectItemsRef &&
         "$ref" in componentBySchemaObjectItemsRef &&
-        arrayItemsHas$ref
+        arraySchemaObjectItemsHas$RefOfComponent
       ) {
         this.pendingRefCache.add(componentBySchemaObjectItemsRef.$ref);
 
@@ -90,7 +90,7 @@ export class Schema {
           componentBySchemaObjectItemsRef.$ref
         ) as [OpenAPIV3.SchemaObject, boolean];
 
-        return arrayItemsHas$ref({
+        return arraySchemaObjectItemsHas$RefOfComponent({
           componentBySchemaObjectItemsRef,
           component,
           parent,
@@ -98,10 +98,14 @@ export class Schema {
         });
       }
 
-      if (arraySchemaObjectItemsHas$Ref) {
+      if (
+        arraySchemaObjectItemsHas$Ref &&
+        !("$ref" in componentBySchemaObjectItemsRef)
+      ) {
         return arraySchemaObjectItemsHas$Ref({
           $ref: schemaObject.items.$ref,
           schemaObjectTitle: schemaObject.title,
+          componentBySchemaObjectItemsRef,
           parent,
           key,
         });
@@ -164,7 +168,7 @@ export class Schema {
       schemaObject.allOf.length
     ) {
       //todo 待补充
-      errorLog("TS interface schemaObject.allOf");
+      errorLog("schemaObject.allOf");
       return "";
     }
 
@@ -195,7 +199,7 @@ export class Schema {
         key,
       });
     }
-    errorLog("TS interface schemaObject.type");
+    errorLog("schemaObject.type");
     return "";
   }
 }
