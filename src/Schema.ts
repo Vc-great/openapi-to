@@ -29,16 +29,24 @@ export class Schema {
   //todo 优化
   getComponent(
     ref: string = ""
-  ): [
-    component: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
-    isCache: boolean
-  ] {
-    this.resolveRefCache.add(ref);
-    const component = _.get(
+  ): OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject {
+    return _.get(
       this.openAPI.openApi3SourceData,
       ref.split("/").slice(1).join(".")
     );
-    return [component, this.resolveRefCache.has(ref)];
+  }
+
+  getComponentResolveRefCache(
+    ref: string = ""
+  ): OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject | undefined {
+    if (this.resolveRefCache.has(ref)) {
+      return undefined;
+    }
+    this.resolveRefCache.add(ref);
+    return _.get(
+      this.openAPI.openApi3SourceData,
+      ref.split("/").slice(1).join(".")
+    );
   }
 
   handleComponentSchema(
@@ -61,10 +69,10 @@ export class Schema {
     if ("$ref" in schemaObject && schemaObjectHas$Ref) {
       this.pendingRefCache.add(schemaObject.$ref);
 
-      const [component] = this.getComponent(schemaObject.$ref) as [
-        OpenAPIV3.SchemaObject,
-        boolean
-      ];
+      const component = this.getComponent(
+        schemaObject.$ref
+      ) as OpenAPIV3.SchemaObject;
+
       return schemaObjectHas$Ref({ schemaObject, component, parent, key });
     }
 
@@ -76,7 +84,7 @@ export class Schema {
     ) {
       this.pendingRefCache.add(schemaObject.items.$ref);
 
-      const [componentBySchemaObjectItemsRef] = this.getComponent(
+      const componentBySchemaObjectItemsRef = this.getComponent(
         schemaObject.items.$ref
       );
       if (
@@ -86,9 +94,9 @@ export class Schema {
       ) {
         this.pendingRefCache.add(componentBySchemaObjectItemsRef.$ref);
 
-        const [component] = this.getComponent(
+        const component = this.getComponent(
           componentBySchemaObjectItemsRef.$ref
-        ) as [OpenAPIV3.SchemaObject, boolean];
+        ) as OpenAPIV3.SchemaObject;
 
         return arraySchemaObjectItemsHas$RefOfComponent({
           componentBySchemaObjectItemsRef,
@@ -155,6 +163,7 @@ export class Schema {
     // 枚举类型
     if (key && "enum" in schemaObject && schemaObject.enum && hasEnum) {
       return hasEnum({
+        schemaObject,
         schemaObjectEnum: schemaObject.enum,
         schemaObjectDescription: schemaObject.description,
         parent,

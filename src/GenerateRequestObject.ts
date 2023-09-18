@@ -67,7 +67,7 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
     if (_.isEmpty(this.query.parameters)) {
       return "";
     }
-    return `const ${_.upperFirst(this.apiItem.requestName)}QueryRequest = {
+    return `const ${this.queryRequestName} = {
         ${this.handleParameters(this.query.parameters)}
         }`;
   }
@@ -143,26 +143,26 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
     if (!["post", "put"].includes(apiItem.method)) {
       return "";
     }
-    const refHasCache: RefHasCache = (interfaceName, $ref) => {
+    const refHasCache: RefHasCache = ($ref) => {
       return `/** ${apiItem.summary ?? ""} */
-      const ${interfaceName} = ${this.apiNameCache.get($ref)}`;
+      const ${this.bodyRequestName} = ${this.apiNameCache.get($ref)}`;
     };
 
-    const arrayItems: ArrayItems = (interfaceName) => {
+    const arrayItems: ArrayItems = () => {
       return `/** ${apiItem.summary} */
-      const ${interfaceName} = []`;
+      const ${this.bodyRequestName} = []`;
     };
 
-    const baseType: BaseType = (interfaceName, component) => {
+    const baseType: BaseType = (component) => {
       return `/** ${apiItem.summary} */
-            const ${interfaceName} = ${formatterBaseType(component)}`;
+            const ${this.bodyRequestName} = ${formatterBaseType(component)}`;
     };
 
-    const handleComponent: HandleComponent = (interfaceName, component) => {
+    const handleComponent: HandleComponent = (component) => {
       const typeString = this.handleComponentSchema(component);
 
       const bodyType = `/** ${apiItem.summary ?? ""} */
-            const ${interfaceName} = {
+            const ${this.bodyRequestName} = {
               ${typeString}
             }`;
       return `${bodyType}`;

@@ -20,6 +20,10 @@ export class Response {
     return this.openAPI.schemas;
   }
 
+  get responseName() {
+    return this.openAPI.responseName;
+  }
+
   get ref() {
     let responses = _.values(_.get(this.apiItem, "responses", {}));
 
@@ -44,28 +48,26 @@ export class Response {
   }
 
   getComponent({
-    notHaveResponseRef,
-    notHaveApiNameCache,
+    withOutResponseRef,
+    withOutApiNameCache,
     handleComponent,
   }: ResponseType.ResponseComponent) {
     const responseRef = this.ref;
-    const interfaceName = `${_.upperFirst(this.apiItem.requestName)}Response`;
 
     if (!responseRef) {
-      return notHaveResponseRef(interfaceName);
+      return withOutResponseRef();
     }
 
     //已经解析过采用继承的方式
     if (this.apiNameCache.has(responseRef)) {
-      return notHaveApiNameCache(responseRef, interfaceName);
+      return withOutApiNameCache(responseRef);
     }
-    this.apiNameCache.set(responseRef, interfaceName);
+    this.apiNameCache.set(responseRef, this.responseName);
 
-    const [component] = this.schemas.getComponent(responseRef) as [
-      OpenAPIV3.SchemaObject,
-      boolean
-    ];
+    const component = this.schemas.getComponent(
+      responseRef
+    ) as OpenAPIV3.SchemaObject;
 
-    return handleComponent(interfaceName, component);
+    return handleComponent(component);
   }
 }

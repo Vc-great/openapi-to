@@ -76,7 +76,7 @@ export function getResponseRef(apiItem: ApiData) {
 
 export function formatterBaseType(
   schemaObject: OpenAPIV3.SchemaObject | undefined
-) {
+): string {
   if (_.isNil(schemaObject)) {
     return "";
   }
@@ -106,15 +106,17 @@ export function formatterBaseType(
     "items" in schemaObject &&
     "type" in schemaObject.items
   ) {
-    return `${schemaObject.items.type}[]`;
+    return `${formatterBaseType(schemaObject.items)}`;
   }
 
   //todo
   if (type === "object") {
     errorLog("type ===object");
+    return "";
   }
 
   errorLog("interface type");
+  return "";
 }
 
 /**

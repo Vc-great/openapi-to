@@ -10,15 +10,17 @@ import type {
   OpenApi3FormatData,
   RefHasCache,
 } from "./types";
-import { formatterBaseType, prettierFile } from "./utils";
+import { numberEnum, prettierFile, stringEnum } from "./utils";
 import { OpenAPIV3 } from "openapi-types";
 import path from "path";
-import { successLog } from "./log";
+import { errorLog, successLog } from "./log";
 import { OpenAPI } from "./OpenAPI";
 import { ComponentSchema, ResponseType } from "./types";
 
-export class GenerateTSInterface extends OpenAPI implements GenerateCode {
+export class GenerateZod extends OpenAPI implements GenerateCode {
   enumSchema: Map<string, object>;
+  zodName: Set<string>;
+  typeByZod: Set<string>;
   constructor(
     public config: Config,
     openApi3SourceData: OpenAPIV3.Document,
@@ -29,28 +31,56 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     this.openApi3FormatData = openApi3FormatData;
 
     this.enumSchema = new Map();
+    this.zodName = new Set();
+    this.typeByZod = new Set();
     this.config = config;
   }
 
   //query参数
-  getQueryParams() {
+  getQueryParamsType() {
     if (_.isEmpty(this.query.parameters)) {
       return "";
     }
-    return `/** ${this.apiItem.summary ?? ""}*/
-    export interface ${this.queryRequestName} {
-                 ${this.handleParameters(this.query.parameters)}
-            }`;
+
+    const zod = `/** ${this.apiItem.summary ?? ""}*/
+       const ${this.lowerFirstQueryRequestName} = z.object({
+       ${this.handleParameters(this.query.parameters)}
+       })`;
+
+    const type = `/** ${this.apiItem.summary ?? ""}*/
+    export type ${this.queryRequestName} =  z.infer<typeof ${
+      this.lowerFirstQueryRequestName
+    }>`;
+
+    this.typeByZod.add(type);
+
+    this.zodName.add(`/** ${this.apiItem.summary ?? ""}*/
+    ${this.lowerFirstQueryRequestName}`);
+
+    return zod;
   }
 
   getPathParams() {
     if (_.isEmpty(this.path.parameters)) {
       return "";
     }
-    return `/** ${this.apiItem.summary ?? ""}*/
-    export interface ${this.pathRequestName} {
-                 ${this.handleParameters(this.path.parameters)}
-            }`;
+
+    const zod = `/** ${this.apiItem.summary ?? ""}*/
+       const ${this.lowerFirstPathRequestName} = z.object({
+       ${this.handleParameters(this.path.parameters)}
+       })`;
+
+    const type = `/** ${this.apiItem.summary ?? ""}*/
+    export type ${this.pathRequestName} =  z.infer<typeof ${
+      this.lowerFirstPathRequestName
+    }>`;
+
+    this.typeByZod.add(type);
+
+    this.zodName.add(`/** ${this.apiItem.summary ?? ""}*/
+    ${this.lowerFirstPathRequestName}`);
+
+    return zod;
   }
 
   handleParameters(
@@ -66,44 +96,83 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
         }
         //todo 补充$ref逻辑
         if (item.schema && "$ref" in item.schema) {
+          console.log("-> handleParameters异常");
           return "";
         }
 
-        if (item.schema && !("$ref" in item.schema)) {
-          return `/** ${item.description ?? ""} */
-              ${item.name.includes("-") ? _.camelCase(item.name) : item.name}${
-            item.required ? "" : "?"
-          }:${formatterBaseType(item.schema)}${
-            item.schema.type === "array" ? "[]" : ""
-          }`;
-        }
-
         return `/** ${item.description ?? ""} */
-              ${item.name.includes("-") ? _.camelCase(item.name) : item.name}${
-          item.required ? "" : "?"
-        }:${formatterBaseType(item.schema)}`;
+              ${
+                item.name.includes("-") ? _.camelCase(item.name) : item.name
+              }:${this.formatterBaseType(item.schema)}${
+          item.required ? "" : ".optional()"
+        },`;
       });
     };
     const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
     return _.flow(itemTypeMap, joinItem)(parameters);
   }
 
+  formatterBaseType(schemaObject: OpenAPIV3.SchemaObject | undefined): string {
+    if (_.isNil(schemaObject)) {
+      return "";
+    }
+    let type = schemaObject.type;
+
+    if (
+      numberEnum.includes(type || "") ||
+      numberEnum.includes(schemaObject.format || "")
+    ) {
+      return "z.number()";
+    }
+
+    /*   if (dateEnum.includes(type)) {
+          return "Date";
+        }*/
+
+    if (stringEnum.includes(type || "")) {
+      return "z.string()";
+    }
+
+    if (type === "boolean") {
+      return "z.boolean()";
+    }
+
+    if (
+      type === "array" &&
+      "items" in schemaObject &&
+      "type" in schemaObject.items
+    ) {
+      return `${this.formatterBaseType(schemaObject.items)}`;
+    }
+
+    //todo
+    if (type === "object") {
+      errorLog("type ===object");
+      return "";
+    }
+
+    errorLog("interface type");
+    return "";
+  }
+
   getBodyParamsType() {
     const refHasCache: RefHasCache = ($ref) => {
       return `/** ${this.apiItem.summary ?? ""} */
-      export interface ${this.bodyRequestName} extends ${this.apiNameCache.get(
-        $ref
-      )}{}`;
+     const  ${this.lowerFirstBodyRequestName} =z.lazy(() =>${_.lowerFirst(
+        this.apiNameCache.get($ref)
+      )}.extend({}))`;
     };
 
     const arrayItems: ArrayItems = (items) => {
       return `/** ${this.apiItem.summary} */
-      export type ${this.bodyRequestName} = ${formatterBaseType(items)}[]`;
+      const ${this.lowerFirstBodyRequestName} = ${this.formatterBaseType(
+        items
+      )}.array()`;
     };
 
     const baseType: BaseType = (component) => {
       return `/** ${this.apiItem.summary} */
-            export type ${this.bodyRequestName} = ${formatterBaseType(
+           const  ${this.lowerFirstBodyRequestName} = ${this.formatterBaseType(
         component
       )}`;
     };
@@ -111,24 +180,35 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     const handleComponent: HandleComponent = (component) => {
       const typeString = this.handleComponentSchema(component);
 
-      const bodyType = `/** ${this.apiItem.summary ?? ""} */
-            export interface ${this.bodyRequestName} {
+      return `/** ${this.apiItem.summary ?? ""} */
+           const  ${this.lowerFirstBodyRequestName} = z.object({
               ${typeString}
-            }`;
-      return `${bodyType}`;
+            })`;
     };
 
-    return this.requestBody.getParams({
+    const zod = this.requestBody.getParams({
       refHasCache,
       arrayItems,
       baseType,
       handleComponent,
     });
+
+    const type = zod
+      ? `/** ${this.apiItem.summary ?? ""} */
+    export type ${this.bodyRequestName}= z.infer<typeof ${
+          this.lowerFirstBodyRequestName
+        }>`
+      : "";
+    zod &&
+      this.zodName.add(`/** ${this.apiItem.summary ?? ""} */
+    ${this.lowerFirstBodyRequestName}`);
+
+    this.typeByZod.add(type);
+    return zod;
   }
   //
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
     this.pendingRefCache.clear();
-
     const generateInterface = (
       component: OpenAPIV3.SchemaObject | undefined,
       index: number
@@ -137,16 +217,38 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
         return undefined;
       }
       const interfaceName = _.upperFirst($refs[index].split("/").pop());
+      const lowFirstInterfaceName = _.lowerFirst($refs[index].split("/").pop());
       //没有properties
       if (component.type === "object" && !component.properties) {
-        return `/**${component.title}*/
-      export type ${interfaceName} = object`;
+        this.zodName.add(`/**${component.title}*/
+    ${lowFirstInterfaceName}`);
+
+        const zod = `/**${component.title}*/
+       const ${lowFirstInterfaceName} = z.object({}),`;
+        const type = `/**${component.title}*/
+                           export type ${interfaceName} = z.infer<typeof ${lowFirstInterfaceName}>`;
+        this.typeByZod.add(type);
+
+        this.zodName.add(`/**${component.title}*/
+         ${lowFirstInterfaceName}`);
+
+        return zod;
       }
 
-      return `/**${component.title ?? ""}*/
-      export  interface ${_.upperFirst(interfaceName)} {
-              ${this.handleComponentSchema(component)}
-             }`;
+      this.zodName.add(`/**${component.title}*/
+    ${lowFirstInterfaceName}`);
+
+      const zod = `/**${component.title ?? ""}*/
+     const ${lowFirstInterfaceName} = z.object({
+      ${this.handleComponentSchema(component)}
+      })`;
+      const type = `/**${component.title ?? ""}*/
+      export type ${_.upperFirst(
+        interfaceName
+      )} = z.infer<typeof ${lowFirstInterfaceName}>`;
+
+      this.typeByZod.add(type);
+      return zod;
     };
 
     typeString +=
@@ -162,7 +264,6 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     this.pendingRefCache = new Set(
       _.without([...this.pendingRefCache], ...$refs)
     );
-
     return this.pendingRefCache.size
       ? this.getComponentTypeByRef([...this.pendingRefCache.keys()], typeString)
       : typeString;
@@ -171,16 +272,16 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
   getResponseType(apiItem: ApiData) {
     const withOutResponseRef: ResponseType.withOutResponseRef = () => {
       return `/** ${apiItem.summary} */
-           export  interface ${this.responseName} {}`;
+          const  ${this.lowFirstResponseName} = z.object({})`;
     };
 
     const withOutApiNameCache: ResponseType.withOutApiNameCache = (
       responseRef
     ) => {
       return `/** ${apiItem.summary} */
-      export interface ${this.responseName} extends ${this.apiNameCache.get(
-        responseRef
-      )}{}`;
+     const  ${this.lowFirstResponseName} = z.lazy(() =>${_.lowerFirst(
+        this.apiNameCache.get(responseRef)
+      )}.extend({}))`;
     };
 
     const handleComponent: HandleComponent = (component) => {
@@ -188,17 +289,28 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
 
       //
       const bodyTypeStr = `/** ${apiItem.summary} */
-           export  interface ${this.responseName} {
-              ${typeString}
-            }`;
-      return `${bodyTypeStr}`;
+          const  ${this.lowFirstResponseName} =  z.object({
+            ${typeString}
+            })`;
+      return bodyTypeStr;
     };
 
-    return this.response.getComponent({
+    const zod = this.response.getComponent({
       withOutResponseRef,
       withOutApiNameCache,
       handleComponent,
     });
+
+    const type = `/** ${this.apiItem.summary ?? ""} */
+   export type ${this.responseName}= z.infer<typeof ${
+      this.lowFirstResponseName
+    }>`;
+
+    this.zodName.add(`/** ${this.apiItem.summary ?? ""} */
+    ${this.lowFirstResponseName}`);
+
+    this.typeByZod.add(type);
+    return zod;
   }
   // 生成ts类型
   public run(tagItem: ApiData[]) {
@@ -206,26 +318,45 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     this.pendingRefCache.clear();
     this.schemas.clearCache();
     this.apiNameCache.clear();
+    this.zodName.clear();
+    this.typeByZod.clear();
 
-    const tagItemTypeString = tagItem
+    const tagItemString = tagItem
       .map((apiItem) => {
         this.apiItem = apiItem;
-        const types = [
-          this.getQueryParams(),
-          this.getPathParams(),
-          this.getBodyParamsType(),
-          this.getResponseType(apiItem),
-          this.getComponentTypeByRef([...this.pendingRefCache.keys()]),
-        ];
+        const queryZod = this.getQueryParamsType();
+        const pathZod = this.getPathParams();
+        const bodyZod = this.getBodyParamsType();
+        const responseZod = this.getResponseType(apiItem);
+        const componentZod = this.getComponentTypeByRef([
+          ...this.pendingRefCache.keys(),
+        ]);
+        const zods = [queryZod, pathZod, bodyZod, responseZod, componentZod];
+
         const filterEmpty = (types: string[]) => types.filter((type) => type);
         const addType = (types: string[]) => types.join("\n");
 
-        return _.flow([filterEmpty, addType])(types);
+        return _.flow([filterEmpty, addType])(zods);
       })
       .join("\n");
 
-    const addEslint = (tagItemTypeString: string) => `
+    const addEslint = (tagItemString: string) => `
     //eslint-disable-next-line @typescript-eslint/no-namespace
+    import {z} from 'zod'
+
+      ${tagItemString}
+      
+      /**
+     *@tag ${_.get(tagItem, "[0].tags[0]", "")}
+     *@description ${_.get(tagItem, "[0].tagDescription", "")}
+     */
+     //todo edit zod name
+    export const ZOD = {
+    ${[...this.zodName].join(",\n")}
+}
+    
+    
+    
     /**
      *@tag ${_.get(tagItem, "[0].tags[0]", "")}
      *@description ${_.get(tagItem, "[0].tagDescription", "")}
@@ -234,13 +365,15 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     export namespace ApiType {
       /**error response*/
        export interface ErrorResponse {}
-      ${tagItemTypeString}
+      ${[...this.typeByZod].join("\n")}
+  
     }
-      ${this.getEnumOption(Array.from(this.enumSchema.entries()))}`;
+      ${this.getEnumOption(Array.from(this.enumSchema.entries()))}
+    `;
 
     return {
       title: _.get(_.head(tagItem), "tags[0]", ""),
-      codeString: prettierFile(addEslint(tagItemTypeString)),
+      codeString: prettierFile(addEslint(tagItemString)),
     };
   }
   //this.enumSchema.entries(),
@@ -252,6 +385,7 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       (result, [key, value]) => {
         const labelName = `${_.upperFirst(_.camelCase(key))}Label`;
         const valueName = `${_.upperFirst(_.camelCase(key))}`;
+
         result += `
         /**${value.description}*/
         export const enum ${labelName} {
@@ -277,6 +411,7 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
                   }{label:${labelName}.${item},value:${valueName}.${item}}`;
                 })}
           ]`;
+
         return result;
       },
       ""
@@ -300,16 +435,16 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       const componentName = schemaObject.$ref.split("/").pop();
 
       return `/**${component.title ?? ""}*/
-      ${key}${parent?.required?.includes(key || "") ? "" : "?"}:${_.upperFirst(
-        componentName
-      )}${component.type === "array" ? "[]" : ""}`;
+      ${key}:z.lazy(()=>${_.lowerFirst(componentName)}${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      }${component.type === "array" ? ".array()" : ""}),`;
     };
     const arraySchemaObjectItemsHas$Ref: ComponentSchema.ArraySchemaObjectItemsHas$Ref =
       ({ $ref, schemaObjectTitle }) => {
         return `/**${schemaObjectTitle ?? ""}*/
-        ${key}${parent?.required?.includes(key || "") ? "" : "?"}:${
-          _.upperFirst($ref.split("/").pop()) + "[]"
-        }`;
+        ${key}:z.lazy(()=>${_.lowerFirst($ref.split("/").pop())}${
+          parent?.required?.includes(key || "") ? "" : ".optional()"
+        }.array()),`;
       };
     const arrayItemsNo$ref: ComponentSchema.ArrayItemsNo$ref = ({
       schemaObjectDescription,
@@ -318,9 +453,9 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObjectDescription ?? ""}*/
-      ${key ?? ""}${
-        parent?.required?.includes(key || "") ? "" : "?"
-      }:${formatterBaseType(schemaObjectItems)}[]`;
+      ${key ?? ""}:${this.formatterBaseType(schemaObjectItems)}${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      }.array(),`;
     };
     const objectNotHaveProperties: ComponentSchema.ObjectNotHaveProperties = ({
       schemaObjectDescription,
@@ -328,9 +463,9 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObjectDescription ?? ""}*/
-        ${key ?? ""}${
-        parent?.required?.includes(key || "") ? "" : "?"
-      }: object`;
+        ${key ?? ""}: z.object()${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      },`;
     };
     const objectHasProperties: ComponentSchema.ObjectHasProperties = ({
       schemaObject,
@@ -356,9 +491,9 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     }) => {
       this.enumSchema.set(key, schemaObject);
       return `/**${schemaObjectDescription ?? ""}*/
-      ${key}${
-        parent?.required?.includes(key) ? "" : "?"
-      }:${this.resolveEnumObject(schemaObjectEnum)}`;
+      ${key}:${this.resolveEnumObject(schemaObjectEnum)}${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      },`;
     };
 
     const baseOfNumber: ComponentSchema.BaseOfNumber = ({
@@ -367,9 +502,9 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObject.description ?? ""}*/
-      ${key}${
-        parent?.required?.includes(key || "") ? "" : "?"
-      }:${formatterBaseType(schemaObject)}`;
+      ${key}:${this.formatterBaseType(schemaObject)}${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      },`;
     };
     const baseOfString: ComponentSchema.BaseOfString = ({
       schemaObject,
@@ -377,9 +512,9 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `${this.getStringDescription(schemaObject)}
-      ${key}${
-        parent?.required?.includes(key || "") ? "" : "?"
-      }:${formatterBaseType(schemaObject)}`;
+      ${key}:${this.formatterBaseType(schemaObject)}${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      },`;
     };
     const baseOfBoolean: ComponentSchema.BaseOfBoolean = ({
       schemaObject,
@@ -387,9 +522,9 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObject.description ?? ""}*/
-      ${key}${
-        parent?.required?.includes(key || "") ? "" : "?"
-      }:${formatterBaseType(schemaObject)}`;
+      ${key}:${this.formatterBaseType(schemaObject)}${
+        parent?.required?.includes(key || "") ? "" : ".optional()"
+      },`;
     };
 
     return this.schemas.handleComponentSchema(
@@ -433,23 +568,24 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
     return `/**${schemaObject.description ?? ""}*/`;
   }
   resolveEnumObject(schemaObjectEnum: unknown[] | undefined) {
+    // z.enum(["Salmon", "Tuna", "Trout"])
     return Array.isArray(schemaObjectEnum)
       ? _.reduce(
           schemaObjectEnum,
           (result, value, index) => {
             result += `'${value}'${
-              schemaObjectEnum?.length === index + 1 ? "" : "|"
+              schemaObjectEnum?.length === index + 1 ? "])" : ","
             }`;
             return result;
           },
-          ""
+          "z.enum(["
         )
-      : "string";
+      : "";
   }
 
   writeFile(title: string, codeString: string) {
-    const filePath = path.join(this.config.output, `${title}Types.ts`);
+    const filePath = path.join(this.config.output, `${title}Zod.ts`);
     fse.outputFileSync(filePath, codeString);
-    successLog(`${title} interface write succeeded!`);
+    successLog(`${title} zod write succeeded!`);
   }
 }

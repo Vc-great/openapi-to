@@ -12,11 +12,9 @@ import {
   downLoadResponseType,
   generateUploadFormData,
   getParamsSerializer,
-  numberEnum,
   prettierFile,
-  stringEnum,
 } from "./utils";
-import { errorLog, successLog } from "./log";
+import { successLog } from "./log";
 import { OpenAPI } from "./OpenAPI";
 
 export class GenerateTSRequest extends OpenAPI implements GenerateCode {
@@ -33,52 +31,28 @@ export class GenerateTSRequest extends OpenAPI implements GenerateCode {
   }
 
   get queryRequest() {
-    return `${this.namespaceName}.${_.upperFirst(
-      this.apiItem.requestName
-    )}QueryRequest`;
+    return `${this.namespaceName}.${this.queryRequestName}`;
+  }
+  get pathRequest() {
+    return `${this.namespaceName}.${this.pathRequestName}`;
   }
 
   get bodyRequest() {
-    return `${this.namespaceName}.${_.upperFirst(
-      this.apiItem.requestName
-    )}BodyRequest`;
+    return `${this.namespaceName}.${this.bodyRequestName}`;
+  }
+
+  get hasZodDecorator() {
+    return this.config.zodDecorator;
   }
 
   get pathParametersType() {
-    const formatterBaseType = (
-      schemaObject:
-        | OpenAPIV3.ReferenceObject
-        | OpenAPIV3.SchemaObject
-        | undefined
-    ) => {
-      if (!schemaObject) {
-        return "";
-      }
-      if ("$ref" in schemaObject) {
-        //todo
-        errorLog("pathParams");
-        return "";
-      }
-
-      let type = schemaObject.type || "";
-      if (
-        numberEnum.includes(type) ||
-        numberEnum.includes(schemaObject.format || "")
-      ) {
-        return "number";
-      }
-      if (stringEnum.includes(type)) {
-        return "string";
-      }
-      return type;
-    };
-
     return _.chain(this.path.parameters)
       .map((parameter) => {
         if ("$ref" in parameter) return "";
-        return `${_.camelCase(parameter.name)}:${formatterBaseType(
-          parameter.schema
-        )}`;
+        const zodSchemaPath = `${this.lowerFirstPathRequestName}.shape.${parameter.name}`;
+        return `${this.generatorZodPathDecorator(zodSchemaPath)}${_.camelCase(
+          parameter.name
+        )}:${this.pathRequest}['${parameter.name}']`;
       })
       .join()
       .value();
@@ -120,9 +94,30 @@ export class GenerateTSRequest extends OpenAPI implements GenerateCode {
     const name = _.get(_.head(tagItem), "tags[0]", "");
     const tagDescription = _.get(_.head(tagItem), "tagDescription", "");
     return `/**
-           *@tagName ${name}.
-           *@tagDescription ${tagDescription}.
+           *@tag ${name ?? ""}.
+           *@description ${tagDescription ?? ""}.
            */`;
+  }
+
+  get zodMethodDecorator() {
+    if (this.hasZodDecorator) {
+      return `@zodValidate
+  @responseZodSchema(ZOD.${this.lowFirstResponseName})\n`;
+    }
+    return "";
+  }
+
+  generatorZodPathDecorator(zodSchema: string) {
+    if (this.hasZodDecorator) {
+      return `@paramsZodSchema(ZOD.${zodSchema})`;
+    }
+    return "";
+  }
+  generatorZodParamsDecorator(zodSchema: string) {
+    if (this.hasZodDecorator) {
+      return `@paramsZodSchema(ZOD.${zodSchema})`;
+    }
+    return "";
   }
 
   generatorFuncContent(apiItem: ApiData) {
@@ -130,12 +125,19 @@ export class GenerateTSRequest extends OpenAPI implements GenerateCode {
       apiItem,
       this.openApi3SourceData
     );
-
     //函数参数
     const funcParams = [
       this.path.hasPathParameters ? this.pathParametersType : "",
-      this.query.hasQueryParameters ? `query:${this.queryRequest}` : "",
-      this.requestBody.hasRequestBodyParams ? `body:${this.bodyRequest}` : "",
+      this.query.hasQueryParameters
+        ? `${this.generatorZodParamsDecorator(
+            this.lowerFirstQueryRequestName
+          )}query:${this.queryRequest}`
+        : "",
+      this.requestBody.hasRequestBodyParams
+        ? `${this.generatorZodParamsDecorator(
+            this.lowerFirstBodyRequestName
+          )}body:${this.bodyRequest}`
+        : "",
     ]
       .filter((x) => x)
       .join();
@@ -151,13 +153,12 @@ export class GenerateTSRequest extends OpenAPI implements GenerateCode {
       downLoadResponseType(apiItem),
       formDataHeader,
     ];
-    return ` ${
+
+    return `${this.zodMethodDecorator}${
       apiItem.requestName
-    }(${funcParams}):Promise<[ApiType.ErrorResponse,${
-      this.namespaceName
-    }.${_.upperFirst(apiItem.requestName)}Response]>{${
-      uploadFormData ? "\n" + uploadFormData + "\n" : ""
-    }
+    }(${funcParams}):Promise<[ApiType.ErrorResponse,${this.namespaceName}.${
+      this.responseName
+    }]>{${uploadFormData ? "\n" + uploadFormData + "\n" : ""}
       return request.${apiItem.method}({
         ${_.chain(contents)
           .filter((x) => !!x)
@@ -173,7 +174,8 @@ export class GenerateTSRequest extends OpenAPI implements GenerateCode {
   //函数注释
   generatorFuncJSDoc(apiItem: ApiData) {
     return `/**
-    *@apiSummary ${apiItem.summary} 
+    *@summary ${apiItem.summary ?? ""} 
+    *@description ${apiItem.description ?? ""} 
     */`;
   }
 

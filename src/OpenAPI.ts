@@ -5,6 +5,7 @@ import { ParameterQuery } from "./ParameterQuery";
 import { RequestBody } from "./RequestBody";
 import { Response } from "./Response";
 import { Schema } from "./Schema";
+import _ from "lodash";
 
 export class OpenAPI {
   public apiItem: ApiData;
@@ -27,5 +28,34 @@ export class OpenAPI {
     this.requestBody = new RequestBody(this);
     this.response = new Response(this);
     this.schemas = new Schema(this);
+  }
+
+  get queryRequestName() {
+    return `${_.upperFirst(this.apiItem.requestName)}QueryRequest`;
+  }
+  get pathRequestName() {
+    return `${_.upperFirst(this.apiItem.requestName)}PathRequest`;
+  }
+  get bodyRequestName() {
+    return `${_.upperFirst(this.apiItem.requestName)}BodyRequest`;
+  }
+  get responseName() {
+    return `${_.upperFirst(this.apiItem.requestName)}Response`;
+  }
+
+  get lowerFirstQueryRequestName() {
+    return _.lowerFirst(this.queryRequestName);
+  }
+
+  get lowerFirstPathRequestName() {
+    return _.lowerFirst(this.pathRequestName);
+  }
+
+  get lowerFirstBodyRequestName() {
+    return _.lowerFirst(this.bodyRequestName);
+  }
+
+  get lowFirstResponseName() {
+    return _.lowerFirst(this.responseName);
   }
 }

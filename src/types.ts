@@ -7,6 +7,12 @@ type WithRequiredProperty<Type, Key extends keyof Type> = Type & {
 
 export type ConfigTemplate = {
   projects: Project[];
+  jsRequest: boolean;
+  tsRequest: boolean;
+  tsInterface: boolean;
+  zod: boolean;
+  /**ts request file use zod decorator*/
+  zodDecorator: boolean;
 };
 
 export interface Project {
@@ -14,11 +20,19 @@ export interface Project {
   path: string;
 }
 
+//todo
 export interface Config {
   projectDir: string;
   output: string;
   title: string;
   path: string;
+  jsRequest: boolean;
+  tsRequest: boolean;
+  tsInterface: boolean;
+  requestObject: boolean;
+  zod: boolean;
+  /**ts request file use zod decorator*/
+  zodDecorator: boolean;
 }
 
 export interface ApiData extends OpenAPIV3.OperationObject {
@@ -56,19 +70,10 @@ export type HttpMethod = "get" | "put" | "post" | "delete" | "patch";
 
 export type ApiNameCache = Map<string, string>;
 
-export type RefHasCache = (interfaceName: string, $ref: string) => string;
-export type ArrayItems = (
-  interfaceName: string,
-  items: OpenAPIV3.SchemaObject
-) => string;
-export type BaseType = (
-  interfaceName: string,
-  component: OpenAPIV3.SchemaObject
-) => string;
-export type HandleComponent = (
-  interfaceName: string,
-  component: OpenAPIV3.SchemaObject
-) => string;
+export type RefHasCache = ($ref: string) => string;
+export type ArrayItems = (items: OpenAPIV3.SchemaObject) => string;
+export type BaseType = (component: OpenAPIV3.SchemaObject) => string;
+export type HandleComponent = (component: OpenAPIV3.SchemaObject) => string;
 export interface RequestBodyParams {
   refHasCache: RefHasCache;
   arrayItems: ArrayItems;
@@ -77,16 +82,13 @@ export interface RequestBodyParams {
 }
 
 export namespace ResponseType {
-  export type NotHaveResponseRef = (interfaceName: string) => string;
+  export type withOutResponseRef = () => string | string[];
 
-  export type NotHaveApiNameCache = (
-    responseRef: string,
-    interfaceName: string
-  ) => string;
+  export type withOutApiNameCache = (responseRef: string) => string;
 
   export interface ResponseComponent {
-    notHaveResponseRef: NotHaveResponseRef;
-    notHaveApiNameCache: NotHaveApiNameCache;
+    withOutResponseRef: withOutResponseRef;
+    withOutApiNameCache: withOutApiNameCache;
     handleComponent: HandleComponent;
   }
 }
@@ -170,11 +172,13 @@ export namespace ComponentSchema {
   }) => string;
 
   export type HasEnum = ({
+    schemaObject,
     schemaObjectEnum,
     schemaObjectDescription,
     parent,
     key,
   }: {
+    schemaObject: OpenAPIV3.SchemaObject;
     schemaObjectEnum: any[];
     schemaObjectDescription: string | undefined;
     parent: OpenAPIV3.SchemaObject | undefined;

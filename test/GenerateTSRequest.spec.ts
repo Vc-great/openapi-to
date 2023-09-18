@@ -4,29 +4,28 @@ import _ from "lodash";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 import { tsApiExpected } from "../mock/tsApiExpected";
+import { tsResquestZodDecoratorExpected } from "../mock/tsResquestZodDecoratorExpected";
 
 const generateApi = new GenerateTSRequest({}, {}, {});
 
-test("classDoc", () => {
-  const doc = generateApi.generatorClassJSDoc(openApi3Formatter.pet);
-  const str = `/**
-           *@tagName pet.
-           *@tagDescription Everything about your Pets.
-           */`;
-  return expect(doc).toBe(str);
+test("run zodDecorator true", () => {
+  const tagItem = openApi3Formatter.pet;
+  const generateApi = new GenerateTSRequest(
+    { zodDecorator: true },
+    openApi3,
+    openApi3Formatter
+  );
+  const result = generateApi.run(tagItem);
+  return expect(result.codeString).toBe(tsResquestZodDecoratorExpected);
 });
 
-test("functionDoc", () => {
-  const apiItem = _.head(openApi3Formatter.pet);
-  const doc = generateApi.generatorFuncJSDoc(apiItem);
-  const str = `/**
-    *@apiSummary uploads an image 
-    */`;
-  return expect(doc).toBe(str);
-});
-test("run", () => {
+test("run zodDecorator false", () => {
   const tagItem = openApi3Formatter.pet;
-  const generateApi = new GenerateTSRequest({}, openApi3, openApi3Formatter);
+  const generateApi = new GenerateTSRequest(
+    { zodDecorator: false },
+    openApi3,
+    openApi3Formatter
+  );
   const result = generateApi.run(tagItem);
   return expect(result.codeString).toBe(tsApiExpected);
 });

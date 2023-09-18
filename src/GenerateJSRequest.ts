@@ -88,8 +88,8 @@ ${this.generatorClassJSDoc(tagItem)}
     const name = _.get(_.head(tagItem), "tags[0]", "");
     const tagDescription = _.get(_.head(tagItem), "tagDescription", "");
     return `/**
-           *@tagName ${name}.
-           *@tagDescription ${tagDescription}.
+           *@tag ${name ?? ""}
+           *@description ${tagDescription ?? ""}
            */`;
   }
 
@@ -233,21 +233,23 @@ ${this.generatorClassJSDoc(tagItem)}
   }
 
   generateBodyParams(apiItem: ApiData) {
-    const refHasCache: RefHasCache = (interfaceName, $ref) => {
+    const refHasCache: RefHasCache = ($ref) => {
       return `*@param {${this.apiNameCache.get($ref)}} body`;
     };
 
-    const arrayItems: ArrayItems = (interfaceName, items) => {
+    const arrayItems: ArrayItems = (items) => {
       return `*@param {${formatterBaseType(items)}[]} body ${_.upperFirst(
         this.apiItem.requestName
       )}`;
     };
 
-    const baseType: BaseType = (interfaceName, component) => {
-      return `*@param {${formatterBaseType(component)}} body ${interfaceName}`;
+    const baseType: BaseType = (component) => {
+      return `*@param {${formatterBaseType(component)}} body ${
+        this.bodyRequestName
+      }`;
     };
 
-    const handleComponent: HandleComponent = (interfaceName, component) => {
+    const handleComponent: HandleComponent = (component) => {
       const typeString = this.handleComponentSchema(
         component,
         "param",
@@ -255,12 +257,13 @@ ${this.generatorClassJSDoc(tagItem)}
       );
 
       this.globalDoc.push(`/**
-    *@apiSummary ${this.apiItem.summary}
-    *@typedef {Object} ${interfaceName}
+    *@summary ${this.apiItem.summary ?? ""}
+    *@description ${this.apiItem.description ?? ""}
+    *@typedef {Object} ${this.bodyRequestName}
       ${typeString}
     */`);
 
-      return `*@param {${interfaceName}} body`;
+      return `*@param {${this.bodyRequestName}} body`;
     };
 
     return this.requestBody.getParams({
@@ -461,13 +464,11 @@ ${this.generatorClassJSDoc(tagItem)}
   }
 
   generateResponseType(apiItem: ApiData) {
-    const notHaveResponseRef: ResponseType.NotHaveResponseRef = (
-      interfaceName
-    ) => {
-      return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
+    const withOutResponseRef: ResponseType.withOutResponseRef = () => {
+      return `*@returns {Promise<[ErrorResponse, ${this.responseName}]>}`;
     };
 
-    const notHaveApiNameCache: ResponseType.NotHaveApiNameCache = (
+    const withOutApiNameCache: ResponseType.withOutApiNameCache = (
       responseRef
     ) => {
       return `*@returns {Promise<[ErrorResponse, ${this.apiNameCache.get(
@@ -475,50 +476,23 @@ ${this.generatorClassJSDoc(tagItem)}
       )}]>}`;
     };
 
-    const handleComponent: HandleComponent = (interfaceName, component) => {
+    const handleComponent: HandleComponent = (component) => {
       const typeString = this.handleComponentSchema(component, "property");
 
       this.globalDoc.push(`/**
-    *@apiSummary ${apiItem.summary}
-    *@typedef {Object} ${interfaceName}
+    *@summary ${apiItem.summary ?? ""}
+    *@description ${apiItem.description ?? ""}
+    *@typedef {Object} ${this.responseName}
       ${typeString}
     */`);
-      return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
+      return `*@returns {Promise<[ErrorResponse, ${this.responseName}]>}`;
     };
 
     return this.response.getComponent({
-      notHaveResponseRef,
-      notHaveApiNameCache,
+      withOutResponseRef,
+      withOutApiNameCache,
       handleComponent,
     });
-
-    /*    const interfaceName = `${_.upperFirst(apiItem.requestName)}Response`;
-    const responseRef = this.response.ref;
-    if (!responseRef) {
-      return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;
-    }
-
-    //已经解析过采用继承的方式
-    if (this.apiNameCache.has(responseRef)) {
-      return `*@returns {Promise<[ErrorResponse, ${this.apiNameCache.get(
-        responseRef
-      )}]>}`;
-    }
-    this.apiNameCache.set(responseRef, interfaceName);
-
-    const [component] = this.schemas.getComponent(responseRef) as [
-      OpenAPIV3.SchemaObject,
-      boolean
-    ];
-
-    const typeString = this.handleComponentSchema(component, "property");
-
-    this.globalDoc.push(`/!**
-    *@apiSummary ${apiItem.summary}
-    *@typedef {Object} ${interfaceName}
-      ${typeString}
-    *!/`);
-    return `*@returns {Promise<[ErrorResponse, ${interfaceName}]>}`;*/
   }
 
   getComponentTypeByRef($refs: Array<string>, typeString: string = ""): string {
@@ -549,7 +523,7 @@ ${this.generatorClassJSDoc(tagItem)}
     typeString +=
       (typeString ? "\n" : "") +
       _.chain($refs)
-        .map((ref) => this.schemas.getComponent(ref)[0])
+        .map((ref) => this.schemas.getComponentResolveRefCache(ref))
         .map((component: OpenAPIV3.SchemaObject, index) =>
           generateInterface(component, index)
         )
@@ -581,7 +555,8 @@ ${this.generatorClassJSDoc(tagItem)}
       .join("\n");
 
     return `/**
-    *@apiSummary ${apiItem.summary ?? ""}
+    *@summary ${apiItem.summary ?? ""}
+    *@description ${apiItem.description ?? ""}
     ${paramString}
     */`;
   }

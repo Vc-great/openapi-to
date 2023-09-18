@@ -11,6 +11,7 @@ import { ConfigTemplate } from "./types";
 import { pathToFileURL } from "node:url";
 import { updateVersionMessage } from "./version";
 import { GenerateRequestObject } from "./GenerateRequestObject";
+import { GenerateZod } from "./GenerateZod";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -49,6 +50,7 @@ export async function generateApiCode(config: ConfigTemplate) {
     fse.ensureDirSync(output);
     //
     const generateCode = new GenerateCode({
+      ...config,
       ...item,
       output: output,
       projectDir: cwd,
@@ -57,22 +59,26 @@ export async function generateApiCode(config: ConfigTemplate) {
       await generateCode.init();
     generateCode.register(
       [
-        GenerateTSInterface,
-        GenerateTSRequest,
-        GenerateJSRequest,
-        GenerateRequestObject,
-      ].map(
-        (item) =>
-          new item(
-            {
-              ...item,
-              output: output,
-              projectDir: cwd,
-            },
-            openApi3SourceData,
-            openApi3FormatData
-          )
-      )
+        config.tsInterface ? GenerateTSInterface : "",
+        config.tsRequest ? GenerateTSRequest : "",
+        config.jsRequest ? GenerateJSRequest : "",
+        config.requestObject ? GenerateRequestObject : "",
+        config.zod ? GenerateZod : "",
+      ]
+        .filter((x) => x)
+        .map(
+          (item) =>
+            new item(
+              {
+                ...config,
+                ...item,
+                output: output,
+                projectDir: cwd,
+              },
+              openApi3SourceData,
+              openApi3FormatData
+            )
+        )
     );
     generateCode.allRun();
   });

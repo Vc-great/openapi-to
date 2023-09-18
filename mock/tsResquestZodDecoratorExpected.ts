@@ -1,4 +1,4 @@
-export const tsApiExpected =
+export const tsResquestZodDecoratorExpected =
   "//TODO: edit import\n" +
   "import type { ApiType } from './types';\n" +
   "import request from '@/api/request';\n" +
@@ -11,7 +11,11 @@ export const tsApiExpected =
   "     *@summary summary\n" +
   "     *@description\n" +
   "     */\n" +
-  "    testPut(body: ApiType.TestPutBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.TestPutResponse]> {\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.testPutResponse)\n" +
+  "    testPut(\n" +
+  "        @paramsZodSchema(ZOD.testPutBodyRequest) body: ApiType.TestPutBodyRequest\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.TestPutResponse]> {\n" +
   "        return request.put({\n" +
   "            url: `/pet/test`,\n" +
   "            data: body,\n" +
@@ -21,7 +25,11 @@ export const tsApiExpected =
   "     *@summary summary\n" +
   "     *@description\n" +
   "     */\n" +
-  "    testPost(body: ApiType.TestPostBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.TestPostResponse]> {\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.testPostResponse)\n" +
+  "    testPost(\n" +
+  "        @paramsZodSchema(ZOD.testPostBodyRequest) body: ApiType.TestPostBodyRequest\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.TestPostResponse]> {\n" +
   "        return request.post({\n" +
   "            url: `/pet/test`,\n" +
   "            data: body,\n" +
@@ -31,7 +39,11 @@ export const tsApiExpected =
   "     *@summary summary\n" +
   "     *@description\n" +
   "     */\n" +
-  "    delByTest(body: ApiType.DelByTestBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.DelByTestResponse]> {\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.delByTestResponse)\n" +
+  "    delByTest(\n" +
+  "        @paramsZodSchema(ZOD.delByTestBodyRequest) body: ApiType.DelByTestBodyRequest\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.DelByTestResponse]> {\n" +
   "        return request.delete({\n" +
   "            url: `/pet/test`,\n" +
   "            data: body,\n" +
@@ -41,9 +53,11 @@ export const tsApiExpected =
   "     *@summary summary\n" +
   "     *@description\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.idResponse)\n" +
   "    id(\n" +
-  "        id: ApiType.IdPathRequest['id'],\n" +
-  "        query: ApiType.IdQueryRequest\n" +
+  "        @paramsZodSchema(ZOD.idPathRequest.shape.id) id: ApiType.IdPathRequest['id'],\n" +
+  "        @paramsZodSchema(ZOD.idQueryRequest) query: ApiType.IdQueryRequest\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.IdResponse]> {\n" +
   "        return request.get({\n" +
   "            url: `/pet/test/${id}`,\n" +
@@ -57,9 +71,11 @@ export const tsApiExpected =
   "     *@summary uploads an image\n" +
   "     *@description pet\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.uploadImagePostResponse)\n" +
   "    uploadImagePost(\n" +
-  "        petId: ApiType.UploadImagePostPathRequest['petId'],\n" +
-  "        body: ApiType.UploadImagePostBodyRequest\n" +
+  "        @paramsZodSchema(ZOD.uploadImagePostPathRequest.shape.petId) petId: ApiType.UploadImagePostPathRequest['petId'],\n" +
+  "        @paramsZodSchema(ZOD.uploadImagePostBodyRequest) body: ApiType.UploadImagePostBodyRequest\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.UploadImagePostResponse]> {\n" +
   "        //todo 上传文件\n" +
   "        const formData = new FormData();\n" +
@@ -75,7 +91,11 @@ export const tsApiExpected =
   "     *@summary Update an existing pet\n" +
   "     *@description\n" +
   "     */\n" +
-  "    update(body: ApiType.UpdateBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.UpdateResponse]> {\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.updateResponse)\n" +
+  "    update(\n" +
+  "        @paramsZodSchema(ZOD.updateBodyRequest) body: ApiType.UpdateBodyRequest\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.UpdateResponse]> {\n" +
   "        return request.put({\n" +
   "            url: `/pet`,\n" +
   "            data: body,\n" +
@@ -85,7 +105,11 @@ export const tsApiExpected =
   "     *@summary Add a new pet to the store\n" +
   "     *@description\n" +
   "     */\n" +
-  "    create(body: ApiType.CreateBodyRequest): Promise<[ApiType.ErrorResponse, ApiType.CreateResponse]> {\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.createResponse)\n" +
+  "    create(\n" +
+  "        @paramsZodSchema(ZOD.createBodyRequest) body: ApiType.CreateBodyRequest\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.CreateResponse]> {\n" +
   "        return request.post({\n" +
   "            url: `/pet`,\n" +
   "            data: body,\n" +
@@ -95,8 +119,10 @@ export const tsApiExpected =
   "     *@summary Finds Pets by status\n" +
   "     *@description Multiple status values can be provided with comma separated strings\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.findByStatusGetResponse)\n" +
   "    findByStatusGet(\n" +
-  "        query: ApiType.FindByStatusGetQueryRequest\n" +
+  "        @paramsZodSchema(ZOD.findByStatusGetQueryRequest) query: ApiType.FindByStatusGetQueryRequest\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.FindByStatusGetResponse]> {\n" +
   "        return request.get({\n" +
   "            url: `/pet/findByStatus`,\n" +
@@ -110,8 +136,10 @@ export const tsApiExpected =
   "     *@summary Finds Pets by tags\n" +
   "     *@description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.findByTagsGetResponse)\n" +
   "    findByTagsGet(\n" +
-  "        query: ApiType.FindByTagsGetQueryRequest\n" +
+  "        @paramsZodSchema(ZOD.findByTagsGetQueryRequest) query: ApiType.FindByTagsGetQueryRequest\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.FindByTagsGetResponse]> {\n" +
   "        return request.get({\n" +
   "            url: `/pet/findByTags`,\n" +
@@ -125,8 +153,10 @@ export const tsApiExpected =
   "     *@summary Find pet by ID\n" +
   "     *@description Returns a single pet\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.detailByPetIdResponse)\n" +
   "    detailByPetId(\n" +
-  "        petId: ApiType.DetailByPetIdPathRequest['petId']\n" +
+  "        @paramsZodSchema(ZOD.detailByPetIdPathRequest.shape.petId) petId: ApiType.DetailByPetIdPathRequest['petId']\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {\n" +
   "        return request.get({\n" +
   "            url: `/pet/${petId}`,\n" +
@@ -136,9 +166,11 @@ export const tsApiExpected =
   "     *@summary Updates a pet in the store with form data\n" +
   "     *@description\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.petIdResponse)\n" +
   "    petId(\n" +
-  "        petId: ApiType.PetIdPathRequest['petId'],\n" +
-  "        body: ApiType.PetIdBodyRequest\n" +
+  "        @paramsZodSchema(ZOD.petIdPathRequest.shape.petId) petId: ApiType.PetIdPathRequest['petId'],\n" +
+  "        @paramsZodSchema(ZOD.petIdBodyRequest) body: ApiType.PetIdBodyRequest\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.PetIdResponse]> {\n" +
   "        return request.post({\n" +
   "            url: `/pet/${petId}`,\n" +
@@ -149,8 +181,10 @@ export const tsApiExpected =
   "     *@summary Deletes a pet\n" +
   "     *@description\n" +
   "     */\n" +
+  "    @zodValidate\n" +
+  "    @responseZodSchema(ZOD.delByPetIdResponse)\n" +
   "    delByPetId(\n" +
-  "        petId: ApiType.DelByPetIdPathRequest['petId']\n" +
+  "        @paramsZodSchema(ZOD.delByPetIdPathRequest.shape.petId) petId: ApiType.DelByPetIdPathRequest['petId']\n" +
   "    ): Promise<[ApiType.ErrorResponse, ApiType.DelByPetIdResponse]> {\n" +
   "        return request.delete({\n" +
   "            url: `/pet/${petId}`,\n" +

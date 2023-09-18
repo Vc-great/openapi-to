@@ -15,6 +15,14 @@
   },
   "tags": [
     {
+      "name": "test",
+      "description": "description",
+      "externalDocs": {
+        "description": "test",
+        "url": "http://swagger.io"
+      }
+    },
+    {
       "name": "pet",
       "description": "Everything about your Pets",
       "externalDocs": {
@@ -36,6 +44,206 @@
     }
   ],
   "paths": {
+    "/pet/test": {
+      "post": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "summary",
+        "operationId": "operationId",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/testDto"
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/testDto2"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      },
+      "put": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "summary",
+        "operationId": "operationId",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/testDto"
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/testDto2"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      },
+      "delete": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "summary",
+        "operationId": "operationId",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "description": "ids",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/test32145"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
+    "/pet/test/{id}": {
+      "get": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "summary",
+        "operationId": "operationId",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "fields",
+            "required": false,
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/testDto2"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "Authorization": [
+              "global"
+            ]
+          }
+        ],
+        "deprecated": false
+      }
+    },
     "/pet/{petId}/uploadImage": {
       "post": {
         "tags": ["pet"],
@@ -775,6 +983,17 @@
   ],
   "components": {
     "requestBodies": {
+      "testDto": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/testDto"
+            }
+          }
+        },
+        "description": "resources",
+        "required": true
+      },
       "UserArray": {
         "content": {
           "application/json": {
@@ -826,6 +1045,165 @@
       }
     },
     "schemas": {
+      "test32145": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "description"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/testdata"
+          }
+        },
+        "title": "Response«Void»"
+      },
+      "test3214": {
+        "type": "object",
+        "properties": {
+          "columnDefault": {
+            "type": "string",
+            "description": "默认值"
+          },
+          "columnLength": {
+            "type": "integer",
+            "format": "int32",
+            "description": "description"
+          },
+          "columnName": {
+            "type": "string",
+            "description": "description"
+          },
+          "columnRemark": {
+            "type": "string",
+            "description": "description"
+          },
+          "columnScale": {
+            "type": "integer",
+            "format": "int32",
+            "description": "description"
+          },
+          "columnType": {
+            "type": "string",
+            "description": "description",
+            "enum": [
+              "CHAR"
+            ]
+          },
+          "delFlag": {
+            "type": "boolean",
+            "description": "description"
+          },
+          "formId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "id"
+          },
+          "notNull": {
+            "type": "boolean",
+            "description": "description"
+          }
+        },
+        "title": "test3214"
+      },
+      "testdata": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "description": "description"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int64",
+            "description": "description"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64",
+            "description": "description"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "description": "description"
+          }
+        },
+        "title": "title"
+      },
+      "Sort": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean"
+          },
+          "sorted": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          }
+        },
+        "title": "Sort"
+      },
+      "testDto3": {
+        "type": "object",
+        "properties": {
+          "test3214": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/test3214"
+            }
+          }
+        },
+        "title": "testDto3"
+      },
+      "testDto2": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/testDto3"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/testdata"
+          }
+        },
+        "title": "Response«testDto3»"
+      },
+      "test321": {
+        "type": "object",
+        "required": [
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "title": "test321"
+      },
+      "testDto": {
+        "type": "object",
+        "required": [
+          "formTable"
+        ],
+        "properties": {
+          "test321": {
+            "type": "array",
+            "description": "test321",
+            "items": {
+              "$ref": "#/components/schemas/test321"
+            }
+          }
+        },
+        "title": "testDto"
+      },
       "refList": {
         "type": "object",
         "properties": {

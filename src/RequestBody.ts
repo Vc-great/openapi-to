@@ -21,6 +21,10 @@ export class RequestBody {
     return this.openAPI.openApi3SourceData;
   }
 
+  get bodyRequestName() {
+    return this.openAPI.bodyRequestName;
+  }
+
   get hasRequestBodyParams() {
     if (this.apiItem.requestBody && "$ref" in this.apiItem.requestBody) {
       return true;
@@ -99,15 +103,12 @@ export class RequestBody {
     if (!this.apiItem.requestBody) {
       return "";
     }
-    const interfaceName = `${_.upperFirst(
-      this.apiItem.requestName
-    )}BodyRequest`;
     //已经解析过采用继承的方式
     if (
       "$ref" in this.apiItem.requestBody &&
       this.apiNameCache.has(this.apiItem.requestBody.$ref)
     ) {
-      return refHasCache(interfaceName, this.apiItem.requestBody.$ref);
+      return refHasCache(this.apiItem.requestBody.$ref);
     }
 
     let component;
@@ -119,7 +120,7 @@ export class RequestBody {
 
       component = resolveComponent;
       [...resolveRefs, this.apiItem.requestBody.$ref].forEach((ref) =>
-        this.apiNameCache.set(ref, interfaceName)
+        this.apiNameCache.set(ref, this.bodyRequestName)
       );
     }
 
@@ -139,7 +140,7 @@ export class RequestBody {
         );
         component = resolveComponent;
         [...resolveRefs, media.schema.$ref].forEach((ref) =>
-          this.apiNameCache.set(ref, interfaceName)
+          this.apiNameCache.set(ref, this.bodyRequestName)
         );
       } else {
         component = media.schema;
@@ -155,13 +156,13 @@ export class RequestBody {
       component.items &&
       !("$ref" in component.items)
     ) {
-      return arrayItems(interfaceName, component);
+      return arrayItems(component);
     }
 
     //容错 请求body不应该是基本类型
     if (baseDataType.includes(component.type || "")) {
-      return baseType(interfaceName, component);
+      return baseType(component);
     }
-    return handleComponent(interfaceName, component);
+    return handleComponent(component);
   }
 }

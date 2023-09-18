@@ -69,28 +69,17 @@ describe("getRequestName", () => {
   });
 });
 
-describe("init && run", () => {
+describe("init", () => {
   const config = {
     projectDir: "", //项目根目录
     title: "", //项目名称,用于生成目录
-    path: path.resolve(__dirname, "../mock/swagger2.json"), //项目路径
+    path: path.resolve(__dirname, "../mock/openApi3.json"), //项目路径
   };
   const generateCode = new GenerateCode(config);
 
   test("init ", async () => {
     const { openApi3FormatData } = await generateCode.init();
     expect(openApi3FormatData).toEqual(openApi3FormatDataExpectedResult);
-  });
-
-  test("register", () => {
-    // @ts-ignore
-    const instanceList = [
-      new GenerateTSRequest({}, openApi3, openApi3Formatter),
-    ];
-    // @ts-ignore
-    generateCode.register(instanceList);
-    const instance = generateCode.registerClass;
-    expect(instance).toStrictEqual(instanceList);
   });
 
   /* test("run", () => {

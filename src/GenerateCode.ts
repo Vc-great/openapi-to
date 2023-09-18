@@ -180,7 +180,7 @@ export class GenerateCode {
       return _.camelCase(popItem.slice(1, popItem.length - 1));
     }
 
-    return _.camelCase(paths[paths.length - 1]);
+    return _.camelCase(paths[paths.length - 1]) + _.upperFirst(method);
   }
 
   //最短路径为crud路径
