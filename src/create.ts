@@ -12,6 +12,7 @@ import { pathToFileURL } from "node:url";
 import { updateVersionMessage } from "./version";
 import { GenerateRequestObject } from "./GenerateRequestObject";
 import { GenerateZod } from "./GenerateZod";
+import _ from "lodash";
 // 命令运行时的目录
 const cwd = process.cwd();
 const configPath = pathToFileURL(
@@ -59,11 +60,27 @@ export async function generateApiCode(config: ConfigTemplate) {
       await generateCode.init();
     generateCode.register(
       [
-        config.tsInterface ? GenerateTSInterface : "",
-        config.tsRequest ? GenerateTSRequest : "",
-        config.jsRequest ? GenerateJSRequest : "",
-        config.requestObject ? GenerateRequestObject : "",
-        config.zod ? GenerateZod : "",
+        _.isBoolean(config.tsInterface)
+          ? config.tsInterface
+            ? GenerateTSInterface
+            : ""
+          : GenerateTSInterface,
+        _.isBoolean(config.tsRequest)
+          ? config.tsRequest
+            ? GenerateTSRequest
+            : ""
+          : GenerateTSRequest,
+        _.isBoolean(config.jsRequest)
+          ? config.jsRequest
+            ? GenerateJSRequest
+            : ""
+          : GenerateJSRequest,
+        _.isBoolean(config.requestObject)
+          ? config.requestObject
+            ? GenerateRequestObject
+            : ""
+          : GenerateRequestObject,
+        _.isBoolean(config.zod) ? (config.zod ? GenerateZod : "") : GenerateZod,
       ]
         .filter((x) => x)
         .map(
