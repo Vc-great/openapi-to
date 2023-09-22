@@ -64,7 +64,9 @@ openapi i
 openapi install
 ```
 
-## ts request
+
+<details> 
+<summary>ts request</summary>
 
 ```ts
 //TODO: edit import
@@ -91,96 +93,100 @@ class ApiName {
       data: body,
       headers: { "Content-Type": "multipart/form-data" },
     });
-  }
-  /**
-   *@apiSummary Update an existing pet
-   */
-  update(
-    body: ApiType.UpdateBodyRequest
-  ): Promise<[ApiType.ErrorResponse, ApiType.UpdateResponse]> {
-    return request.put({
-      url: `/pet`,
-      data: body,
-    });
-  }
-  /**
-   *@apiSummary Add a new pet to the store
-   */
-  create(
-    body: ApiType.CreateBodyRequest
-  ): Promise<[ApiType.ErrorResponse, ApiType.CreateResponse]> {
-    return request.post({
-      url: `/pet`,
-      data: body,
-    });
-  }
-  /**
-   *@apiSummary Finds Pets by status
-   */
-  findByStatus(
-    query: ApiType.FindByStatusQueryRequest
-  ): Promise<[ApiType.ErrorResponse, ApiType.FindByStatusResponse]> {
-    return request.get({
-      url: `/pet/findByStatus`,
-      params: query,
-      paramsSerializer(params: ApiType.FindByStatusQueryRequest) {
-        return qs.stringify(params);
-      },
-    });
-  }
-  /**
-   *@apiSummary Finds Pets by tags
-   */
-  findByTags(
-    query: ApiType.FindByTagsQueryRequest
-  ): Promise<[ApiType.ErrorResponse, ApiType.FindByTagsResponse]> {
-    return request.get({
-      url: `/pet/findByTags`,
-      params: query,
-      paramsSerializer(params: ApiType.FindByTagsQueryRequest) {
-        return qs.stringify(params);
-      },
-    });
-  }
-  /**
-   *@apiSummary Find pet by ID
-   */
-  detailByPetId(
-    petId: number
-  ): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {
-    return request.get({
-      url: `/pet/${petId}`,
-    });
-  }
-  /**
-   *@apiSummary Updates a pet in the store with form data
-   */
-  petId(
-    petId: number,
-    body: ApiType.PetIdBodyRequest
-  ): Promise<[ApiType.ErrorResponse, ApiType.PetIdResponse]> {
-    return request.post({
-      url: `/pet/${petId}`,
-      data: body,
-    });
-  }
-  /**
-   *@apiSummary Deletes a pet
-   */
-  delByPetId(
-    petId: number
-  ): Promise<[ApiType.ErrorResponse, ApiType.DelByPetIdResponse]> {
-    return request.delete({
-      url: `/pet/${petId}`,
-    });
-  }
+}
+/**
+*@apiSummary Update an existing pet
+*/
+update(
+body: ApiType.UpdateBodyRequest
+): Promise<[ApiType.ErrorResponse, ApiType.UpdateResponse]> {
+return request.put({
+url: `/pet`,
+data: body,
+});
+}
+/**
+*@apiSummary Add a new pet to the store
+*/
+create(
+body: ApiType.CreateBodyRequest
+): Promise<[ApiType.ErrorResponse, ApiType.CreateResponse]> {
+return request.post({
+url: `/pet`,
+data: body,
+});
+}
+/**
+*@apiSummary Finds Pets by status
+*/
+findByStatus(
+query: ApiType.FindByStatusQueryRequest
+): Promise<[ApiType.ErrorResponse, ApiType.FindByStatusResponse]> {
+return request.get({
+url: `/pet/findByStatus`,
+params: query,
+paramsSerializer(params: ApiType.FindByStatusQueryRequest) {
+return qs.stringify(params);
+},
+});
+}
+/**
+*@apiSummary Finds Pets by tags
+*/
+findByTags(
+query: ApiType.FindByTagsQueryRequest
+): Promise<[ApiType.ErrorResponse, ApiType.FindByTagsResponse]> {
+return request.get({
+url: `/pet/findByTags`,
+params: query,
+paramsSerializer(params: ApiType.FindByTagsQueryRequest) {
+return qs.stringify(params);
+},
+});
+}
+/**
+*@apiSummary Find pet by ID
+*/
+detailByPetId(
+petId: number
+): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {
+return request.get({
+url: `/pet/${petId}`,
+});
+}
+/**
+*@apiSummary Updates a pet in the store with form data
+*/
+petId(
+petId: number,
+body: ApiType.PetIdBodyRequest
+): Promise<[ApiType.ErrorResponse, ApiType.PetIdResponse]> {
+return request.post({
+url: `/pet/${petId}`,
+data: body,
+});
+}
+/**
+*@apiSummary Deletes a pet
+*/
+delByPetId(
+petId: number
+): Promise<[ApiType.ErrorResponse, ApiType.DelByPetIdResponse]> {
+return request.delete({
+url: `/pet/${petId}`,
+});
+}
 }
 const apiName = new ApiName();
 
 export { apiName };
 ```
 
-## ts interface
+</details>
+
+<details> 
+<summary>ts interface</summary>
+
 
 ```ts
 //eslint-disable-next-line @typescript-eslint/no-namespace
@@ -295,7 +301,10 @@ export const StatusOption = [
 ];
 ```
 
-## js request
+</details> 
+
+<details> 
+<summary>js request</summary>
 
 ```js
 import request from "@/api/request";
@@ -457,7 +466,10 @@ const apiName = new ApiName();
 export { apiName };
 ```
 
-## request object
+</details> 
+
+<details> 
+<summary>request object</summary>
 
 ```ts
 /** uploads an image */
@@ -501,3 +513,8 @@ const PetIdBodyRequest = {
   status: "",
 };
 ```
+
+
+</details> 
+
+
