@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
-import type { ApiData, ApiNameCache } from "./types";
+import type { ApiData, ApiNameCache, Config } from "./types";
 import { ParameterPath } from "./ParameterPath";
 import { ParameterQuery } from "./ParameterQuery";
 import { RequestBody } from "./RequestBody";
@@ -17,8 +17,12 @@ export class OpenAPI {
   apiNameCache: ApiNameCache;
   pendingRefCache: Set<string>;
 
-  constructor(public openApi3SourceData: OpenAPIV3.Document) {
+  constructor(
+    public openApi3SourceData: OpenAPIV3.Document,
+    public config: Config
+  ) {
     this.openApi3SourceData = openApi3SourceData;
+    this.config = config;
     this.apiNameCache = new Map();
     //缓存$ref
     this.pendingRefCache = new Set();

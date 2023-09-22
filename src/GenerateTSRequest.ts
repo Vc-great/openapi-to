@@ -20,12 +20,12 @@ import { OpenAPI } from "./OpenAPI";
 export class GenerateTSRequest extends OpenAPI implements GenerateCode {
   private readonly namespaceName: string;
   constructor(
-    public config: Config,
+    config: Config,
     openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
-    super(openApi3SourceData);
-    this.config = config;
+    super(openApi3SourceData, config);
+
     this.openApi3FormatData = openApi3FormatData;
     this.namespaceName = "ApiType";
   }

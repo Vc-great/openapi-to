@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { GenerateCode } from "../src/GenerateCode";
+import { FormatterOpenAPI } from "../src/FormatterOpenAPI";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
 import openApi3FormatDataExpectedResult from "../mock/openApi3Formatter.json";
@@ -12,7 +12,7 @@ const config = {
   path: "", //项目路径
 };
 
-let generateCode = new GenerateCode(config);
+let generateCode = new FormatterOpenAPI(config);
 
 beforeAll(() => {
   //generateCode = new GenerateCode(config);
@@ -27,7 +27,7 @@ describe("getOpenApiJson", () => {
       path: "https://petstore.swagger.io/v2/swagger.json", //项目路径
     };
 
-    const generateCode = new GenerateCode(config);
+    const generateCode = new FormatterOpenAPI(config);
     const openApiJson = await generateCode.getSchema();
     expect(openApiJson).not.toEqual({});
   });
@@ -39,7 +39,7 @@ describe("getOpenApiJson", () => {
       path: path.resolve(__dirname, "../mock/swagger2.json"), //项目路径
     };
 
-    const generateCode = new GenerateCode(config);
+    const generateCode = new FormatterOpenAPI(config);
     const openApiJson = await generateCode.getSchema();
     expect(openApiJson).not.toEqual({});
   });
@@ -75,7 +75,7 @@ describe("init", () => {
     title: "", //项目名称,用于生成目录
     path: path.resolve(__dirname, "../mock/openApi3.json"), //项目路径
   };
-  const generateCode = new GenerateCode(config);
+  const generateCode = new FormatterOpenAPI(config);
 
   test("init ", async () => {
     const { openApi3FormatData } = await generateCode.init();

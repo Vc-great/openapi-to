@@ -3,7 +3,7 @@ import path from "path";
 import fse from "fs-extra";
 import { configTemplate } from "./configTemplate";
 import { errorLog, successLog } from "./log";
-import { GenerateCode } from "./GenerateCode";
+import { FormatterOpenAPI } from "./FormatterOpenAPI";
 import { GenerateTSInterface } from "./GenerateTSInterface";
 import { GenerateTSRequest } from "./GenerateTSRequest";
 import { GenerateJSRequest } from "./GenerateJSRequest";
@@ -49,7 +49,7 @@ export async function generateApiCode(config: ConfigTemplate) {
     //创建目录
     fse.ensureDirSync(output);
     //
-    const generateCode = new GenerateCode({
+    const generateCode = new FormatterOpenAPI({
       ...config,
       ...item,
       output: output,

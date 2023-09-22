@@ -34,12 +34,12 @@ const errorInterface = `/**
 export class GenerateJSRequest extends OpenAPI implements GenerateCode {
   public globalDoc: string[];
   constructor(
-    public config: Config,
+    config: Config,
     openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
-    super(openApi3SourceData);
-    this.config = config;
+    super(openApi3SourceData, config);
+
     //初始化
     this.initGlobalDoc();
   }

@@ -22,18 +22,17 @@ export class GenerateZod extends OpenAPI implements GenerateCode {
   zodName: Set<string>;
   typeByZod: Set<string>;
   constructor(
-    public config: Config,
+    config: Config,
     openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
-    super(openApi3SourceData);
+    super(openApi3SourceData, config);
     this.openApi3SourceData = openApi3SourceData;
     this.openApi3FormatData = openApi3FormatData;
 
     this.enumSchema = new Map();
     this.zodName = new Set();
     this.typeByZod = new Set();
-    this.config = config;
   }
 
   //query参数

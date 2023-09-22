@@ -15,17 +15,13 @@ import fetch from "node-fetch";
 /**
  * GenerateCode
  */
-export class GenerateCode {
+export class FormatterOpenAPI {
   public registerClass: unknown[];
   public openApiJson: OpenAPIV2.Document | OpenAPIV3.Document;
   public openApi3SourceData: OpenAPIV3.Document;
   public openApi3FormatData: OpenApi3FormatData;
   constructor(public config: Config) {
     this.config = config;
-    // this.openApiJson = {};
-    // this.openApi3Data = {};
-    //this.openApi3FormatData = {};
-    // this.registerClass = [];
   }
 
   //注册

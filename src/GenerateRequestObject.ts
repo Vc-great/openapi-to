@@ -25,16 +25,15 @@ import path from "path";
 export class GenerateRequestObject extends OpenAPI implements GenerateCode {
   enumSchema: Map<string, object>;
   constructor(
-    public config: Config,
+    config: Config,
     openApi3SourceData: OpenAPIV3.Document,
     public openApi3FormatData: OpenApi3FormatData
   ) {
-    super(openApi3SourceData);
+    super(openApi3SourceData, config);
     this.openApi3SourceData = openApi3SourceData;
     this.openApi3FormatData = openApi3FormatData;
 
     this.enumSchema = new Map();
-    this.config = config;
   }
 
   public run(tagItem: ApiData[]) {
