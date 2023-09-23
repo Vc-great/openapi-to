@@ -15,7 +15,7 @@ import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import { errorLog, successLog } from "./log";
 import { OpenAPI } from "./OpenAPI";
-import { ComponentSchema, ResponseType } from "./types";
+import { ComponentSchema, Parameter, ResponseType } from "./types";
 
 export class GenerateZod extends OpenAPI implements GenerateCode {
   enumSchema: Map<string, object>;
@@ -85,39 +85,18 @@ export class GenerateZod extends OpenAPI implements GenerateCode {
   handleParameters(
     parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]
   ) {
-    const itemTypeMap = (
-      parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]
-    ): string[] => {
-      return _.map(parameters, (item) => {
-        //todo 补充逻辑
-        if ("$ref" in item) {
-          return "";
-        }
-        //todo 补充$ref逻辑
-        if (item.schema && "$ref" in item.schema) {
-          console.log("-> handleParameters异常");
-          return "";
-        }
-
-        if (item.schema && !("$ref" in item.schema)) {
-          return `/** ${item.description ?? ""} */
+    const other: Parameter.other = ({ item, schema }) => {
+      return `/** ${item.description ?? ""} */
               ${
                 item.name.includes("-") ? _.camelCase(item.name) : item.name
-              }:${this.formatterBaseType(item.schema)}${
-            item.schema.type === "array" ? ".array()" : ""
-          }${item.required ? "" : ".optional()"},`;
-        }
-
-        return `/** ${item.description ?? ""} */
-              ${
-                item.name.includes("-") ? _.camelCase(item.name) : item.name
-              }:${this.formatterBaseType(item.schema)}${
-          item.required ? "" : ".optional()"
-        },`;
-      });
+              }:${this.formatterBaseType(schema)}${
+        schema?.type === "array" ? ".array()" : ""
+      }${item.required ? "" : ".optional()"},`;
     };
-    const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
-    return _.flow(itemTypeMap, joinItem)(parameters);
+
+    return this.traverseParameters(parameters, {
+      other,
+    });
   }
 
   formatterBaseType(schemaObject: OpenAPIV3.SchemaObject | undefined): string {

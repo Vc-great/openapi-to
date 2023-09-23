@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { OpenAPI } from "./OpenAPI";
 
-export class ParameterQuery {
+export class Query {
   constructor(public openAPI: OpenAPI) {
     this.openAPI = openAPI;
   }

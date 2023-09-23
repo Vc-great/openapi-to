@@ -25,6 +25,7 @@ import {
 } from "./utils";
 import { errorLog, successLog } from "./log";
 import { OpenAPI } from "./OpenAPI";
+import { Parameter } from "./types";
 
 const errorInterface = `/**
  * error response
@@ -145,29 +146,17 @@ ${this.generatorClassJSDoc(tagItem)}
     parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[],
     namespace?: string
   ) {
-    const itemTypeMap = (
-      parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]
-    ): string[] => {
-      return _.map(parameters, (item) => {
-        //todo 补充逻辑
-        if ("$ref" in item) {
-          errorLog('JSAPI-> "$ref" in item');
-          return "";
-        }
-        //todo 补充$ref逻辑
-        if (item.schema && "$ref" in item.schema) {
-          errorLog('JSAPI-> "$ref" in item.schema');
-          return "";
-        }
-        //@param {string} [params.name]  名称
-        return `*@param ${this.parametersType(item)} ${this.optionalParameters(
-          item,
-          namespace
-        )} ${item.description ?? ""}`;
-      });
+    const other: Parameter.other = ({ item, schema }) => {
+      //@param {string} [params.name]  名称
+      return `*@param ${this.parametersType(item)} ${this.optionalParameters(
+        item,
+        namespace
+      )} ${item.description ?? ""}`;
     };
-    const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
-    return _.flow(itemTypeMap, joinItem)(parameters);
+
+    return this.traverseParameters(parameters, {
+      other,
+    });
   }
 
   optionalParameters(

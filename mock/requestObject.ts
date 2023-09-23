@@ -8,7 +8,7 @@ const TestPostBodyRequest = TestPutBodyRequest;
 
 const IdQueryRequest = {
     /** fields */
-    fields: '',
+    fields: [],
 };
 /** uploads an image */
 const UploadImagePostBodyRequest = {
@@ -36,11 +36,11 @@ const UpdateBodyRequest = {
 const CreateBodyRequest = UpdateBodyRequest;
 const FindByStatusGetQueryRequest = {
     /** Status values that need to be considered for filter */
-    status: '',
+    status: [],
 };
 const FindByTagsGetQueryRequest = {
     /** Tags to filter by */
-    tags: '',
+    tags: [],
 };
 
 /** Updates a pet in the store with form data */

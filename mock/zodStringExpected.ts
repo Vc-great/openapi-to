@@ -4,7 +4,7 @@ import { z } from 'zod';
 /** summary */
 const testPutBodyRequest = z.object({
     /***/
-    test321: z.lazy(() => test321.optional().array()),
+    test321: z.lazy(() => test321.array().optional()),
 });
 /** summary */
 const testPutResponse = z.object({
@@ -21,7 +21,7 @@ const test321 = z.object({
 /**testDto3*/
 const testDto3 = z.object({
     /***/
-    test3214: z.lazy(() => test3214.optional().array()),
+    test3214: z.lazy(() => test3214.array().optional()),
 });
 /**title*/
 const testdata = z.object({
@@ -73,7 +73,7 @@ const delByTestResponse = z.object({
 /** summary*/
 const idQueryRequest = z.object({
     /** fields */
-    fields: z.string().optional(),
+    fields: z.string().array().optional(),
 });
 /** summary*/
 const idPathRequest = z.object({
@@ -117,7 +117,7 @@ const updateBodyRequest = z.object({
     /***/
     photoUrls: z.string().array(),
     /***/
-    tags: z.lazy(() => tag.optional().array()),
+    tags: z.lazy(() => tag.array().optional()),
     /**pet status in the store*/
     status: z.enum(['available', 'pending', 'sold']).optional(),
 });
@@ -144,14 +144,14 @@ const createResponse = z.object({});
 /** Finds Pets by status*/
 const findByStatusGetQueryRequest = z.object({
     /** Status values that need to be considered for filter */
-    status: z.string(),
+    status: z.string().array(),
 });
 /** Finds Pets by status */
 const findByStatusGetResponse = z.object({});
 /** Finds Pets by tags*/
 const findByTagsGetQueryRequest = z.object({
     /** Tags to filter by */
-    tags: z.string(),
+    tags: z.string().array(),
 });
 /** Finds Pets by tags */
 const findByTagsGetResponse = z.object({});

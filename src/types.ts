@@ -227,3 +227,21 @@ export namespace ComponentSchema {
     baseOfBoolean: BaseOfBoolean;
   }
 }
+
+export namespace Parameter {
+  export type has$ref = ($ref: string) => string;
+  export type $refInItemSchema = ({
+    $ref,
+    item,
+  }: {
+    $ref: string;
+    item: OpenAPIV3.ParameterObject;
+  }) => string;
+  export type other = ({
+    schema,
+    item,
+  }: {
+    schema: OpenAPIV3.SchemaObject | undefined;
+    item: OpenAPIV3.ParameterObject;
+  }) => string;
+}

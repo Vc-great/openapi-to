@@ -15,7 +15,7 @@ import { OpenAPIV3 } from "openapi-types";
 import path from "path";
 import { successLog } from "./log";
 import { OpenAPI } from "./OpenAPI";
-import { ComponentSchema, ResponseType } from "./types";
+import { ComponentSchema, ResponseType, Parameter } from "./types";
 
 export class GenerateTSInterface extends OpenAPI implements GenerateCode {
   enumSchema: Map<string, object>;
@@ -55,36 +55,16 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
   handleParameters(
     parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]
   ) {
-    const itemTypeMap = (
-      parameters: (OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject)[]
-    ): string[] => {
-      return _.map(parameters, (item) => {
-        //todo 补充逻辑
-        if ("$ref" in item) {
-          return "";
-        }
-        //todo 补充$ref逻辑
-        if (item.schema && "$ref" in item.schema) {
-          return "";
-        }
-
-        if (item.schema && !("$ref" in item.schema)) {
-          return `/** ${item.description ?? ""} */
+    const other: Parameter.other = ({ item, schema }) => {
+      return `/** ${item.description ?? ""} */
               ${item.name.includes("-") ? _.camelCase(item.name) : item.name}${
-            item.required ? "" : "?"
-          }:${formatterBaseType(item.schema)}${
-            item.schema.type === "array" ? "[]" : ""
-          }`;
-        }
-
-        return `/** ${item.description ?? ""} */
-              ${item.name.includes("-") ? _.camelCase(item.name) : item.name}${
-          item.required ? "" : "?"
-        }:${formatterBaseType(item.schema)}`;
-      });
+        item.required ? "" : "?"
+      }:${formatterBaseType(schema)}${schema?.type === "array" ? "[]" : ""}`;
     };
-    const joinItem = (itemTypeMap: string[]) => _.join(itemTypeMap, "\n");
-    return _.flow(itemTypeMap, joinItem)(parameters);
+
+    return this.traverseParameters(parameters, {
+      other,
+    });
   }
 
   getBodyParamsType() {
