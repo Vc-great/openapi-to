@@ -99,6 +99,15 @@ export class GenerateZod extends OpenAPI implements GenerateCode {
           return "";
         }
 
+        if (item.schema && !("$ref" in item.schema)) {
+          return `/** ${item.description ?? ""} */
+              ${
+                item.name.includes("-") ? _.camelCase(item.name) : item.name
+              }:${this.formatterBaseType(item.schema)}${
+            item.schema.type === "array" ? ".array()" : ""
+          }${item.required ? "" : ".optional()"},`;
+        }
+
         return `/** ${item.description ?? ""} */
               ${
                 item.name.includes("-") ? _.camelCase(item.name) : item.name
@@ -435,15 +444,15 @@ export class GenerateZod extends OpenAPI implements GenerateCode {
 
       return `/**${component.title ?? ""}*/
       ${key}:z.lazy(()=>${_.lowerFirst(componentName)}${
-        parent?.required?.includes(key || "") ? "" : ".optional()"
-      }${component.type === "array" ? ".array()" : ""}),`;
+        component.type === "array" ? ".array()" : ""
+      }${parent?.required?.includes(key || "") ? "" : ".optional()"}),`;
     };
     const arraySchemaObjectItemsHas$Ref: ComponentSchema.ArraySchemaObjectItemsHas$Ref =
       ({ $ref, schemaObjectTitle }) => {
         return `/**${schemaObjectTitle ?? ""}*/
-        ${key}:z.lazy(()=>${_.lowerFirst($ref.split("/").pop())}${
+        ${key}:z.lazy(()=>${_.lowerFirst($ref.split("/").pop())}.array()${
           parent?.required?.includes(key || "") ? "" : ".optional()"
-        }.array()),`;
+        }),`;
       };
     const arrayItemsNo$ref: ComponentSchema.ArrayItemsNo$ref = ({
       schemaObjectDescription,
@@ -452,9 +461,9 @@ export class GenerateZod extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObjectDescription ?? ""}*/
-      ${key ?? ""}:${this.formatterBaseType(schemaObjectItems)}${
+      ${key ?? ""}:${this.formatterBaseType(schemaObjectItems)}.array()${
         parent?.required?.includes(key || "") ? "" : ".optional()"
-      }.array(),`;
+      },`;
     };
     const objectNotHaveProperties: ComponentSchema.ObjectNotHaveProperties = ({
       schemaObjectDescription,
