@@ -20,7 +20,7 @@ const UploadImagePostBodyRequest = {
 /** Update an existing pet */
 const UpdateBodyRequest = {
     /***/
-    id: 0,
+    id: -1,
     /***/
     category: '',
     /***/
@@ -49,5 +49,75 @@ const PetIdBodyRequest = {
     name: '',
     /**Updated status of the pet*/
     status: '',
+};
+`;
+
+export const requestObjectUserExpected = `/** Creates list of users with given input array */
+const CreateWithArrayPostBodyRequest = {
+    /***/
+    id: -1,
+    /***/
+    username: '',
+    /***/
+    firstName: '',
+    /***/
+    lastName: '',
+    /***/
+    email: '',
+    /***/
+    password: '',
+    /***/
+    phone: '',
+    /**User Status*/
+    userStatus: -1,
+};
+/** Creates list of users with given input array */
+const CreateWithListPostBodyRequest = CreateWithArrayPostBodyRequest;
+
+/** Updated user */
+const UsernameBodyRequest = {
+    /***/
+    id: -1,
+    /***/
+    username: '',
+    /***/
+    firstName: '',
+    /***/
+    lastName: '',
+    /***/
+    email: '',
+    /***/
+    password: '',
+    /***/
+    phone: '',
+    /**User Status*/
+    userStatus: -1,
+};
+
+const LoginGetQueryRequest = {
+    /** The user name for login */
+    username: '',
+    /** The password for login in clear text */
+    password: '',
+};
+
+/** Create user */
+const CreateBodyRequest = {
+    /***/
+    id: -1,
+    /***/
+    username: '',
+    /***/
+    firstName: '',
+    /***/
+    lastName: '',
+    /***/
+    email: '',
+    /***/
+    password: '',
+    /***/
+    phone: '',
+    /**User Status*/
+    userStatus: -1,
 };
 `;

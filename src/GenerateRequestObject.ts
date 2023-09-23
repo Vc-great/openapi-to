@@ -12,12 +12,7 @@ import type {
 import { OpenAPIV3 } from "openapi-types";
 import { OpenAPI } from "./OpenAPI";
 import _ from "lodash";
-import {
-  formatterBaseType,
-  numberEnum,
-  prettierFile,
-  stringEnum,
-} from "./utils";
+import { numberEnum, prettierFile, stringEnum } from "./utils";
 import { errorLog, successLog } from "./log";
 import fse from "fs-extra";
 import path from "path";
@@ -104,7 +99,7 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
         }*/
 
     if (stringEnum.includes(type || "")) {
-      return "";
+      return `''`;
     }
 
     if (type === "boolean") {
@@ -142,7 +137,9 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
 
     const baseType: BaseType = (component) => {
       return `/** ${apiItem.summary} */
-            const ${this.bodyRequestName} = ${formatterBaseType(component)}`;
+            const ${this.bodyRequestName} = ${this.formatterBaseType(
+        component
+      )}`;
     };
 
     const handleComponent: HandleComponent = (component) => {
@@ -225,7 +222,7 @@ export class GenerateRequestObject extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObject.description ?? ""}*/
-      ${key}:0,`;
+      ${key}:-1,`;
     };
     const baseOfString: ComponentSchema.BaseOfString = ({
       schemaObject,
