@@ -139,12 +139,12 @@ export class FormatterOpenAPI {
     const methodUpperCase = method.toUpperCase();
     const lasePathParams = this.getPathLastParams(path);
     const name = new Map([
-      ["GET", "list"],
+      ["GET", "findAll"],
       ["POST", "create"],
       ["PUT", "update"],
-      ["DELETE", "del"],
+      ["DELETE", "remove"],
       ["PATCH", "patch"],
-      ["DETAIL", "detail"],
+      ["DETAIL", "find"],
     ]);
 
     const isMatch = path === crudPath && name.has(methodUpperCase);

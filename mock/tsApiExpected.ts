@@ -125,9 +125,9 @@ export const tsApiExpected =
   "     *@summary Find pet by ID\n" +
   "     *@description Returns a single pet\n" +
   "     */\n" +
-  "    detailByPetId(\n" +
-  "        petId: ApiType.DetailByPetIdPathRequest['petId']\n" +
-  "    ): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {\n" +
+  "    findByPetId(\n" +
+  "        petId: ApiType.FindByPetIdPathRequest['petId']\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.FindByPetIdResponse]> {\n" +
   "        return request.get({\n" +
   "            url: `/pet/${petId}`,\n" +
   "        });\n" +

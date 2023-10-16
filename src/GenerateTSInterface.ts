@@ -212,7 +212,7 @@ export class GenerateTSInterface extends OpenAPI implements GenerateCode {
      //todo edit namespace name
     export namespace ApiType {
       /**error response*/
-       export interface ErrorResponse {}
+       export type ErrorResponse = object
       ${tagItemTypeString}
     }
       ${this.getEnumOption(Array.from(this.enumSchema.entries()))}`;

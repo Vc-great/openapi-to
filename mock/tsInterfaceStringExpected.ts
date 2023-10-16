@@ -6,7 +6,7 @@ export const tsInterfaceStringExpected = `//eslint-disable-next-line @typescript
 //todo edit namespace name
 export namespace ApiType {
     /**error response*/
-    export interface ErrorResponse {}
+    export type ErrorResponse = object;
     /** summary */
     export interface TestPutBodyRequest {
         /***/
@@ -162,12 +162,12 @@ export namespace ApiType {
     /** Finds Pets by tags */
     export interface FindByTagsGetResponse {}
     /** Find pet by ID*/
-    export interface DetailByPetIdPathRequest {
+    export interface FindByPetIdPathRequest {
         /** ID of pet to return */
         petId: number;
     }
     /** Find pet by ID */
-    export interface DetailByPetIdResponse extends UpdateBodyRequest {}
+    export interface FindByPetIdResponse extends UpdateBodyRequest {}
     /** Updates a pet in the store with form data*/
     export interface PetIdPathRequest {
         /** ID of pet that needs to be updated */

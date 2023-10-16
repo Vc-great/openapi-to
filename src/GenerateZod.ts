@@ -450,7 +450,7 @@ export class GenerateZod extends OpenAPI implements GenerateCode {
       key,
     }) => {
       return `/**${schemaObjectDescription ?? ""}*/
-        ${key ?? ""}: z.object()${
+        ${key ?? ""}: z.object({})${
         parent?.required?.includes(key || "") ? "" : ".optional()"
       },`;
     };

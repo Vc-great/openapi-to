@@ -2,7 +2,7 @@
 import { FormatterOpenAPI } from "../src/FormatterOpenAPI";
 import openApi3 from "../mock/openApi3.json";
 import openApi3Formatter from "../mock/openApi3Formatter.json";
-import openApi3FormatDataExpectedResult from "../mock/openApi3Formatter.json";
+
 import path from "path";
 import { GenerateTSRequest } from "../src/GenerateTSRequest";
 
@@ -79,7 +79,7 @@ describe("init", () => {
 
   test("init ", async () => {
     const { openApi3FormatData } = await generateCode.init();
-    expect(openApi3FormatData).toEqual(openApi3FormatDataExpectedResult);
+    expect(openApi3FormatData).toEqual(openApi3Formatter);
   });
 
   /* test("run", () => {

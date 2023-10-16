@@ -154,10 +154,10 @@ export const tsResquestZodDecoratorExpected =
   "     *@description Returns a single pet\n" +
   "     */\n" +
   "    @zodValidate\n" +
-  "    @responseZodSchema(ZOD.detailByPetIdResponse)\n" +
-  "    detailByPetId(\n" +
-  "        @paramsZodSchema(ZOD.detailByPetIdPathRequest.shape.petId) petId: ApiType.DetailByPetIdPathRequest['petId']\n" +
-  "    ): Promise<[ApiType.ErrorResponse, ApiType.DetailByPetIdResponse]> {\n" +
+  "    @responseZodSchema(ZOD.findByPetIdResponse)\n" +
+  "    findByPetId(\n" +
+  "        @paramsZodSchema(ZOD.findByPetIdPathRequest.shape.petId) petId: ApiType.FindByPetIdPathRequest['petId']\n" +
+  "    ): Promise<[ApiType.ErrorResponse, ApiType.FindByPetIdResponse]> {\n" +
   "        return request.get({\n" +
   "            url: `/pet/${petId}`,\n" +
   "        });\n" +

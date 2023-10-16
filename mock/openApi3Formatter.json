@@ -517,7 +517,7 @@
           "api_key": []
         }
       ],
-      "requestName": "detailByPetId"
+      "requestName": "findByPetId"
     },
     {
       "path": "/pet/{petId}",
@@ -715,7 +715,7 @@
           "description": "Order not found"
         }
       },
-      "requestName": "detailByOrderId"
+      "requestName": "findByOrderId"
     },
     {
       "path": "/store/order/{orderId}",
@@ -869,7 +869,7 @@
           "description": "User not found"
         }
       },
-      "requestName": "detailByUsername"
+      "requestName": "findByUsername"
     },
     {
       "path": "/user/{username}",

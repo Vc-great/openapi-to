@@ -240,7 +240,7 @@ export const jsApiExpected =
   "     *@param {number} petId ID of pet to return\n" +
   "     *@returns {Promise<[ErrorResponse, UpdateBodyRequest]>}\n" +
   "     */\n" +
-  "    detailByPetId(petId) {\n" +
+  "    findByPetId(petId) {\n" +
   "        return request.get({\n" +
   "            url: `/pet/${petId}`,\n" +
   "        });\n" +

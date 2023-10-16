@@ -156,12 +156,12 @@ const findByTagsGetQueryRequest = z.object({
 /** Finds Pets by tags */
 const findByTagsGetResponse = z.object({});
 /** Find pet by ID*/
-const detailByPetIdPathRequest = z.object({
+const findByPetIdPathRequest = z.object({
     /** ID of pet to return */
     petId: z.number(),
 });
 /** Find pet by ID */
-const detailByPetIdResponse = z.lazy(() => updateBodyRequest.extend({}));
+const findByPetIdResponse = z.lazy(() => updateBodyRequest.extend({}));
 /** Updates a pet in the store with form data*/
 const petIdPathRequest = z.object({
     /** ID of pet that needs to be updated */
@@ -243,9 +243,9 @@ export const ZOD = {
     /** Finds Pets by tags */
     findByTagsGetResponse,
     /** Find pet by ID*/
-    detailByPetIdPathRequest,
+    findByPetIdPathRequest,
     /** Find pet by ID */
-    detailByPetIdResponse,
+    findByPetIdResponse,
     /** Updates a pet in the store with form data*/
     petIdPathRequest,
     /** Updates a pet in the store with form data */
@@ -320,9 +320,9 @@ export namespace ApiType {
     /** Finds Pets by tags */
     export type FindByTagsGetResponse = z.infer<typeof findByTagsGetResponse>;
     /** Find pet by ID*/
-    export type DetailByPetIdPathRequest = z.infer<typeof detailByPetIdPathRequest>;
+    export type FindByPetIdPathRequest = z.infer<typeof findByPetIdPathRequest>;
     /** Find pet by ID */
-    export type DetailByPetIdResponse = z.infer<typeof detailByPetIdResponse>;
+    export type FindByPetIdResponse = z.infer<typeof findByPetIdResponse>;
     /** Updates a pet in the store with form data*/
     export type PetIdPathRequest = z.infer<typeof petIdPathRequest>;
     /** Updates a pet in the store with form data */
