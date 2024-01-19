@@ -1,27 +1,46 @@
 {
-  "include": ["./src/*"],
-  "exclude": ["**/*.spec.ts"],
+  "extends": "@openapi-to/ts-config/base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "strict": true,
-    "allowJs": true,
-    "esModuleInterop": true,
-    "noImplicitAny": true,
-    "noImplicitOverride": true,
-    "noUnusedLocals": true,
-    "strictPropertyInitialization": false,
-    "resolveJsonModule": true,
-    "useUnknownInCatchVariables": false,
-    "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "typeRoots": ["./types", "./node_modules/@types"],
     "baseUrl": ".",
-    "paths": {}
+    "types": [
+      "vitest/globals",
+      "bun-types",
+      "@openapi-to/ts-config"
+    ],
+    "paths": {
+      "@openapi-to/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@openapi-to/core/utils": [
+        "packages/core/src/utils/index.ts"
+      ],
+      "@openapi-to/swagger": [
+        "packages/swagger/src/index.ts"
+      ],
+      "@openapi-to/swagger-ts": [
+        "packages/swagger-ts/src/index.ts"
+      ],
+      "@openapi-to/swagger-ts/hooks": [
+        "packages/swagger-ts/src/hooks/index.ts"
+      ],
+      "@openapi-to/swagger/hooks": [
+        "packages/swagger/src/hooks/index.ts"
+      ],
+      "@openapi-to/swagger/utils": [
+        "packages/swagger/src/utils/index.ts"
+      ],
+      "@openapi-to/react": [
+        "packages/react/src/index.ts"
+      ]
+    }
   },
-  "types": ["jest"],
-  "ts-node": {
-    "esm": true
-  }
+  "include": [
+    "./package.json",
+    "./tsup.config.ts",
+    "./vitest.config.ts",
+    "./eslint.config.js"
+  ],
+  "exclude": [
+    "**/node_modules/**"
+  ]
 }

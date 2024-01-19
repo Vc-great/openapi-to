@@ -1,0 +1,91 @@
+{
+  "extends": "@openapi-to/ts-config/base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "baseUrl": ".",
+    // "composite": true,
+    // "rootDir": "./",
+    // "outDir": "./dist",
+    // "tsBuildInfoFile": "./build/.tsbuildinfo"
+    // add paths also here because when set with `base.json` it will use the `./dist` folder instead of `./src`.
+    "types": [
+      "vitest/globals",
+      "bun-types",
+      "../core/globals.d.ts",
+      "../config/ts-config/reset.d.ts"
+    ],
+    "paths": {
+      "@openapi-to/cli": [
+        "../cli/src/index.ts"
+      ],
+      "@openapi-to/eslint-config": [
+        "../config/eslint-config/src/index.ts"
+      ],
+      "@openapi-to/tsup-config": [
+        "../config/tsup-config/src/index.ts"
+      ],
+      "@openapi-to/ts-config": [
+        "../config/ts-config/src/index.ts"
+      ],
+      "@openapi-to/core": [
+        "../core/src/index.ts"
+      ],
+      "@openapi-to/swagger": [
+        "../swagger/src/index.ts"
+      ],
+      "@openapi-to/swagger-client": [
+        "../swagger-client/src/index.ts"
+      ],
+      "@openapi-to/swagger-client/client": [
+        "../swagger-client/client.ts"
+      ],
+      "@openapi-to/swagger-client/ts-client": [
+        "../swagger-client/client.ts"
+      ],
+      "@openapi-to/swagger-faker": [
+        "../swagger-faker/src/index.ts"
+      ],
+      "@openapi-to/swagger-tanstack-query": [
+        "../swagger-tanstack-query/src/index.ts"
+      ],
+      "@openapi-to/swagger-ts": [
+        "../swagger-ts/src/index.ts"
+      ],
+      "@openapi-to/swagger-zod": [
+        "../swagger-zod/src/index.ts"
+      ],
+      "@openapi-to/swagger-zodios": [
+        "../swagger-zodios/src/index.ts"
+      ],
+      "@openapi-to/parser": [
+        "../parser/src/index.ts"
+      ],
+      "@openapi-to/react": [
+        "../react/src/index.ts"
+      ],
+      "@openapi-to/react/jsx-runtime": [
+        "../react/src/jsx-runtime.ts"
+      ],
+      "@openapi-to/react/client": [
+        "../react/src/client/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "./mocks/*",
+    "./package.json",
+    "./tsup.config.ts",
+    "./vitest.config.ts"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/types/**",
+    ".sink.d.ts'"
+  ],
+  // "references": [
+  //   { "path": "../core" },
+  //   { "path": "../swagger" },
+  //   { "path": "../parser" }
+  // ]
+}

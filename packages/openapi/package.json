@@ -1,0 +1,60 @@
+{
+  "name": "openapi-to",
+  "version": "2.0.0-alpha.1",
+  "description": "OpenAPI to TypeScript,Axios.",
+  "keywords": [
+    "typescript",
+    "plugins",
+    "codegen",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vc-great/openapi-to.git",
+    "directory": ""
+  },
+  "license": "MIT",
+  "author": "",
+  "sideEffects": false,
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "openapi": "bin/openapi.js"
+  },
+  "files": [
+    "src",
+    "dist",
+    "bin",
+    "!/**/**.test.**",
+    "!/**/__tests__/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "npx rimraf ./dist",
+    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint --format pretty .",
+    "lint-fix": "bun run lint --quiet --fix",
+    "release": "pnpm publish --no-git-check",
+    "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
+    "start": "tsup --watch",
+    "test": "vitest --passWithNoTests",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@openapi-to/cli": "workspace:*",
+    "@openapi-to/openapi-ts-request": "workspace:*"
+  },
+  "devDependencies": {
+  },
+  "packageManager": "pnpm@8.3.0",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8.3.0"
+  },
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

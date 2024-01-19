@@ -1,0 +1,51 @@
+{
+  "name": "@openapi-to/tsup-config",
+  "version": "1.1.8",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/es/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/cjs/index.cjs"
+    },
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/es/index.js",
+  "types": "./dist/es/index.d.ts",
+  "files": [
+    "src",
+    "dist",
+    "!/**/**.test.**",
+    "!/**/__tests__/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "npx rimraf ./dist",
+    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint --format pretty .",
+    "lint-fix": "bun run lint --quiet --fix",
+    "release": "pnpm publish --no-git-check",
+    "release:canary": "bash ../../../.github/canary.sh && node ../../../scripts/build.js canary && pnpm publish --no-git-check",
+    "start": "tsup --watch",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@microsoft/api-extractor": "^7.38.5",
+    "esbuild-plugin-file-path-extensions": "^2.0.0"
+  },
+  "devDependencies": {
+    "@openapi-to/ts-config": "workspace:*"
+  },
+  "packageManager": "pnpm@8.3.0",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8.3.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

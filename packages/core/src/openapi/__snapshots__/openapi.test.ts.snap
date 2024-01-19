@@ -1,0 +1,147 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`openapi get pathGroupByTag > get pathGroupByTag 1`] = `
+{
+  "pet": [
+    {
+      "method": "post",
+      "path": "/pet/test",
+      "tag": "pet",
+    },
+    {
+      "method": "put",
+      "path": "/pet/test",
+      "tag": "pet",
+    },
+    {
+      "method": "delete",
+      "path": "/pet/test",
+      "tag": "pet",
+    },
+    {
+      "method": "get",
+      "path": "/pet/test/{id}",
+      "tag": "pet",
+    },
+    {
+      "method": "get",
+      "path": "/pet/{id}",
+      "tag": "pet",
+    },
+    {
+      "method": "post",
+      "path": "/pet/{petId}/uploadImage",
+      "tag": "pet",
+    },
+    {
+      "method": "get",
+      "path": "/pet",
+      "tag": "pet",
+    },
+    {
+      "method": "post",
+      "path": "/pet",
+      "tag": "pet",
+    },
+    {
+      "method": "put",
+      "path": "/pet",
+      "tag": "pet",
+    },
+    {
+      "method": "delete",
+      "path": "/pet",
+      "tag": "pet",
+    },
+    {
+      "method": "get",
+      "path": "/pet/findByStatus",
+      "tag": "pet",
+    },
+    {
+      "method": "get",
+      "path": "/pet/findByTags",
+      "tag": "pet",
+    },
+    {
+      "method": "get",
+      "path": "/pet/{petId}",
+      "tag": "pet",
+    },
+    {
+      "method": "post",
+      "path": "/pet/{petId}",
+      "tag": "pet",
+    },
+    {
+      "method": "delete",
+      "path": "/pet/{petId}",
+      "tag": "pet",
+    },
+  ],
+  "store": [
+    {
+      "method": "post",
+      "path": "/store/order",
+      "tag": "store",
+    },
+    {
+      "method": "get",
+      "path": "/store/order/{orderId}",
+      "tag": "store",
+    },
+    {
+      "method": "delete",
+      "path": "/store/order/{orderId}",
+      "tag": "store",
+    },
+    {
+      "method": "get",
+      "path": "/store/inventory",
+      "tag": "store",
+    },
+  ],
+  "user": [
+    {
+      "method": "post",
+      "path": "/user/createWithArray",
+      "tag": "user",
+    },
+    {
+      "method": "post",
+      "path": "/user/createWithList",
+      "tag": "user",
+    },
+    {
+      "method": "get",
+      "path": "/user/{username}",
+      "tag": "user",
+    },
+    {
+      "method": "put",
+      "path": "/user/{username}",
+      "tag": "user",
+    },
+    {
+      "method": "delete",
+      "path": "/user/{username}",
+      "tag": "user",
+    },
+    {
+      "method": "get",
+      "path": "/user/login",
+      "tag": "user",
+    },
+    {
+      "method": "get",
+      "path": "/user/logout",
+      "tag": "user",
+    },
+    {
+      "method": "post",
+      "path": "/user",
+      "tag": "user",
+    },
+  ],
+}
+`;
