@@ -2,16 +2,29 @@ import _ from "lodash";
 import Oas from "oas";
 import petStore from "../mock/petstore.json";
 import { RequestGenerator } from "./RequestGenerator";
-import { AST, OpenAPI } from "@openapi-to/core";
+import {AST, OpenAPI} from "@openapi-to/core";
+import type {OpenapiToSingleConfig} from '@openapi-to/core'
+import path from 'node:path'
+import { dirname } from "node:path"
+import { fileURLToPath } from "node:url"
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe("RequestGenerator", async () => {
-  const defineConfig = {};
+  const openapiToSingleConfig:OpenapiToSingleConfig = {
+    input:{
+      path:'',
+      name:''
+    },
+    output:path.resolve(__dirname,'../gen'),
+    plugins:[]
+  };
 
   const pluginConfig = {
     createZodDecorator: true,
   };
 
-  test("requestGenerator", () => {
+  test("requestGenerator getFullText", () => {
     const ast = new AST();
     const oas = new Oas(petStore);
     const openapi = new OpenAPI({}, oas);
@@ -20,13 +33,16 @@ describe("RequestGenerator", async () => {
       ast,
       openapi,
       pluginConfig,
-      defineConfig,
+      openapiToSingleConfig,
     });
     requestGenerator.build();
     const text = _.chain(ast.sourceFile)
       .map((sourceFile) => sourceFile.getFullText())
       .join("\n")
       .value();
+
+      _.forEach(ast.sourceFile,sourceFile=>sourceFile.saveSync())
+
     expect(text).toMatchSnapshot();
   });
 });

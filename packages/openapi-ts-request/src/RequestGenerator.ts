@@ -1,8 +1,9 @@
 import { URLPath } from "@openapi-to/core/utils";
 import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
-
+import path from 'node:path'
 import type { AST, OpenAPI } from "@openapi-to/core";
+import type {OpenapiToSingleConfig} from "@openapi-to/core";
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3 } from "openapi-types";
@@ -12,14 +13,13 @@ import type {
   OptionalKind,
 } from "ts-morph";
 import type { PluginConfig } from "./types.ts";
-//todo core type add DefineConfig
-type DefineConfig = object;
+
 type RequestGeneratorParams = {
   oas: Oas;
   openapi: OpenAPI;
   ast: AST;
   pluginConfig: PluginConfig;
-  defineConfig: DefineConfig;
+  openapiToSingleConfig: OpenapiToSingleConfig;
 };
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
@@ -31,19 +31,19 @@ export class RequestGenerator {
   private readonly openapi: RequestGeneratorParams["openapi"];
   private readonly ast: RequestGeneratorParams["ast"];
   private readonly pluginConfig: RequestGeneratorParams["pluginConfig"];
-  private readonly defineConfig: RequestGeneratorParams["defineConfig"];
+  private readonly openapiToSingleConfig: RequestGeneratorParams["openapiToSingleConfig"];
 
   constructor({
     oas,
     openapi,
     ast,
     pluginConfig,
-    defineConfig,
+    openapiToSingleConfig,
   }: RequestGeneratorParams) {
     this.oas = oas;
     this.ast = ast;
     this.pluginConfig = pluginConfig;
-    this.defineConfig = defineConfig;
+    this.openapiToSingleConfig = openapiToSingleConfig;
     this.openapi = openapi;
     this.paramsZodSchema = "paramsZodSchema";
   }
@@ -66,8 +66,9 @@ export class RequestGenerator {
         this.operation = this.openapi.setCurrentOperation(path, method, tag);
         return this.generatorMethod();
       });
-
-      return this.ast.createSourceFile(tag, {
+      const filePath = path.resolve(this.openapiToSingleConfig.output||'',tag+'.ts')
+      console.log("-> filePath",filePath);
+      return this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(),
           this.generatorClass(methodsStatements),

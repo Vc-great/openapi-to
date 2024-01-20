@@ -7,7 +7,7 @@ import converter from "do-swagger2openapi";
 import type {
   OpenapiToConfigPlugin,
   OpenapiToSingleConfig,
-  OpenAPIV3AllDocument,
+  OpenAPIDocument,
 } from "./types.ts";
 
 type OpenAPIAllDocument = OpenAPIV2.Document | OpenAPIV3.Document;
@@ -108,7 +108,7 @@ class PluginManager {
   private plugins: Array<OpenapiToConfigPlugin>;
   constructor(
     private readonly config: OpenapiToSingleConfig,
-    private readonly openapiDocument: OpenAPIV3AllDocument,
+    private readonly openapiDocument: OpenAPIDocument,
   ) {
     this.config = config;
     this.plugins = config.plugins;

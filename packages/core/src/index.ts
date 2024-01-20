@@ -12,7 +12,7 @@ export default build;*/
 export { build } from "./build.ts";
 export { AST } from "./ast/ast.ts";
 export { OpenAPI } from "./openapi/OpenAPI.ts";
-
+export {createPlugin} from './plugins.ts'
 /*
 
 

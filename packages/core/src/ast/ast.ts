@@ -18,7 +18,7 @@ type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 
 export class AST {
   private project: Project;
-  private sourceFile: Array<SourceFile>;
+  public sourceFile: Array<SourceFile>;
   constructor() {
     this.project = new Project();
     this.sourceFile = [];
@@ -82,7 +82,11 @@ export class AST {
     };
   }
 
-  async saveSync(): Promise<void> {
+  saveSync() {
+    this.sourceFile.map((node) => node.save());
+
+  }
+  async save(): Promise<void> {
     const map = this.sourceFile.map((node) => node.save());
     await Promise.allSettled(map);
   }

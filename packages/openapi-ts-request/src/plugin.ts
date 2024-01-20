@@ -1,33 +1,26 @@
-import {AST,OpenAPI} from '@openapi-to/core'
+import {AST,OpenAPI,createPlugin} from '@openapi-to/core'
 import {RequestGenerator} from "./RequestGenerator.ts";
 import Oas from 'oas';
-export type PluginOptions = {
+import type {PluginConfig} from './types.ts'
 
-}
-
-export const definePlugin = createPlugin<PluginOptions>((options) => {
+export const definePlugin = createPlugin<PluginConfig>((pluginConfig)=>(openapiToSingleConfig,openapiDocument) => {
   const ast = new AST()
-
-const openapi = new OpenAPI(oas)
+  const oas = new Oas({...openapiDocument})
+  const openapi = new OpenAPI({}, oas);
   return {
-    //plugin name
     name:"openapi-ts-request",
-    //
-    resolvePath:(config)=>{
-      return config.title
-    },
-   async buildStart(config,openapiDocument){
-      //log
-       const oas = new Oas(openapiDocument)
-      //start
-      const requestGenerate = new RequestGenerator({
-        oas:oas,
-        ast
-      })
-      requestGenerate.build()
+   async buildStart(){
+     const requestGenerator = new RequestGenerator({
+       oas,
+       ast,
+       openapi,
+       pluginConfig,
+       openapiToSingleConfig,
+     });
+     requestGenerator.build()
     },
     writeFile(){
-      ast.save()
+      ast.saveSync()
     },
     buildEnd(){
       //log

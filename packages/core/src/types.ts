@@ -1,6 +1,9 @@
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { LogLevel } from "./utils";
 
+
+export type PluginFactory<T> = (pluginConfig:T)=>(openapiToSingleConfig:OpenapiToSingleConfig,openapiDocument:OpenAPIDocument)=>void
+
 export type OpenapiToConfigInput = {
   /**
    * Project name, which is used to output the name of the folder
@@ -18,20 +21,21 @@ export type OpenapiToConfigInput = {
 export type OpenapiToConfigPlugin = {
   buildStart: (
     config: OpenapiToSingleConfig,
-    openapiDocument: OpenAPIV3AllDocument,
+    openapiDocument: OpenAPIDocument,
   ) => void;
   writeFileSync: (
     config: OpenapiToSingleConfig,
-    openapiDocument: OpenAPIV3AllDocument,
+    openapiDocument: OpenAPIDocument,
   ) => void;
   buildEnd: (
     config: OpenapiToSingleConfig,
-    openapiDocument: OpenAPIV3AllDocument,
+    openapiDocument: OpenAPIDocument,
   ) => void;
 };
 
 export type OpenapiToSingleConfig = {
   input: OpenapiToConfigInput;
+  output?:string;
   plugins: Array<OpenapiToConfigPlugin>;
 };
 
@@ -79,4 +83,4 @@ export type PathGroupByTag = {
   [k in string]: Array<PathGroup>;
 };
 
-export type OpenAPIV3AllDocument = OpenAPIV3.Document | OpenAPIV3_1.Document;
+export type OpenAPIDocument = OpenAPIV3.Document | OpenAPIV3_1.Document
