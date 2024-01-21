@@ -1,10 +1,7 @@
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { LogLevel } from "./utils";
 
-
-export type PluginFactory<T> = (pluginConfig:T)=>(openapiToSingleConfig:OpenapiToSingleConfig,openapiDocument:OpenAPIDocument)=>void
-
-export type OpenapiToConfigInput = {
+export type OpenapiToConfigSingleInput = {
   /**
    * Project name, which is used to output the name of the folder
    */
@@ -15,28 +12,29 @@ export type OpenapiToConfigInput = {
   path: string;
 };
 
-/**
- * @private
- */
-export type OpenapiToConfigPlugin = {
-  buildStart: (
-    config: OpenapiToSingleConfig,
-    openapiDocument: OpenAPIDocument,
-  ) => void;
-  writeFileSync: (
-    config: OpenapiToSingleConfig,
-    openapiDocument: OpenAPIDocument,
-  ) => void;
-  buildEnd: (
-    config: OpenapiToSingleConfig,
-    openapiDocument: OpenAPIDocument,
-  ) => void;
-};
+export type LifeCycle = {
+  name:string
+  buildStart: () => void;
+  writeFile: () => void;
+  buildEnd: () => void;
+}
+
+export type PluginConfigFactory<T> =( pluginConfig:T)=>PluginFactory
+
+export type PluginFactory = ({
+                                  openapiDocument,
+                                  openapiToSingleConfig,
+                                }: {
+  openapiDocument:OpenAPIDocument,
+  openapiToSingleConfig:OpenapiToSingleConfig,
+
+})=> LifeCycle
+
 
 export type OpenapiToSingleConfig = {
-  input: OpenapiToConfigInput;
+  input: OpenapiToConfigSingleInput;
   output?:string;
-  plugins: Array<OpenapiToConfigPlugin>;
+  plugins: Array<PluginFactory>;
 };
 
 /**
@@ -44,12 +42,12 @@ export type OpenapiToSingleConfig = {
  */
 export type OpenapiToConfig = {
   /** Array of OpenapiTo project to use.*/
-  input: Array<OpenapiToConfigInput>;
+  input: Array<OpenapiToConfigSingleInput>;
   /**
    * Array of OpenapiTo plugins to use.
    * The plugin/package can forsee some options that you need to pass through.
    */
-  plugins: Array<OpenapiToConfigPlugin>;
+  plugins: Array<PluginFactory>;
 };
 
 export type CLIOptions = {

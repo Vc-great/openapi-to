@@ -67,7 +67,6 @@ export class RequestGenerator {
         return this.generatorMethod();
       });
       const filePath = path.resolve(this.openapiToSingleConfig.output||'',tag+'.ts')
-      console.log("-> filePath",filePath);
       return this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(),

@@ -8,17 +8,18 @@ import pc from "picocolors";
 
 import { spinner } from "./utils/spinner.ts";
 
-import type { CLIOptions, Input, OpenapiToConfig } from "@openapi-to/core";
+import type { CLIOptions, OpenapiToConfigSingleInput, OpenapiToConfig } from "@openapi-to/core";
+import {build} from "@openapi-to/core";
 
 type GenerateProps = {
-  input: Input;
-  config: OpenapiToConfig;
+  input: OpenapiToConfigSingleInput;
+  openapiToConfig: OpenapiToConfig;
   CLIOptions: CLIOptions;
 };
 
 export async function generate({
   input,
-  config,
+  openapiToConfig,
   CLIOptions,
 }: GenerateProps): Promise<void> {
   const inputPath = input.path;
@@ -55,4 +56,6 @@ export async function generate({
   spinner.start(
     `🚀 Building ${logLevel !== "silent" ? pc.dim(inputPath) : ""}`,
   );
+
+  build(input,openapiToConfig,CLIOptions)
 }

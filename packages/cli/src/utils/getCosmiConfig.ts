@@ -3,14 +3,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { cosmiconfig } from 'cosmiconfig'
 import {folderName} from './folderName.js'
+import type {CosmiconfigResult} from '../types.ts'
 
-import type { defineConfig, OpenapiToUserConfig } from '@openapi-to/core'
-
-export type CosmiconfigResult = {
-  filepath: string
-  isEmpty?: boolean
-  config: ReturnType<typeof defineConfig> | OpenapiToUserConfig
-}
 export async function getCosmiConfig(moduleName: string): Promise<CosmiconfigResult> {
   const searchPlaces = [
     `${moduleName}.config.js`,

@@ -5,9 +5,8 @@ import fs from "fs-extra";
 import { OpenAPIV3, OpenAPIV2 } from "openapi-types";
 import converter from "do-swagger2openapi";
 import type {
-  OpenapiToConfigPlugin,
   OpenapiToSingleConfig,
-  OpenAPIDocument,
+  OpenAPIDocument, OpenapiToConfigSingleInput, OpenapiToConfig, CLIOptions, PluginFactory, LifeCycle,
 } from "./types.ts";
 
 type OpenAPIAllDocument = OpenAPIV2.Document | OpenAPIV3.Document;
@@ -66,16 +65,13 @@ async function swagger2ToOpenapi3(
   return options.openapi;
 }
 
-export async function build(option: any) {
-  const map = _.map(option.input, (input) => {
+export async function build(input:OpenapiToConfigSingleInput,openapiToConfig:OpenapiToConfig,CLIOptions:CLIOptions) {
     const config = {
       input: input,
-      ..._.omit(option, ["input", "plugins"]),
-      plugins: option.plugins,
+      ..._.omit(openapiToConfig, ["input", "plugins"]),
+      plugins: openapiToConfig.plugins,
     };
-    run(config);
-  });
-  const result = await Promise.allSettled(map);
+    await run(config);
 }
 
 /**
@@ -93,8 +89,7 @@ async function run(config: OpenapiToSingleConfig) {
   const openapiDocument = await loadData(path);
 
   if (_.isUndefined(openapiDocument)) {
-    //todo error
-    return;
+    throw new Error('Unable to get the OpenAPI Document!')
   }
   //执行每一个插件
   const pluginManager = new PluginManager(config, openapiDocument);
@@ -105,13 +100,13 @@ async function run(config: OpenapiToSingleConfig) {
 }
 
 class PluginManager {
-  private plugins: Array<OpenapiToConfigPlugin>;
+  private plugins: Array<PluginFactory>;
   constructor(
-    private readonly config: OpenapiToSingleConfig,
+    private readonly openapiToSingleConfig: OpenapiToSingleConfig,
     private readonly openapiDocument: OpenAPIDocument,
   ) {
-    this.config = config;
-    this.plugins = config.plugins;
+    this.openapiToSingleConfig = openapiToSingleConfig;
+    this.plugins = openapiToSingleConfig.plugins;
     this.openapiDocument = openapiDocument;
   }
 
@@ -119,13 +114,17 @@ class PluginManager {
    * 执行插件
    * @param plugin
    */
-  execute(plugin: OpenapiToConfigPlugin) {
+  execute(plugin: PluginFactory) {
+    const lifeCycle = plugin({
+      openapiDocument:this.openapiDocument,
+      openapiToSingleConfig:this.openapiToSingleConfig,
+    })
     //
-    plugin.buildStart(this.config, this.openapiDocument);
+    lifeCycle.buildStart();
     //
-    plugin.writeFileSync(this.config, this.openapiDocument);
+    lifeCycle.writeFile();
     //
-    plugin.buildEnd(this.config, this.openapiDocument);
+    lifeCycle.buildEnd();
   }
 
   run() {

@@ -1,6 +1,6 @@
 import { build } from "./build.ts";
 
-export * from "./config.ts";
+export * from "./defineConfig";
 export * from "./errors.ts";
 export { Generator } from "./Generator.ts";
 export { PackageManager } from "./PackageManager.ts";
