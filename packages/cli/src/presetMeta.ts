@@ -1,4 +1,4 @@
-export  default `const {
+export default `const {
   defineConfig,
   createJSRequest,
   createTSRequest,
@@ -6,12 +6,12 @@ export  default `const {
   createZod,
   createTanstackQuery,
   createFaker,
-  createMSW } require('openapi-to')
+  createMSW }= require('openapi-to')
 
 module.exports = defineConfig({
   input:[
     {
-      title:'swagger',  // output file folder name
+      name:'swagger',  // output file folder name
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
     }
   ],
@@ -29,4 +29,4 @@ module.exports = defineConfig({
     createFaker(),
     createMSW()
   ]
-})`
+})`;

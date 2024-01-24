@@ -1,13 +1,14 @@
-import type { CosmiconfigResult } from '../types.ts'
 import _ from "lodash";
-import type{ OpenapiToConfig} from "@openapi-to/core";
 
-export function getDefineConfig(result: CosmiconfigResult):  OpenapiToConfig {
-  const config = result?.config
+import type { OpenapiToConfig } from "@openapi-to/core";
+import type { CosmiconfigResult } from "../types.ts";
 
-  if(!_.isFunction(config)){
-      throw new Error('definePlugin is not function')
+export function getDefineConfig(result: CosmiconfigResult): OpenapiToConfig {
+  const config = result?.config;
+
+  if (!_.toPlainObject(config)) {
+    throw new Error("openapi.config file does not have an export config.");
   }
 
-  return config
+  return config;
 }

@@ -1,4 +1,4 @@
-import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import type { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { LogLevel } from "./utils";
 
 export type OpenapiToConfigSingleInput = {
@@ -13,27 +13,25 @@ export type OpenapiToConfigSingleInput = {
 };
 
 export type LifeCycle = {
-  name:string
+  name: string;
   buildStart: () => void;
   writeFile: () => void;
   buildEnd: () => void;
-}
+};
 
-export type PluginConfigFactory<T> =( pluginConfig:T)=>PluginFactory
+export type PluginConfigFactory<T> = (pluginConfig: T) => PluginFactory;
 
 export type PluginFactory = ({
-                                  openapiDocument,
-                                  openapiToSingleConfig,
-                                }: {
-  openapiDocument:OpenAPIDocument,
-  openapiToSingleConfig:OpenapiToSingleConfig,
-
-})=> LifeCycle
-
+  openapiDocument,
+  openapiToSingleConfig,
+}: {
+  openapiDocument: OpenAPIDocument;
+  openapiToSingleConfig: OpenapiToSingleConfig;
+}) => LifeCycle;
 
 export type OpenapiToSingleConfig = {
   input: OpenapiToConfigSingleInput;
-  output?:string;
+  output?: string;
   plugins: Array<PluginFactory>;
 };
 
@@ -81,4 +79,9 @@ export type PathGroupByTag = {
   [k in string]: Array<PathGroup>;
 };
 
-export type OpenAPIDocument = OpenAPIV3.Document | OpenAPIV3_1.Document
+export type OpenAPIDocument = OpenAPIV3.Document | OpenAPIV3_1.Document;
+
+export type OpenAPIAllDocument =
+  | OpenAPIV2.Document
+  | OpenAPIV3.Document
+  | OpenAPIV3_1.Document;

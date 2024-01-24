@@ -1,3 +1,4 @@
+import { build } from "@openapi-to/core";
 import {
   createLogger,
   LogLevel,
@@ -8,8 +9,11 @@ import pc from "picocolors";
 
 import { spinner } from "./utils/spinner.ts";
 
-import type { CLIOptions, OpenapiToConfigSingleInput, OpenapiToConfig } from "@openapi-to/core";
-import {build} from "@openapi-to/core";
+import type {
+  CLIOptions,
+  OpenapiToConfig,
+  OpenapiToConfigSingleInput,
+} from "@openapi-to/core";
 
 type GenerateProps = {
   input: OpenapiToConfigSingleInput;
@@ -57,5 +61,5 @@ export async function generate({
     `🚀 Building ${logLevel !== "silent" ? pc.dim(inputPath) : ""}`,
   );
 
-  build(input,openapiToConfig,CLIOptions)
+  await build(input, openapiToConfig, CLIOptions);
 }

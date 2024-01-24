@@ -1,9 +1,13 @@
+import path from "node:path";
+
 import { URLPath } from "@openapi-to/core/utils";
+
 import _ from "lodash";
+import * as process from "process";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
-import path from 'node:path'
+
 import type { AST, OpenAPI } from "@openapi-to/core";
-import type {OpenapiToSingleConfig} from "@openapi-to/core";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3 } from "openapi-types";
@@ -60,13 +64,26 @@ export class RequestGenerator {
     return this.pluginConfig.createZodDecorator;
   }
 
+  get writeFilePath() {
+    return (
+      process.cwd() +
+      "/" +
+      ".OpenAPI" +
+      "/" +
+      this.openapiToSingleConfig.input.name
+    );
+  }
+
   build() {
     return _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
       const methodsStatements = _.map(pathGroup, ({ path, method, tag }) => {
         this.operation = this.openapi.setCurrentOperation(path, method, tag);
         return this.generatorMethod();
       });
-      const filePath = path.resolve(this.openapiToSingleConfig.output||'',tag+'.ts')
+      const filePath = path.resolve(
+        this.openapiToSingleConfig.output || this.writeFilePath,
+        this.lowerFirstClassName + ".ts",
+      );
       return this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(),
@@ -90,7 +107,7 @@ export class RequestGenerator {
         declarationKind: VariableDeclarationKind.Const,
         declarations: [
           {
-            name: _.lowerFirst(this.className),
+            name: this.lowerFirstClassName,
             initializer: "new" + " " + this.className,
           },
         ],
@@ -167,6 +184,10 @@ export class RequestGenerator {
         ),
       ) + "Api"
     );
+  }
+
+  get lowerFirstClassName() {
+    return _.lowerFirst(this.className);
   }
 
   generatorClass(

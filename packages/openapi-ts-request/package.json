@@ -6,16 +6,16 @@
   "description": "Generator ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.cjs"
+      "import": "./dist/es/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/cjs/index.cjs"
     },
     "./package.json": "./package.json",
     "./*": "./*"
   },
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/es/index.js",
+  "types": "./dist/es/index.d.ts",
   "files": [
     "dist",
     "!/**/**.test.**",

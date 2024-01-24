@@ -82,9 +82,10 @@ export class AST {
     };
   }
 
-  saveSync() {
-    this.sourceFile.map((node) => node.save());
-
+  saveSync(): void {
+    this.sourceFile.map((node) => {
+      node.saveSync();
+    });
   }
   async save(): Promise<void> {
     const map = this.sourceFile.map((node) => node.save());

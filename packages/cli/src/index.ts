@@ -6,8 +6,8 @@ import { cac } from "cac";
 import pc from "picocolors";
 
 import { version } from "../package.json";
-import { getDefineConfig } from "./utils/getDefineConfig.ts";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";
+import { getDefineConfig } from "./utils/getDefineConfig.ts";
 import { renderErrors } from "./utils/renderErrors.ts";
 import { spinner } from "./utils/spinner.ts";
 import { generate } from "./generate.ts";
@@ -40,18 +40,19 @@ async function generateAction(CLIOptions: CLIOptions) {
   );
 
   const openapiToConfig = getDefineConfig(result);
-  openapiToConfig.input.forEach(
-    (input) => () => generate({ input, openapiToConfig, CLIOptions }),
-  );
+
+  for (const input of openapiToConfig.input) {
+    await generate({ input, openapiToConfig, CLIOptions });
+  }
 
   return;
 }
 
-export default async function runCLI(argv?: string[]): Promise<void> {
+export async function run(argv?: string[]): Promise<void> {
   const program = cac(moduleName);
   //todo
   program
-    .command("g --generate", "Generate code from the openapi.config.js file")
+    .command("g", "Generate code from the openapi.config.js file")
     .option("-l, --log-level <type>", "Info, silent or debug")
     .option("-w, --watch", "Watch mode based on the input file")
     .action(generateAction);
@@ -70,3 +71,5 @@ export default async function runCLI(argv?: string[]): Promise<void> {
     programCatcher(e, program.options);
   }
 }
+
+export default run;
