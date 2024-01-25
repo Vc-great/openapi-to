@@ -4,14 +4,14 @@
  * @example `ESLINT_USE_FLAT_CONFIG=true eslint`
  */
 
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import tsPlugin from '@typescript-eslint/eslint-plugin'
 
 // configs
-import config from "@openapi-to/eslint-config/dist/es/flat.js";
+import config from '@openapi-to/eslint-config/dist/es/flat.js'
 
-import { ignores } from "@openapi-to/eslint-config";
+import { ignores } from '@openapi-to/eslint-config'
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
@@ -19,39 +19,35 @@ export default [
   config.configs.tests,
   config.configs.build,
   {
-    files: ["examples/**", "e2e/**"],
+    files: ['examples/**', 'e2e/**'],
     ignores: ignores.all,
     plugins: {
-      "@typescript-eslint": tsPlugin,
+      '@typescript-eslint': tsPlugin,
     },
     rules: {
-      "import/extensions": "off",
-      "simple-import-sort/imports": "off",
-      "@typescript-eslint/no-duplicate-type-constituents": "off",
-      "@typescript-eslint/no-namespace": "off",
-      "@typescript-eslint/consistent-type-imports": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "unused-imports/no-unused-vars": "off",
-      "@typescript-eslint/explicit-module-boundary-types": "off",
+      'import/extensions': 'off',
+      'simple-import-sort/imports': 'off',
+      '@typescript-eslint/no-duplicate-type-constituents': 'off',
+      '@typescript-eslint/no-namespace': 'off',
+      '@typescript-eslint/consistent-type-imports': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      'unused-imports/no-unused-vars': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
   {
-    files: ["packages/**", "examples/**"],
-    ignores: ["e2e/**", "docs/**", "vitest.config.ts", "vite.config.ts"],
+    files: ['packages/**', 'examples/**'],
+    ignores: ['e2e/**', 'docs/**', 'vitest.config.ts', 'vite.config.ts'],
     languageOptions: {
       parserOptions: {
-        ecmaVersion: "latest",
+        ecmaVersion: 'latest',
         tsconfigRootDir: dirname(fileURLToPath(import.meta.url)),
-        project: [
-          "./examples/*/tsconfig.json",
-          "./packages/*/tsconfig.json",
-          "./packages/config/*/tsconfig.json",
-        ],
+        project: ['./examples/*/tsconfig.json', './packages/*/tsconfig.json', './packages/config/*/tsconfig.json'],
       },
     },
   },
-];
+]

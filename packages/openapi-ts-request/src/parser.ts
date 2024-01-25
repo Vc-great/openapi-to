@@ -1,9 +1,5 @@
 // 装饰器 注释 参数
-export function creatClass() {
-
-}
+export function creatClass() {}
 
 //装饰器 注释 参数
-export function createFunction() {
-
-}
+export function createFunction() {}

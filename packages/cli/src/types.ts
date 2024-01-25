@@ -5,8 +5,3 @@ export type CosmiconfigResult = {
   isEmpty?: boolean
   config: ReturnType<typeof defineConfig>
 }
-
-
-
-
-

@@ -29,4 +29,4 @@ module.exports = defineConfig({
     createFaker(),
     createMSW()
   ]
-})`;
+})`

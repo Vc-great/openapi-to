@@ -3,7 +3,8 @@ import path from "node:path";
 import { Warning } from "@openapi-to/core";
 
 import { cac } from "cac";
-import pc from "picocolors";
+import _ from "lodash";
+import c from "tinyrainbow";
 
 import { version } from "../package.json";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";
@@ -13,6 +14,7 @@ import { spinner } from "./utils/spinner.ts";
 import { generate } from "./generate.ts";
 import { init } from "./init.ts";
 
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type { CLIOptions } from "@openapi-to/core";
 
 const moduleName = "openapi";
@@ -22,7 +24,7 @@ function programCatcher(e: unknown, CLIOptions: CLIOptions): void {
   const message = renderErrors(error, { logLevel: CLIOptions.logLevel });
 
   if (error instanceof Warning) {
-    spinner.warn(pc.yellow(error.message));
+    spinner.warn(c.yellow(error.message));
     process.exit(0);
   }
 
@@ -34,15 +36,18 @@ async function generateAction(CLIOptions: CLIOptions) {
   spinner.start("💾 Loading config");
   const result = await getCosmiConfig(moduleName);
   spinner.succeed(
-    `🔍 Config loaded(${pc.dim(
-      path.relative(process.cwd(), result.filepath),
-    )})`,
+    `🔍 Config loaded(${c.dim(path.relative(process.cwd(), result.filepath))})`,
   );
 
   const openapiToConfig = getDefineConfig(result);
 
   for (const input of openapiToConfig.input) {
-    await generate({ input, openapiToConfig, CLIOptions });
+    const openapiToSingleConfig: OpenapiToSingleConfig = {
+      input: input,
+      ..._.omit(openapiToConfig, ["input", "plugins"]),
+      plugins: openapiToConfig.plugins,
+    };
+    await generate(openapiToSingleConfig, CLIOptions);
   }
 
   return;

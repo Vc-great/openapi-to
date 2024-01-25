@@ -1,43 +1,30 @@
-import { build } from "@openapi-to/core";
-import {
-  createLogger,
-  LogLevel,
-  randomPicoColour,
-} from "@openapi-to/core/utils";
+import { build, PluginStatus } from "@openapi-to/core";
+import { createLogger, LogLevel, randomCliColour } from "@openapi-to/core";
 
-import pc from "picocolors";
+import c from "tinyrainbow";
 
+import { getSummary } from "./utils/getSummary.ts";
 import { spinner } from "./utils/spinner.ts";
 
-import type {
-  CLIOptions,
-  OpenapiToConfig,
-  OpenapiToConfigSingleInput,
-} from "@openapi-to/core";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
+import type { CLIOptions } from "@openapi-to/core";
 
-type GenerateProps = {
-  input: OpenapiToConfigSingleInput;
-  openapiToConfig: OpenapiToConfig;
-  CLIOptions: CLIOptions;
-};
-
-export async function generate({
-  input,
-  openapiToConfig,
-  CLIOptions,
-}: GenerateProps): Promise<void> {
-  const inputPath = input.path;
+export async function generate(
+  openapiToSingleConfig: OpenapiToSingleConfig,
+  CLIOptions: CLIOptions,
+): Promise<void> {
+  const inputPath = openapiToSingleConfig.input.path;
   const logger = createLogger({
     logLevel: CLIOptions.logLevel || LogLevel.silent,
-    name: input.name,
+    name: openapiToSingleConfig.input.name,
     spinner,
   });
 
   if (logger.name) {
-    spinner.prefixText = randomPicoColour(logger.name);
+    spinner.prefixText = randomCliColour(logger.name);
   }
 
-  const hrstart = process.hrtime();
+  const startHrtime = process.hrtime();
 
   if (CLIOptions.logLevel === LogLevel.debug) {
     const { performance, PerformanceObserver } = await import(
@@ -47,7 +34,7 @@ export async function generate({
     const performanceOpserver = new PerformanceObserver((items) => {
       const message = `${items.getEntries()[0]?.duration.toFixed(0)}ms`;
 
-      spinner.suffixText = pc.yellow(message);
+      spinner.suffixText = c.yellow(message);
 
       performance.clearMarks();
     });
@@ -57,9 +44,37 @@ export async function generate({
 
   const logLevel = logger.logLevel;
 
-  spinner.start(
-    `🚀 Building ${logLevel !== "silent" ? pc.dim(inputPath) : ""}`,
+  spinner.start(`🚀 Building ${logLevel !== "silent" ? c.dim(inputPath) : ""}`);
+
+  const { pluginManager, error } = await build(
+    openapiToSingleConfig,
+    CLIOptions,
+    logger,
   );
 
-  await build(input, openapiToConfig, CLIOptions);
+  const summary = getSummary({
+    pluginManager,
+    openapiToSingleConfig,
+    status: error ? PluginStatus.Failed : PluginStatus.Succeeded,
+    startHrtime,
+    logger,
+  });
+
+  if (error) {
+    spinner.suffixText = "";
+    spinner.fail(
+      `🚀 Build failed ${logLevel !== "silent" ? c.dim(inputPath) : ""}`,
+    );
+
+    console.log(summary.join(""));
+
+    throw error;
+  }
+
+  spinner.suffixText = "";
+  spinner.succeed(
+    `🚀 Build completed ${logLevel !== "silent" ? c.dim(inputPath) : ""}`,
+  );
+
+  console.log(summary.join(""));
 }

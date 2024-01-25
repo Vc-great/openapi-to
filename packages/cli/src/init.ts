@@ -1,10 +1,9 @@
 import pathParser from "node:path";
 
-import { pathExistsSync, readSync, write } from "@openapi-to/core/utils";
+import { folderName, pathExistsSync, readSync, write } from "@openapi-to/core";
 
-import pc from "picocolors";
+import c from "tinyrainbow";
 
-import { folderName } from "./utils/folderName.js";
 import { spinner } from "./utils/spinner.ts";
 import presetMeta from "./presetMeta.ts";
 
@@ -21,10 +20,10 @@ async function createConfig() {
     process.cwd(),
     `${folderName}/openapi.config.js`,
   );
-  spinner.start(`📀 Writing \`openapi.config.js\` ${pc.dim(path)}`);
+  spinner.start(`📀 Writing \`openapi.config.js\` ${c.dim(path)}`);
   //todo distinguish env: .js .ts
   await write(presetMeta, path);
-  spinner.succeed(`📀 Wrote \`openapi.config.js\` ${pc.dim(path)}`);
+  spinner.succeed(`📀 Wrote \`openapi.config.js\` ${c.dim(path)}`);
 }
 
 /**
@@ -33,7 +32,7 @@ async function createConfig() {
 async function createGitignore() {
   const path = pathParser.resolve(process.cwd(), ".gitignore");
   const content = "# https://github.com/Vc-great/openapi-to\n.OpenAPI";
-  spinner.start(`📀 Writing \`.OpenAPI to the .gitignore\` ${pc.dim(path)}`);
+  spinner.start(`📀 Writing \`.OpenAPI to the .gitignore\` ${c.dim(path)}`);
 
   if (pathExistsSync(path)) {
     const fileContent: string = readSync(path);
@@ -44,5 +43,5 @@ async function createGitignore() {
   } else {
     await write(content, path);
   }
-  spinner.succeed(`📀 Wrote \`.OpenAPI to the .gitignore\` ${pc.dim(path)}`);
+  spinner.succeed(`📀 Wrote \`.OpenAPI to the .gitignore\` ${c.dim(path)}`);
 }

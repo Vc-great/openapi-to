@@ -3,19 +3,17 @@ import converter from "do-swagger2openapi";
 import fs from "fs-extra";
 import _ from "lodash";
 
+import { PluginManager } from "./PluginManager.ts";
 import { URLPath } from "./utils";
 
 import type { AxiosResponse } from "axios";
 import type { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
+import type { Logger } from "./logger.ts";
 import type {
   CLIOptions,
   OpenAPIAllDocument,
-  OpenAPIDocument,
-  OpenapiToConfig,
-  OpenapiToConfigSingleInput,
   OpenapiToSingleConfig,
-  PluginFactory,
 } from "./types.ts";
 
 export async function requestRemoteData(
@@ -79,72 +77,33 @@ export async function swagger2ToOpenapi3(
 }
 
 export async function build(
-  input: OpenapiToConfigSingleInput,
-  openapiToConfig: OpenapiToConfig,
+  openapiToSingleConfig: OpenapiToSingleConfig,
   CLIOptions: CLIOptions,
-) {
-  const config = {
-    input: input,
-    ..._.omit(openapiToConfig, ["input", "plugins"]),
-    plugins: openapiToConfig.plugins,
-  };
-  await run(config);
-}
-
-/**
- *
- *   input: OpenapiToConfigInput,
- *   plugins: Array<OpenapiToConfigPlugin>,
- *
- */
-async function run(config: OpenapiToSingleConfig) {
-  const logger = {};
-  const {
-    input: { path },
-  } = config;
-
-  const openapiDocument = await loadData(path);
+  logger: Logger,
+): Promise<{ pluginManager: PluginManager; error?: Error }> {
+  const openapiDocument = await loadData(openapiToSingleConfig.input.path);
 
   if (_.isUndefined(openapiDocument)) {
     throw new Error("Unable to get the OpenAPI Document!");
   }
   //执行每一个插件
-  const pluginManager = new PluginManager(config, openapiDocument);
+  const pluginManager = new PluginManager(
+    openapiToSingleConfig,
+    openapiDocument,
+    logger,
+  );
 
-  pluginManager.run();
+  try {
+    pluginManager.run();
+  } catch (e) {
+    return {
+      pluginManager,
+      error: e as Error,
+    };
+  }
 
   // logger.spinner.succeed(`💾 Writing completed`)
-}
-
-class PluginManager {
-  private plugins: Array<PluginFactory>;
-  constructor(
-    private readonly openapiToSingleConfig: OpenapiToSingleConfig,
-    private readonly openapiDocument: OpenAPIDocument,
-  ) {
-    this.openapiToSingleConfig = openapiToSingleConfig;
-    this.plugins = openapiToSingleConfig.plugins;
-    this.openapiDocument = openapiDocument;
-  }
-
-  /**
-   * 执行插件
-   * @param plugin
-   */
-  execute(plugin: PluginFactory) {
-    const lifeCycle = plugin({
-      openapiDocument: this.openapiDocument,
-      openapiToSingleConfig: this.openapiToSingleConfig,
-    });
-    //
-    lifeCycle.buildStart();
-    //
-    lifeCycle.writeFile();
-    //
-    lifeCycle.buildEnd();
-  }
-
-  run() {
-    this.plugins.forEach((plugin) => this.execute(plugin));
-  }
+  return {
+    pluginManager,
+  };
 }

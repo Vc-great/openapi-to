@@ -4,4 +4,4 @@ exports[`BarrelManager > if getIndexes can return an export with \`exportAs\` an
 "export * as models from './hello.ts'
 export * as models from './world.ts'
 "
-`;
+`

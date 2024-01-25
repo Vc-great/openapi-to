@@ -9,9 +9,11 @@ export * from "./types.ts";
 export default build;*/
 export { AST } from "./ast/ast.ts";
 export { build, requestRemoteData } from "./build.ts";
+export { folderName } from "./folderName.ts";
+export * from "./fs";
+export * from "./logger.ts";
 export { OpenAPI } from "./openapi/OpenAPI.ts";
-export { createPlugin } from "./plugins.ts";
-
+export * from "./PluginManager.ts";
 /*
 
 

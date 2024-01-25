@@ -9,34 +9,7 @@
       "path": "../../core"
     },
     {
-      "path": "../../swagger"
-    },
-    {
-      "path": "../../swagger-client"
-    },
-    {
-      "path": "../../swagger-faker"
-    },
-    {
-      "path": "../../swagger-msw"
-    },
-    {
-      "path": "../../swagger-tanstack-query"
-    },
-    {
-      "path": "../../swagger-ts"
-    },
-    {
-      "path": "../../swagger-zod"
-    },
-    {
-      "path": "../../swagger-zodios"
-    },
-    {
-      "path": "../../parser"
-    },
-    {
-      "path": "../../react"
+      "path": "../../openapi-ts-request"
     }
   ]
 }

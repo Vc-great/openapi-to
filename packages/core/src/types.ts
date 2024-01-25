@@ -1,5 +1,5 @@
 import type { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import type { LogLevel } from "./utils";
+import type { LogLevel } from "./logger.ts";
 
 export type OpenapiToConfigSingleInput = {
   /**
@@ -12,11 +12,28 @@ export type OpenapiToConfigSingleInput = {
   path: string;
 };
 
-export type LifeCycle = {
+export type PluginName = {
   name: string;
-  buildStart: () => void;
-  writeFile: () => void;
-  buildEnd: () => void;
+};
+export type PluginLifecycleHooks = keyof LifeCycle;
+
+export type PluginContext = {
+  output: string;
+};
+
+export enum LifeCycleEnum {
+  buildStart = "buildStart",
+  writeFile = "writeFile",
+  buildEnd = "buildEnd",
+}
+
+export type LifeCycle = {
+  [LifeCycleEnum.buildStart]: (context: PluginContext) => void;
+  /**
+   * plugin lifeCycle return path
+   */
+  [LifeCycleEnum.writeFile]: (context: PluginContext) => string[];
+  [LifeCycleEnum.buildEnd]: (context: PluginContext) => void;
 };
 
 export type PluginConfigFactory<T> = (pluginConfig: T) => PluginFactory;
@@ -27,7 +44,7 @@ export type PluginFactory = ({
 }: {
   openapiDocument: OpenAPIDocument;
   openapiToSingleConfig: OpenapiToSingleConfig;
-}) => LifeCycle;
+}) => LifeCycle & PluginName;
 
 export type OpenapiToSingleConfig = {
   input: OpenapiToConfigSingleInput;

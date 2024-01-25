@@ -27,6 +27,9 @@ describe("RequestGenerator", async () => {
   const pluginConfig = {
     createZodDecorator: true,
   };
+  const context = {
+    output: "",
+  };
 
   test("requestGenerator getFullText", () => {
     const ast = new AST();
@@ -39,7 +42,7 @@ describe("RequestGenerator", async () => {
       pluginConfig,
       openapiToSingleConfig,
     });
-    requestGenerator.build();
+    requestGenerator.build(context);
     const text = _.chain(ast.sourceFile)
       .map((sourceFile) => sourceFile.getFullText())
       .join("\n")

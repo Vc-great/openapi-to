@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { folderName } from "@openapi-to/core";
+
 import { bundleRequire } from "bundle-require";
 import { cosmiconfig } from "cosmiconfig";
-
-import { folderName } from "./folderName.js";
 
 import type { CosmiconfigResult } from "../types.ts";
 const tsLoader = async (configFile: string) => {

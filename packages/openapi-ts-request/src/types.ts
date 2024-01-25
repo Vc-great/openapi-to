@@ -5,19 +5,19 @@ export type PluginLifecycle = {
    * @type hookFirst
    * @example ('./Pet.ts', './src/gen/') => '/src/gen/Pet.ts'
    */
-  resolvePath?: () => {};
+  resolvePath?: () => {}
 
-  resolveName?: () => {};
+  resolveName?: () => {}
 
-  buildStart?: () => {};
-  buildEnd?: () => {};
-  writeFile?: () => {};
-};
+  buildStart?: () => {}
+  buildEnd?: () => {}
+  writeFile?: () => {}
+}
 
 export type PluginConfig = {
-  createZodDecorator: boolean;
-};
+  createZodDecorator: boolean
+}
 
 export type PluginOptions = {
-  createZodDecorator: boolean;
-};
+  createZodDecorator: boolean
+}

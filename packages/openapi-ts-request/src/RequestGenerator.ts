@@ -3,9 +3,9 @@ import path from "node:path";
 import { URLPath } from "@openapi-to/core/utils";
 
 import _ from "lodash";
-import * as process from "process";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
 
+import type { PluginContext } from "@openapi-to/core";
 import type { AST, OpenAPI } from "@openapi-to/core";
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type Oas from "oas";
@@ -64,24 +64,14 @@ export class RequestGenerator {
     return this.pluginConfig.createZodDecorator;
   }
 
-  get writeFilePath() {
-    return (
-      process.cwd() +
-      "/" +
-      ".OpenAPI" +
-      "/" +
-      this.openapiToSingleConfig.input.name
-    );
-  }
-
-  build() {
-    return _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+  build(context: PluginContext): void {
+    _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
       const methodsStatements = _.map(pathGroup, ({ path, method, tag }) => {
         this.operation = this.openapi.setCurrentOperation(path, method, tag);
         return this.generatorMethod();
       });
       const filePath = path.resolve(
-        this.openapiToSingleConfig.output || this.writeFilePath,
+        context.output,
         this.lowerFirstClassName + ".ts",
       );
       return this.ast.createSourceFile(filePath, {
@@ -426,7 +416,7 @@ export class RequestGenerator {
     const requestFuncContent = _.chain([] as string[])
       .push("method:" + "'" + this.operation?.method + "'")
       .push(header())
-      .push("url:`" + url.requestPath + "`")
+      .push("url:" + url.requestPath)
       .push(this.openapi.parameter?.hasQueryParameters ? "params:query" : "")
       .push(this.openapi.requestBody?.hasRequestBody ? "data:body" : "")
       .push(this.openapi.response?.isDownLoad ? "responseType:'blob'" : "")

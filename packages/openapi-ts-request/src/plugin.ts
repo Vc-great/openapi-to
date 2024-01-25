@@ -14,7 +14,7 @@ export const definePlugin = createPlugin<PluginConfig>(
       const openapi = new OpenAPI({}, oas);
       return {
         name: "openapi-ts-request",
-        buildStart() {
+        buildStart(context) {
           const requestGenerator = new RequestGenerator({
             oas,
             ast,
@@ -22,10 +22,10 @@ export const definePlugin = createPlugin<PluginConfig>(
             pluginConfig,
             openapiToSingleConfig,
           });
-          requestGenerator.build();
+          requestGenerator.build(context);
         },
         writeFile() {
-          ast.saveSync();
+          return ast.saveSync();
         },
         buildEnd() {},
       };

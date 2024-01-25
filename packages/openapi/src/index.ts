@@ -1,5 +1,5 @@
-export { defineConfig } from "@openapi-to/core";
-export { definePlugin as createTSRequest } from "@openapi-to/openapi-ts-request";
+export { defineConfig } from '@openapi-to/core'
+export { definePlugin as createTSRequest } from '@openapi-to/openapi-ts-request'
 
 export function createJSRequest() {}
 

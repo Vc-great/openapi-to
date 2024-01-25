@@ -1,10 +1,10 @@
-import { esbuildPluginFilePathExtensions } from "esbuild-plugin-file-path-extensions";
+import { esbuildPluginFilePathExtensions } from 'esbuild-plugin-file-path-extensions'
 
-import type { Options } from "tsup";
+import type { Options } from 'tsup'
 
-export const bannerCJS: Options["banner"] = {};
+export const bannerCJS: Options['banner'] = {}
 
-export const bannerESM: Options["banner"] = {
+export const bannerESM: Options['banner'] = {
   /**
    * @link https://stackoverflow.com/questions/31931614/require-is-not-defined-node-js
    */
@@ -12,47 +12,41 @@ export const bannerESM: Options["banner"] = {
    import { createRequire } from 'module';
    const require = createRequire(import.meta.url);
   `,
-};
+}
 
 export const options: Options = {
-  entry: ["src/index.ts"],
+  entry: ['src/index.ts'],
   treeshake: true,
   sourcemap: true,
   minify: false,
   clean: true,
-  platform: "node",
+  platform: 'node',
   shims: true,
-  ignoreWatch: [
-    "**/.turbo",
-    "**/dist",
-    "**/node_modules",
-    "**/.DS_STORE",
-    "**/.git",
-  ],
-};
+  ignoreWatch: ['**/.turbo', '**/dist', '**/node_modules', '**/.DS_STORE', '**/.git'],
+}
 
 export const optionsESM: Options = {
   ...options,
-  format: "esm",
+  format: 'esm',
   dts: true,
   splitting: true,
   banner: bannerESM,
-  outDir: "./dist/es",
-};
+  outDir: './dist/es',
+}
 
 export const optionsCJS: Options = {
   ...options,
-  format: "cjs",
+  format: 'cjs',
   dts: true,
   banner: bannerCJS,
   splitting: true,
-  outDir: "./dist/cjs",
-};
+  outDir: './dist/cjs',
+}
 
 export const optionsFlat: Options = {
-  format: ["cjs", "esm"],
-  entry: ["./src/**/!(*.d|*.test).ts"],
-  outDir: "./dist",
+  format: ['cjs', 'esm'],
+  entry: ['./src/**/!(*.d|*.test).ts'],
+  outDir: './dist',
   sourcemap: true,
   clean: true,
   dts: true,
@@ -64,15 +58,15 @@ export const optionsFlat: Options = {
   ignoreWatch: options.ignoreWatch,
   esbuildPlugins: [
     esbuildPluginFilePathExtensions({
-      esmExtension: "js",
-      cjsExtension: "cjs",
+      esmExtension: 'js',
+      cjsExtension: 'cjs',
     }),
-  ] as Options["esbuildPlugins"],
-};
+  ] as Options['esbuildPlugins'],
+}
 
 export default {
   default: options,
   esm: optionsESM,
   cjs: optionsCJS,
   flat: optionsFlat,
-} as const;
+} as const

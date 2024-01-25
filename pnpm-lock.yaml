@@ -110,22 +110,22 @@ importers:
         version: 3.5.3
       cosmiconfig:
         specifier: ^8.3.6
-        version: 8.3.6(typescript@5.3.3)
+        version: 8.3.6
       execa:
         specifier: ^8.0.1
         version: 8.0.1
       ora:
         specifier: ^7.0.1
         version: 7.0.1
-      picocolors:
-        specifier: ^1.0.0
-        version: 1.0.0
       pretty-error:
         specifier: ^4.0.0
         version: 4.0.0
       string-argv:
         specifier: ^0.3.2
         version: 0.3.2
+      tinyrainbow:
+        specifier: ^1.1.1
+        version: 1.1.1
     devDependencies:
       '@openapi-to/ts-config':
         specifier: workspace:*
@@ -236,15 +236,15 @@ importers:
       natural-orderby:
         specifier: ^3.0.2
         version: 3.0.2
-      picocolors:
-        specifier: ^1.0.0
-        version: 1.0.0
       seedrandom:
         specifier: ^3.0.5
         version: 3.0.5
       semver:
         specifier: ^7.5.4
         version: 7.5.4
+      tinyrainbow:
+        specifier: ^1.1.1
+        version: 1.1.1
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -2354,6 +2354,21 @@ packages:
       typescript: 5.3.3
     dev: true
 
+  /cosmiconfig@8.3.6:
+    resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      typescript: '>=4.9.5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+    dependencies:
+      import-fresh: 3.3.0
+      js-yaml: 4.1.0
+      parse-json: 5.2.0
+      path-type: 4.0.0
+    dev: false
+
   /cosmiconfig@8.3.6(typescript@5.3.3):
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
@@ -2368,6 +2383,7 @@ packages:
       parse-json: 5.2.0
       path-type: 4.0.0
       typescript: 5.3.3
+    dev: true
 
   /create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
@@ -5749,6 +5765,11 @@ packages:
   /tinypool@0.8.1:
     resolution: {integrity: sha512-zBTCK0cCgRROxvs9c0CGK838sPkeokNGdQVUUwHAbynHFlmyJYj825f/oRs528HaIJ97lo0pLIlDUzwN+IorWg==}
     engines: {node: '>=14.0.0'}
+
+  /tinyrainbow@1.1.1:
+    resolution: {integrity: sha512-3yBkLfmrG/x2fkhcDAg4vyS4/GLSCOXtXa9bIfzEN1Y3geldnA7aEPsHfSsKqsvdEsPnESzkV9aU/9T0IjwWFg==}
+    engines: {node: '>=14.0.0'}
+    dev: false
 
   /tinyspy@2.2.0:
     resolution: {integrity: sha512-d2eda04AN/cPOR89F7Xv5bK/jrQEhmcLFe6HFldoeO9AJtps+fqEnh486vnT/8y4bw38pSyxDcTCAq+Ks2aJTg==}

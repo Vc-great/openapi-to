@@ -1,6 +1,6 @@
-import { optionsCJS, optionsESM } from "@openapi-to/tsup-config";
+import { optionsCJS, optionsESM } from '@openapi-to/tsup-config'
 
-import { defineConfig } from "tsup";
+import { defineConfig } from 'tsup'
 
 export default defineConfig([
   {
@@ -13,18 +13,18 @@ export default defineConfig([
     ...optionsCJS,
     sourcemap: true,
     entry: {
-      utils: "src/utils/index.ts",
+      utils: 'src/utils/index.ts',
     },
-    name: "utils",
+    name: 'utils',
     noExternal: [/find-up/],
   },
   {
     ...optionsESM,
     sourcemap: true,
     entry: {
-      utils: "src/utils/index.ts",
+      utils: 'src/utils/index.ts',
     },
-    name: "utils",
+    name: 'utils',
     noExternal: [/find-up/],
   },
-]);
+])

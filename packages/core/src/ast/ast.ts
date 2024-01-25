@@ -82,9 +82,10 @@ export class AST {
     };
   }
 
-  saveSync(): void {
-    this.sourceFile.map((node) => {
+  saveSync(): Array<string> {
+    return this.sourceFile.map((node) => {
       node.saveSync();
+      return node.getFilePath();
     });
   }
   async save(): Promise<void> {
