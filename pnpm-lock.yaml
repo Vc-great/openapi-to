@@ -279,6 +279,9 @@ importers:
       '@openapi-to/openapi-ts-request':
         specifier: workspace:*
         version: link:../openapi-ts-request
+      '@openapi-to/tsup-config':
+        specifier: workspace:*
+        version: link:../config/tsup-config
 
   packages/openapi-ts-request:
     devDependencies:
