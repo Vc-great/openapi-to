@@ -1,12 +1,7 @@
-export default `const {
+export const commonPresetMeta= `const {
   defineConfig,
-  createJSRequest,
   createTSRequest,
-  createTSInterface,
-  createZod,
-  createTanstackQuery,
-  createFaker,
-  createMSW }= require('openapi-to')
+   }= require('openapi-to')
 
 module.exports = defineConfig({
   input:[
@@ -16,17 +11,28 @@ module.exports = defineConfig({
     }
   ],
   plugins: [
-    createJSRequest({
-      createZodDecorator: true
-    }),
     createTSRequest({
       createZodDecorator: true
-    }),
-    createTSInterface(),
-    createZod(),
-    createTSRequest(),
-    createTanstackQuery(),
-    createFaker(),
-    createMSW()
+    })
+  ]
+})`
+
+
+export const modulePresetMeta= `import {
+  defineConfig,
+  createTSRequest,
+   } from'openapi-to'
+
+export default defineConfig({
+  input:[
+    {
+      name:'swagger',  // output file folder name
+      path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+    }
+  ],
+  plugins: [
+    createTSRequest({
+      createZodDecorator: true
+    })
   ]
 })`

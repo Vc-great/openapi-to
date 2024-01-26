@@ -44,6 +44,7 @@ stats.html
 ## custom ones
 private
 /e2e/src/gen/**
+/e2e/.gitignore
 test.json
 .turbo
 .next

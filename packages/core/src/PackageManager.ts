@@ -7,9 +7,11 @@ import { coerce, satisfies } from "semver";
 
 import { read, readSync } from "./fs/read";
 
+//todo package type
 type PackageJSON = {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  type?:'module'|'common'
 };
 
 type DependencyName = string;
