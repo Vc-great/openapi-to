@@ -34,6 +34,9 @@ jobs:
         - name: Setup
           uses: ./.github/setup
 
+        - name: Build
+          run: npm run build --concurrency=1
+
         - name: Typecheck
           run: npm run typecheck --concurrency=1
 
