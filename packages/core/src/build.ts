@@ -60,7 +60,7 @@ export async function swagger2ToOpenapi3(
     return openapiDocument;
   }
 
-  //log  "💺 将 Swagger 转化为 openAPI";
+  //log  "💺 将 Swagger 转化为 OpenAPI";
   const [err, options] = await converter
     .convertObj(<OpenAPIV2.Document>openapiDocument, {})
     .then(

@@ -172,7 +172,7 @@ export class RequestGenerator {
             this.openapi.currentTagMetadata &&
             this.openapi.currentTagMetadata.name,
         ),
-      ) + "Api"
+      ) + "API"
     );
   }
 
