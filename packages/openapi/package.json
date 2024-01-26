@@ -54,7 +54,11 @@
     "@openapi-to/core": "workspace:*",
     "@openapi-to/openapi-ts-request": "workspace:*"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@openapi-to/tsup-config": "workspace:*",
+    "@openapi-to/core": "workspace:*",
+    "@openapi-to/openapi-ts-request": "workspace:*"
+  },
   "packageManager": "pnpm@8.3.0",
   "engines": {
     "node": ">=18",
