@@ -17,6 +17,7 @@ describe("ts request plugin", () => {
     const lifeCycle = definePlugin({
       createZodDecorator: true,
     })({
+      // @ts-expect-error Not a canonical document
       openapiDocument: petStore,
       openapiToSingleConfig: openapiToSingleConfig,
     });

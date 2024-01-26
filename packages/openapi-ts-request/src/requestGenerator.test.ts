@@ -33,6 +33,7 @@ describe("RequestGenerator", async () => {
 
   test("requestGenerator getFullText", () => {
     const ast = new AST();
+    // @ts-expect-error Not a canonical document
     const oas = new Oas(petStore);
     const openapi = new OpenAPI({}, oas);
     const requestGenerator = new RequestGenerator({

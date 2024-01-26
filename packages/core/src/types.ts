@@ -102,3 +102,5 @@ export type OpenAPIAllDocument =
   | OpenAPIV2.Document
   | OpenAPIV3.Document
   | OpenAPIV3_1.Document;
+
+export type PossiblePromise<T> = Promise<T> | T;
