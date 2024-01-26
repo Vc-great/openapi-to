@@ -33,13 +33,12 @@
     "test": "vitest --passWithNoTests",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@openapi-to/core": "workspace:*",
     "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*",
-    "@openapi-to/core": "workspace:*"
+    "@openapi-to/tsup-config": "workspace:*"
   },
   "packageManager": "pnpm@8.6.12",
   "keywords": [],

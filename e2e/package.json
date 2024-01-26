@@ -23,9 +23,7 @@
   "dependencies": {
     "openapi-to": "workspace:*"
   },
-  "devDependencies": {
-
-  },
+  "devDependencies": {},
   "packageManager": "pnpm@8.3.0",
   "engines": {
     "node": ">=18",

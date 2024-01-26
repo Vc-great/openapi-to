@@ -8,6 +8,5 @@
     "base.json",
     "bundler.json"
   ],
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }
