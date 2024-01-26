@@ -36,8 +36,8 @@ jobs:
           working-directory: ./e2e
           run:  ${{ matrix.installer }} init
 
-        - name: openapi-to g
+        - name: openapi-to generate
           env:
             NODE_OPTIONS: "--max_old_space_size=4096"
-          run:  ${{ matrix.installer }} g
+          run:  ${{ matrix.installer }} generate
 
