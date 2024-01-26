@@ -1,5 +1,6 @@
-import type { Operation } from 'oas/operation'
 import _ from 'lodash'
+
+import type { Operation } from 'oas/operation'
 
 export class Response {
   constructor(private operation: Operation) {

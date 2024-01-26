@@ -1,7 +1,6 @@
 dist/**
 dist
-coverage/**
 **/coverage/**
-mocks/**
-**/mocks/**
+mock/**
+**/mock/**
 *.d.ts

@@ -3,7 +3,9 @@ import path from "node:path";
 import { PackageManager } from "./PackageManager.ts";
 
 describe("getPackageJSON", () => {
-  const packageManager = new PackageManager();
+  const packageManager = new PackageManager(
+    path.resolve(__dirname, "./package.json"),
+  );
 
   test("if package.json data is returned", async () => {
     const packageJSON = await packageManager.getPackageJSON();
