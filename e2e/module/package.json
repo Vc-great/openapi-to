@@ -1,5 +1,5 @@
 {
-  "name": "e2e",
+  "name": "e2e-module",
   "version": "0.0.1",
   "private": true,
   "description": "",
@@ -13,12 +13,8 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "clean": "npx rimraf ./dist",
-    "format": "prettier --write **/*.{ts,tsx}",
     "init": "openapi init",
-    "generate": "openapi g",
-    "generate:debug": "node --inspect ../packages/cli/bin/kubb.js",
-    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+    "generate": "openapi g"
   },
   "dependencies": {
     "openapi-to": "workspace:*"

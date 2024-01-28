@@ -15,7 +15,7 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       oas:
-        specifier: 24.1.0
+        specifier: ^24.1.0
         version: 24.1.0
       ts-morph:
         specifier: ^21.0.1
@@ -85,11 +85,17 @@ importers:
         specifier: ^1.2.1
         version: 1.2.1(@types/node@20.11.7)(@vitest/ui@1.2.1)
 
-  e2e:
+  e2e/common:
     dependencies:
       openapi-to:
         specifier: workspace:*
-        version: link:../packages/openapi
+        version: link:../../packages/openapi
+
+  e2e/module:
+    dependencies:
+      openapi-to:
+        specifier: workspace:*
+        version: link:../../packages/openapi
 
   packages/cli:
     dependencies:
@@ -114,15 +120,15 @@ importers:
       ora:
         specifier: ^7.0.1
         version: 7.0.1
+      picocolors:
+        specifier: ^1.0.0
+        version: 1.0.0
       pretty-error:
         specifier: ^4.0.0
         version: 4.0.0
       string-argv:
         specifier: ^0.3.2
         version: 0.3.2
-      tinyrainbow:
-        specifier: ^1.1.1
-        version: 1.1.1
     devDependencies:
       '@openapi-to/ts-config':
         specifier: workspace:*
@@ -233,15 +239,15 @@ importers:
       natural-orderby:
         specifier: ^3.0.2
         version: 3.0.2
+      picocolors:
+        specifier: ^1.0.0
+        version: 1.0.0
       seedrandom:
         specifier: ^3.0.5
         version: 3.0.5
       semver:
         specifier: ^7.5.4
         version: 7.5.4
-      tinyrainbow:
-        specifier: ^1.1.1
-        version: 1.1.1
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -281,6 +287,10 @@ importers:
         version: link:../config/tsup-config
 
   packages/openapi-ts-request:
+    dependencies:
+      oas:
+        specifier: ^24.1.0
+        version: 24.1.0
     devDependencies:
       '@openapi-to/core':
         specifier: workspace:*
@@ -5723,11 +5733,6 @@ packages:
   /tinypool@0.8.1:
     resolution: {integrity: sha512-zBTCK0cCgRROxvs9c0CGK838sPkeokNGdQVUUwHAbynHFlmyJYj825f/oRs528HaIJ97lo0pLIlDUzwN+IorWg==}
     engines: {node: '>=14.0.0'}
-
-  /tinyrainbow@1.1.1:
-    resolution: {integrity: sha512-3yBkLfmrG/x2fkhcDAg4vyS4/GLSCOXtXa9bIfzEN1Y3geldnA7aEPsHfSsKqsvdEsPnESzkV9aU/9T0IjwWFg==}
-    engines: {node: '>=14.0.0'}
-    dev: false
 
   /tinyspy@2.2.0:
     resolution: {integrity: sha512-d2eda04AN/cPOR89F7Xv5bK/jrQEhmcLFe6HFldoeO9AJtps+fqEnh486vnT/8y4bw38pSyxDcTCAq+Ks2aJTg==}

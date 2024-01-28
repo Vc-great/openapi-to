@@ -1,11 +1,11 @@
+import c, { createColors } from "picocolors";
 import seedrandom from "seedrandom";
-import c, { createColors } from "tinyrainbow";
 
 import { writeLog } from "./fs/write.ts";
 import { EventEmitter } from "./utils/EventEmitter.ts";
 
 import type { Ora } from "ora";
-import type { Formatter } from "tinyrainbow";
+import type { Formatter } from "picocolors/types.ts";
 
 export const LogLevel = {
   silent: "silent",

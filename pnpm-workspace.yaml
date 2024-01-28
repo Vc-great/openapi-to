@@ -4,4 +4,4 @@ packages:
   - 'packages/config/*'
   - 'docs'
   - 'examples/*'
-  - 'e2e'
+  - 'e2e/*'

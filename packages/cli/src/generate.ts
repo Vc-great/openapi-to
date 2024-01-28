@@ -1,7 +1,7 @@
 import { build, PluginStatus } from "@openapi-to/core";
 import { createLogger, LogLevel, randomCliColour } from "@openapi-to/core";
 
-import c from "tinyrainbow";
+import c from "picocolors";
 
 import { getSummary } from "./utils/getSummary.ts";
 import { spinner } from "./utils/spinner.ts";

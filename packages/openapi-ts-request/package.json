@@ -33,7 +33,6 @@
     "test": "vitest --passWithNoTests",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
-  "dependencies": {},
   "devDependencies": {
     "@openapi-to/core": "workspace:*",
     "@openapi-to/eslint-config": "workspace:*",
@@ -43,5 +42,8 @@
   "packageManager": "pnpm@8.6.12",
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "oas": "^24.1.0"
+  }
 }

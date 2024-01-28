@@ -1,13 +1,14 @@
 import pathParser from "node:path";
-import {PackageManager} from '@openapi-to/core'
+import path from "node:path";
+
+import { PackageManager } from "@openapi-to/core";
 import { folderName, pathExistsSync, readSync, write } from "@openapi-to/core";
 
-import c from "tinyrainbow";
+import c from "picocolors";
+import process from "process";
 
 import { spinner } from "./utils/spinner.ts";
-import {commonPresetMeta,modulePresetMeta} from "./presetMeta.ts";
-import path from "node:path";
-import process from "process";
+import { commonPresetMeta, modulePresetMeta } from "./presetMeta.ts";
 
 export async function init(): Promise<undefined> {
   spinner.start("📦 Initializing openapi-to");
@@ -18,13 +19,15 @@ export async function init(): Promise<undefined> {
 }
 
 async function createConfig() {
-  const packageJson =await new PackageManager(path.resolve(process.cwd(), "./package.json")).getPackageJSON()
-  const extension = packageJson?.type ==='module'?'.ts':'.js'
-  const configName = `${folderName}/openapi.config${extension}`
-  const filePath = pathParser.resolve(
-    process.cwd(),configName);
+  const packageJson = await new PackageManager(
+    path.resolve(process.cwd(), "./package.json"),
+  ).getPackageJSON();
+  const extension = packageJson?.type === "module" ? ".ts" : ".js";
+  const configName = `${folderName}/openapi.config${extension}`;
+  const filePath = pathParser.resolve(process.cwd(), configName);
   spinner.start(`📀 Writing \`${configName}\` ${c.dim(filePath)}`);
-  const presetMeta =  packageJson?.type ==='module'?modulePresetMeta:commonPresetMeta
+  const presetMeta =
+    packageJson?.type === "module" ? modulePresetMeta : commonPresetMeta;
   await write(presetMeta, filePath);
   spinner.succeed(`📀 Wrote \`${configName}\` ${c.dim(filePath)}`);
 }

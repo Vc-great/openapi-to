@@ -57,9 +57,9 @@
     "cosmiconfig": "^8.3.6",
     "execa": "^8.0.1",
     "ora": "^7.0.1",
+    "picocolors": "^1.0.0",
     "pretty-error": "^4.0.0",
-    "string-argv": "^0.3.2",
-    "tinyrainbow": "^1.1.1"
+    "string-argv": "^0.3.2"
   },
   "devDependencies": {
     "@openapi-to/ts-config": "workspace:*",

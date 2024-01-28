@@ -4,7 +4,7 @@ import { Warning } from "@openapi-to/core";
 
 import { cac } from "cac";
 import _ from "lodash";
-import c from "tinyrainbow";
+import c from "picocolors";
 
 import { version } from "../package.json";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";
