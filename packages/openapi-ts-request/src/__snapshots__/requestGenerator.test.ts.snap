@@ -20,7 +20,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.TestPostResponse)
-    testPost(@paramsZodSchema(PetAPIZod.TestPostBodyRequest) body: PetAPIType.TestPostBodyRequest): Promise<[ErrorResponse, PetAPIType.TestPostResponse]> {
+    testPost(@paramsZodSchema(PetAPIZod.TestPostBodyParams) bodyParams: PetAPIType.TestPostBodyParams): Promise<[ErrorResponse, PetAPIType.TestPostResponse]> {
         return request({
             method: 'post',
             url: \`/pet/test\`,
@@ -35,7 +35,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.TestPutResponse)
-    testPut(@paramsZodSchema(PetAPIZod.TestPutBodyRequest) body: PetAPIType.TestPutBodyRequest): Promise<[ErrorResponse, PetAPIType.TestPutResponse]> {
+    testPut(@paramsZodSchema(PetAPIZod.TestPutBodyParams) bodyParams: PetAPIType.TestPutBodyParams): Promise<[ErrorResponse, PetAPIType.TestPutResponse]> {
         return request({
             method: 'put',
             url: \`/pet/test\`,
@@ -50,7 +50,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.DelByTestResponse)
-    delByTest(@paramsZodSchema(PetAPIZod.DelByTestBodyRequest) body: PetAPIType.DelByTestBodyRequest): Promise<[ErrorResponse, PetAPIType.DelByTestResponse]> {
+    delByTest(@paramsZodSchema(PetAPIZod.DelByTestBodyParams) bodyParams: PetAPIType.DelByTestBodyParams): Promise<[ErrorResponse, PetAPIType.DelByTestResponse]> {
         return request({
             method: 'delete',
             url: \`/pet/test\`,
@@ -64,13 +64,13 @@ class PetAPI {
      * @description
      */
     @zodValidate
-    @responseZodSchema(PetAPIZod.TestIdResponse)
-    testId(@paramsZodSchema(PetAPIZod.TestIdQueryRequest) query: PetAPIType.TestIdQueryRequest, @paramsZodSchema(PetAPIZod.TestIdPathRequest) testId: PetAPIType.TestIdPathRequest): Promise<[ErrorResponse, PetAPIType.TestIdResponse]> {
+    @responseZodSchema(PetAPIZod.TestIdGetResponse)
+    testIdGet(@paramsZodSchema(PetAPIZod.testIdGetQueryParams) queryParams: PetAPIType.testIdGetQueryParams, @paramsZodSchema(PetAPIZod.testIdGetPathParams) testId: PetAPIType.testIdGetPathParams): Promise<[ErrorResponse, PetAPIType.TestIdGetResponse]> {
         return request({
             method: 'get',
             url: \`/pet/test/\${testId}\`,
             params: query,
-            paramsSerializer(params: PetAPIType.TestIdQueryRequest) {
+            paramsSerializer(params: PetAPIType.TestIdGetQueryParams) {
                 return qs.stringify(params)
             }
         })
@@ -83,7 +83,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.UploadImagePostResponse)
-    uploadImagePost(@paramsZodSchema(PetAPIZod.UploadImagePostBodyRequest) body: PetAPIType.UploadImagePostBodyRequest, @paramsZodSchema(PetAPIZod.UploadImagePostPathRequest) petId: PetAPIType.UploadImagePostPathRequest): Promise<[ErrorResponse, PetAPIType.UploadImagePostResponse]> {
+    uploadImagePost(@paramsZodSchema(PetAPIZod.UploadImagePostBodyParams) bodyParams: PetAPIType.UploadImagePostBodyParams, @paramsZodSchema(PetAPIZod.uploadImagePostPathParams) petId: PetAPIType.uploadImagePostPathParams): Promise<[ErrorResponse, PetAPIType.UploadImagePostResponse]> {
         return request({
             method: 'post',
             headers: {
@@ -101,7 +101,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.CreateResponse)
-    create(@paramsZodSchema(PetAPIZod.CreateBodyRequest) body: PetAPIType.CreateBodyRequest): Promise<[ErrorResponse, PetAPIType.CreateResponse]> {
+    create(@paramsZodSchema(PetAPIZod.CreateBodyParams) bodyParams: PetAPIType.CreateBodyParams): Promise<[ErrorResponse, PetAPIType.CreateResponse]> {
         return request({
             method: 'post',
             url: \`/pet\`,
@@ -116,7 +116,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.UpdateResponse)
-    update(@paramsZodSchema(PetAPIZod.UpdateBodyRequest) body: PetAPIType.UpdateBodyRequest): Promise<[ErrorResponse, PetAPIType.UpdateResponse]> {
+    update(@paramsZodSchema(PetAPIZod.UpdateBodyParams) bodyParams: PetAPIType.UpdateBodyParams): Promise<[ErrorResponse, PetAPIType.UpdateResponse]> {
         return request({
             method: 'put',
             url: \`/pet\`,
@@ -131,12 +131,12 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.FindByStatusGetResponse)
-    findByStatusGet(@paramsZodSchema(PetAPIZod.FindByStatusGetQueryRequest) query: PetAPIType.FindByStatusGetQueryRequest): Promise<[ErrorResponse, PetAPIType.FindByStatusGetResponse]> {
+    findByStatusGet(@paramsZodSchema(PetAPIZod.findByStatusGetQueryParams) queryParams: PetAPIType.findByStatusGetQueryParams): Promise<[ErrorResponse, PetAPIType.FindByStatusGetResponse]> {
         return request({
             method: 'get',
             url: \`/pet/findByStatus\`,
             params: query,
-            paramsSerializer(params: PetAPIType.FindByStatusGetQueryRequest) {
+            paramsSerializer(params: PetAPIType.FindByStatusGetQueryParams) {
                 return qs.stringify(params)
             }
         })
@@ -149,12 +149,12 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.FindByTagsGetResponse)
-    findByTagsGet(@paramsZodSchema(PetAPIZod.FindByTagsGetQueryRequest) query: PetAPIType.FindByTagsGetQueryRequest): Promise<[ErrorResponse, PetAPIType.FindByTagsGetResponse]> {
+    findByTagsGet(@paramsZodSchema(PetAPIZod.findByTagsGetQueryParams) queryParams: PetAPIType.findByTagsGetQueryParams): Promise<[ErrorResponse, PetAPIType.FindByTagsGetResponse]> {
         return request({
             method: 'get',
             url: \`/pet/findByTags\`,
             params: query,
-            paramsSerializer(params: PetAPIType.FindByTagsGetQueryRequest) {
+            paramsSerializer(params: PetAPIType.FindByTagsGetQueryParams) {
                 return qs.stringify(params)
             }
         })
@@ -167,7 +167,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.FindByPetIdResponse)
-    findByPetId(@paramsZodSchema(PetAPIZod.FindByPetIdPathRequest) petId: PetAPIType.FindByPetIdPathRequest): Promise<[ErrorResponse, PetAPIType.FindByPetIdResponse]> {
+    findByPetId(@paramsZodSchema(PetAPIZod.findByPetIdPathParams) petId: PetAPIType.findByPetIdPathParams): Promise<[ErrorResponse, PetAPIType.FindByPetIdResponse]> {
         return request({
             method: 'get',
             url: \`/pet/\${petId}\`
@@ -180,8 +180,8 @@ class PetAPI {
      * @description
      */
     @zodValidate
-    @responseZodSchema(PetAPIZod.PetIdResponse)
-    petId(@paramsZodSchema(PetAPIZod.PetIdBodyRequest) body: PetAPIType.PetIdBodyRequest, @paramsZodSchema(PetAPIZod.PetIdPathRequest) petId: PetAPIType.PetIdPathRequest): Promise<[ErrorResponse, PetAPIType.PetIdResponse]> {
+    @responseZodSchema(PetAPIZod.PetIdPostResponse)
+    petIdPost(@paramsZodSchema(PetAPIZod.PetIdPostBodyParams) bodyParams: PetAPIType.PetIdPostBodyParams, @paramsZodSchema(PetAPIZod.petIdPostPathParams) petId: PetAPIType.petIdPostPathParams): Promise<[ErrorResponse, PetAPIType.PetIdPostResponse]> {
         return request({
             method: 'post',
             headers: {
@@ -199,7 +199,7 @@ class PetAPI {
      */
     @zodValidate
     @responseZodSchema(PetAPIZod.DelByPetIdResponse)
-    delByPetId(@paramsZodSchema(PetAPIZod.DelByPetIdPathRequest) petId: PetAPIType.DelByPetIdPathRequest): Promise<[ErrorResponse, PetAPIType.DelByPetIdResponse]> {
+    delByPetId(@paramsZodSchema(PetAPIZod.delByPetIdPathParams) petId: PetAPIType.delByPetIdPathParams): Promise<[ErrorResponse, PetAPIType.DelByPetIdResponse]> {
         return request({
             method: 'delete',
             url: \`/pet/\${petId}\`
@@ -228,7 +228,7 @@ class StoreAPI {
      */
     @zodValidate
     @responseZodSchema(StoreAPIZod.CreateResponse)
-    create(@paramsZodSchema(StoreAPIZod.CreateBodyRequest) body: StoreAPIType.CreateBodyRequest): Promise<[ErrorResponse, StoreAPIType.CreateResponse]> {
+    create(@paramsZodSchema(StoreAPIZod.CreateBodyParams) bodyParams: StoreAPIType.CreateBodyParams): Promise<[ErrorResponse, StoreAPIType.CreateResponse]> {
         return request({
             method: 'post',
             url: \`/store/order\`,
@@ -243,7 +243,7 @@ class StoreAPI {
      */
     @zodValidate
     @responseZodSchema(StoreAPIZod.FindByOrderIdResponse)
-    findByOrderId(@paramsZodSchema(StoreAPIZod.FindByOrderIdPathRequest) orderId: StoreAPIType.FindByOrderIdPathRequest): Promise<[ErrorResponse, StoreAPIType.FindByOrderIdResponse]> {
+    findByOrderId(@paramsZodSchema(StoreAPIZod.findByOrderIdPathParams) orderId: StoreAPIType.findByOrderIdPathParams): Promise<[ErrorResponse, StoreAPIType.FindByOrderIdResponse]> {
         return request({
             method: 'get',
             url: \`/store/order/\${orderId}\`
@@ -257,7 +257,7 @@ class StoreAPI {
      */
     @zodValidate
     @responseZodSchema(StoreAPIZod.DelByOrderIdResponse)
-    delByOrderId(@paramsZodSchema(StoreAPIZod.DelByOrderIdPathRequest) orderId: StoreAPIType.DelByOrderIdPathRequest): Promise<[ErrorResponse, StoreAPIType.DelByOrderIdResponse]> {
+    delByOrderId(@paramsZodSchema(StoreAPIZod.delByOrderIdPathParams) orderId: StoreAPIType.delByOrderIdPathParams): Promise<[ErrorResponse, StoreAPIType.DelByOrderIdResponse]> {
         return request({
             method: 'delete',
             url: \`/store/order/\${orderId}\`
@@ -300,7 +300,7 @@ class UserAPI {
      */
     @zodValidate
     @responseZodSchema(UserAPIZod.CreateWithArrayPostResponse)
-    createWithArrayPost(@paramsZodSchema(UserAPIZod.CreateWithArrayPostBodyRequest) body: UserAPIType.CreateWithArrayPostBodyRequest): Promise<[ErrorResponse, UserAPIType.CreateWithArrayPostResponse]> {
+    createWithArrayPost(@paramsZodSchema(UserAPIZod.CreateWithArrayPostBodyParams) bodyParams: UserAPIType.CreateWithArrayPostBodyParams): Promise<[ErrorResponse, UserAPIType.CreateWithArrayPostResponse]> {
         return request({
             method: 'post',
             url: \`/user/createWithArray\`,
@@ -315,7 +315,7 @@ class UserAPI {
      */
     @zodValidate
     @responseZodSchema(UserAPIZod.CreateWithListPostResponse)
-    createWithListPost(@paramsZodSchema(UserAPIZod.CreateWithListPostBodyRequest) body: UserAPIType.CreateWithListPostBodyRequest): Promise<[ErrorResponse, UserAPIType.CreateWithListPostResponse]> {
+    createWithListPost(@paramsZodSchema(UserAPIZod.CreateWithListPostBodyParams) bodyParams: UserAPIType.CreateWithListPostBodyParams): Promise<[ErrorResponse, UserAPIType.CreateWithListPostResponse]> {
         return request({
             method: 'post',
             url: \`/user/createWithList\`,
@@ -330,7 +330,7 @@ class UserAPI {
      */
     @zodValidate
     @responseZodSchema(UserAPIZod.FindByUsernameResponse)
-    findByUsername(@paramsZodSchema(UserAPIZod.FindByUsernamePathRequest) username: UserAPIType.FindByUsernamePathRequest): Promise<[ErrorResponse, UserAPIType.FindByUsernameResponse]> {
+    findByUsername(@paramsZodSchema(UserAPIZod.findByUsernamePathParams) username: UserAPIType.findByUsernamePathParams): Promise<[ErrorResponse, UserAPIType.FindByUsernameResponse]> {
         return request({
             method: 'get',
             url: \`/user/\${username}\`
@@ -343,8 +343,8 @@ class UserAPI {
      * @description This can only be done by the logged in user.
      */
     @zodValidate
-    @responseZodSchema(UserAPIZod.UsernameResponse)
-    username(@paramsZodSchema(UserAPIZod.UsernameBodyRequest) body: UserAPIType.UsernameBodyRequest, @paramsZodSchema(UserAPIZod.UsernamePathRequest) username: UserAPIType.UsernamePathRequest): Promise<[ErrorResponse, UserAPIType.UsernameResponse]> {
+    @responseZodSchema(UserAPIZod.UsernamePutResponse)
+    usernamePut(@paramsZodSchema(UserAPIZod.UsernamePutBodyParams) bodyParams: UserAPIType.UsernamePutBodyParams, @paramsZodSchema(UserAPIZod.usernamePutPathParams) username: UserAPIType.usernamePutPathParams): Promise<[ErrorResponse, UserAPIType.UsernamePutResponse]> {
         return request({
             method: 'put',
             url: \`/user/\${username}\`,
@@ -359,7 +359,7 @@ class UserAPI {
      */
     @zodValidate
     @responseZodSchema(UserAPIZod.DelByUsernameResponse)
-    delByUsername(@paramsZodSchema(UserAPIZod.DelByUsernamePathRequest) username: UserAPIType.DelByUsernamePathRequest): Promise<[ErrorResponse, UserAPIType.DelByUsernameResponse]> {
+    delByUsername(@paramsZodSchema(UserAPIZod.delByUsernamePathParams) username: UserAPIType.delByUsernamePathParams): Promise<[ErrorResponse, UserAPIType.DelByUsernameResponse]> {
         return request({
             method: 'delete',
             url: \`/user/\${username}\`
@@ -373,7 +373,7 @@ class UserAPI {
      */
     @zodValidate
     @responseZodSchema(UserAPIZod.LoginGetResponse)
-    loginGet(@paramsZodSchema(UserAPIZod.LoginGetQueryRequest) query: UserAPIType.LoginGetQueryRequest): Promise<[ErrorResponse, UserAPIType.LoginGetResponse]> {
+    loginGet(@paramsZodSchema(UserAPIZod.loginGetQueryParams) queryParams: UserAPIType.loginGetQueryParams): Promise<[ErrorResponse, UserAPIType.LoginGetResponse]> {
         return request({
             method: 'get',
             url: \`/user/login\`,
@@ -402,7 +402,7 @@ class UserAPI {
      */
     @zodValidate
     @responseZodSchema(UserAPIZod.CreateResponse)
-    create(@paramsZodSchema(UserAPIZod.CreateBodyRequest) body: UserAPIType.CreateBodyRequest): Promise<[ErrorResponse, UserAPIType.CreateResponse]> {
+    create(@paramsZodSchema(UserAPIZod.CreateBodyParams) bodyParams: UserAPIType.CreateBodyParams): Promise<[ErrorResponse, UserAPIType.CreateResponse]> {
         return request({
             method: 'post',
             url: \`/user\`,

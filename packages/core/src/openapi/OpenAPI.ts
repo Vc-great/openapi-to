@@ -1,21 +1,26 @@
 import _ from "lodash";
+import { isRef } from "oas/types";
+import { findSchemaDefinition } from "oas/utils";
 
 import { Parameter } from "./Parameter.ts";
 import { RequestBody } from "./RequestBody.ts";
 import { Response } from "./Response.ts";
+import { Schema } from "./Schema.ts";
 
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3 } from "openapi-types";
+import type { OpenAPIV3_1 } from "openapi-types";
 import type { HttpMethod, PathGroup, PathGroupByTag } from "../types.js";
 
 export class OpenAPI {
   public parameter: Parameter | undefined;
   public requestBody: RequestBody | undefined;
   public response: Response | undefined;
+  public schema: Schema | undefined;
   public operation: Operation | undefined;
   public currentTagMetadata: OpenAPIV3.TagObject | undefined;
-
+  public refCache: Map<unknown, unknown> = new Map<unknown, unknown>();
   constructor(
     public config: object,
     public oas: Oas,
@@ -28,26 +33,47 @@ export class OpenAPI {
   get operationName(): string {
     return "";
   }
+  get methodName(): string {
+    return this.generateMethodName();
+  }
 
   //crud的requestName
   get requestName(): string {
-    return this.generateRequestName();
+    return this.methodName;
+  }
+  get upperFirstRequestName(): string {
+    return _.upperFirst(this.methodName);
   }
 
   get queryRequestName(): string {
-    return `${_.upperFirst(_.camelCase(this.requestName))}QueryRequest`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}QueryParams`;
+  }
+
+  get upperFirstQueryRequestName(): string {
+    return `${_.camelCase(this.methodName)}QueryParams`;
   }
 
   get pathRequestName(): string {
-    return `${_.upperFirst(_.camelCase(this.requestName))}PathRequest`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}PathParams`;
+  }
+
+  get upperFirstPathRequestName(): string {
+    return `${_.camelCase(this.methodName)}PathParams`;
   }
 
   get bodyRequestName(): string {
-    return `${_.upperFirst(_.camelCase(this.requestName))}BodyRequest`;
+    return `${_.camelCase(this.methodName)}BodyParams`;
+  }
+
+  get upperFirstBodyRequestName(): string {
+    return `${_.upperFirst(_.camelCase(this.methodName))}BodyParams`;
   }
 
   get responseName(): string {
-    return `${_.upperFirst(_.camelCase(this.requestName))}Response`;
+    return `${_.camelCase(this.methodName)}Response`;
+  }
+  get upperFirstResponseName(): string {
+    return `${_.upperFirst(_.camelCase(this.methodName))}Response`;
   }
 
   get queryRequestNameForLowerFirst(): string {
@@ -98,10 +124,11 @@ export class OpenAPI {
     this.parameter = new Parameter(this.operation);
     this.requestBody = new RequestBody(this.operation);
     this.response = new Response(this.operation);
+    this.schema = new Schema(this.operation, this);
     return this.operation;
   }
 
-  private generateRequestName(): string {
+  private generateMethodName(): string {
     if (!this.currentTagMetadata || !this.operation) {
       //todo error log
       return "";
@@ -149,7 +176,10 @@ export class OpenAPI {
     if (hasBracket) {
       const popItem = _.last(paths) || "";
 
-      return _.camelCase(popItem.slice(1, popItem.length - 1));
+      return (
+        _.camelCase(popItem.slice(1, popItem.length - 1)) +
+        _.upperFirst(this.operation.method)
+      );
     }
 
     return (
@@ -186,5 +216,36 @@ export class OpenAPI {
     } else {
       return part;
     }
+  }
+
+  /**
+   * @param check Data to determine if it contains a ReferenceObject (`$ref` pointer`).
+   * @returns If the supplied data has a `$ref` pointer.
+   */
+  isReference(
+    check: unknown,
+  ): check is OpenAPIV3.ReferenceObject | OpenAPIV3_1.ReferenceObject {
+    return isRef(check);
+  }
+
+  getRefAlias($ref: string): string {
+    //todo ref cache
+    this.refCache.set($ref, null);
+    const typeName = $ref.replace(/.+\//, "");
+    return _.upperFirst(_.camelCase(typeName));
+  }
+
+  hasRefByCache($ref: string): boolean {
+    return [...this.refCache.keys()].includes($ref);
+  }
+
+  /**
+   * Lookup a reference pointer within an OpenAPI definition and return the schema that it resolves
+   * to.
+   *
+   * @param $ref Reference to look up a schema for.
+   */
+  findSchemaBy$ref($ref: string): any {
+    return findSchemaDefinition($ref, this.operation?.api);
   }
 }

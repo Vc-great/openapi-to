@@ -221,6 +221,9 @@ importers:
       axios:
         specifier: ^1.6.7
         version: 1.6.7
+      code-block-writer:
+        specifier: ^12.0.0
+        version: 12.0.0
       directory-tree:
         specifier: ^3.5.1
         version: 3.5.1
@@ -287,6 +290,25 @@ importers:
         version: link:../config/tsup-config
 
   packages/openapi-ts-request:
+    dependencies:
+      oas:
+        specifier: ^24.1.0
+        version: 24.1.0
+    devDependencies:
+      '@openapi-to/core':
+        specifier: workspace:*
+        version: link:../core
+      '@openapi-to/eslint-config':
+        specifier: workspace:*
+        version: link:../config/eslint-config
+      '@openapi-to/ts-config':
+        specifier: workspace:*
+        version: link:../config/ts-config
+      '@openapi-to/tsup-config':
+        specifier: workspace:*
+        version: link:../config/tsup-config
+
+  packages/openapi-ts-type:
     dependencies:
       oas:
         specifier: ^24.1.0

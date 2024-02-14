@@ -1,0 +1,176 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`typerGenerator > TypeGenerator getFullText 1`] = `
+"import type { TestDto2, Test32145, ApiResponse, Pet } from "/model/index";
+
+/** Everything about your Pets */
+export namespace PetType {
+    /** OK */
+    export type TestPostResponse = TestDto2;
+    /** OK */
+    export type TestPutResponse = TestDto2;
+    /** */
+    export type DelByTestBodyParams = Array<number>;
+    /** OK */
+    export type DelByTestResponse = Test32145;
+
+    /** queryParams */
+    export interface TestIdGetQueryParams {
+        /** */
+        fields?: Array<string>;
+        /** */
+        page: number;
+        /** */
+        size: number;
+    }
+
+    /** pathParams */
+    export interface TestIdGetPathParams {
+        /** */
+        testId: number;
+        /** */
+        testId2: string;
+    }
+
+    /** OK */
+    export type TestIdGetResponse = TestDto2;
+
+    /** pathParams */
+    export interface UploadImagePostPathParams {
+        /** */
+        petId: number;
+    }
+
+    /** bodyParams */
+    export interface UploadImagePostBodyParams {
+        /** Additional data to pass to server */
+        additionalMetadata?: string;
+        /** file to upload */
+        file?: string;
+    }
+
+    /** successful operation */
+    export type UploadImagePostResponse = ApiResponse;
+
+    /** queryParams */
+    export interface FindByStatusGetQueryParams {
+        /** */
+        status: Array<string>;
+    }
+
+    /** successful operation */
+    export type FindByStatusGetResponse = Pet;
+
+    /** queryParams */
+    export interface FindByTagsGetQueryParams {
+        /** */
+        tags: Array<string>;
+    }
+
+    /** successful operation */
+    export type FindByTagsGetResponse = Pet;
+
+    /** pathParams */
+    export interface FindByPetIdPathParams {
+        /** */
+        petId: number;
+    }
+
+    /** successful operation */
+    export type FindByPetIdResponse = Pet;
+
+    /** pathParams */
+    export interface PetIdPostPathParams {
+        /** */
+        petId: number;
+    }
+
+    /** bodyParams */
+    export interface PetIdPostBodyParams {
+        /** Updated name of the pet */
+        name?: string;
+        /** Updated status of the pet */
+        status?: string;
+    }
+
+    /** pathParams */
+    export interface DelByPetIdPathParams {
+        /** */
+        petId: number;
+    }
+}
+
+import type { TestDto2, Test32145, ApiResponse, Pet, Order } from "/model/index";
+
+/** Access to Petstore orders */
+export namespace StoreType {
+    /** */
+    export type CreateBodyParams = Order;
+    /** successful operation */
+    export type CreateResponse = Order;
+
+    /** pathParams */
+    export interface FindByOrderIdPathParams {
+        /** */
+        orderId: number;
+    }
+
+    /** successful operation */
+    export type FindByOrderIdResponse = Order;
+
+    /** pathParams */
+    export interface DelByOrderIdPathParams {
+        /** */
+        orderId: number;
+    }
+
+    /** bodyParams */
+    export interface InventoryGetResponse {
+    }
+}
+
+import type { TestDto2, Test32145, ApiResponse, Pet, Order, User } from "/model/index";
+
+/** Operations about user */
+export namespace UserType {
+    /** pathParams */
+    export interface FindByUsernamePathParams {
+        /** */
+        username: string;
+    }
+
+    /** successful operation */
+    export type FindByUsernameResponse = User;
+
+    /** pathParams */
+    export interface UsernamePutPathParams {
+        /** */
+        username: string;
+    }
+
+    /** */
+    export type UsernamePutBodyParams = User;
+
+    /** pathParams */
+    export interface DelByUsernamePathParams {
+        /** */
+        username: string;
+    }
+
+    /** queryParams */
+    export interface LoginGetQueryParams {
+        /** */
+        username: string;
+        /** */
+        password: string;
+    }
+
+    /** bodyParams */
+    export interface LoginGetResponse {
+    }
+
+    /** */
+    export type CreateBodyParams = User;
+}
+"
+`;

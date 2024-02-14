@@ -225,29 +225,11 @@ export class RequestGenerator {
       },
       {
         name: "responseZodSchema",
-        arguments: [this.getParametersName("zod", "responseName")],
+        arguments: [
+          this.namespaceZodName + "." + this.openapi.upperFirstResponseName,
+        ],
       },
     ];
-  }
-
-  /**
-   *
-   * @param prefix
-   * @param name
-   */
-  getParametersName(
-    prefix: "type" | "zod",
-    name:
-      | "pathRequestName"
-      | "bodyRequestName"
-      | "queryRequestName"
-      | "responseName",
-  ) {
-    const prefixType = {
-      type: this.namespaceTypeName,
-      zod: this.namespaceZodName,
-    };
-    return prefixType[prefix] + "." + _.get(this.openapi, name);
   }
 
   /**
@@ -260,23 +242,33 @@ export class RequestGenerator {
    */
   generatorMethodParameters() {
     const queryParameters = {
-      name: "query",
-      type: this.getParametersName("type", "queryRequestName"),
+      name: "queryParams",
+      type:
+        this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName,
       decorators: [
         {
           name: this.paramsZodSchema,
-          arguments: [this.getParametersName("zod", "queryRequestName")],
+          arguments: [
+            this.namespaceZodName +
+              "." +
+              this.openapi.upperFirstQueryRequestName,
+          ],
         },
       ],
     };
 
     const bodyParameters = {
-      name: "body",
-      type: this.getParametersName("type", "bodyRequestName"),
+      name: "bodyParams",
+      type:
+        this.namespaceTypeName + "." + this.openapi.upperFirstBodyRequestName,
       decorators: [
         {
           name: this.paramsZodSchema,
-          arguments: [this.getParametersName("zod", "bodyRequestName")],
+          arguments: [
+            this.namespaceZodName +
+              "." +
+              this.openapi.upperFirstBodyRequestName,
+          ],
         },
       ],
     };
@@ -286,11 +278,18 @@ export class RequestGenerator {
       .map((item: OpenAPIV3.ParameterObject) => {
         return {
           name: _.camelCase(item.name),
-          type: this.getParametersName("type", "pathRequestName"),
+          type:
+            this.namespaceTypeName +
+            "." +
+            this.openapi.upperFirstPathRequestName,
           decorators: [
             {
               name: this.paramsZodSchema,
-              arguments: [this.getParametersName("zod", "pathRequestName")],
+              arguments: [
+                this.namespaceZodName +
+                  "." +
+                  this.openapi.upperFirstPathRequestName,
+              ],
             },
           ],
         };
@@ -345,8 +344,9 @@ export class RequestGenerator {
    * Promise<[ApiType.ErrorResponse, ApiType.FindByIdResponse]>
    * ```
    */
-  generatorReturnType() {
-    const resultType = this.namespaceTypeName + "." + this.openapi.responseName;
+  generatorReturnType(): string {
+    const resultType =
+      this.namespaceTypeName + "." + this.openapi.upperFirstResponseName;
     return `Promise<[ErrorResponse,${resultType}]>`;
   }
 
@@ -376,10 +376,7 @@ export class RequestGenerator {
   }
 
   generatorParamsSerializer(): string {
-    return `paramsSerializer(params:${this.getParametersName(
-      "type",
-      "queryRequestName",
-    )}) {
+    return `paramsSerializer(params:${this.namespaceTypeName + "." + this.openapi.queryRequestName}) {
             return qs.stringify(params)
         }`;
   }
