@@ -13,6 +13,7 @@ import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type OasTypes from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
+import type { StatementStructures } from "ts-morph";
 import type {
   ImportDeclarationStructure,
   InterfaceDeclarationStructure,
@@ -50,6 +51,10 @@ type ResponseObject = {
   type: string | string[];
 };
 
+type ComponentObject = {
+  [key: string]: OpenAPIV3.ReferenceObject | OasTypes.MediaTypeObject;
+};
+
 export class TypeGenerator {
   private operation: Operation | undefined;
   private oas: RequestGeneratorParams["oas"];
@@ -62,6 +67,10 @@ export class TypeGenerator {
     OasTypes.SchemaObject,
     string
   >();
+  private importCache: Set<string> = new Set<string>();
+  private context: PluginContext | null = null;
+  private modelIndex: Set<string> = new Set<string>();
+  private readonly modelFolderName: string = "models";
   constructor({
     oas,
     openapi,
@@ -85,34 +94,33 @@ export class TypeGenerator {
     );
   }
 
-  get upperFirstCurrentTagName() {
+  get upperFirstCurrentTagName(): string {
     return _.upperFirst(this.currentTagName);
   }
 
-  get nameSpaceName() {
-    return _.upperFirst(this.currentTagName) + "Type";
+  get nameSpaceName(): string {
+    return _.upperFirst(this.currentTagName);
   }
 
-  get lowerFirstNameSpaceName() {
-    return _.lowerFirst(this.currentTagName) + "Type";
+  get upperFirstNameSpaceName(): string {
+    return _.upperFirst(this.currentTagName);
   }
 
   //todo unknown or any
-  get unknownReturn() {
+  get unknownReturn(): string {
     return "unknown";
   }
 
   build(context: PluginContext): void {
+    this.context = context;
     _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
       const typeStatements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);
-
           return _.chain([] as Array<TypeStatements | null>)
             .concat(this.generateParametersType())
             .concat(this.generateRequestBodyType())
             .concat(this.generateResponseType())
-            .concat(this.generateComponentType())
             .filter(Boolean)
             .value() as Array<TypeStatements>;
         })
@@ -122,17 +130,20 @@ export class TypeGenerator {
 
       const filePath = path.resolve(
         context.output,
-        this.lowerFirstNameSpaceName + ".ts",
+        this.upperFirstNameSpaceName + ".ts",
       );
 
       return this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(),
           this.generateNameSpace(typeStatements),
-          ...this.generateEnum(),
         ],
       });
     });
+    this.generateComponentType();
+    this.generateModelIndex();
+    //todo enum
+    //this.generateEnum(),
   }
 
   /**
@@ -182,7 +193,7 @@ export class TypeGenerator {
               ),
             },
           ],
-          docs: [{ description: schema.description }],
+          docs: [{ description: schema.description || "" }],
         });
       })
       .value();
@@ -252,7 +263,7 @@ export class TypeGenerator {
     const typeModel: ImportStatementsOmitKind = {
       namedImports: [...model],
       isTypeOnly: true,
-      moduleSpecifier: `/model/index`,
+      moduleSpecifier: "./" + this.modelFolderName,
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
@@ -403,10 +414,217 @@ export class TypeGenerator {
     });
   }
 
-  generateComponentType(): Array<
-    InterfaceDeclarationStructure | TypeAliasDeclarationStructure
-  > {
-    return [];
+  generateComponentRefType(
+    schema: OpenAPIV3.ReferenceObject,
+    typeName: string,
+  ): void {
+    this.createModelSourceFile(
+      [
+        ...this.ast.generateImportStatements([
+          {
+            namedImports: [this.openapi.getRefAlias(schema.$ref)],
+            isTypeOnly: true,
+            moduleSpecifier: `/model/index`,
+          },
+        ]),
+        this.ast.generateTypeAliasStatements({
+          name: _.upperFirst(_.camelCase(typeName)),
+          type: this.openapi.getRefAlias(schema.$ref),
+          //todo
+          docs: [{ description: "" }],
+          isExported: true,
+        }),
+      ],
+      _.upperFirst(_.camelCase(typeName)),
+    );
+  }
+
+  /**
+   * schema type
+   * @param schema
+   * @param typeName
+   */
+  generateComponentSchemaType(
+    schema: OasTypes.SchemaObject,
+    typeName: string,
+  ): void {
+    this.openapi.resetRefCache();
+
+    const schemaStatuments = this.ast.generateInterfaceStatements({
+      isExported: true,
+      name: _.upperFirst(_.camelCase(typeName)),
+      //todo
+      docs: [{ description: schema.description || "" }],
+      properties: this.getBaseTypeFromSchema(schema),
+    });
+    const importStatements = _.chain([...this.openapi.refCache.keys()])
+      .map((ref) => {
+        return this.ast.generateImportStatements([
+          {
+            namedImports: [this.openapi.getRefAlias(ref)],
+            isTypeOnly: true,
+            moduleSpecifier: "./" + this.openapi.getRefAlias(ref),
+          },
+        ]);
+      })
+      .flatten()
+      .value();
+
+    this.createModelSourceFile(
+      [...importStatements, schemaStatuments],
+      _.upperFirst(_.camelCase(typeName)),
+    );
+  }
+
+  generateComponentObjectType(
+    componentObject: ComponentObject | null | undefined,
+  ): void {
+    if (!componentObject) {
+      return;
+    }
+
+    const name = _.chain(Object.keys(componentObject))
+      .head()
+      .camelCase()
+      .upperFirst()
+      .value();
+    const typeName = _.upperFirst(_.camelCase(name));
+    const value:
+      | OpenAPIV3.ReferenceObject
+      | OasTypes.MediaTypeObject
+      | undefined = _.head(Object.values(componentObject));
+
+    if (!name || !value) {
+      return;
+    }
+
+    if (this.openapi.isReference(value)) {
+      this.generateComponentRefType(value, typeName);
+      return;
+    }
+
+    let schema: OasTypes.SchemaObject | null = null;
+
+    if ("schema" in value) {
+      schema = value.schema || (null as OasTypes.SchemaObject | null);
+    }
+
+    if (schema === null) {
+      return;
+    }
+    if (this.openapi.isReference(schema)) {
+      this.generateComponentRefType(schema, typeName);
+      return;
+    }
+
+    if (schema.type === "array") {
+      this.createModelSourceFile(
+        [
+          this.ast.generateTypeAliasStatements({
+            name: _.upperFirst(_.camelCase(typeName)),
+            type: this.formatterSchemaType(schema),
+            //todo
+            docs: [{ description: "" }],
+            isExported: true,
+          }),
+        ],
+        name,
+      );
+      return;
+    }
+
+    this.generateComponentSchemaType(schema, typeName);
+  }
+
+  createModelSourceFile(
+    statements: Array<StatementStructures>,
+    fileName: string,
+  ): void {
+    const filePath = path.resolve(
+      this.context?.output || "./",
+      this.modelFolderName + "/" + fileName + ".ts",
+    );
+
+    this.ast.createSourceFile(filePath, {
+      //...(this.generateModelImport() || [])
+      statements,
+    });
+
+    //
+    this.setModelIndexStatements(statements);
+  }
+
+  setModelIndexStatements(statements: Array<StatementStructures>): void {
+    const whiteKind = [StructureKind.TypeAlias, StructureKind.Interface];
+
+    const names = _.chain(statements)
+      .filter((item) => whiteKind.includes(item.kind))
+      .map(
+        (item: TypeAliasDeclarationStructure | InterfaceDeclarationStructure) =>
+          item.name,
+      )
+      .value() as unknown as string[];
+
+    _.forEach(names, (name) => this.modelIndex.add(name));
+  }
+
+  generateModelIndex(): void {
+    const statements = _.chain([...this.modelIndex])
+      .map((name) =>
+        this.ast.generateExportStatements({
+          moduleSpecifier: "./" + name,
+        }),
+      )
+      .value();
+
+    this.createModelSourceFile(statements, "index");
+  }
+
+  /**
+   *
+   * @param context
+   * ```
+   * import {Order} from './models'
+   * export interface Response {
+   * order:Order
+   * }
+   *
+   * ```
+   */
+  generateComponentType(): void {
+    //todo requestBodies
+    //this.generateComponentObjectType(this.openapi.component.requestBodyObject);
+    _.forEach(this.openapi.component.schemas, (schema, key) => {
+      if (this.openapi.isReference(schema)) {
+        this.generateComponentRefType(schema, key);
+        return;
+      }
+
+      this.generateComponentSchemaType(schema, key);
+    });
+
+    // const refCache = [...this.openapi.refCache.keys()];
+
+    /*    _.forEach(refCache, (ref) => {
+      const schema = this.openapi.findSchemaBy$ref(
+        ref,
+      ) as OasTypes.SchemaObject;
+      const name = this.openapi.getRefAlias(ref);
+      const statements = this.ast.generateInterfaceStatements({
+        isExported: true,
+        name: name,
+        docs: [{ description: schema.description }],
+        properties: this.getBaseTypeFromSchema(schema),
+      });
+
+      const filePath = path.resolve(context.output, "/models" + name + ".ts");
+
+      this.ast.createSourceFile(filePath, {
+        statements: [...this.generateModelImport(), statements],
+      });
+
+      this.openapi.setRefCache(ref, { writeModel: "succeed" });
+    });*/
   }
 
   //SchemaObject

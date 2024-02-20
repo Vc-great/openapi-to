@@ -54,3 +54,13 @@ describe("openapi get pathGroupByTag", () => {
     expect(pathGroup).toMatchSnapshot();
   });
 });
+
+describe("openapi component", () => {
+  // @ts-expect-error Not a canonical document
+  const oas = new Oas(petStore);
+  const openapi = new OpenAPI({}, oas);
+  test("requestBodyObject", () => {
+    const pathGroup = openapi.component.requestBodies;
+    expect(pathGroup).toMatchSnapshot();
+  });
+});

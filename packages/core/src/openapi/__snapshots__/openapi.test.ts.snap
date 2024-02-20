@@ -1,5 +1,53 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`openapi component > requestBodyObject 1`] = `
+{
+  "Pet": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/Pet",
+        },
+      },
+      "application/xml": {
+        "schema": {
+          "$ref": "#/components/schemas/Pet",
+        },
+      },
+    },
+    "description": "Pet object that needs to be added to the store",
+    "required": true,
+  },
+  "UserArray": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "items": {
+            "$ref": "#/components/schemas/User",
+          },
+          "type": "array",
+        },
+      },
+    },
+    "description": "List of user object",
+    "required": true,
+  },
+  "testDto": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/testDto",
+        },
+      },
+    },
+    "description": "resources",
+    "required": true,
+  },
+}
+`;
+
+exports[`openapi component > responsesObject 1`] = `null`;
+
 exports[`openapi get pathGroupByTag > get pathGroupByTag 1`] = `
 {
   "pet": [

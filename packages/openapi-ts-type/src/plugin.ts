@@ -4,10 +4,8 @@ import Oas from "oas";
 
 import { TypeGenerator } from "./TypeGenerator.ts";
 
-import type { PluginConfig } from "./types.ts";
-
-export const definePlugin = createPlugin<PluginConfig>(
-  (pluginConfig) =>
+export const definePlugin = createPlugin(
+  (pluginConfig?: object) =>
     ({ openapiDocument, openapiToSingleConfig }) => {
       const ast = new AST();
       const oas = new Oas({ ...openapiDocument });

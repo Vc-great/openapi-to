@@ -2,6 +2,7 @@ import _ from "lodash";
 import { isRef } from "oas/types";
 import { findSchemaDefinition } from "oas/utils";
 
+import { Component } from "./Component.ts";
 import { Parameter } from "./Parameter.ts";
 import { RequestBody } from "./RequestBody.ts";
 import { Response } from "./Response.ts";
@@ -9,18 +10,36 @@ import { Schema } from "./Schema.ts";
 
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
+import type OasTypes from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { HttpMethod, PathGroup, PathGroupByTag } from "../types.js";
+
+const enum WriteModel {
+  await = "await",
+  succeed = "succeed",
+}
+
+type RefCacheValue = {
+  schema?: OasTypes.SchemaObject;
+  type?: "";
+  isWriteIndex?: boolean;
+  //等待写入 写入完成
+  writeModel?: `${WriteModel}`;
+};
 
 export class OpenAPI {
   public parameter: Parameter | undefined;
   public requestBody: RequestBody | undefined;
   public response: Response | undefined;
+  public component: Component = new Component(this);
   public schema: Schema | undefined;
   public operation: Operation | undefined;
   public currentTagMetadata: OpenAPIV3.TagObject | undefined;
-  public refCache: Map<unknown, unknown> = new Map<unknown, unknown>();
+  public refCache: Map<string, RefCacheValue | null> = new Map<
+    string,
+    RefCacheValue | null
+  >();
   constructor(
     public config: object,
     public oas: Oas,
@@ -228,6 +247,10 @@ export class OpenAPI {
     return isRef(check);
   }
 
+  resetRefCache(): void {
+    this.refCache.clear();
+  }
+
   getRefAlias($ref: string): string {
     //todo ref cache
     this.refCache.set($ref, null);
@@ -239,6 +262,14 @@ export class OpenAPI {
     return [...this.refCache.keys()].includes($ref);
   }
 
+  setRefCache(ref: string, config: RefCacheValue): void {
+    const value = this.refCache.get(ref);
+    this.refCache.set(ref, {
+      ...value,
+      ...config,
+    });
+  }
+
   /**
    * Lookup a reference pointer within an OpenAPI definition and return the schema that it resolves
    * to.
@@ -246,6 +277,15 @@ export class OpenAPI {
    * @param $ref Reference to look up a schema for.
    */
   findSchemaBy$ref($ref: string): any {
-    return findSchemaDefinition($ref, this.operation?.api);
+    const schema = findSchemaDefinition(
+      $ref,
+      this.operation?.api,
+    ) as OasTypes.SchemaObject;
+
+    this.refCache.set($ref, {
+      schema: schema,
+      writeModel: "await",
+    });
+    return schema;
   }
 }

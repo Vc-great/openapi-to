@@ -78,7 +78,7 @@ export class AST {
     };
   }
 
-  generateExportDeclarationStatements(
+  generateExportStatements(
     statement: Omit<ExportDeclarationStructure, "kind">,
   ): ExportDeclarationStructure {
     return {

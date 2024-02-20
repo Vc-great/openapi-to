@@ -1,10 +1,10 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`typerGenerator > TypeGenerator getFullText 1`] = `
-"import type { TestDto2, Test32145, ApiResponse, Pet } from "/model/index";
+"import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
 
 /** Everything about your Pets */
-export namespace PetType {
+export namespace Pet {
     /** OK */
     export type TestPostResponse = TestDto2;
     /** OK */
@@ -100,10 +100,10 @@ export namespace PetType {
     }
 }
 
-import type { TestDto2, Test32145, ApiResponse, Pet, Order } from "/model/index";
+import type { TestDto2, Test32145, ApiResponse, Pet, Order } from "./models";
 
 /** Access to Petstore orders */
-export namespace StoreType {
+export namespace Store {
     /** */
     export type CreateBodyParams = Order;
     /** successful operation */
@@ -129,10 +129,10 @@ export namespace StoreType {
     }
 }
 
-import type { TestDto2, Test32145, ApiResponse, Pet, Order, User } from "/model/index";
+import type { TestDto2, Test32145, ApiResponse, Pet, Order, User } from "./models";
 
 /** Operations about user */
-export namespace UserType {
+export namespace User {
     /** pathParams */
     export interface FindByUsernamePathParams {
         /** */
@@ -172,5 +172,207 @@ export namespace UserType {
     /** */
     export type CreateBodyParams = User;
 }
+
+import type { Testdata } from "./Testdata";
+
+/** */
+export interface Test32145 {
+    /** description */
+    code?: number;
+    /** */
+    meta?: Testdata;
+}
+
+/** */
+export interface Test3214 {
+    /** 默认值 */
+    columnDefault?: string;
+    /** description */
+    columnLength?: number;
+    /** description */
+    columnName?: string;
+    /** description */
+    columnRemark?: string;
+    /** description */
+    columnScale?: number;
+    /** description */
+    columnType?: string;
+    /** description */
+    delFlag?: boolean;
+    /** */
+    formId?: number;
+    /** id */
+    id?: number;
+    /** description */
+    notNull?: boolean;
+}
+
+/** */
+export interface Testdata {
+    /** description */
+    number?: number;
+    /** description */
+    numberOfElements?: number;
+    /** description */
+    totalElements?: number;
+    /** description */
+    totalPages?: number;
+}
+
+/** */
+export interface Sort {
+    /** */
+    empty?: boolean;
+    /** */
+    sorted?: boolean;
+    /** */
+    unsorted?: boolean;
+}
+
+import type { Test3214 } from "./Test3214";
+
+/** */
+export interface TestDto3 {
+    /** */
+    test3214?: Test3214;
+}
+
+import type { TestDto3 } from "./TestDto3";
+import type { Testdata } from "./Testdata";
+
+/** */
+export interface TestDto2 {
+    /** */
+    content?: TestDto3;
+    /** */
+    meta?: Testdata;
+}
+
+/** */
+export interface Test321 {
+    /** */
+    id?: number;
+}
+
+import type { Test321 } from "./Test321";
+
+/** */
+export interface TestDto {
+    /** test321 */
+    test321?: Test321;
+}
+
+import type { ApiResponse } from "./ApiResponse";
+
+/** */
+export interface RefList {
+    /** */
+    content?: ApiResponse;
+    /** string */
+    string?: string;
+    /** */
+    name?: string;
+    /** title */
+    title?: string;
+    /** type */
+    type?: string;
+}
+
+/** */
+export interface ApiResponse {
+    /** */
+    code?: number;
+    /** */
+    type?: string;
+    /** */
+    message?: string;
+}
+
+/** */
+export interface Category {
+    /** */
+    id?: number;
+    /** */
+    name?: string;
+}
+
+import type { Category } from "./Category";
+import type { Tag } from "./Tag";
+
+/** */
+export interface Pet {
+    /** */
+    id?: number;
+    /** */
+    category?: Category;
+    /** */
+    name: string;
+    /** */
+    photoUrls: Array<string>;
+    /** */
+    tags?: Tag;
+    /** pet status in the store */
+    status?: string;
+}
+
+/** */
+export interface Tag {
+    /** */
+    id?: number;
+    /** */
+    name?: string;
+}
+
+/** */
+export interface Order {
+    /** */
+    id?: number;
+    /** */
+    petId?: number;
+    /** */
+    quantity?: number;
+    /** */
+    shipDate?: string;
+    /** Order Status */
+    status?: string;
+    /** */
+    complete?: boolean;
+}
+
+/** */
+export interface User {
+    /** */
+    id?: number;
+    /** */
+    username?: string;
+    /** */
+    firstName?: string;
+    /** */
+    lastName?: string;
+    /** */
+    email?: string;
+    /** */
+    password?: string;
+    /** */
+    phone?: string;
+    /** User Status */
+    userStatus?: number;
+}
+
+export * from "./Test32145";
+export * from "./Test3214";
+export * from "./Testdata";
+export * from "./Sort";
+export * from "./TestDto3";
+export * from "./TestDto2";
+export * from "./Test321";
+export * from "./TestDto";
+export * from "./RefList";
+export * from "./ApiResponse";
+export * from "./Category";
+export * from "./Pet";
+export * from "./Tag";
+export * from "./Order";
+export * from "./User";
 "
 `;

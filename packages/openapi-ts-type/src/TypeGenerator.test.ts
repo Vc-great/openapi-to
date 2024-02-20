@@ -36,6 +36,7 @@ describe("typerGenerator", async () => {
     // @ts-expect-error Not a canonical document
     const oas = new Oas(petStore);
     const openapi = new OpenAPI({}, oas);
+
     const typerGenerator = new TypeGenerator({
       oas,
       ast,
