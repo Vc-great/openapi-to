@@ -7,12 +7,34 @@ exports[`typerGenerator > TypeGenerator getFullText 1`] = `
 export namespace Pet {
     /** OK */
     export type TestPostResponse = TestDto2;
+    /** */
+    export type TestPostResponse401 = unknown;
+    /** */
+    export type TestPostResponse403 = unknown;
+    /** */
+    export type TestPostResponse404 = unknown;
+    /** */
+    export type TestPostErrorResponse = TestPostResponse401 | TestPostResponse403 | TestPostResponse404;
     /** OK */
     export type TestPutResponse = TestDto2;
+    /** */
+    export type TestPutResponse401 = unknown;
+    /** */
+    export type TestPutResponse403 = unknown;
+    /** */
+    export type TestPutResponse404 = unknown;
+    /** */
+    export type TestPutErrorResponse = TestPutResponse401 | TestPutResponse403 | TestPutResponse404;
     /** */
     export type DelByTestBodyParams = Array<number>;
     /** OK */
     export type DelByTestResponse = Test32145;
+    /** */
+    export type DelByTestResponse401 = unknown;
+    /** */
+    export type DelByTestResponse403 = unknown;
+    /** */
+    export type DelByTestErrorResponse = DelByTestResponse401 | DelByTestResponse403;
 
     /** queryParams */
     export interface TestIdGetQueryParams {
@@ -34,6 +56,14 @@ export namespace Pet {
 
     /** OK */
     export type TestIdGetResponse = TestDto2;
+    /** */
+    export type TestIdGetResponse401 = unknown;
+    /** */
+    export type TestIdGetResponse403 = unknown;
+    /** */
+    export type TestIdGetResponse404 = unknown;
+    /** */
+    export type TestIdGetErrorResponse = TestIdGetResponse401 | TestIdGetResponse403 | TestIdGetResponse404;
 
     /** pathParams */
     export interface UploadImagePostPathParams {
@@ -51,6 +81,24 @@ export namespace Pet {
 
     /** successful operation */
     export type UploadImagePostResponse = ApiResponse;
+    /** */
+    export type UploadImagePostErrorResponse = unknown;
+    /** */
+    export type CreateResponse405 = unknown;
+    /** */
+    export type CreateErrorResponse = CreateResponse405;
+    /** */
+    export type CreateResponse = unknown;
+    /** */
+    export type UpdateResponse400 = unknown;
+    /** */
+    export type UpdateResponse404 = unknown;
+    /** */
+    export type UpdateResponse405 = unknown;
+    /** */
+    export type UpdateErrorResponse = UpdateResponse400 | UpdateResponse404 | UpdateResponse405;
+    /** */
+    export type UpdateResponse = unknown;
 
     /** queryParams */
     export interface FindByStatusGetQueryParams {
@@ -60,6 +108,10 @@ export namespace Pet {
 
     /** successful operation */
     export type FindByStatusGetResponse = Pet;
+    /** */
+    export type FindByStatusGetResponse400 = unknown;
+    /** */
+    export type FindByStatusGetErrorResponse = FindByStatusGetResponse400;
 
     /** queryParams */
     export interface FindByTagsGetQueryParams {
@@ -69,6 +121,10 @@ export namespace Pet {
 
     /** successful operation */
     export type FindByTagsGetResponse = Pet;
+    /** */
+    export type FindByTagsGetResponse400 = unknown;
+    /** */
+    export type FindByTagsGetErrorResponse = FindByTagsGetResponse400;
 
     /** pathParams */
     export interface FindByPetIdPathParams {
@@ -78,6 +134,12 @@ export namespace Pet {
 
     /** successful operation */
     export type FindByPetIdResponse = Pet;
+    /** */
+    export type FindByPetIdResponse400 = unknown;
+    /** */
+    export type FindByPetIdResponse404 = unknown;
+    /** */
+    export type FindByPetIdErrorResponse = FindByPetIdResponse400 | FindByPetIdResponse404;
 
     /** pathParams */
     export interface PetIdPostPathParams {
@@ -93,14 +155,30 @@ export namespace Pet {
         status?: string;
     }
 
+    /** */
+    export type PetIdPostResponse405 = unknown;
+    /** */
+    export type PetIdPostErrorResponse = PetIdPostResponse405;
+    /** */
+    export type PetIdPostResponse = unknown;
+
     /** pathParams */
     export interface DelByPetIdPathParams {
         /** */
         petId: number;
     }
+
+    /** */
+    export type DelByPetIdResponse400 = unknown;
+    /** */
+    export type DelByPetIdResponse404 = unknown;
+    /** */
+    export type DelByPetIdErrorResponse = DelByPetIdResponse400 | DelByPetIdResponse404;
+    /** */
+    export type DelByPetIdResponse = unknown;
 }
 
-import type { TestDto2, Test32145, ApiResponse, Pet, Order } from "./models";
+import type { Order } from "./models";
 
 /** Access to Petstore orders */
 export namespace Store {
@@ -108,6 +186,10 @@ export namespace Store {
     export type CreateBodyParams = Order;
     /** successful operation */
     export type CreateResponse = Order;
+    /** */
+    export type CreateResponse400 = unknown;
+    /** */
+    export type CreateErrorResponse = CreateResponse400;
 
     /** pathParams */
     export interface FindByOrderIdPathParams {
@@ -117,6 +199,12 @@ export namespace Store {
 
     /** successful operation */
     export type FindByOrderIdResponse = Order;
+    /** */
+    export type FindByOrderIdResponse400 = unknown;
+    /** */
+    export type FindByOrderIdResponse404 = unknown;
+    /** */
+    export type FindByOrderIdErrorResponse = FindByOrderIdResponse400 | FindByOrderIdResponse404;
 
     /** pathParams */
     export interface DelByOrderIdPathParams {
@@ -124,15 +212,36 @@ export namespace Store {
         orderId: number;
     }
 
-    /** bodyParams */
+    /** */
+    export type DelByOrderIdResponse400 = unknown;
+    /** */
+    export type DelByOrderIdResponse404 = unknown;
+    /** */
+    export type DelByOrderIdErrorResponse = DelByOrderIdResponse400 | DelByOrderIdResponse404;
+    /** */
+    export type DelByOrderIdResponse = unknown;
+
+    /** successful operation */
     export interface InventoryGetResponse {
     }
+
+    /** */
+    export type InventoryGetErrorResponse = unknown;
 }
 
-import type { TestDto2, Test32145, ApiResponse, Pet, Order, User } from "./models";
+import type { User } from "./models";
 
 /** Operations about user */
 export namespace User {
+    /** */
+    export type CreateWithArrayPostErrorResponse = unknown;
+    /** */
+    export type CreateWithArrayPostResponse = unknown;
+    /** */
+    export type CreateWithListPostErrorResponse = unknown;
+    /** */
+    export type CreateWithListPostResponse = unknown;
+
     /** pathParams */
     export interface FindByUsernamePathParams {
         /** */
@@ -141,6 +250,12 @@ export namespace User {
 
     /** successful operation */
     export type FindByUsernameResponse = User;
+    /** */
+    export type FindByUsernameResponse400 = unknown;
+    /** */
+    export type FindByUsernameResponse404 = unknown;
+    /** */
+    export type FindByUsernameErrorResponse = FindByUsernameResponse400 | FindByUsernameResponse404;
 
     /** pathParams */
     export interface UsernamePutPathParams {
@@ -150,12 +265,29 @@ export namespace User {
 
     /** */
     export type UsernamePutBodyParams = User;
+    /** */
+    export type UsernamePutResponse400 = unknown;
+    /** */
+    export type UsernamePutResponse404 = unknown;
+    /** */
+    export type UsernamePutErrorResponse = UsernamePutResponse400 | UsernamePutResponse404;
+    /** */
+    export type UsernamePutResponse = unknown;
 
     /** pathParams */
     export interface DelByUsernamePathParams {
         /** */
         username: string;
     }
+
+    /** */
+    export type DelByUsernameResponse400 = unknown;
+    /** */
+    export type DelByUsernameResponse404 = unknown;
+    /** */
+    export type DelByUsernameErrorResponse = DelByUsernameResponse400 | DelByUsernameResponse404;
+    /** */
+    export type DelByUsernameResponse = unknown;
 
     /** queryParams */
     export interface LoginGetQueryParams {
@@ -165,12 +297,24 @@ export namespace User {
         password: string;
     }
 
-    /** bodyParams */
+    /** successful operation */
     export interface LoginGetResponse {
     }
 
     /** */
+    export type LoginGetResponse400 = unknown;
+    /** */
+    export type LoginGetErrorResponse = LoginGetResponse400;
+    /** */
+    export type LogoutGetErrorResponse = unknown;
+    /** */
+    export type LogoutGetResponse = unknown;
+    /** */
     export type CreateBodyParams = User;
+    /** */
+    export type CreateErrorResponse = unknown;
+    /** */
+    export type CreateResponse = unknown;
 }
 
 import type { Testdata } from "./Testdata";
@@ -359,6 +503,80 @@ export interface User {
     userStatus?: number;
 }
 
+/** description */
+export const ColumnTypeLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/** pet status in the store */
+export const StatusLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/** Order Status */
+export const Status1Label = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+
+/** description */
+const enum ColumnType {
+    Char = "CHAR",
+    Char2 = "CHAR2",
+    Char3 = "CHAR3"
+}
+
+/** pet status in the store */
+const enum Status {
+    Available = "available",
+    Pending = "pending",
+    Sold = "sold"
+}
+
+/** Order Status */
+const enum Status1 {
+    Placed = "placed",
+    Approved = "approved",
+    Delivered = "delivered"
+}
+
+/** description */
+export const columnTypeOption = [{
+    label: ColumnTypeLabel.Char,
+    value: ColumnType.Char
+}, {
+    label: ColumnTypeLabel.Char2,
+    value: ColumnType.Char2
+}, {
+    label: ColumnTypeLabel.Char3,
+    value: ColumnType.Char3
+}];
+/** pet status in the store */
+export const statusOption = [{
+    label: StatusLabel.Available,
+    value: Status.Available
+}, {
+    label: StatusLabel.Pending,
+    value: Status.Pending
+}, {
+    label: StatusLabel.Sold,
+    value: Status.Sold
+}];
+/** Order Status */
+export const status1Option = [{
+    label: Status1Label.Placed,
+    value: Status1.Placed
+}, {
+    label: Status1Label.Approved,
+    value: Status1.Approved
+}, {
+    label: Status1Label.Delivered,
+    value: Status1.Delivered
+}];
+
 export * from "./Test32145";
 export * from "./Test3214";
 export * from "./Testdata";
@@ -374,5 +592,6 @@ export * from "./Pet";
 export * from "./Tag";
 export * from "./Order";
 export * from "./User";
+export * from "./enum";
 "
 `;

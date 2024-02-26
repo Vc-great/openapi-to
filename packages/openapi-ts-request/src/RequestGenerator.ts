@@ -52,12 +52,30 @@ export class RequestGenerator {
     this.paramsZodSchema = "paramsZodSchema";
   }
 
+  get currentTagName() {
+    return _.upperFirst(
+      _.camelCase(
+        this.openapi &&
+          this.openapi.currentTagMetadata &&
+          this.openapi.currentTagMetadata.name,
+      ),
+    );
+  }
+
+  get className() {
+    return this.currentTagName + "API";
+  }
+
+  get lowerFirstClassName() {
+    return _.lowerFirst(this.className);
+  }
+
   get namespaceTypeName(): string {
-    return this.className + "Type";
+    return this.currentTagName;
   }
 
   get namespaceZodName(): string {
-    return this.className + "Zod";
+    return this.currentTagName + "Zod";
   }
 
   get isCreateZodDecorator(): boolean {
@@ -133,19 +151,15 @@ export class RequestGenerator {
 
     const request: ImportStatementsOmitKind = {
       namedImports: ["request"],
-      moduleSpecifier: "./request",
+      moduleSpecifier: "@/api/request",
     };
 
     //todo model
     //requestBody response
     const typeModel: ImportStatementsOmitKind = {
+      isTypeOnly: true,
       namedImports: [this.namespaceTypeName],
       moduleSpecifier: `./${this.namespaceTypeName}`,
-    };
-
-    const errorType: ImportStatementsOmitKind = {
-      namedImports: ["ErrorResponse"],
-      moduleSpecifier: "./model/ErrorResponse",
     };
 
     const zodModel: ImportStatementsOmitKind = {
@@ -156,28 +170,11 @@ export class RequestGenerator {
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
       .concat(this.isCreateZodDecorator ? [zodModel, zodDecorator] : [])
       .push(typeModel)
-      .push(errorType)
       .push(request)
       .filter(Boolean)
       .value();
 
     return this.ast.generateImportStatements(statements);
-  }
-
-  get className() {
-    return (
-      _.upperFirst(
-        _.camelCase(
-          this.openapi &&
-            this.openapi.currentTagMetadata &&
-            this.openapi.currentTagMetadata.name,
-        ),
-      ) + "API"
-    );
-  }
-
-  get lowerFirstClassName() {
-    return _.lowerFirst(this.className);
   }
 
   generatorClass(
@@ -281,14 +278,16 @@ export class RequestGenerator {
           type:
             this.namespaceTypeName +
             "." +
-            this.openapi.upperFirstPathRequestName,
+            this.openapi.upperFirstPathRequestName +
+            `['${_.camelCase(item.name)}']`,
           decorators: [
             {
               name: this.paramsZodSchema,
               arguments: [
                 this.namespaceZodName +
                   "." +
-                  this.openapi.upperFirstPathRequestName,
+                  this.openapi.upperFirstPathRequestName +
+                  `['${_.camelCase(item.name)}']`,
               ],
             },
           ],
@@ -347,7 +346,7 @@ export class RequestGenerator {
   generatorReturnType(): string {
     const resultType =
       this.namespaceTypeName + "." + this.openapi.upperFirstResponseName;
-    return `Promise<[ErrorResponse,${resultType}]>`;
+    return `Promise<[${this.namespaceTypeName}.${this.openapi.upperFirstRequestName}ErrorResponse,${resultType}]>`;
   }
 
   /**
@@ -414,8 +413,10 @@ export class RequestGenerator {
       .push("method:" + "'" + this.operation?.method + "'")
       .push(header())
       .push("url:" + url.requestPath)
-      .push(this.openapi.parameter?.hasQueryParameters ? "params:query" : "")
-      .push(this.openapi.requestBody?.hasRequestBody ? "data:body" : "")
+      .push(
+        this.openapi.parameter?.hasQueryParameters ? "params:queryParams" : "",
+      )
+      .push(this.openapi.requestBody?.hasRequestBody ? "data:bodyParams" : "")
       .push(this.openapi.response?.isDownLoad ? "responseType:'blob'" : "")
       .push(
         this.openapi.parameter?.hasQueryParametersArray

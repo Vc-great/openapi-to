@@ -1,3 +1,1 @@
-export type PluginOptions = {
-  createZodDecorator: boolean;
-};
+export type PluginConfig = object | undefined;

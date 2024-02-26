@@ -1117,7 +1117,9 @@
             "type": "string",
             "description": "description",
             "enum": [
-              "CHAR"
+              "CHAR",
+              "CHAR2",
+              "CHAR3"
             ]
           },
           "delFlag": {

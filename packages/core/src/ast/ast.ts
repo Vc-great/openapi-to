@@ -123,6 +123,12 @@ export class AST {
     return writer.toString();
   }
 
+  generateObject(object: { [key: string]: any }): string {
+    const writer = new CodeBlockWriter();
+    Writers.object(object)(writer);
+    return writer.toString();
+  }
+
   generateEnumStatement(
     statement: Omit<EnumDeclarationStructure, "kind">,
   ): EnumDeclarationStructure {

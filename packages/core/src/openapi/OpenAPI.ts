@@ -69,15 +69,15 @@ export class OpenAPI {
   }
 
   get upperFirstQueryRequestName(): string {
-    return `${_.camelCase(this.methodName)}QueryParams`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}QueryParams`;
   }
 
   get pathRequestName(): string {
-    return `${_.upperFirst(_.camelCase(this.methodName))}PathParams`;
+    return `${_.camelCase(this.methodName)}PathParams`;
   }
 
   get upperFirstPathRequestName(): string {
-    return `${_.camelCase(this.methodName)}PathParams`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}PathParams`;
   }
 
   get bodyRequestName(): string {

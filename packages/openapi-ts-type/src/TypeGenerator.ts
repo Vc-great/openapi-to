@@ -3,6 +3,8 @@ import path from "node:path";
 import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
 
+import { EnumCache } from "./EnumCache.ts";
+
 import type {
   AST,
   OpenAPI,
@@ -45,10 +47,13 @@ type ObjectSchema = OpenAPIV3.BaseSchemaObject & {
 };
 
 type ResponseObject = {
-  description?: string;
-  label: string;
-  schema: OasTypes.SchemaObject;
-  type: string | string[];
+  code: string;
+  jsonSchema?: {
+    description?: string;
+    label: string;
+    schema: OasTypes.SchemaObject;
+    type: string | string[];
+  };
 };
 
 type ComponentObject = {
@@ -63,10 +68,7 @@ export class TypeGenerator {
   private readonly ast: RequestGeneratorParams["ast"];
   private readonly pluginConfig: RequestGeneratorParams["pluginConfig"];
   private readonly openapiToSingleConfig: RequestGeneratorParams["openapiToSingleConfig"];
-  private enumCache: Map<OasTypes.SchemaObject, string> = new Map<
-    OasTypes.SchemaObject,
-    string
-  >();
+  private enumCache: EnumCache = new EnumCache();
   private importCache: Set<string> = new Set<string>();
   private context: PluginContext | null = null;
   private modelIndex: Set<string> = new Set<string>();
@@ -133,17 +135,20 @@ export class TypeGenerator {
         this.upperFirstNameSpaceName + ".ts",
       );
 
-      return this.ast.createSourceFile(filePath, {
+      const refKey = [...this.openapi.refCache.keys()];
+
+      this.ast.createSourceFile(filePath, {
         statements: [
-          ...this.generateImport(),
+          ...this.generateImport(refKey),
           this.generateNameSpace(typeStatements),
         ],
       });
+      //
+      this.openapi.resetRefCache();
     });
     this.generateComponentType();
+    this.generateEnum();
     this.generateModelIndex();
-    //todo enum
-    //this.generateEnum(),
   }
 
   /**
@@ -168,28 +173,24 @@ export class TypeGenerator {
    * ];
    * ```
    */
-  generateEnum() {
-    const enumCache: Array<[OasTypes.SchemaObject, string]> = [];
-    for (const [schema, name] of this.enumCache) {
-      enumCache.push([schema, name]);
-    }
-
-    // label
-    const label = _.chain(enumCache)
+  generateEnum(): void {
+    //
+    const labelStatements = _.chain(this.enumCache.entries())
       .map(([schema, name]) => {
         return this.ast.generateVariableStatements({
           declarationKind: VariableDeclarationKind.Const,
           isExported: true,
           declarations: [
             {
-              name: name + "Label",
-              initializer: this.ast.generateObjectType(
-                (schema.enum || []).map((item: string) => {
-                  return {
-                    name: item,
-                    type: "",
-                  };
-                }),
+              name: _.upperFirst(_.camelCase(name)) + "Label",
+              initializer: this.ast.generateObject(
+                (schema.enum || []).reduce(
+                  (obj, item: string) => {
+                    obj[_.upperFirst(_.camelCase(item))] = "''";
+                    return obj;
+                  },
+                  {} as { [key: string]: string },
+                ),
               ),
             },
           ],
@@ -197,17 +198,16 @@ export class TypeGenerator {
         });
       })
       .value();
-    /*
 
     //enum
-    const enumValue = _.chain(enumCache)
+    const valueStatements = _.chain(this.enumCache.entries())
       .map(([schema, name]) => {
         return this.ast.generateEnumStatement({
           isConst: true,
-          name,
+          name: _.upperFirst(_.camelCase(name)),
           members: (schema.enum || []).map((item: string) => {
             return {
-              name: item,
+              name: _.upperFirst(_.camelCase(item)),
               value: item,
             };
           }),
@@ -221,30 +221,50 @@ export class TypeGenerator {
       .value();
 
     // option
-    const option = _.chain(enumCache)
+    const optionStatements = _.chain(this.enumCache.entries())
       .map(([schema, name]) => {
-        return _.chain(schema.enum)
-          .map((item) => {
-            return this.ast.generateObjectType([
-              {
-                name: "label",
-                type: item,
-              },
-              {
-                name: "value",
-                type: item,
-              },
-            ]);
-          })
-          .reduce((arr, item) => {
-            arr.push(item);
-            return arr;
-          }, []);
+        return this.ast.generateVariableStatements({
+          declarationKind: VariableDeclarationKind.Const,
+          isExported: true,
+          declarations: [
+            {
+              name: name + "Option",
+              initializer:
+                "[" +
+                (schema.enum || []).reduce((arr, item: string) => {
+                  const obj = this.ast.generateObject({
+                    label:
+                      _.upperFirst(_.camelCase(name)) +
+                      "Label" +
+                      "." +
+                      _.upperFirst(_.camelCase(item)),
+                    value:
+                      _.upperFirst(_.camelCase(name)) +
+                      "." +
+                      _.upperFirst(_.camelCase(item)),
+                  });
+                  return arr + (arr ? "," : "") + obj;
+                }, "") +
+                "]",
+            },
+          ],
+          docs: [{ description: schema.description || "" }],
+        });
       })
       .value();
-*/
 
-    return label;
+    const enumPath = path.resolve(
+      this.context?.output || "",
+      this.modelFolderName,
+      "enum" + ".ts",
+    );
+
+    //
+    this.modelIndex.add("enum");
+
+    return this.ast.createSourceFile(enumPath, {
+      statements: [...labelStatements, ...valueStatements, ...optionStatements],
+    });
   }
 
   /**
@@ -255,8 +275,10 @@ export class TypeGenerator {
    * import type { DrmsDynamicDataType } from './drmsDynamicDataZod'
    * ```
    */
-  generateImport(): Array<ImportDeclarationStructure> {
-    const model = _.chain([...this.openapi.refCache.keys()] as Array<string>)
+  generateImport(
+    importModel: Array<string>,
+  ): Array<ImportDeclarationStructure> {
+    const model = _.chain(importModel)
       .map(($ref: string) => this.openapi.getRefAlias($ref))
       .value();
 
@@ -293,27 +315,6 @@ export class TypeGenerator {
     });
   }
 
-  /**
-
-   _.chain(this.openapi.parameter?.getParametersSchema("query"))
-   .reduce((result, schemaObject: OasTypes.SchemaObject, key) => {
-   return [
-   ...result,
-   {
-   name: key,
-   type: this.getBaseTypeFromSchema(schemaObject),
-   docs: [{ description: schemaObject.description }],
-   },
-   ];
-   }, [] as Array<InterfaceStatementsOmitKind>)
-   .value()
-
-   */
-
-  /**
-   *
-   *
-   */
   generateParametersType(): Array<
     InterfaceDeclarationStructure | TypeAliasDeclarationStructure
   > {
@@ -350,66 +351,104 @@ export class TypeGenerator {
   generateResponseType(): Array<
     InterfaceDeclarationStructure | TypeAliasDeclarationStructure
   > {
-    const codes = this.openapi.response?.getResponseStatusCodes;
+    const codes = this.openapi.response?.getResponseStatusCodes || [];
+
     const successCode = (codes || []).filter((code) =>
       /^(2[0-9][0-9]|300)$/.test(code),
     );
     const errorCode = (codes || []).filter((code) =>
       /^([3-5][0-9][0-9])$/.test(code),
     );
-    //success
-    const successSchema = _.chain(successCode)
-      .map(
-        (code) =>
-          _.head(this.openapi.response?.getResponseAsJSONSchema(code)) || null,
-      )
-      .filter(Boolean)
-      .value() as Array<ResponseObject>;
-    //error
-    const errorSchema = _.chain(errorCode)
-      .map(
-        (code) =>
-          _.head(this.openapi.response?.getResponseAsJSONSchema(code)) || null,
-      )
-      .filter(Boolean)
+    const isSuccessCode = (code: string) => /^(2[0-9][0-9]|300)$/.test(code);
+
+    const responseObject = _.chain([...successCode, ...errorCode])
+      .map((code) => {
+        return {
+          code,
+          jsonSchema:
+            _.head(this.openapi.response?.getResponseAsJSONSchema(code)) ||
+            null,
+        };
+      })
+      .filter((x) => {
+        if (isSuccessCode(x.code)) {
+          return !_.isNull(x.jsonSchema);
+        }
+        return true;
+      })
       .value() as Array<ResponseObject>;
 
-    return _.chain([...successSchema, ...errorSchema])
-      .map((schema) => this.generateResponseSingleSchema(schema))
+    const errorType = this.ast.generateTypeAliasStatements({
+      name: this.openapi.upperFirstRequestName + "ErrorResponse",
+      type:
+        _.chain(errorCode)
+          .map((code) => this.openapi.upperFirstRequestName + "Response" + code)
+          .join("|")
+          .value() || "unknown",
+      docs: [{ description: "" }],
+      isExported: true,
+    });
+
+    const successDefaultType = this.ast.generateTypeAliasStatements({
+      name: this.openapi.upperFirstRequestName + "Response",
+      type: "unknown",
+      docs: [{ description: "" }],
+      isExported: true,
+    });
+
+    return _.chain(responseObject)
+      .map((responseObject) =>
+        this.generateResponseSingleSchema(responseObject),
+      )
+      .concat(errorType)
+      .concat(_.isEmpty(successCode) ? successDefaultType : [])
       .filter(Boolean)
       .value();
   }
 
   generateResponseSingleSchema({
-    description,
-    label,
-    schema,
-    type,
+    code,
+    jsonSchema,
   }: ResponseObject):
     | InterfaceDeclarationStructure
     | TypeAliasDeclarationStructure {
+    const schema = jsonSchema?.schema;
+    const description = jsonSchema?.description;
+    const isError = /^([3-5][0-9][0-9])$/.test(code);
+    const name =
+      this.openapi.upperFirstRequestName + "Response" + (isError ? code : "");
+
+    if (!schema) {
+      return this.ast.generateTypeAliasStatements({
+        name,
+        type: "unknown",
+        docs: [{ description: "" }],
+        isExported: true,
+      });
+    }
+
     if (this.openapi.isReference(schema)) {
       return this.ast.generateTypeAliasStatements({
-        name: this.openapi.upperFirstRequestName + "Response",
+        name,
         type: this.openapi.getRefAlias(schema.$ref),
-        docs: [{ description }],
+        docs: [{ description: description || "" }],
         isExported: true,
       });
     }
 
     if (schema.type === "array") {
       return this.ast.generateTypeAliasStatements({
-        name: this.openapi.upperFirstRequestName + "Response",
+        name,
         type: this.formatterSchemaType(schema),
-        docs: [{ description }],
+        docs: [{ description: description || "" }],
         isExported: true,
       });
     }
 
     return this.ast.generateInterfaceStatements({
       isExported: true,
-      name: this.openapi.upperFirstRequestName + "Response",
-      docs: [{ description: "bodyParams" }],
+      name,
+      docs: [{ description: description || "" }],
       properties: this.getBaseTypeFromSchema(schema),
     });
   }
@@ -602,29 +641,6 @@ export class TypeGenerator {
 
       this.generateComponentSchemaType(schema, key);
     });
-
-    // const refCache = [...this.openapi.refCache.keys()];
-
-    /*    _.forEach(refCache, (ref) => {
-      const schema = this.openapi.findSchemaBy$ref(
-        ref,
-      ) as OasTypes.SchemaObject;
-      const name = this.openapi.getRefAlias(ref);
-      const statements = this.ast.generateInterfaceStatements({
-        isExported: true,
-        name: name,
-        docs: [{ description: schema.description }],
-        properties: this.getBaseTypeFromSchema(schema),
-      });
-
-      const filePath = path.resolve(context.output, "/models" + name + ".ts");
-
-      this.ast.createSourceFile(filePath, {
-        statements: [...this.generateModelImport(), statements],
-      });
-
-      this.openapi.setRefCache(ref, { writeModel: "succeed" });
-    });*/
   }
 
   //SchemaObject
@@ -810,8 +826,8 @@ export class TypeGenerator {
           .value();
 
         //
-        if (schema.enum) {
-          this.enumCache.set(schema.enum, name);
+        if (schema.enum && this.enumCache.enumUnique(schema.enum)) {
+          this.enumCache.set(schema, this.enumCache.getName(name));
         }
 
         return {
