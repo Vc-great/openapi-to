@@ -577,6 +577,7 @@ export const status1Option = [{
     value: Status1.Delivered
 }];
 
+export * from "./enum";
 export * from "./Test32145";
 export * from "./Test3214";
 export * from "./Testdata";
@@ -592,6 +593,5 @@ export * from "./Pet";
 export * from "./Tag";
 export * from "./Order";
 export * from "./User";
-export * from "./enum";
 "
 `;

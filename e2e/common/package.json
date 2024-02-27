@@ -13,12 +13,13 @@
   "sideEffects": false,
   "scripts": {
     "init": "openapi init",
+    "editPlugins": "node editPlugins.cjs",
     "generate": "openapi g"
   },
   "dependencies": {
+    "fs-extra": "^11.2.0",
     "openapi-to": "workspace:*"
   },
-  "devDependencies": {},
   "packageManager": "pnpm@8.3.0",
   "engines": {
     "node": ">=18",

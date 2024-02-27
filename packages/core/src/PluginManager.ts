@@ -45,20 +45,20 @@ export class PluginManager {
     this.logger = logger;
   }
 
-  get output(): string {
-    return (
-      this.openapiToSingleConfig.output ||
-      process.cwd() +
-        "/" +
-        folderName +
-        "/" +
-        this.openapiToSingleConfig.input.name
-    );
+  get openapiToSingleConfigOfPlugin() {
+    return {
+      ...this.openapiToSingleConfig,
+      output:
+        this.openapiToSingleConfig.output ||
+        process.cwd() +
+          "/" +
+          folderName +
+          "/" +
+          this.openapiToSingleConfig.input.name,
+    };
   }
   get context(): PluginContext {
-    return {
-      output: this.output,
-    };
+    return {};
   }
 
   /**
@@ -68,7 +68,7 @@ export class PluginManager {
   execute(plugin: PluginFactory): void {
     const lifeCycle = plugin({
       openapiDocument: this.openapiDocument,
-      openapiToSingleConfig: this.openapiToSingleConfig,
+      openapiToSingleConfig: this.openapiToSingleConfigOfPlugin,
     });
     const pluginStatus = {
       name: lifeCycle.name,

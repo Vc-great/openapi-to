@@ -72,7 +72,7 @@ export function getSummary({
         : undefined,
     filesCreated: fileTotal,
     time: c.yellow(`${elapsedSeconds}s`),
-    output: pluginManager.context.output,
+    output: pluginManager.openapiToSingleConfigOfPlugin.output,
   } as const;
 
   if (logLevel === LogLevel.debug) {

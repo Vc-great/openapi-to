@@ -1,4 +1,3 @@
-import path from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,25 +9,23 @@ import Oas from "oas";
 import petStore from "../mock/petstore.json";
 import { TypeGenerator } from "./TypeGenerator.ts";
 
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
+import type { OpenapiToSingleConfigOfPlugin } from "@openapi-to/core";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe("typerGenerator", async () => {
-  const openapiToSingleConfig: OpenapiToSingleConfig = {
+  const openapiToSingleConfig: OpenapiToSingleConfigOfPlugin = {
     input: {
       path: "",
       name: "",
     },
-    output: path.resolve(__dirname, "../gen"),
+    output: "",
     plugins: [],
   };
 
   const pluginConfig = {
     createZodDecorator: true,
-  };
-  const context = {
-    output: "",
   };
 
   test("TypeGenerator getFullText", () => {
@@ -44,7 +41,7 @@ describe("typerGenerator", async () => {
       pluginConfig,
       openapiToSingleConfig,
     });
-    typerGenerator.build(context);
+    typerGenerator.build();
     const text = _.chain(ast.sourceFile)
       .map((sourceFile) => sourceFile.getFullText())
       .join("\n")

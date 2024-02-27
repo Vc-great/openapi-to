@@ -18,10 +18,6 @@ type RequestBodyObject = {
   [key: string]: OpenAPIV3.ReferenceObject | OasTypes.MediaTypeObject;
 };
 
-type ResponsesObject = {
-  [key: string]: OpenAPIV3.ReferenceObject | OasTypes.MediaTypeObject;
-};
-
 export class Component {
   constructor(private openapi: OpenAPI) {
     this.openapi = openapi;

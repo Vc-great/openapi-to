@@ -32,3 +32,13 @@ export class EnumCache {
       .value();
   }
 }
+
+let enumCache: EnumCache | null = null;
+
+export function useEnumCache(): EnumCache {
+  if (enumCache) {
+    return enumCache;
+  }
+  enumCache = new EnumCache();
+  return enumCache;
+}

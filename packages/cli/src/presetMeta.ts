@@ -1,6 +1,7 @@
-export const commonPresetMeta= `const {
+export const commonPresetMeta = `const {
   defineConfig,
   createTSRequest,
+  createTSType
    }= require('openapi-to')
 
 module.exports = defineConfig({
@@ -10,15 +11,15 @@ module.exports = defineConfig({
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
     }
   ],
-  plugins: [
+  plugins:[
     createTSRequest({
       createZodDecorator: true
-    })
+    }),
+    createTSType()
   ]
-})`
+})`;
 
-
-export const modulePresetMeta= `import {
+export const modulePresetMeta = `import {
   defineConfig,
   createTSRequest,
    } from'openapi-to'
@@ -35,4 +36,4 @@ export default defineConfig({
       createZodDecorator: true
     })
   ]
-})`
+})`;

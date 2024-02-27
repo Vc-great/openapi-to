@@ -1,6 +1,719 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`RequestGenerator > requestGenerator getFullText 1`] = `
+exports[`RequestGenerator > createZodDecorator false getFullText 1`] = `
+"import type { Pet } from "./Pet";
+import { request } from "@/api/request";
+
+/**
+ *
+ * @tag pet
+ * @description Everything about your Pets
+ */
+class PetAPI {
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    testPost(bodyParams: Pet.TestPostBodyParams): Promise<[Pet.TestPostErrorResponse, Pet.TestPostResponse]> {
+        return request({
+            method: 'post',
+            url: \`/pet/test\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    testPut(bodyParams: Pet.TestPutBodyParams): Promise<[Pet.TestPutErrorResponse, Pet.TestPutResponse]> {
+        return request({
+            method: 'put',
+            url: \`/pet/test\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    delByTest(bodyParams: Pet.DelByTestBodyParams): Promise<[Pet.DelByTestErrorResponse, Pet.DelByTestResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/pet/test\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    testIdGet(queryParams: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']): Promise<[Pet.TestIdGetErrorResponse, Pet.TestIdGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/test/\${testId}\`,
+            params: queryParams,
+            paramsSerializer(params: Pet.TestIdGetQueryParams) {
+                return qs.stringify(params)
+            }
+        })
+    }
+
+    /**
+     *
+     * @summary uploads an image
+     * @description pet
+     */
+    uploadImagePost(bodyParams: Pet.UploadImagePostBodyParams, petId: Pet.UploadImagePostPathParams['petId']): Promise<[Pet.UploadImagePostErrorResponse, Pet.UploadImagePostResponse]> {
+        return request({
+            method: 'post',
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            url: \`/pet/\${petId}/uploadImage\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Add a new pet to the store
+     * @description
+     */
+    create(bodyParams: Pet.CreateBodyParams): Promise<[Pet.CreateErrorResponse, Pet.CreateResponse]> {
+        return request({
+            method: 'post',
+            url: \`/pet\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Update an existing pet
+     * @description
+     */
+    update(bodyParams: Pet.UpdateBodyParams): Promise<[Pet.UpdateErrorResponse, Pet.UpdateResponse]> {
+        return request({
+            method: 'put',
+            url: \`/pet\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Finds Pets by status
+     * @description Multiple status values can be provided with comma separated strings
+     */
+    findByStatusGet(queryParams: Pet.FindByStatusGetQueryParams): Promise<[Pet.FindByStatusGetErrorResponse, Pet.FindByStatusGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/findByStatus\`,
+            params: queryParams,
+            paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
+                return qs.stringify(params)
+            }
+        })
+    }
+
+    /**
+     *
+     * @summary Finds Pets by tags
+     * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+     */
+    findByTagsGet(queryParams: Pet.FindByTagsGetQueryParams): Promise<[Pet.FindByTagsGetErrorResponse, Pet.FindByTagsGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/findByTags\`,
+            params: queryParams,
+            paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
+                return qs.stringify(params)
+            }
+        })
+    }
+
+    /**
+     *
+     * @summary Find pet by ID
+     * @description Returns a single pet
+     */
+    findByPetId(petId: Pet.FindByPetIdPathParams['petId']): Promise<[Pet.FindByPetIdErrorResponse, Pet.FindByPetIdResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/\${petId}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Updates a pet in the store with form data
+     * @description
+     */
+    petIdPost(bodyParams: Pet.PetIdPostBodyParams, petId: Pet.PetIdPostPathParams['petId']): Promise<[Pet.PetIdPostErrorResponse, Pet.PetIdPostResponse]> {
+        return request({
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            url: \`/pet/\${petId}\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Deletes a pet
+     * @description
+     */
+    delByPetId(petId: Pet.DelByPetIdPathParams['petId']): Promise<[Pet.DelByPetIdErrorResponse, Pet.DelByPetIdResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/pet/\${petId}\`
+        })
+    }
+}
+
+export const petAPI = new PetAPI;
+
+import type { Store } from "./Store";
+import { request } from "@/api/request";
+
+/**
+ *
+ * @tag store
+ * @description Access to Petstore orders
+ */
+class StoreAPI {
+    /**
+     *
+     * @summary Place an order for a pet
+     * @description
+     */
+    create(bodyParams: Store.CreateBodyParams): Promise<[Store.CreateErrorResponse, Store.CreateResponse]> {
+        return request({
+            method: 'post',
+            url: \`/store/order\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Find purchase order by ID
+     * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
+     */
+    findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']): Promise<[Store.FindByOrderIdErrorResponse, Store.FindByOrderIdResponse]> {
+        return request({
+            method: 'get',
+            url: \`/store/order/\${orderId}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Delete purchase order by ID
+     * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
+     */
+    delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']): Promise<[Store.DelByOrderIdErrorResponse, Store.DelByOrderIdResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/store/order/\${orderId}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Returns pet inventories by status
+     * @description Returns a map of status codes to quantities
+     */
+    inventoryGet(): Promise<[Store.InventoryGetErrorResponse, Store.InventoryGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/store/inventory\`
+        })
+    }
+}
+
+export const storeAPI = new StoreAPI;
+
+import type { User } from "./User";
+import { request } from "@/api/request";
+
+/**
+ *
+ * @tag user
+ * @description Operations about user
+ */
+class UserAPI {
+    /**
+     *
+     * @summary Creates list of users with given input array
+     * @description
+     */
+    createWithArrayPost(bodyParams: User.CreateWithArrayPostBodyParams): Promise<[User.CreateWithArrayPostErrorResponse, User.CreateWithArrayPostResponse]> {
+        return request({
+            method: 'post',
+            url: \`/user/createWithArray\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Creates list of users with given input array
+     * @description
+     */
+    createWithListPost(bodyParams: User.CreateWithListPostBodyParams): Promise<[User.CreateWithListPostErrorResponse, User.CreateWithListPostResponse]> {
+        return request({
+            method: 'post',
+            url: \`/user/createWithList\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Get user by user name
+     * @description
+     */
+    findByUsername(username: User.FindByUsernamePathParams['username']): Promise<[User.FindByUsernameErrorResponse, User.FindByUsernameResponse]> {
+        return request({
+            method: 'get',
+            url: \`/user/\${username}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Updated user
+     * @description This can only be done by the logged in user.
+     */
+    usernamePut(bodyParams: User.UsernamePutBodyParams, username: User.UsernamePutPathParams['username']): Promise<[User.UsernamePutErrorResponse, User.UsernamePutResponse]> {
+        return request({
+            method: 'put',
+            url: \`/user/\${username}\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Delete user
+     * @description This can only be done by the logged in user.
+     */
+    delByUsername(username: User.DelByUsernamePathParams['username']): Promise<[User.DelByUsernameErrorResponse, User.DelByUsernameResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/user/\${username}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Logs user into the system
+     * @description
+     */
+    loginGet(queryParams: User.LoginGetQueryParams): Promise<[User.LoginGetErrorResponse, User.LoginGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/user/login\`,
+            params: queryParams
+        })
+    }
+
+    /**
+     *
+     * @summary Logs out current logged in user session
+     * @description
+     */
+    logoutGet(): Promise<[User.LogoutGetErrorResponse, User.LogoutGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/user/logout\`
+        })
+    }
+
+    /**
+     *
+     * @summary Create user
+     * @description This can only be done by the logged in user.
+     */
+    create(bodyParams: User.CreateBodyParams): Promise<[User.CreateErrorResponse, User.CreateResponse]> {
+        return request({
+            method: 'post',
+            url: \`/user\`,
+            data: bodyParams
+        })
+    }
+}
+
+export const userAPI = new UserAPI;
+
+import type { Pet } from "./Pet";
+import { request } from "@/api/request";
+
+/**
+ *
+ * @tag pet
+ * @description Everything about your Pets
+ */
+class PetAPI {
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    testPost(bodyParams: Pet.TestPostBodyParams): Promise<[Pet.TestPostErrorResponse, Pet.TestPostResponse]> {
+        return request({
+            method: 'post',
+            url: \`/pet/test\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    testPut(bodyParams: Pet.TestPutBodyParams): Promise<[Pet.TestPutErrorResponse, Pet.TestPutResponse]> {
+        return request({
+            method: 'put',
+            url: \`/pet/test\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    delByTest(bodyParams: Pet.DelByTestBodyParams): Promise<[Pet.DelByTestErrorResponse, Pet.DelByTestResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/pet/test\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary summary
+     * @description
+     */
+    testIdGet(queryParams: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']): Promise<[Pet.TestIdGetErrorResponse, Pet.TestIdGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/test/\${testId}\`,
+            params: queryParams,
+            paramsSerializer(params: Pet.TestIdGetQueryParams) {
+                return qs.stringify(params)
+            }
+        })
+    }
+
+    /**
+     *
+     * @summary uploads an image
+     * @description pet
+     */
+    uploadImagePost(bodyParams: Pet.UploadImagePostBodyParams, petId: Pet.UploadImagePostPathParams['petId']): Promise<[Pet.UploadImagePostErrorResponse, Pet.UploadImagePostResponse]> {
+        return request({
+            method: 'post',
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            url: \`/pet/\${petId}/uploadImage\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Add a new pet to the store
+     * @description
+     */
+    create(bodyParams: Pet.CreateBodyParams): Promise<[Pet.CreateErrorResponse, Pet.CreateResponse]> {
+        return request({
+            method: 'post',
+            url: \`/pet\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Update an existing pet
+     * @description
+     */
+    update(bodyParams: Pet.UpdateBodyParams): Promise<[Pet.UpdateErrorResponse, Pet.UpdateResponse]> {
+        return request({
+            method: 'put',
+            url: \`/pet\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Finds Pets by status
+     * @description Multiple status values can be provided with comma separated strings
+     */
+    findByStatusGet(queryParams: Pet.FindByStatusGetQueryParams): Promise<[Pet.FindByStatusGetErrorResponse, Pet.FindByStatusGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/findByStatus\`,
+            params: queryParams,
+            paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
+                return qs.stringify(params)
+            }
+        })
+    }
+
+    /**
+     *
+     * @summary Finds Pets by tags
+     * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+     */
+    findByTagsGet(queryParams: Pet.FindByTagsGetQueryParams): Promise<[Pet.FindByTagsGetErrorResponse, Pet.FindByTagsGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/findByTags\`,
+            params: queryParams,
+            paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
+                return qs.stringify(params)
+            }
+        })
+    }
+
+    /**
+     *
+     * @summary Find pet by ID
+     * @description Returns a single pet
+     */
+    findByPetId(petId: Pet.FindByPetIdPathParams['petId']): Promise<[Pet.FindByPetIdErrorResponse, Pet.FindByPetIdResponse]> {
+        return request({
+            method: 'get',
+            url: \`/pet/\${petId}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Updates a pet in the store with form data
+     * @description
+     */
+    petIdPost(bodyParams: Pet.PetIdPostBodyParams, petId: Pet.PetIdPostPathParams['petId']): Promise<[Pet.PetIdPostErrorResponse, Pet.PetIdPostResponse]> {
+        return request({
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            url: \`/pet/\${petId}\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Deletes a pet
+     * @description
+     */
+    delByPetId(petId: Pet.DelByPetIdPathParams['petId']): Promise<[Pet.DelByPetIdErrorResponse, Pet.DelByPetIdResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/pet/\${petId}\`
+        })
+    }
+}
+
+export const petAPI = new PetAPI;
+
+import type { Store } from "./Store";
+import { request } from "@/api/request";
+
+/**
+ *
+ * @tag store
+ * @description Access to Petstore orders
+ */
+class StoreAPI {
+    /**
+     *
+     * @summary Place an order for a pet
+     * @description
+     */
+    create(bodyParams: Store.CreateBodyParams): Promise<[Store.CreateErrorResponse, Store.CreateResponse]> {
+        return request({
+            method: 'post',
+            url: \`/store/order\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Find purchase order by ID
+     * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
+     */
+    findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']): Promise<[Store.FindByOrderIdErrorResponse, Store.FindByOrderIdResponse]> {
+        return request({
+            method: 'get',
+            url: \`/store/order/\${orderId}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Delete purchase order by ID
+     * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
+     */
+    delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']): Promise<[Store.DelByOrderIdErrorResponse, Store.DelByOrderIdResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/store/order/\${orderId}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Returns pet inventories by status
+     * @description Returns a map of status codes to quantities
+     */
+    inventoryGet(): Promise<[Store.InventoryGetErrorResponse, Store.InventoryGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/store/inventory\`
+        })
+    }
+}
+
+export const storeAPI = new StoreAPI;
+
+import type { User } from "./User";
+import { request } from "@/api/request";
+
+/**
+ *
+ * @tag user
+ * @description Operations about user
+ */
+class UserAPI {
+    /**
+     *
+     * @summary Creates list of users with given input array
+     * @description
+     */
+    createWithArrayPost(bodyParams: User.CreateWithArrayPostBodyParams): Promise<[User.CreateWithArrayPostErrorResponse, User.CreateWithArrayPostResponse]> {
+        return request({
+            method: 'post',
+            url: \`/user/createWithArray\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Creates list of users with given input array
+     * @description
+     */
+    createWithListPost(bodyParams: User.CreateWithListPostBodyParams): Promise<[User.CreateWithListPostErrorResponse, User.CreateWithListPostResponse]> {
+        return request({
+            method: 'post',
+            url: \`/user/createWithList\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Get user by user name
+     * @description
+     */
+    findByUsername(username: User.FindByUsernamePathParams['username']): Promise<[User.FindByUsernameErrorResponse, User.FindByUsernameResponse]> {
+        return request({
+            method: 'get',
+            url: \`/user/\${username}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Updated user
+     * @description This can only be done by the logged in user.
+     */
+    usernamePut(bodyParams: User.UsernamePutBodyParams, username: User.UsernamePutPathParams['username']): Promise<[User.UsernamePutErrorResponse, User.UsernamePutResponse]> {
+        return request({
+            method: 'put',
+            url: \`/user/\${username}\`,
+            data: bodyParams
+        })
+    }
+
+    /**
+     *
+     * @summary Delete user
+     * @description This can only be done by the logged in user.
+     */
+    delByUsername(username: User.DelByUsernamePathParams['username']): Promise<[User.DelByUsernameErrorResponse, User.DelByUsernameResponse]> {
+        return request({
+            method: 'delete',
+            url: \`/user/\${username}\`
+        })
+    }
+
+    /**
+     *
+     * @summary Logs user into the system
+     * @description
+     */
+    loginGet(queryParams: User.LoginGetQueryParams): Promise<[User.LoginGetErrorResponse, User.LoginGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/user/login\`,
+            params: queryParams
+        })
+    }
+
+    /**
+     *
+     * @summary Logs out current logged in user session
+     * @description
+     */
+    logoutGet(): Promise<[User.LogoutGetErrorResponse, User.LogoutGetResponse]> {
+        return request({
+            method: 'get',
+            url: \`/user/logout\`
+        })
+    }
+
+    /**
+     *
+     * @summary Create user
+     * @description This can only be done by the logged in user.
+     */
+    create(bodyParams: User.CreateBodyParams): Promise<[User.CreateErrorResponse, User.CreateResponse]> {
+        return request({
+            method: 'post',
+            url: \`/user\`,
+            data: bodyParams
+        })
+    }
+}
+
+export const userAPI = new UserAPI;
+"
+`;
+
+exports[`RequestGenerator > createZodDecorator true getFullText 1`] = `
 "import { PetZod } from "./PetZod";
 import { paramsZodSchema, responseZodSchema, zodValidate } from "@/utils/zod";
 import type { Pet } from "./Pet";

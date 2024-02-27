@@ -17,9 +17,7 @@ export type PluginName = {
 };
 export type PluginLifecycleHooks = keyof LifeCycle;
 
-export type PluginContext = {
-  output: string;
-};
+export type PluginContext = {};
 
 export enum LifeCycleEnum {
   buildStart = "buildStart",
@@ -36,20 +34,27 @@ export type LifeCycle = {
   [LifeCycleEnum.buildEnd]: (context: PluginContext) => void;
 };
 
-export type PluginConfigFactory<T> = (pluginConfig: T) => PluginFactory;
+export type PluginConfigFactory<T> = (pluginConfig?: T) => PluginFactory;
 
 export type PluginFactory = ({
   openapiDocument,
   openapiToSingleConfig,
 }: {
   openapiDocument: OpenAPIDocument;
-  openapiToSingleConfig: OpenapiToSingleConfig;
+  openapiToSingleConfig: OpenapiToSingleConfigOfPlugin;
 }) => LifeCycle & PluginName;
 
 export type OpenapiToSingleConfig = {
   input: OpenapiToConfigSingleInput;
   output?: string;
   plugins: Array<PluginFactory>;
+};
+
+export type OpenapiToSingleConfigOfPlugin = Omit<
+  OpenapiToSingleConfig,
+  "output"
+> & {
+  output: string;
 };
 
 /**

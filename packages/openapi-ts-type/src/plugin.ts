@@ -14,15 +14,15 @@ export const definePlugin = createPlugin(
       const openapi = new OpenAPI({}, oas);
       return {
         name: "openapi-ts-type",
-        buildStart(context) {
-          const requestGenerator = new TypeGenerator({
+        buildStart() {
+          const typeGenerator = new TypeGenerator({
             oas,
             ast,
             openapi,
             pluginConfig,
             openapiToSingleConfig,
           });
-          requestGenerator.build(context);
+          typeGenerator.build();
         },
         writeFile() {
           return ast.saveSync();

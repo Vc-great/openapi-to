@@ -36,6 +36,10 @@ jobs:
           working-directory: ./e2e/common
           run:  ${{ matrix.installer }} init
 
+        - name: E2e  openapi-to edit plugins
+          working-directory: ./e2e/common
+          run: ${{ matrix.installer }} editPlugins
+
         - name: openapi-to generate
           working-directory: ./e2e/common
           env:
@@ -73,6 +77,10 @@ jobs:
       - name: E2e  openapi-to init
         working-directory: ./e2e/module
         run: ${{ matrix.installer }} init
+
+      - name: E2e  openapi-to edit plugins
+        working-directory: ./e2e/module
+        run: ${{ matrix.installer }} editPlugins
 
       - name: openapi-to generate
         working-directory: ./e2e/module

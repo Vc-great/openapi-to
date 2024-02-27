@@ -6,9 +6,6 @@ import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
 
 import type { PluginContext } from "@openapi-to/core";
-import type { AST, OpenAPI } from "@openapi-to/core";
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
-import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3 } from "openapi-types";
 import type {
@@ -16,26 +13,18 @@ import type {
   MethodDeclarationStructure,
   OptionalKind,
 } from "ts-morph";
-import type { PluginConfig } from "./types.ts";
-
-type RequestGeneratorParams = {
-  oas: Oas;
-  openapi: OpenAPI;
-  ast: AST;
-  pluginConfig: PluginConfig;
-  openapiToSingleConfig: OpenapiToSingleConfig;
-};
+import type { Config } from "./types.ts";
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 
 export class RequestGenerator {
   private operation: Operation | undefined;
-  private oas: RequestGeneratorParams["oas"];
+  private oas: Config["oas"];
   private readonly paramsZodSchema: string;
-  private readonly openapi: RequestGeneratorParams["openapi"];
-  private readonly ast: RequestGeneratorParams["ast"];
-  private readonly pluginConfig: RequestGeneratorParams["pluginConfig"];
-  private readonly openapiToSingleConfig: RequestGeneratorParams["openapiToSingleConfig"];
+  private readonly openapi: Config["openapi"];
+  private readonly ast: Config["ast"];
+  private readonly pluginConfig: Config["pluginConfig"];
+  private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
 
   constructor({
     oas,
@@ -43,7 +32,7 @@ export class RequestGenerator {
     ast,
     pluginConfig,
     openapiToSingleConfig,
-  }: RequestGeneratorParams) {
+  }: Config) {
     this.oas = oas;
     this.ast = ast;
     this.pluginConfig = pluginConfig;
@@ -79,6 +68,9 @@ export class RequestGenerator {
   }
 
   get isCreateZodDecorator(): boolean {
+    if (this.pluginConfig === undefined) {
+      return false;
+    }
     return this.pluginConfig.createZodDecorator;
   }
 
@@ -89,7 +81,7 @@ export class RequestGenerator {
         return this.generatorMethod();
       });
       const filePath = path.resolve(
-        context.output,
+        this.openapiToSingleConfig.output,
         this.lowerFirstClassName + ".ts",
       );
       return this.ast.createSourceFile(filePath, {
@@ -242,32 +234,36 @@ export class RequestGenerator {
       name: "queryParams",
       type:
         this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName,
-      decorators: [
-        {
-          name: this.paramsZodSchema,
-          arguments: [
-            this.namespaceZodName +
-              "." +
-              this.openapi.upperFirstQueryRequestName,
-          ],
-        },
-      ],
+      decorators: this.isCreateZodDecorator
+        ? [
+            {
+              name: this.paramsZodSchema,
+              arguments: [
+                this.namespaceZodName +
+                  "." +
+                  this.openapi.upperFirstQueryRequestName,
+              ],
+            },
+          ]
+        : [],
     };
 
     const bodyParameters = {
       name: "bodyParams",
       type:
         this.namespaceTypeName + "." + this.openapi.upperFirstBodyRequestName,
-      decorators: [
-        {
-          name: this.paramsZodSchema,
-          arguments: [
-            this.namespaceZodName +
-              "." +
-              this.openapi.upperFirstBodyRequestName,
-          ],
-        },
-      ],
+      decorators: this.isCreateZodDecorator
+        ? [
+            {
+              name: this.paramsZodSchema,
+              arguments: [
+                this.namespaceZodName +
+                  "." +
+                  this.openapi.upperFirstBodyRequestName,
+              ],
+            },
+          ]
+        : [],
     };
 
     const pathParameters = _.chain(this.openapi.parameter?.parameters)
@@ -280,17 +276,19 @@ export class RequestGenerator {
             "." +
             this.openapi.upperFirstPathRequestName +
             `['${_.camelCase(item.name)}']`,
-          decorators: [
-            {
-              name: this.paramsZodSchema,
-              arguments: [
-                this.namespaceZodName +
-                  "." +
-                  this.openapi.upperFirstPathRequestName +
-                  `['${_.camelCase(item.name)}']`,
-              ],
-            },
-          ],
+          decorators: this.isCreateZodDecorator
+            ? [
+                {
+                  name: this.paramsZodSchema,
+                  arguments: [
+                    this.namespaceZodName +
+                      "." +
+                      this.openapi.upperFirstPathRequestName +
+                      `['${_.camelCase(item.name)}']`,
+                  ],
+                },
+              ]
+            : [],
         };
       })
       .value();
@@ -434,7 +432,9 @@ export class RequestGenerator {
   generatorMethod(): MethodDeclarationStructure {
     const statement = {
       name: this.openapi.requestName,
-      decorators: this.generatorMethodDecorators(),
+      decorators: this.isCreateZodDecorator
+        ? this.generatorMethodDecorators()
+        : [],
       parameters: this.generatorMethodParameters(),
       returnType: this.generatorReturnType(),
       docs: this.generatorMethodDocs(),
