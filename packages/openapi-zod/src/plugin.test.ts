@@ -3,13 +3,14 @@ import { describe, expect } from "vitest";
 import petStore from "../mock/petstore.json";
 import { definePlugin } from "./plugin.ts";
 
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
+import type { OpenapiToSingleConfigOfPlugin } from "@openapi-to/core";
 describe("ts request plugin", () => {
-  const openapiToSingleConfig: OpenapiToSingleConfig = {
+  const openapiToSingleConfig: OpenapiToSingleConfigOfPlugin = {
     input: {
       path: "",
       name: "",
     },
+    output: "",
     plugins: [],
   };
 

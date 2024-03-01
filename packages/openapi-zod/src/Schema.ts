@@ -267,7 +267,9 @@ export class Schema {
       !this.openapi.isReference(schema.items) &&
       !_.isBoolean(schema.items)
     ) {
-      const arrayType = this.formatterSchemaType(schema.items);
+      const arrayType = this.formatterSchemaType(
+        schema.items as OasTypes.SchemaObject,
+      );
       return this.z.array(arrayType).toString();
     }
 
