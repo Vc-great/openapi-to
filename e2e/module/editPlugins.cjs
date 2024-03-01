@@ -6,7 +6,8 @@ const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.ts");
 const config =`import {
   defineConfig,
   createTSRequest,
-  createTSType
+  createTSType,
+  createZod,
    } from'openapi-to'
 
 export default defineConfig({
@@ -20,7 +21,8 @@ export default defineConfig({
     createTSRequest({
       createZodDecorator: true
     }),
-    createTSType()
+    createTSType(),
+    createZod(),
   ]
 })`
 

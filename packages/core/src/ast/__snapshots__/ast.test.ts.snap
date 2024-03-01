@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ast > generateObject$2 1`] = `
+"{
+    /**
+    *这是一段文字描述
+    *@tag:pet
+    *@pet:Everything about your Pets
+    */
+    key:1,
+    /**描述2*/
+    key2:string
+}"
+`;

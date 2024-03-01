@@ -53,7 +53,8 @@
     "@openapi-to/cli": "workspace:*",
     "@openapi-to/core": "workspace:*",
     "@openapi-to/openapi-ts-request": "workspace:*",
-    "@openapi-to/openapi-ts-type": "workspace:*"
+    "@openapi-to/openapi-ts-type": "workspace:*",
+    "@openapi-to/openapi-zod": "workspace:*"
   },
   "devDependencies": {
   },

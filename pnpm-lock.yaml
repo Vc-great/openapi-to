@@ -105,6 +105,9 @@ importers:
       openapi-to:
         specifier: workspace:*
         version: link:../../packages/openapi
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
 
   packages/cli:
     dependencies:
@@ -297,6 +300,9 @@ importers:
       '@openapi-to/openapi-ts-type':
         specifier: workspace:*
         version: link:../openapi-ts-type
+      '@openapi-to/openapi-zod':
+        specifier: workspace:*
+        version: link:../openapi-zod
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
@@ -321,6 +327,25 @@ importers:
         version: link:../config/tsup-config
 
   packages/openapi-ts-type:
+    dependencies:
+      oas:
+        specifier: ^24.1.0
+        version: 24.1.0
+    devDependencies:
+      '@openapi-to/core':
+        specifier: workspace:*
+        version: link:../core
+      '@openapi-to/eslint-config':
+        specifier: workspace:*
+        version: link:../config/eslint-config
+      '@openapi-to/ts-config':
+        specifier: workspace:*
+        version: link:../config/ts-config
+      '@openapi-to/tsup-config':
+        specifier: workspace:*
+        version: link:../config/tsup-config
+
+  packages/openapi-zod:
     dependencies:
       oas:
         specifier: ^24.1.0
@@ -6570,4 +6595,8 @@ packages:
       validator: 13.11.0
     optionalDependencies:
       commander: 9.5.0
+    dev: false
+
+  /zod@3.22.4:
+    resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
     dev: false

@@ -20,7 +20,8 @@
   "dependencies": {
     "@types/fs-extra": "^11.0.4",
     "fs-extra": "^11.2.0",
-    "openapi-to": "workspace:*"
+    "openapi-to": "workspace:*",
+    "zod": "^3.22.4"
   },
   "packageManager": "pnpm@8.3.0",
   "engines": {

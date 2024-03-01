@@ -1,6 +1,6 @@
 import type { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { LogLevel } from "./logger.ts";
-
+export * from "./ast/type.ts";
 export type OpenapiToConfigSingleInput = {
   /**
    * Project name, which is used to output the name of the folder

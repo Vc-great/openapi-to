@@ -112,7 +112,9 @@ export class Parameter {
           required,
           properties: {
             ...schema.properties,
-            [pathParameters.name]: {
+            [inKey === "path"
+              ? _.camelCase(pathParameters.name)
+              : pathParameters.name]: {
               //description: pathParameters.description,
               ...property,
             },

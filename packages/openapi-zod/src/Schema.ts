@@ -2,13 +2,13 @@ import _ from "lodash";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
 import { useEnumCache } from "./EnumCache.ts";
+import { Zod } from "./zod.ts";
 
-import type { PluginContext } from "@openapi-to/core";
+import type { ObjectStructure, PluginContext } from "@openapi-to/core";
 import type OasTypes from "oas/types";
 import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
 import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
-
 type OptionalKindOfPropertySignatureStructure =
   OptionalKind<PropertySignatureStructure>;
 export class Schema {
@@ -19,8 +19,8 @@ export class Schema {
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
   private readonly modelFolderName: string = modelFolderName;
   private context: PluginContext | null = null;
-
   private enumCache: EnumCache = useEnumCache();
+
   constructor({
     oas,
     openapi,
@@ -35,13 +35,24 @@ export class Schema {
     this.openapi = openapi;
   }
 
-  getBaseTypeFromSchema(
-    schema: OasTypes.SchemaObject | null,
-  ): Array<OptionalKindOfPropertySignatureStructure> | undefined {
+  get z(): Zod {
+    return new Zod();
+  }
+
+  /**
+   *
+   * @param schema
+   * @example
+   * ```
+   * //object
+   * z.object({})
+   * ```
+   */
+  getZodFromSchema(schema: OasTypes.SchemaObject | undefined): string {
     const version = this.oas.getVersion();
 
     if (!schema) {
-      return undefined;
+      return "";
     }
 
     /*    if (this.openapi.isReference(schema)) {
@@ -49,24 +60,24 @@ export class Schema {
     }*/
 
     if (schema.oneOf) {
-      return undefined;
+      return "";
     }
 
     if (schema.anyOf) {
-      return undefined;
+      return "";
     }
 
     if (schema.allOf) {
-      return undefined;
+      return "";
     }
 
     if (schema.enum) {
-      return undefined;
+      return "";
     }
 
     if ("items" in schema) {
       // items -> array
-      return undefined;
+      return "";
     }
 
     /**
@@ -75,12 +86,12 @@ export class Schema {
      */
 
     if ("prefixItems" in schema) {
-      return undefined;
+      return "";
     }
 
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
-      return this.getTypeStringFromProperties(schema);
+      return this.z.head().object(this.getZodFromProperties(schema)).toString();
     }
 
     /**
@@ -141,18 +152,31 @@ export class Schema {
       return factory.createTypeReferenceNode("Blob", []);
     }*/
 
-    return undefined;
+    return "";
   }
 
-  getTypeStringFromProperties(
-    baseSchema?: OasTypes.SchemaObject,
-  ): Array<OptionalKindOfPropertySignatureStructure> | undefined {
+  /**
+   *
+   * @param baseSchema
+   * @example
+   * ```
+   * {
+   *
+   * }
+   * ```
+   *
+   */
+  getZodFromProperties(baseSchema?: OasTypes.SchemaObject): string {
+    if (!baseSchema) {
+      return "";
+    }
+
     const properties = baseSchema?.properties || {};
     const required = baseSchema?.required;
     const additionalProperties = baseSchema?.additionalProperties;
 
-    const typeStatements: Array<OptionalKindOfPropertySignatureStructure> =
-      Object.keys(properties).map((name) => {
+    const objectStructure: Array<ObjectStructure> = Object.keys(properties).map(
+      (name) => {
         const schema = properties[name] as OasTypes.SchemaObject;
 
         const isRequired = _.chain([] as Array<string>)
@@ -168,20 +192,27 @@ export class Schema {
         }
 
         return {
-          name: _.camelCase(name) + (isRequired ? "" : "?"),
-          type: this.openapi.isReference(schema)
-            ? _.upperFirst(this.openapi.getRefAlias(schema.$ref))
+          key: name,
+          value: this.openapi.isReference(schema)
+            ? this.z
+                .head()
+                .lazy(
+                  this.openapi.getRefAlias(schema.$ref) +
+                    (isRequired ? "" : new Zod().optional().toString()),
+                )
+                .toString()
             : this.formatterSchemaType(schema),
           docs: [{ description: _.get(schema, "description", "") }],
         };
-      });
+      },
+    );
 
     //todo additionalProperties
     if (additionalProperties) {
-      return undefined;
+      return "";
     }
 
-    return typeStatements;
+    return this.ast.generateObject$2(objectStructure);
   }
 
   formatterSchemaType(schema: OasTypes.SchemaObject | undefined): string {
@@ -200,16 +231,16 @@ export class Schema {
     // const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
 
     if (_.isUndefined(schema)) {
-      return "unknown";
+      return this.z.head().unknown().toString();
     }
 
     const type = schema.type;
     if (typeof type !== "string") {
-      return "unknown";
+      return this.z.head().unknown().toString();
     }
 
     if (numberEnum.includes(type) || numberEnum.includes(schema.format || "")) {
-      return "number";
+      return this.z.head().number().toString();
     }
 
     /*   if (dateEnum.includes(type)) {
@@ -217,32 +248,37 @@ export class Schema {
     }*/
 
     if (stringEnum.includes(type || "")) {
-      return "string";
+      return this.z.head().string().toString();
     }
 
     if (type === "boolean") {
-      return "boolean";
+      return this.z.head().boolean().toString();
     }
 
     if (type === "array" && this.openapi.isReference(schema.items)) {
-      return _.upperFirst(this.openapi.getRefAlias(schema.items.$ref));
+      return this.z
+        .head()
+        .lazy(this.openapi.getRefAlias(schema.items.$ref))
+        .toString();
     }
 
-    if (type === "array" && !this.openapi.isReference(schema.items)) {
-      const arrayType = this.formatterSchemaType(
-        schema.items as OasTypes.SchemaObject,
-      );
-      return `Array<${arrayType}>`;
+    if (
+      type === "array" &&
+      !this.openapi.isReference(schema.items) &&
+      !_.isBoolean(schema.items)
+    ) {
+      const arrayType = this.formatterSchemaType(schema.items);
+      return this.z.array(arrayType).toString();
     }
 
     //todo 嵌套object
     if (type === "object" && schema.properties) {
-      return this.ast.generateObjectType(
-        this.getTypeStringFromProperties(schema) || [],
-      );
-      //return this.getTypeStringFromProperties(schema as ObjectSchema);
+      return this.z
+        .head()
+        .object(this.getZodFromProperties(schema || []))
+        .toString();
     }
 
-    return "unknown";
+    return this.z.head().unknown().toString();
   }
 }

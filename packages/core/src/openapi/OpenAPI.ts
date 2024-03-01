@@ -65,7 +65,7 @@ export class OpenAPI {
   }
 
   get queryRequestName(): string {
-    return `${_.upperFirst(_.camelCase(this.methodName))}QueryParams`;
+    return `${_.camelCase(this.methodName)}QueryParams`;
   }
 
   get upperFirstQueryRequestName(): string {
@@ -255,7 +255,7 @@ export class OpenAPI {
     //todo ref cache
     this.refCache.set($ref, null);
     const typeName = $ref.replace(/.+\//, "");
-    return _.upperFirst(_.camelCase(typeName));
+    return _.camelCase(typeName);
   }
 
   hasRefByCache($ref: string): boolean {

@@ -18,9 +18,11 @@ import type {
   VariableStatementStructure,
   WriterFunction,
 } from "ts-morph";
+import type { JSDoc, ObjectStructure } from "./type.ts";
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 type InterfaceStatementsOmitKind = Omit<InterfaceDeclarationStructure, "kind">;
+
 export class AST {
   private project: Project;
   public sourceFile: Array<SourceFile>;
@@ -126,6 +128,51 @@ export class AST {
   generateObject(object: { [key: string]: any }): string {
     const writer = new CodeBlockWriter();
     Writers.object(object)(writer);
+    return writer.toString();
+  }
+
+  generateObject$2(objectStructure: Array<ObjectStructure>): string {
+    const writer = new CodeBlockWriter();
+    function writeDocs(docs: JSDoc) {
+      writer.write("/**");
+      docs.forEach((doc) => {
+        const isLine = doc.description?.startsWith("\n");
+        if (isLine || doc.tags) {
+          writer.newLine();
+          writer.write("*").write(doc.description || "");
+        } else {
+          writer.write(doc.description || "");
+        }
+
+        if (doc.tags) {
+          writer.newLine();
+          doc.tags.forEach((tag) => {
+            writer.write("*@").write(tag.tagName);
+            writer.write(":");
+            writer.write(tag.text as string);
+            writer.newLine();
+          });
+        }
+      });
+      writer.write("*/");
+      writer.newLine();
+    }
+    writer.block(() => {
+      objectStructure.forEach((item, index) => {
+        if (index !== 0) {
+          writer.newLine();
+        }
+        writeDocs(item.docs || []);
+        const isEqual = item.key === item.value;
+        writer.write(item.key);
+        if (!isEqual) {
+          writer.write(":").write(item.value);
+        }
+
+        writer.write(index === objectStructure.length - 1 ? "" : ",");
+      });
+    });
+
     return writer.toString();
   }
 

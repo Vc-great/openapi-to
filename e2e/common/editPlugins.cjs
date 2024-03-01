@@ -6,7 +6,8 @@ const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.js");
 const config =`const {
   defineConfig,
   createTSRequest,
-  createTSType
+  createTSType,
+  createZod
    }= require('openapi-to')
 
 module.exports = defineConfig({
@@ -20,7 +21,8 @@ module.exports = defineConfig({
     createTSRequest({
       createZodDecorator: true
     }),
-    createTSType()
+    createTSType(),
+    createZod()
   ]
 })`
 

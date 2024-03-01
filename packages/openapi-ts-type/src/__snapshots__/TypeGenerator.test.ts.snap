@@ -49,9 +49,9 @@ export namespace Pet {
     /** pathParams */
     export interface TestIdGetPathParams {
         /** */
-        testId: number;
+        testId?: number;
         /** */
-        testId2: string;
+        testId2?: string;
     }
 
     /** OK */

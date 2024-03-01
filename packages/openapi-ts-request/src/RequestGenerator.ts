@@ -42,17 +42,15 @@ export class RequestGenerator {
   }
 
   get currentTagName() {
-    return _.upperFirst(
-      _.camelCase(
-        this.openapi &&
-          this.openapi.currentTagMetadata &&
-          this.openapi.currentTagMetadata.name,
-      ),
+    return _.camelCase(
+      this.openapi &&
+        this.openapi.currentTagMetadata &&
+        this.openapi.currentTagMetadata.name,
     );
   }
 
   get className() {
-    return this.currentTagName + "API";
+    return _.upperFirst(this.currentTagName) + "API";
   }
 
   get lowerFirstClassName() {
@@ -60,7 +58,7 @@ export class RequestGenerator {
   }
 
   get namespaceTypeName(): string {
-    return this.currentTagName;
+    return _.upperFirst(this.currentTagName);
   }
 
   get namespaceZodName(): string {
@@ -159,9 +157,17 @@ export class RequestGenerator {
       moduleSpecifier: `./${this.namespaceZodName}`,
     };
 
+    const zodTypeModel: ImportStatementsOmitKind = {
+      isTypeOnly: true,
+      namedImports: [this.namespaceTypeName],
+      moduleSpecifier: `./${this.namespaceZodName}`,
+    };
+
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
-      .concat(this.isCreateZodDecorator ? [zodModel, zodDecorator] : [])
-      .push(typeModel)
+      .concat(
+        this.isCreateZodDecorator ? [zodModel, zodTypeModel, zodDecorator] : [],
+      )
+      .concat(this.isCreateZodDecorator ? [] : [typeModel])
       .push(request)
       .filter(Boolean)
       .value();
@@ -214,9 +220,7 @@ export class RequestGenerator {
       },
       {
         name: "responseZodSchema",
-        arguments: [
-          this.namespaceZodName + "." + this.openapi.upperFirstResponseName,
-        ],
+        arguments: [this.namespaceZodName + "." + this.openapi.responseName],
       },
     ];
   }
@@ -239,9 +243,7 @@ export class RequestGenerator {
             {
               name: this.paramsZodSchema,
               arguments: [
-                this.namespaceZodName +
-                  "." +
-                  this.openapi.upperFirstQueryRequestName,
+                this.namespaceZodName + "." + this.openapi.queryRequestName,
               ],
             },
           ]
@@ -257,9 +259,7 @@ export class RequestGenerator {
             {
               name: this.paramsZodSchema,
               arguments: [
-                this.namespaceZodName +
-                  "." +
-                  this.openapi.upperFirstBodyRequestName,
+                this.namespaceZodName + "." + this.openapi.bodyRequestName,
               ],
             },
           ]
@@ -283,8 +283,9 @@ export class RequestGenerator {
                   arguments: [
                     this.namespaceZodName +
                       "." +
-                      this.openapi.upperFirstPathRequestName +
-                      `['${_.camelCase(item.name)}']`,
+                      this.openapi.pathRequestName +
+                      ".shape" +
+                      `.${_.camelCase(item.name)}`,
                   ],
                 },
               ]
@@ -373,7 +374,7 @@ export class RequestGenerator {
   }
 
   generatorParamsSerializer(): string {
-    return `paramsSerializer(params:${this.namespaceTypeName + "." + this.openapi.queryRequestName}) {
+    return `paramsSerializer(params:${this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName}) {
             return qs.stringify(params)
         }`;
   }
