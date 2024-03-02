@@ -49,14 +49,14 @@
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@openapi-to/tsup-config": "workspace:*",
     "@openapi-to/cli": "workspace:*",
     "@openapi-to/core": "workspace:*",
     "@openapi-to/openapi-ts-request": "workspace:*",
     "@openapi-to/openapi-ts-type": "workspace:*",
-    "@openapi-to/openapi-zod": "workspace:*"
-  },
-  "devDependencies": {
+    "@openapi-to/openapi-zod": "workspace:*",
+    "@openapi-to/tsup-config": "workspace:*",
+    "@types/update-notifier": "^6.0.8",
+    "update-notifier": "^7.0.0"
   },
   "packageManager": "pnpm@8.3.0",
   "engines": {
