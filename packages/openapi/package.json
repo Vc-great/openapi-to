@@ -1,6 +1,6 @@
 {
   "name": "openapi-to",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "description": "OpenAPI to TypeScript,Axios.",
   "keywords": [
     "typescript",

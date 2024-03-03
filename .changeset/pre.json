@@ -1,0 +1,15 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@openapi-to/cli": "2.0.0-alpha.1",
+    "@openapi-to/core": "2.0.0-alpha.1",
+    "openapi-to": "2.0.0-alpha.1",
+    "@openapi-to/openapi-ts-request": "2.0.0-alpha.1",
+    "@openapi-to/openapi-ts-type": "2.0.0-alpha.1",
+    "@openapi-to/openapi-zod": "2.0.0-alpha.1"
+  },
+  "changesets": [
+    "many-shoes-change"
+  ]
+}

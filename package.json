@@ -32,10 +32,6 @@
     "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint --max-warnings 10 --format pretty ./packages/*",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=true eslint --fix --format pretty ./packages/* && npm run lint:case",
     "lint:turbo": "turbo run lint",
-    "version": "changeset version",
-    "release": "changeset publish",
-    "version:canary": "changeset version --snapshot canary",
-    "release:canary": "changeset publish --no-git-tag",
     "start": "turbo run start --filter=./packages/*",
     "test": "vitest run --config ./configs/vitest.config.ts --coverage",
     "test:vitest": "vitest run --config ./configs/vitest.config.ts",
@@ -43,9 +39,15 @@
     "typecheck": "turbo run typecheck --continue --filter='./packages/*'",
     "typecheck:examples": "turbo run typecheck --continue --filter='./examples/*'",
     "upgrade": "npx  -r -w --exclude pnpm",
-    "changeset": "changeset",
+    "//changeset:beta:alpha": "changeset pre enter alpha",
     "//changeset:beta:enter": "changeset pre enter beta",
+    "//changeset:beta:rc": "changeset pre enter rc",
     "//changeset:beta:exit": "changeset pre exit",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish",
+    "version:canary": "changeset v ersion --snapshot canary",
+    "release:canary": "changeset publish --no-git-tag",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -84,5 +86,9 @@
     "lodash": "^4.17.21",
     "oas": "^24.1.0",
     "ts-morph": "^21.0.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
