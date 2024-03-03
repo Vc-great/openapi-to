@@ -4,9 +4,9 @@
 Generate SDKs,OpenAPI to:
 + [ ] js request(jsDoc)
 + [x] ts request
-+ [ ] ts interface
++ [x] ts type
 + [ ] request object
-+ [ ] zod
++ [x] zod
 + [x] zod decorator
 + [ ] vue-Query
 + [ ] Faker.js
