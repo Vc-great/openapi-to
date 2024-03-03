@@ -1,0 +1,992 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`zodGenerator > zodGenerator getFullText 1`] = `
+"import { z } from "zod";
+import { testDto2, test32145, apiResponse, pet } from "./zodModels";
+/** OK */
+export const testPostResponse = z.lazy(() => testDto2);
+/** */
+export const testPostResponse401 = z.unknown();
+/** */
+export const testPostResponse403 = z.unknown();
+/** */
+export const testPostResponse404 = z.unknown();
+/** */
+export const testPostErrorResponse = z.union([testPostResponse401, testPostResponse403, testPostResponse404]);
+/** OK */
+export const testPutResponse = z.lazy(() => testDto2);
+/** */
+export const testPutResponse401 = z.unknown();
+/** */
+export const testPutResponse403 = z.unknown();
+/** */
+export const testPutResponse404 = z.unknown();
+/** */
+export const testPutErrorResponse = z.union([testPutResponse401, testPutResponse403, testPutResponse404]);
+/** bodyParams */
+export const delByTestBodyParams = z.number().array();
+/** OK */
+export const delByTestResponse = z.lazy(() => test32145);
+/** */
+export const delByTestResponse401 = z.unknown();
+/** */
+export const delByTestResponse403 = z.unknown();
+/** */
+export const delByTestErrorResponse = z.union([delByTestResponse401, delByTestResponse403]);
+/** queryParams */
+export const testIdGetQueryParams = z.object({
+    /***/
+    fields: z.string().array(),
+    /***/
+    page: z.number(),
+    /***/
+    size: z.number()
+});
+/** pathParams */
+export const testIdGetPathParams = z.object({
+    /***/
+    testId: z.number(),
+    /***/
+    testId2: z.string()
+});
+/** OK */
+export const testIdGetResponse = z.lazy(() => testDto2);
+/** */
+export const testIdGetResponse401 = z.unknown();
+/** */
+export const testIdGetResponse403 = z.unknown();
+/** */
+export const testIdGetResponse404 = z.unknown();
+/** */
+export const testIdGetErrorResponse = z.union([testIdGetResponse401, testIdGetResponse403, testIdGetResponse404]);
+/** pathParams */
+export const uploadImagePostPathParams = z.object({
+    /***/
+    petId: z.number()
+});
+/** bodyParams */
+export const uploadImagePostBodyParams = z.object({
+    /**Additional data to pass to server*/
+    additionalMetadata: z.string(),
+    /**file to upload*/
+    file: z.string()
+});
+/** successful operation */
+export const uploadImagePostResponse = z.lazy(() => apiResponse);
+/** */
+export const uploadImagePostErrorResponse = z.unknown();
+/** */
+export const createResponse405 = z.unknown();
+/** */
+export const createErrorResponse = createResponse405;
+/** */
+export const createResponse = z.unknown();
+/** */
+export const updateResponse400 = z.unknown();
+/** */
+export const updateResponse404 = z.unknown();
+/** */
+export const updateResponse405 = z.unknown();
+/** */
+export const updateErrorResponse = z.union([updateResponse400, updateResponse404, updateResponse405]);
+/** */
+export const updateResponse = z.unknown();
+/** queryParams */
+export const findByStatusGetQueryParams = z.object({
+    /***/
+    status: z.string().array()
+});
+/** successful operation */
+export const findByStatusGetResponse = z.lazy(() => pet);
+/** */
+export const findByStatusGetResponse400 = z.unknown();
+/** */
+export const findByStatusGetErrorResponse = findByStatusGetResponse400;
+/** queryParams */
+export const findByTagsGetQueryParams = z.object({
+    /***/
+    tags: z.string().array()
+});
+/** successful operation */
+export const findByTagsGetResponse = z.lazy(() => pet);
+/** */
+export const findByTagsGetResponse400 = z.unknown();
+/** */
+export const findByTagsGetErrorResponse = findByTagsGetResponse400;
+/** pathParams */
+export const findByPetIdPathParams = z.object({
+    /***/
+    petId: z.number()
+});
+/** successful operation */
+export const findByPetIdResponse = z.lazy(() => pet);
+/** */
+export const findByPetIdResponse400 = z.unknown();
+/** */
+export const findByPetIdResponse404 = z.unknown();
+/** */
+export const findByPetIdErrorResponse = z.union([findByPetIdResponse400, findByPetIdResponse404]);
+/** pathParams */
+export const petIdPostPathParams = z.object({
+    /***/
+    petId: z.number()
+});
+/** bodyParams */
+export const petIdPostBodyParams = z.object({
+    /**Updated name of the pet*/
+    name: z.string(),
+    /**Updated status of the pet*/
+    status: z.string()
+});
+/** */
+export const petIdPostResponse405 = z.unknown();
+/** */
+export const petIdPostErrorResponse = petIdPostResponse405;
+/** */
+export const petIdPostResponse = z.unknown();
+/** pathParams */
+export const delByPetIdPathParams = z.object({
+    /***/
+    petId: z.number()
+});
+/** */
+export const delByPetIdResponse400 = z.unknown();
+/** */
+export const delByPetIdResponse404 = z.unknown();
+/** */
+export const delByPetIdErrorResponse = z.union([delByPetIdResponse400, delByPetIdResponse404]);
+/** */
+export const delByPetIdResponse = z.unknown();
+/** Zod */
+export const petZod = {
+    /**OK*/
+    testPostResponse,
+    /***/
+    testPostResponse401,
+    /***/
+    testPostResponse403,
+    /***/
+    testPostResponse404,
+    /***/
+    testPostErrorResponse,
+    /**OK*/
+    testPutResponse,
+    /***/
+    testPutResponse401,
+    /***/
+    testPutResponse403,
+    /***/
+    testPutResponse404,
+    /***/
+    testPutErrorResponse,
+    /**bodyParams*/
+    delByTestBodyParams,
+    /**OK*/
+    delByTestResponse,
+    /***/
+    delByTestResponse401,
+    /***/
+    delByTestResponse403,
+    /***/
+    delByTestErrorResponse,
+    /**queryParams*/
+    testIdGetQueryParams,
+    /**pathParams*/
+    testIdGetPathParams,
+    /**OK*/
+    testIdGetResponse,
+    /***/
+    testIdGetResponse401,
+    /***/
+    testIdGetResponse403,
+    /***/
+    testIdGetResponse404,
+    /***/
+    testIdGetErrorResponse,
+    /**pathParams*/
+    uploadImagePostPathParams,
+    /**bodyParams*/
+    uploadImagePostBodyParams,
+    /**successful operation*/
+    uploadImagePostResponse,
+    /***/
+    uploadImagePostErrorResponse,
+    /***/
+    createResponse405,
+    /***/
+    createErrorResponse,
+    /***/
+    createResponse,
+    /***/
+    updateResponse400,
+    /***/
+    updateResponse404,
+    /***/
+    updateResponse405,
+    /***/
+    updateErrorResponse,
+    /***/
+    updateResponse,
+    /**queryParams*/
+    findByStatusGetQueryParams,
+    /**successful operation*/
+    findByStatusGetResponse,
+    /***/
+    findByStatusGetResponse400,
+    /***/
+    findByStatusGetErrorResponse,
+    /**queryParams*/
+    findByTagsGetQueryParams,
+    /**successful operation*/
+    findByTagsGetResponse,
+    /***/
+    findByTagsGetResponse400,
+    /***/
+    findByTagsGetErrorResponse,
+    /**pathParams*/
+    findByPetIdPathParams,
+    /**successful operation*/
+    findByPetIdResponse,
+    /***/
+    findByPetIdResponse400,
+    /***/
+    findByPetIdResponse404,
+    /***/
+    findByPetIdErrorResponse,
+    /**pathParams*/
+    petIdPostPathParams,
+    /**bodyParams*/
+    petIdPostBodyParams,
+    /***/
+    petIdPostResponse405,
+    /***/
+    petIdPostErrorResponse,
+    /***/
+    petIdPostResponse,
+    /**pathParams*/
+    delByPetIdPathParams,
+    /***/
+    delByPetIdResponse400,
+    /***/
+    delByPetIdResponse404,
+    /***/
+    delByPetIdErrorResponse,
+    /***/
+    delByPetIdResponse
+};
+
+/** Everything about your Pets */
+export namespace Pet {
+    /** OK */
+    export type TestPostResponse = z.infer<typeof testPostResponse>;
+    /** */
+    export type TestPostResponse401 = z.infer<typeof testPostResponse401>;
+    /** */
+    export type TestPostResponse403 = z.infer<typeof testPostResponse403>;
+    /** */
+    export type TestPostResponse404 = z.infer<typeof testPostResponse404>;
+    /** */
+    export type TestPostErrorResponse = z.infer<typeof testPostErrorResponse>;
+    /** OK */
+    export type TestPutResponse = z.infer<typeof testPutResponse>;
+    /** */
+    export type TestPutResponse401 = z.infer<typeof testPutResponse401>;
+    /** */
+    export type TestPutResponse403 = z.infer<typeof testPutResponse403>;
+    /** */
+    export type TestPutResponse404 = z.infer<typeof testPutResponse404>;
+    /** */
+    export type TestPutErrorResponse = z.infer<typeof testPutErrorResponse>;
+    /** bodyParams */
+    export type DelByTestBodyParams = z.infer<typeof delByTestBodyParams>;
+    /** OK */
+    export type DelByTestResponse = z.infer<typeof delByTestResponse>;
+    /** */
+    export type DelByTestResponse401 = z.infer<typeof delByTestResponse401>;
+    /** */
+    export type DelByTestResponse403 = z.infer<typeof delByTestResponse403>;
+    /** */
+    export type DelByTestErrorResponse = z.infer<typeof delByTestErrorResponse>;
+    /** queryParams */
+    export type TestIdGetQueryParams = z.infer<typeof testIdGetQueryParams>;
+    /** pathParams */
+    export type TestIdGetPathParams = z.infer<typeof testIdGetPathParams>;
+    /** OK */
+    export type TestIdGetResponse = z.infer<typeof testIdGetResponse>;
+    /** */
+    export type TestIdGetResponse401 = z.infer<typeof testIdGetResponse401>;
+    /** */
+    export type TestIdGetResponse403 = z.infer<typeof testIdGetResponse403>;
+    /** */
+    export type TestIdGetResponse404 = z.infer<typeof testIdGetResponse404>;
+    /** */
+    export type TestIdGetErrorResponse = z.infer<typeof testIdGetErrorResponse>;
+    /** pathParams */
+    export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
+    /** bodyParams */
+    export type UploadImagePostBodyParams = z.infer<typeof uploadImagePostBodyParams>;
+    /** successful operation */
+    export type UploadImagePostResponse = z.infer<typeof uploadImagePostResponse>;
+    /** */
+    export type UploadImagePostErrorResponse = z.infer<typeof uploadImagePostErrorResponse>;
+    /** */
+    export type CreateResponse405 = z.infer<typeof createResponse405>;
+    /** */
+    export type CreateErrorResponse = z.infer<typeof createErrorResponse>;
+    /** */
+    export type CreateResponse = z.infer<typeof createResponse>;
+    /** */
+    export type UpdateResponse400 = z.infer<typeof updateResponse400>;
+    /** */
+    export type UpdateResponse404 = z.infer<typeof updateResponse404>;
+    /** */
+    export type UpdateResponse405 = z.infer<typeof updateResponse405>;
+    /** */
+    export type UpdateErrorResponse = z.infer<typeof updateErrorResponse>;
+    /** */
+    export type UpdateResponse = z.infer<typeof updateResponse>;
+    /** queryParams */
+    export type FindByStatusGetQueryParams = z.infer<typeof findByStatusGetQueryParams>;
+    /** successful operation */
+    export type FindByStatusGetResponse = z.infer<typeof findByStatusGetResponse>;
+    /** */
+    export type FindByStatusGetResponse400 = z.infer<typeof findByStatusGetResponse400>;
+    /** */
+    export type FindByStatusGetErrorResponse = z.infer<typeof findByStatusGetErrorResponse>;
+    /** queryParams */
+    export type FindByTagsGetQueryParams = z.infer<typeof findByTagsGetQueryParams>;
+    /** successful operation */
+    export type FindByTagsGetResponse = z.infer<typeof findByTagsGetResponse>;
+    /** */
+    export type FindByTagsGetResponse400 = z.infer<typeof findByTagsGetResponse400>;
+    /** */
+    export type FindByTagsGetErrorResponse = z.infer<typeof findByTagsGetErrorResponse>;
+    /** pathParams */
+    export type FindByPetIdPathParams = z.infer<typeof findByPetIdPathParams>;
+    /** successful operation */
+    export type FindByPetIdResponse = z.infer<typeof findByPetIdResponse>;
+    /** */
+    export type FindByPetIdResponse400 = z.infer<typeof findByPetIdResponse400>;
+    /** */
+    export type FindByPetIdResponse404 = z.infer<typeof findByPetIdResponse404>;
+    /** */
+    export type FindByPetIdErrorResponse = z.infer<typeof findByPetIdErrorResponse>;
+    /** pathParams */
+    export type PetIdPostPathParams = z.infer<typeof petIdPostPathParams>;
+    /** bodyParams */
+    export type PetIdPostBodyParams = z.infer<typeof petIdPostBodyParams>;
+    /** */
+    export type PetIdPostResponse405 = z.infer<typeof petIdPostResponse405>;
+    /** */
+    export type PetIdPostErrorResponse = z.infer<typeof petIdPostErrorResponse>;
+    /** */
+    export type PetIdPostResponse = z.infer<typeof petIdPostResponse>;
+    /** pathParams */
+    export type DelByPetIdPathParams = z.infer<typeof delByPetIdPathParams>;
+    /** */
+    export type DelByPetIdResponse400 = z.infer<typeof delByPetIdResponse400>;
+    /** */
+    export type DelByPetIdResponse404 = z.infer<typeof delByPetIdResponse404>;
+    /** */
+    export type DelByPetIdErrorResponse = z.infer<typeof delByPetIdErrorResponse>;
+    /** */
+    export type DelByPetIdResponse = z.infer<typeof delByPetIdResponse>;
+}
+
+import { z } from "zod";
+import { order } from "./zodModels";
+/** bodyParams */
+export const createBodyParams = z.lazy(() => order);
+/** successful operation */
+export const createResponse = z.lazy(() => order);
+/** */
+export const createResponse400 = z.unknown();
+/** */
+export const createErrorResponse = createResponse400;
+/** pathParams */
+export const findByOrderIdPathParams = z.object({
+    /***/
+    orderId: z.number()
+});
+/** successful operation */
+export const findByOrderIdResponse = z.lazy(() => order);
+/** */
+export const findByOrderIdResponse400 = z.unknown();
+/** */
+export const findByOrderIdResponse404 = z.unknown();
+/** */
+export const findByOrderIdErrorResponse = z.union([findByOrderIdResponse400, findByOrderIdResponse404]);
+/** pathParams */
+export const delByOrderIdPathParams = z.object({
+    /***/
+    orderId: z.number()
+});
+/** */
+export const delByOrderIdResponse400 = z.unknown();
+/** */
+export const delByOrderIdResponse404 = z.unknown();
+/** */
+export const delByOrderIdErrorResponse = z.union([delByOrderIdResponse400, delByOrderIdResponse404]);
+/** */
+export const delByOrderIdResponse = z.unknown();
+/** successful operation */
+export const inventoryGetResponse = z.object();
+/** */
+export const inventoryGetErrorResponse = z.unknown();
+/** Zod */
+export const storeZod = {
+    /**bodyParams*/
+    createBodyParams,
+    /**successful operation*/
+    createResponse,
+    /***/
+    createResponse400,
+    /***/
+    createErrorResponse,
+    /**pathParams*/
+    findByOrderIdPathParams,
+    /**successful operation*/
+    findByOrderIdResponse,
+    /***/
+    findByOrderIdResponse400,
+    /***/
+    findByOrderIdResponse404,
+    /***/
+    findByOrderIdErrorResponse,
+    /**pathParams*/
+    delByOrderIdPathParams,
+    /***/
+    delByOrderIdResponse400,
+    /***/
+    delByOrderIdResponse404,
+    /***/
+    delByOrderIdErrorResponse,
+    /***/
+    delByOrderIdResponse,
+    /**successful operation*/
+    inventoryGetResponse,
+    /***/
+    inventoryGetErrorResponse
+};
+
+/** Access to Petstore orders */
+export namespace Store {
+    /** bodyParams */
+    export type CreateBodyParams = z.infer<typeof createBodyParams>;
+    /** successful operation */
+    export type CreateResponse = z.infer<typeof createResponse>;
+    /** */
+    export type CreateResponse400 = z.infer<typeof createResponse400>;
+    /** */
+    export type CreateErrorResponse = z.infer<typeof createErrorResponse>;
+    /** pathParams */
+    export type FindByOrderIdPathParams = z.infer<typeof findByOrderIdPathParams>;
+    /** successful operation */
+    export type FindByOrderIdResponse = z.infer<typeof findByOrderIdResponse>;
+    /** */
+    export type FindByOrderIdResponse400 = z.infer<typeof findByOrderIdResponse400>;
+    /** */
+    export type FindByOrderIdResponse404 = z.infer<typeof findByOrderIdResponse404>;
+    /** */
+    export type FindByOrderIdErrorResponse = z.infer<typeof findByOrderIdErrorResponse>;
+    /** pathParams */
+    export type DelByOrderIdPathParams = z.infer<typeof delByOrderIdPathParams>;
+    /** */
+    export type DelByOrderIdResponse400 = z.infer<typeof delByOrderIdResponse400>;
+    /** */
+    export type DelByOrderIdResponse404 = z.infer<typeof delByOrderIdResponse404>;
+    /** */
+    export type DelByOrderIdErrorResponse = z.infer<typeof delByOrderIdErrorResponse>;
+    /** */
+    export type DelByOrderIdResponse = z.infer<typeof delByOrderIdResponse>;
+    /** successful operation */
+    export type InventoryGetResponse = z.infer<typeof inventoryGetResponse>;
+    /** */
+    export type InventoryGetErrorResponse = z.infer<typeof inventoryGetErrorResponse>;
+}
+
+import { z } from "zod";
+import { user } from "./zodModels";
+/** */
+export const createWithArrayPostErrorResponse = z.unknown();
+/** */
+export const createWithArrayPostResponse = z.unknown();
+/** */
+export const createWithListPostErrorResponse = z.unknown();
+/** */
+export const createWithListPostResponse = z.unknown();
+/** pathParams */
+export const findByUsernamePathParams = z.object({
+    /***/
+    username: z.string()
+});
+/** successful operation */
+export const findByUsernameResponse = z.lazy(() => user);
+/** */
+export const findByUsernameResponse400 = z.unknown();
+/** */
+export const findByUsernameResponse404 = z.unknown();
+/** */
+export const findByUsernameErrorResponse = z.union([findByUsernameResponse400, findByUsernameResponse404]);
+/** pathParams */
+export const usernamePutPathParams = z.object({
+    /***/
+    username: z.string()
+});
+/** bodyParams */
+export const usernamePutBodyParams = z.lazy(() => user);
+/** */
+export const usernamePutResponse400 = z.unknown();
+/** */
+export const usernamePutResponse404 = z.unknown();
+/** */
+export const usernamePutErrorResponse = z.union([usernamePutResponse400, usernamePutResponse404]);
+/** */
+export const usernamePutResponse = z.unknown();
+/** pathParams */
+export const delByUsernamePathParams = z.object({
+    /***/
+    username: z.string()
+});
+/** */
+export const delByUsernameResponse400 = z.unknown();
+/** */
+export const delByUsernameResponse404 = z.unknown();
+/** */
+export const delByUsernameErrorResponse = z.union([delByUsernameResponse400, delByUsernameResponse404]);
+/** */
+export const delByUsernameResponse = z.unknown();
+/** queryParams */
+export const loginGetQueryParams = z.object({
+    /***/
+    username: z.string(),
+    /***/
+    password: z.string()
+});
+/** successful operation */
+export const loginGetResponse;
+/** */
+export const loginGetResponse400 = z.unknown();
+/** */
+export const loginGetErrorResponse = loginGetResponse400;
+/** */
+export const logoutGetErrorResponse = z.unknown();
+/** */
+export const logoutGetResponse = z.unknown();
+/** bodyParams */
+export const createBodyParams = z.lazy(() => user);
+/** */
+export const createErrorResponse = z.unknown();
+/** */
+export const createResponse = z.unknown();
+/** Zod */
+export const userZod = {
+    /***/
+    createWithArrayPostErrorResponse,
+    /***/
+    createWithArrayPostResponse,
+    /***/
+    createWithListPostErrorResponse,
+    /***/
+    createWithListPostResponse,
+    /**pathParams*/
+    findByUsernamePathParams,
+    /**successful operation*/
+    findByUsernameResponse,
+    /***/
+    findByUsernameResponse400,
+    /***/
+    findByUsernameResponse404,
+    /***/
+    findByUsernameErrorResponse,
+    /**pathParams*/
+    usernamePutPathParams,
+    /**bodyParams*/
+    usernamePutBodyParams,
+    /***/
+    usernamePutResponse400,
+    /***/
+    usernamePutResponse404,
+    /***/
+    usernamePutErrorResponse,
+    /***/
+    usernamePutResponse,
+    /**pathParams*/
+    delByUsernamePathParams,
+    /***/
+    delByUsernameResponse400,
+    /***/
+    delByUsernameResponse404,
+    /***/
+    delByUsernameErrorResponse,
+    /***/
+    delByUsernameResponse,
+    /**queryParams*/
+    loginGetQueryParams,
+    /**successful operation*/
+    loginGetResponse,
+    /***/
+    loginGetResponse400,
+    /***/
+    loginGetErrorResponse,
+    /***/
+    logoutGetErrorResponse,
+    /***/
+    logoutGetResponse,
+    /**bodyParams*/
+    createBodyParams,
+    /***/
+    createErrorResponse,
+    /***/
+    createResponse
+};
+
+/** Operations about user */
+export namespace User {
+    /** */
+    export type CreateWithArrayPostErrorResponse = z.infer<typeof createWithArrayPostErrorResponse>;
+    /** */
+    export type CreateWithArrayPostResponse = z.infer<typeof createWithArrayPostResponse>;
+    /** */
+    export type CreateWithListPostErrorResponse = z.infer<typeof createWithListPostErrorResponse>;
+    /** */
+    export type CreateWithListPostResponse = z.infer<typeof createWithListPostResponse>;
+    /** pathParams */
+    export type FindByUsernamePathParams = z.infer<typeof findByUsernamePathParams>;
+    /** successful operation */
+    export type FindByUsernameResponse = z.infer<typeof findByUsernameResponse>;
+    /** */
+    export type FindByUsernameResponse400 = z.infer<typeof findByUsernameResponse400>;
+    /** */
+    export type FindByUsernameResponse404 = z.infer<typeof findByUsernameResponse404>;
+    /** */
+    export type FindByUsernameErrorResponse = z.infer<typeof findByUsernameErrorResponse>;
+    /** pathParams */
+    export type UsernamePutPathParams = z.infer<typeof usernamePutPathParams>;
+    /** bodyParams */
+    export type UsernamePutBodyParams = z.infer<typeof usernamePutBodyParams>;
+    /** */
+    export type UsernamePutResponse400 = z.infer<typeof usernamePutResponse400>;
+    /** */
+    export type UsernamePutResponse404 = z.infer<typeof usernamePutResponse404>;
+    /** */
+    export type UsernamePutErrorResponse = z.infer<typeof usernamePutErrorResponse>;
+    /** */
+    export type UsernamePutResponse = z.infer<typeof usernamePutResponse>;
+    /** pathParams */
+    export type DelByUsernamePathParams = z.infer<typeof delByUsernamePathParams>;
+    /** */
+    export type DelByUsernameResponse400 = z.infer<typeof delByUsernameResponse400>;
+    /** */
+    export type DelByUsernameResponse404 = z.infer<typeof delByUsernameResponse404>;
+    /** */
+    export type DelByUsernameErrorResponse = z.infer<typeof delByUsernameErrorResponse>;
+    /** */
+    export type DelByUsernameResponse = z.infer<typeof delByUsernameResponse>;
+    /** queryParams */
+    export type LoginGetQueryParams = z.infer<typeof loginGetQueryParams>;
+    /** successful operation */
+    export type LoginGetResponse = z.infer<typeof loginGetResponse>;
+    /** */
+    export type LoginGetResponse400 = z.infer<typeof loginGetResponse400>;
+    /** */
+    export type LoginGetErrorResponse = z.infer<typeof loginGetErrorResponse>;
+    /** */
+    export type LogoutGetErrorResponse = z.infer<typeof logoutGetErrorResponse>;
+    /** */
+    export type LogoutGetResponse = z.infer<typeof logoutGetResponse>;
+    /** bodyParams */
+    export type CreateBodyParams = z.infer<typeof createBodyParams>;
+    /** */
+    export type CreateErrorResponse = z.infer<typeof createErrorResponse>;
+    /** */
+    export type CreateResponse = z.infer<typeof createResponse>;
+}
+
+import { testdata } from "./testdata";
+import { z } from "zod";
+/** */
+export const test32145 = z.object(z.object({
+    /**description*/
+    code: z.number(),
+    /***/
+    meta: z.lazy(() => testdata.optional())
+}));
+
+import { z } from "zod";
+/** */
+export const test3214 = z.object(z.object({
+    /**默认值*/
+    columnDefault: z.string(),
+    /**description*/
+    columnLength: z.number(),
+    /**description*/
+    columnName: z.string(),
+    /**description*/
+    columnRemark: z.string(),
+    /**description*/
+    columnScale: z.number(),
+    /**description*/
+    columnType: z.string(),
+    /**description*/
+    delFlag: z.boolean(),
+    /***/
+    formId: z.number(),
+    /**id*/
+    id: z.number(),
+    /**description*/
+    notNull: z.boolean()
+}));
+
+import { z } from "zod";
+/** */
+export const testdata = z.object(z.object({
+    /**description*/
+    number: z.number(),
+    /**description*/
+    numberOfElements: z.number(),
+    /**description*/
+    totalElements: z.number(),
+    /**description*/
+    totalPages: z.number()
+}));
+
+import { z } from "zod";
+/** */
+export const sort = z.object(z.object({
+    /***/
+    empty: z.boolean(),
+    /***/
+    sorted: z.boolean(),
+    /***/
+    unsorted: z.boolean()
+}));
+
+import { test3214 } from "./test3214";
+import { z } from "zod";
+/** */
+export const testDto3 = z.object(z.object({
+    /***/
+    test3214: z.lazy(() => test3214)
+}));
+
+import { testDto3 } from "./testDto3";
+import { testdata } from "./testdata";
+import { z } from "zod";
+/** */
+export const testDto2 = z.object(z.object({
+    /***/
+    content: z.lazy(() => testDto3.optional()),
+    /***/
+    meta: z.lazy(() => testdata.optional())
+}));
+
+import { z } from "zod";
+/** */
+export const test321 = z.object(z.object({
+    /***/
+    id: z.number()
+}));
+
+import { test321 } from "./test321";
+import { z } from "zod";
+/** */
+export const testDto = z.object(z.object({
+    /**test321*/
+    test321: z.lazy(() => test321)
+}));
+
+import { apiResponse } from "./apiResponse";
+import { z } from "zod";
+/** */
+export const refList = z.object(z.object({
+    /***/
+    content: z.lazy(() => apiResponse.optional()),
+    /**string*/
+    string: z.string(),
+    /***/
+    name: z.string(),
+    /**title*/
+    title: z.string(),
+    /**type*/
+    type: z.string()
+}));
+
+import { z } from "zod";
+/** */
+export const apiResponse = z.object(z.object({
+    /***/
+    code: z.number(),
+    /***/
+    type: z.string(),
+    /***/
+    message: z.string()
+}));
+
+import { z } from "zod";
+/** */
+export const category = z.object(z.object({
+    /***/
+    id: z.number(),
+    /***/
+    name: z.string()
+}));
+
+import { category } from "./category";
+import { tag } from "./tag";
+import { z } from "zod";
+/** */
+export const pet = z.object(z.object({
+    /***/
+    id: z.number(),
+    /***/
+    category: z.lazy(() => category.optional()),
+    /***/
+    name: z.string(),
+    /***/
+    photoUrls: z.string().array(),
+    /***/
+    tags: z.lazy(() => tag),
+    /**pet status in the store*/
+    status: z.string()
+}));
+
+import { z } from "zod";
+/** */
+export const tag = z.object(z.object({
+    /***/
+    id: z.number(),
+    /***/
+    name: z.string()
+}));
+
+import { z } from "zod";
+/** */
+export const order = z.object(z.object({
+    /***/
+    id: z.number(),
+    /***/
+    petId: z.number(),
+    /***/
+    quantity: z.number(),
+    /***/
+    shipDate: z.string(),
+    /**Order Status*/
+    status: z.string(),
+    /***/
+    complete: z.boolean()
+}));
+
+import { z } from "zod";
+/** */
+export const user = z.object(z.object({
+    /***/
+    id: z.number(),
+    /***/
+    username: z.string(),
+    /***/
+    firstName: z.string(),
+    /***/
+    lastName: z.string(),
+    /***/
+    email: z.string(),
+    /***/
+    password: z.string(),
+    /***/
+    phone: z.string(),
+    /**User Status*/
+    userStatus: z.number()
+}));
+
+/** description */
+export const ColumnTypeLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/** pet status in the store */
+export const StatusLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/** Order Status */
+export const Status1Label = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+
+/** description */
+const enum ColumnType {
+    Char = "CHAR",
+    Char2 = "CHAR2",
+    Char3 = "CHAR3"
+}
+
+/** pet status in the store */
+const enum Status {
+    Available = "available",
+    Pending = "pending",
+    Sold = "sold"
+}
+
+/** Order Status */
+const enum Status1 {
+    Placed = "placed",
+    Approved = "approved",
+    Delivered = "delivered"
+}
+
+/** description */
+export const columnTypeOption = [{
+    label: ColumnTypeLabel.Char,
+    value: ColumnType.Char
+}, {
+    label: ColumnTypeLabel.Char2,
+    value: ColumnType.Char2
+}, {
+    label: ColumnTypeLabel.Char3,
+    value: ColumnType.Char3
+}];
+/** pet status in the store */
+export const statusOption = [{
+    label: StatusLabel.Available,
+    value: Status.Available
+}, {
+    label: StatusLabel.Pending,
+    value: Status.Pending
+}, {
+    label: StatusLabel.Sold,
+    value: Status.Sold
+}];
+/** Order Status */
+export const status1Option = [{
+    label: Status1Label.Placed,
+    value: Status1.Placed
+}, {
+    label: Status1Label.Approved,
+    value: Status1.Approved
+}, {
+    label: Status1Label.Delivered,
+    value: Status1.Delivered
+}];
+
+export * from "./enum";
+export * from "./test32145";
+export * from "./test3214";
+export * from "./testdata";
+export * from "./sort";
+export * from "./testDto3";
+export * from "./testDto2";
+export * from "./test321";
+export * from "./testDto";
+export * from "./refList";
+export * from "./apiResponse";
+export * from "./category";
+export * from "./pet";
+export * from "./tag";
+export * from "./order";
+export * from "./user";
+"
+`;

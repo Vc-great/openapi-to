@@ -1,0 +1,31 @@
+{
+  "name": "e2e-module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "e2e"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "init": "openapi init",
+    "editPlugins": "node editPlugins.cjs",
+    "generate": "openapi g"
+  },
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "fs-extra": "^11.2.0",
+    "openapi-to": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "packageManager": "pnpm@8.3.0",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8.3.0"
+  }
+}

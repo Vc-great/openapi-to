@@ -1,0 +1,96 @@
+name: Quality
+on:
+  push:
+    branches: [V2]
+jobs:
+  build:
+      name: Build
+      timeout-minutes: 15
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 2
+
+        - name: Setup
+          uses: ./.github/setup
+
+        - name: Build
+          run: npm run build --concurrency=1
+
+  typecheck:
+      name: Typecheck
+      timeout-minutes: 15
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 2
+
+        - name: Setup
+          uses: ./.github/setup
+
+        - name: Build
+          run: npm run build --concurrency=1
+
+        - name: Typecheck
+          run: npm run typecheck --concurrency=1
+
+        - name: Typecheck examples
+          run: npm run typecheck:examples --concurrency=1
+
+  tests:
+      name: Tests
+      timeout-minutes: 15
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 2
+
+        - name: Setup
+          uses: ./.github/setup
+
+        - name: Build
+          run: npm run build
+
+        - name: Test
+          run: npm run test
+
+        - name: Upload coverage reports to Codecov
+          uses: codecov/codecov-action@v3
+
+        - name: Test with node
+          continue-on-error: true
+          run: npm run test:vitest --coverage
+
+
+
+  linting:
+      name: Linting
+      timeout-minutes: 15
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 2
+
+        - name: Setup
+          uses: ./.github/setup
+
+        - name: Build
+          run: npm run build
+
+        - name: Linting
+          env:
+            NODE_OPTIONS: "--max_old_space_size=4096"
+          continue-on-error: true
+          run: npm run lint:ci

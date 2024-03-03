@@ -1,0 +1,88 @@
+{
+  "name": "@openapi-to/core",
+  "version": "2.0.0-alpha.1",
+  "description": "Generator core",
+  "keywords": [
+    "typescript",
+    "plugins",
+    "codegen"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/core"
+  },
+  "license": "MIT",
+  "author": "",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/es/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/cjs/index.cjs"
+    },
+    "./utils": {
+      "import": "./dist/es/utils.js",
+      "require": "./dist/cjs/utils.cjs",
+      "default": "./dist/cjs/utils.cjs"
+    },
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/es/index.js",
+  "types": "./dist/es/index.d.ts",
+  "files": [
+    "src",
+    "dist",
+    "*.d.ts",
+    "*.d.cts",
+    "schema.json",
+    "!/**/**.test.**",
+    "!/**/__tests__/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "npx rimraf ./dist",
+    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint --format pretty .",
+    "lint-fix": "bun run lint --quiet --fix",
+    "release": "pnpm publish --no-git-check",
+    "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check -tag canary",
+    "release:alpha": "bash ../../.github/canary.sh && node ../../scripts/build.js alpha && pnpm publish --no-git-check -tag alpha",
+    "start": "tsup --watch",
+    "test": "vitest --passWithNoTests",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "code-block-writer": "^12.0.0",
+    "directory-tree": "^3.5.1",
+    "do-swagger2openapi": "^7.0.18",
+    "find-up": "^7.0.0",
+    "fs-extra": "^11.2.0",
+    "js-runtime": "^0.0.7",
+    "natural-orderby": "^3.0.2",
+    "picocolors": "^1.0.0",
+    "seedrandom": "^3.0.5",
+    "semver": "^7.5.4"
+  },
+  "devDependencies": {
+    "@openapi-to/eslint-config": "workspace:*",
+    "@openapi-to/ts-config": "workspace:*",
+    "@openapi-to/tsup-config": "workspace:*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/seedrandom": "^3.0.8",
+    "@types/semver": "^7.5.6",
+    "ora": "^7.0.1"
+  },
+  "packageManager": "pnpm@8.3.0",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8.3.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

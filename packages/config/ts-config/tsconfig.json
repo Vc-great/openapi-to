@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    {
+      "path": "../../cli"
+    },
+    {
+      "path": "../../core"
+    },
+    {
+      "path": "../../openapi-ts-request"
+    }
+  ]
+}
