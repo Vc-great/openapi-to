@@ -1,6 +1,6 @@
 {
   "name": "openapi-to",
-  "version": "2.0.0-alpha.2",
+  "version": "2.0.0-alpha.5",
   "description": "OpenAPI to TypeScript,Axios.",
   "keywords": [
     "typescript",
@@ -54,7 +54,6 @@
     "@openapi-to/openapi-ts-request": "workspace:*",
     "@openapi-to/openapi-ts-type": "workspace:*",
     "@openapi-to/openapi-zod": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*",
     "@types/update-notifier": "^6.0.8",
     "update-notifier": "^7.0.0"
   },
@@ -67,5 +66,8 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "@openapi-to/tsup-config": "workspace:*"
   }
 }

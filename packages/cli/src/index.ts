@@ -4,9 +4,10 @@ import { Warning } from "@openapi-to/core";
 
 import { cac } from "cac";
 import _ from "lodash";
+// @ts-expect-error
+import { version } from "openapi-to/package.json";
 import c from "picocolors";
 
-import { version } from "../package.json";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";
 import { getDefineConfig } from "./utils/getDefineConfig.ts";
 import { renderErrors } from "./utils/renderErrors.ts";
@@ -70,7 +71,6 @@ export async function run(argv?: string[]): Promise<void> {
 
   try {
     await program.runMatchedCommand();
-    //todo update-notifier
     process.exit(0);
   } catch (e) {
     programCatcher(e, program.options);

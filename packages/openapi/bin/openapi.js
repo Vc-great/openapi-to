@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { updateVersionNotifier } from "../dist/es/index.js";
+import { updateVersionNotifier } from "../dist/es/utils.js";
 
 updateVersionNotifier();
 import("@openapi-to/cli").then(({ run }) => {

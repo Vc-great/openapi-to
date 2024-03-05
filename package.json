@@ -45,7 +45,7 @@
     "//changeset:beta:exit": "changeset pre exit",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "changeset publish",
+    "release": "pnpm i &&pnpm run clean && pnpm run build && changeset publish",
     "version:canary": "changeset v ersion --snapshot canary",
     "release:canary": "changeset publish --no-git-tag",
     "prepare": "husky"

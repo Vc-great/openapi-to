@@ -125,10 +125,13 @@ importers:
         version: 3.5.3
       cosmiconfig:
         specifier: ^8.3.6
-        version: 8.3.6
+        version: 8.3.6(typescript@5.3.3)
       execa:
         specifier: ^8.0.1
         version: 8.0.1
+      openapi-to:
+        specifier: workspace:*
+        version: link:../openapi
       ora:
         specifier: ^7.0.1
         version: 7.0.1
@@ -303,15 +306,16 @@ importers:
       '@openapi-to/openapi-zod':
         specifier: workspace:*
         version: link:../openapi-zod
-      '@openapi-to/tsup-config':
-        specifier: workspace:*
-        version: link:../config/tsup-config
       '@types/update-notifier':
         specifier: ^6.0.8
         version: 6.0.8
       update-notifier:
         specifier: ^7.0.0
         version: 7.0.0
+    devDependencies:
+      '@openapi-to/tsup-config':
+        specifier: workspace:*
+        version: link:../config/tsup-config
 
   packages/openapi-ts-request:
     dependencies:
@@ -2520,21 +2524,6 @@ packages:
       typescript: 5.3.3
     dev: true
 
-  /cosmiconfig@8.3.6:
-    resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
-    engines: {node: '>=14'}
-    peerDependencies:
-      typescript: '>=4.9.5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-    dependencies:
-      import-fresh: 3.3.0
-      js-yaml: 4.1.0
-      parse-json: 5.2.0
-      path-type: 4.0.0
-    dev: false
-
   /cosmiconfig@8.3.6(typescript@5.3.3):
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
@@ -2549,7 +2538,6 @@ packages:
       parse-json: 5.2.0
       path-type: 4.0.0
       typescript: 5.3.3
-    dev: true
 
   /create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
