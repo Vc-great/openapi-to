@@ -14,3 +14,46 @@ Generate SDKs,OpenAPI to:
 OpenAPI Specifications are supported:
 - swagger 2.0
 - openapi 3.0
+
+
+## Install
+```
+npm i openapi-to -g
+```
+
+
+## Usage
+```js
+  openapi init  // Generate openapi.config.js file
+  openapi g     // Generate code from the openapi.config.js file
+```
+
+## openapi.config
+```ts
+import {
+  defineConfig,
+  createTSRequest,
+  createTSType,
+  createZod,
+   } from'openapi-to'
+
+export default defineConfig({
+  input:[
+    {
+      name:'swagger',  // output file folder name
+      path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+    }
+  ],
+  plugins: [
+    createTSRequest({
+      createZodDecorator: true
+    }),
+    createTSType(),
+    createZod()
+  ]
+})
+```
+
+
+
+
