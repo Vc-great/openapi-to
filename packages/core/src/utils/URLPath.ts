@@ -38,9 +38,12 @@ export class URLPath {
 
   /**
    * Convert Swagger path to URLPath(syntax of Express)
-   * @example /pet/{petId} => /pet/:petId
+   * @example /pet/{pet-id} => /pet/:petId
    */
   get toURLPath(): string {
-    return this.path.replaceAll("{", ":").replaceAll("}", "");
+    return this.path.replace(/{([\w-]+)}/g, (matchData, params: string) => {
+      return ":" + _.camelCase(params);
+    });
+    // return this.path.replaceAll("{", ":").replaceAll("}", "");
   }
 }

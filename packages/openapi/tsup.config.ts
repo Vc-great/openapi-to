@@ -14,4 +14,13 @@ export default defineConfig([
     name: "utils",
     noExternal: [/find-up/],
   },
+  {
+    ...optionsCJS,
+    sourcemap: true,
+    entry: {
+      utils: "src/utils.ts",
+    },
+    name: "utils",
+    noExternal: [/find-up/],
+  },
 ]);

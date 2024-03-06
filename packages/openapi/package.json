@@ -22,6 +22,11 @@
       "import": "./dist/es/index.js",
       "require": "./dist/cjs/index.cjs",
       "default": "./dist/cjs/index.cjs"
+    },
+    "./utils": {
+      "import": "./dist/es/utils.js",
+      "require": "./dist/cjs/utils.cjs",
+      "default": "./dist/cjs/utils.cjs"
     }
   },
   "main": "dist/cjs/index.cjs",
@@ -54,6 +59,8 @@
     "@openapi-to/openapi-ts-request": "workspace:*",
     "@openapi-to/openapi-ts-type": "workspace:*",
     "@openapi-to/openapi-zod": "workspace:*",
+    "@openapi-to/openapi-msw": "workspace:*",
+    "@openapi-to/openapi-faker": "workspace:*",
     "@types/update-notifier": "^6.0.8",
     "update-notifier": "^7.0.0"
   },

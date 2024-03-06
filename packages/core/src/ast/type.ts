@@ -47,7 +47,7 @@ export interface InitializerExpressionableNodeStructure {
 export interface ObjectStructure {
   key: string;
   value: string;
-  docs: JSDocStructure[];
+  docs?: JSDocStructure[];
 }
 
 export interface JSDocStructure {

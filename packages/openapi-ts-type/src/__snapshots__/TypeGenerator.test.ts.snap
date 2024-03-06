@@ -107,7 +107,7 @@ export namespace Pet {
     }
 
     /** successful operation */
-    export type FindByStatusGetResponse = Pet;
+    export type FindByStatusGetResponse = Pet[];
     /** */
     export type FindByStatusGetResponse400 = unknown;
     /** */
@@ -120,7 +120,7 @@ export namespace Pet {
     }
 
     /** successful operation */
-    export type FindByTagsGetResponse = Pet;
+    export type FindByTagsGetResponse = Pet[];
     /** */
     export type FindByTagsGetResponse400 = unknown;
     /** */
@@ -223,6 +223,8 @@ export namespace Store {
 
     /** successful operation */
     export interface InventoryGetResponse {
+        /** */
+        [key: string]: unknown;
     }
 
     /** */
@@ -298,9 +300,7 @@ export namespace User {
     }
 
     /** successful operation */
-    export interface LoginGetResponse {
-    }
-
+    export type LoginGetResponse = string;
     /** */
     export type LoginGetResponse400 = unknown;
     /** */
@@ -378,7 +378,7 @@ import type { Test3214 } from "./Test3214";
 /** */
 export interface TestDto3 {
     /** */
-    test3214?: Test3214;
+    test3214?: Test3214[];
 }
 
 import type { TestDto3 } from "./TestDto3";
@@ -403,7 +403,7 @@ import type { Test321 } from "./Test321";
 /** */
 export interface TestDto {
     /** test321 */
-    test321?: Test321;
+    test321?: Test321[];
 }
 
 import type { ApiResponse } from "./ApiResponse";
@@ -454,7 +454,7 @@ export interface Pet {
     /** */
     photoUrls: Array<string>;
     /** */
-    tags?: Tag;
+    tags?: Tag[];
     /** pet status in the store */
     status?: string;
 }

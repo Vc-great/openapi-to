@@ -1,39 +1,23 @@
 {
-  "name": "@openapi-to/cli",
-  "version": "2.0.0-alpha.3",
-  "description": "openapi-to cli",
-  "keywords": [
-    "typescript",
-    "plugins",
-    "openapi",
-    "codegen",
-    "cli"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "",
-    "directory": "packages/cli"
-  },
-  "license": "MIT",
-  "author": "",
+  "name": "@openapi-to/openapi-faker",
+  "version": "2.0.0-alpha.0",
   "sideEffects": false,
   "type": "module",
-  "main": "dist/es/index.js",
-  "module": "dist/es/index.js",
-  "types": "./dist/es/index.d.ts",
+  "description": "Generator faker",
   "exports": {
     ".": {
       "import": "./dist/es/index.js",
       "require": "./dist/cjs/index.cjs",
       "default": "./dist/cjs/index.cjs"
-    }
+    },
+    "./package.json": "./package.json",
+    "./*": "./*"
   },
-  "bin": {
-    "openapi": "bin/openapi.js"
-  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/es/index.js",
+  "types": "./dist/es/index.d.ts",
   "files": [
     "dist",
-    "bin",
     "!/**/**.test.**",
     "!/**/__tests__/**"
   ],
@@ -49,29 +33,19 @@
     "test": "vitest --passWithNoTests",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
-  "dependencies": {
-    "@openapi-to/core": "workspace:*",
-    "bundle-require": "^4.0.2",
-    "cac": "^6.7.14",
-    "chokidar": "^3.5.3",
-    "cosmiconfig": "^8.3.6",
-    "execa": "^8.0.1",
-    "ora": "^7.0.1",
-    "picocolors": "^1.0.0",
-    "pretty-error": "^4.0.0",
-    "string-argv": "^0.3.2"
-  },
   "devDependencies": {
+    "@openapi-to/core": "workspace:*",
+    "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*",
-    "source-map-support": "^0.5.21"
+    "@openapi-to/tsup-config": "workspace:*"
   },
-  "packageManager": "pnpm@8.3.0",
-  "engines": {
-    "node": ">=18",
-    "pnpm": ">=8.3.0"
+  "packageManager": "pnpm@8.6.12",
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "oas": "^24.1.0"
   },
-  "preferGlobal": true,
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

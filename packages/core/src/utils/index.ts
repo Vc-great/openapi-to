@@ -1,3 +1,4 @@
+export * from './modelFolderName.ts'
 export * from "./pathExistsSync.ts";
 export * from "./promise.ts";
 export * from "./throttle.ts";

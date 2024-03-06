@@ -7,7 +7,9 @@ const config =`const {
   defineConfig,
   createTSRequest,
   createTSType,
-  createZod
+  createZod,
+  createFaker,
+  createMSW,
    }= require('openapi-to')
 
 module.exports = defineConfig({
@@ -22,7 +24,9 @@ module.exports = defineConfig({
       createZodDecorator: true
     }),
     createTSType(),
-    createZod()
+    createZod(),
+    createFaker(),
+    createMSW(),
   ]
 })`
 

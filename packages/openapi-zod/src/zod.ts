@@ -6,9 +6,12 @@ export class Zod {
     return this;
   }
 
-  optional(): this {
-    const str = ".optional()";
-    this.currentType += str;
+  optional(isRequired?: boolean): this {
+    if (isRequired === false || isRequired === undefined) {
+      const str = ".optional()";
+      this.currentType += str;
+      return this;
+    }
     return this;
   }
 

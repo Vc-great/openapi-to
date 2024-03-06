@@ -1,16 +1,20 @@
 import path from "node:path";
 
+import {
+  TYPE_MODEL_FOLDER_NAME,
+} from "@openapi-to/core/utils";
+
 import _ from "lodash";
-import { StructureKind, VariableDeclarationKind } from "ts-morph";
+import { StructureKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { Faker } from "./Faker";
 import { Schema } from "./Schema.ts";
-import { Zod } from "./zod.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type OasTypes from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
-import type { VariableStatementStructure } from "ts-morph";
+import type { ImportDeclarationStructure } from "ts-morph";
 import type { StatementStructures } from "ts-morph";
 import type { Config } from "./types.ts";
 export class Component {
@@ -21,7 +25,7 @@ export class Component {
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
   private readonly modelFolderName: string = modelFolderName;
   private context: PluginContext | null = null;
-  private modelIndex: Set<string> = new Set<string>(["enum"]);
+  private modelIndex: Set<string> = new Set<string>();
   private schema: Schema;
 
   constructor(config: Config) {
@@ -33,9 +37,11 @@ export class Component {
     this.schema = new Schema(config);
   }
 
-  get z(): Zod {
-    return new Zod();
+  get faker(): Faker {
+    return new Faker();
   }
+
+  build() {}
 
   /**
    *
@@ -69,28 +75,29 @@ export class Component {
       [
         ...this.ast.generateImportStatements([
           {
-            namedImports: ["z"],
+            namedImports: ["faker"],
             isTypeOnly: false,
-            moduleSpecifier: `zod`,
+            moduleSpecifier: `@faker-js/faker`,
           },
           {
             namedImports: [this.openapi.getRefAlias(schema.$ref)],
             isTypeOnly: false,
             moduleSpecifier: `/${this.modelFolderName}/index`,
           },
+          {
+            namedImports: [_.upperFirst(_.camelCase(typeName))],
+            isTypeOnly: true,
+            moduleSpecifier: `../${TYPE_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(typeName))}`,
+          },
         ]),
-        this.ast.generateVariableStatements({
-          declarationKind: VariableDeclarationKind.Const,
+        this.ast.generateFunctionStatements({
+          name: _.camelCase(typeName),
+          statements: `return ${this.openapi.getRefAlias(schema.$ref)}()`,
+          returnType:
+            this.openapi.upperFirstCurrentTagName +
+            "." +
+            _.upperFirst(_.camelCase(typeName)),
           isExported: true,
-          declarations: [
-            {
-              name: _.upperFirst(_.camelCase(typeName)),
-              initializer: this.z
-                .head()
-                .lazy(this.openapi.getRefAlias(schema.$ref))
-                .toString(),
-            },
-          ],
           docs: [{ description: "" }],
         }),
       ],
@@ -117,13 +124,20 @@ export class Component {
   }
 
   setModelIndexStatements(statements: Array<StatementStructures>): void {
-    const whiteKind = [StructureKind.VariableStatement];
+    //
+    const whiteKind = [StructureKind.ImportDeclaration];
 
     const names = _.chain(statements)
       .filter((item) => whiteKind.includes(item.kind))
-      .map((item: VariableStatementStructure) =>
-        _.get(item, "declarations[0].name", ""),
+      .filter(
+        (item) =>
+          "moduleSpecifier" in item &&
+          item.moduleSpecifier !== "@faker-js/faker",
       )
+      .map((item: ImportDeclarationStructure) =>
+        _.get(item, "namedImports[0]", ""),
+      )
+      .map((item) => _.camelCase(item))
       .value() as unknown as string[];
 
     _.forEach(names, (name) => this.modelIndex.add(name));
@@ -152,25 +166,13 @@ export class Component {
   ): void {
     this.openapi.resetRefCache();
 
-    const schemaStatuments = this.ast.generateVariableStatements({
-      declarationKind: VariableDeclarationKind.Const,
+    const schemaStatuments = this.ast.generateFunctionStatements({
+      name: _.camelCase(typeName),
+      statements: `return ${this.schema.getStatementsFromSchema(schema)}`,
+      returnType: _.upperFirst(_.camelCase(typeName)),
       isExported: true,
-      declarations: [
-        {
-          name: _.camelCase(typeName),
-          initializer: this.schema.getZodFromSchema(schema),
-        },
-      ],
       docs: [{ description: schema.description || "" }],
     });
-
-    const zodImport = this.ast.generateImportStatements([
-      {
-        namedImports: ["z"],
-        isTypeOnly: false,
-        moduleSpecifier: `zod`,
-      },
-    ]);
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
@@ -178,15 +180,29 @@ export class Component {
           {
             namedImports: [_.camelCase(this.openapi.getRefAlias(ref))],
             isTypeOnly: false,
-            moduleSpecifier: "./" + _.camelCase(this.openapi.getRefAlias(ref)),
+            moduleSpecifier:
+              `./` + _.camelCase(this.openapi.getRefAlias(ref)),
           },
         ]);
       })
       .flatten()
       .value();
 
+    const fakerImport = this.ast.generateImportStatements([
+      {
+        namedImports: ["faker"],
+        isTypeOnly: false,
+        moduleSpecifier: `@faker-js/faker`,
+      },
+      {
+        namedImports: [_.upperFirst(_.camelCase(typeName))],
+        isTypeOnly: true,
+        moduleSpecifier: `../${TYPE_MODEL_FOLDER_NAME}`,
+      },
+    ]);
+
     this.createModelSourceFile(
-      [...importStatements, ...zodImport, schemaStatuments],
+      [...importStatements, ...fakerImport, schemaStatuments],
       _.camelCase(typeName),
     );
   }

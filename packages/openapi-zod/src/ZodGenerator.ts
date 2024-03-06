@@ -345,7 +345,7 @@ export class ZodGenerator {
         {
           name: this.openapi.requestName + "QueryParams",
           initializer: _.isEmpty(queryParamsSchema)
-            ? this.z.head().unknown().toString()
+            ? this.z.head().unknown().optional().toString()
             : this.schema.getZodFromSchema(queryParamsSchema),
         },
       ],

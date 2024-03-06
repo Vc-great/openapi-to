@@ -1,0 +1,178 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MswGenerator > MswGenerator getFullText 1`] = `
+"import { HttpResponse, http, HttpHandler } from "msw";
+import { petFaker } from "./petFaker";
+/** */
+const handlers = [{
+    name: 'testPost',
+    start: false,
+    msw: http.post('/pet/test', (req) => {
+        return HttpResponse.json(petFaker.testPost())
+    })
+}, {
+    name: 'testPut',
+    start: false,
+    msw: http.put('/pet/test', (req) => {
+        return HttpResponse.json(petFaker.testPut())
+    })
+}, {
+    name: 'delByTest',
+    start: false,
+    msw: http.delete('/pet/test', (req) => {
+        return HttpResponse.json(petFaker.delByTest())
+    })
+}, {
+    name: 'testIdGet',
+    start: false,
+    msw: http.get('/pet/test/:testId', (req) => {
+        return HttpResponse.json(petFaker.testIdGet())
+    })
+}, {
+    name: 'uploadImagePost',
+    start: false,
+    msw: http.post('/pet/:petId/uploadImage', (req) => {
+        return HttpResponse.json(petFaker.uploadImagePost())
+    })
+}, {
+    name: 'create',
+    start: false,
+    msw: http.post('/pet', (req) => {
+        return HttpResponse.json(petFaker.create())
+    })
+}, {
+    name: 'update',
+    start: false,
+    msw: http.put('/pet', (req) => {
+        return HttpResponse.json(petFaker.update())
+    })
+}, {
+    name: 'findByStatusGet',
+    start: false,
+    msw: http.get('/pet/findByStatus', (req) => {
+        return HttpResponse.json(petFaker.findByStatusGet())
+    })
+}, {
+    name: 'findByTagsGet',
+    start: false,
+    msw: http.get('/pet/findByTags', (req) => {
+        return HttpResponse.json(petFaker.findByTagsGet())
+    })
+}, {
+    name: 'findByPetId',
+    start: false,
+    msw: http.get('/pet/:petId', (req) => {
+        return HttpResponse.json(petFaker.findByPetId())
+    })
+}, {
+    name: 'petIdPost',
+    start: false,
+    msw: http.post('/pet/:petId', (req) => {
+        return HttpResponse.json(petFaker.petIdPost())
+    })
+}, {
+    name: 'delByPetId',
+    start: false,
+    msw: http.delete('/pet/:petId', (req) => {
+        return HttpResponse.json(petFaker.delByPetId())
+    })
+}];
+export const petHandler: Array<HttpHandler> = handlers
+    .filter(x => x.start)
+    .map(x => x.msw);
+
+import { HttpResponse, http, HttpHandler } from "msw";
+import { storeFaker } from "./storeFaker";
+/** */
+const handlers = [{
+    name: 'create',
+    start: false,
+    msw: http.post('/store/order', (req) => {
+        return HttpResponse.json(storeFaker.create())
+    })
+}, {
+    name: 'findByOrderId',
+    start: false,
+    msw: http.get('/store/order/:orderId', (req) => {
+        return HttpResponse.json(storeFaker.findByOrderId())
+    })
+}, {
+    name: 'delByOrderId',
+    start: false,
+    msw: http.delete('/store/order/:orderId', (req) => {
+        return HttpResponse.json(storeFaker.delByOrderId())
+    })
+}, {
+    name: 'inventoryGet',
+    start: false,
+    msw: http.get('/store/inventory', (req) => {
+        return HttpResponse.json(storeFaker.inventoryGet())
+    })
+}];
+export const storeHandler: Array<HttpHandler> = handlers
+    .filter(x => x.start)
+    .map(x => x.msw);
+
+import { HttpResponse, http, HttpHandler } from "msw";
+import { userFaker } from "./userFaker";
+/** */
+const handlers = [{
+    name: 'createWithArrayPost',
+    start: false,
+    msw: http.post('/user/createWithArray', (req) => {
+        return HttpResponse.json(userFaker.createWithArrayPost())
+    })
+}, {
+    name: 'createWithListPost',
+    start: false,
+    msw: http.post('/user/createWithList', (req) => {
+        return HttpResponse.json(userFaker.createWithListPost())
+    })
+}, {
+    name: 'findByUsername',
+    start: false,
+    msw: http.get('/user/:username', (req) => {
+        return HttpResponse.json(userFaker.findByUsername())
+    })
+}, {
+    name: 'usernamePut',
+    start: false,
+    msw: http.put('/user/:username', (req) => {
+        return HttpResponse.json(userFaker.usernamePut())
+    })
+}, {
+    name: 'delByUsername',
+    start: false,
+    msw: http.delete('/user/:username', (req) => {
+        return HttpResponse.json(userFaker.delByUsername())
+    })
+}, {
+    name: 'loginGet',
+    start: false,
+    msw: http.get('/user/login', (req) => {
+        return HttpResponse.json(userFaker.loginGet())
+    })
+}, {
+    name: 'logoutGet',
+    start: false,
+    msw: http.get('/user/logout', (req) => {
+        return HttpResponse.json(userFaker.logoutGet())
+    })
+}, {
+    name: 'create',
+    start: false,
+    msw: http.post('/user', (req) => {
+        return HttpResponse.json(userFaker.create())
+    })
+}];
+export const userHandler: Array<HttpHandler> = handlers
+    .filter(x => x.start)
+    .map(x => x.msw);
+
+import { petHandler } from "./petHandler";
+import { storeHandler } from "./storeHandler";
+import { userHandler } from "./userHandler";
+import { HttpHandler } from "msw";
+export const handlers: Array<HttpHandler> = [...petHandler, ...storeHandler, ...userHandler];
+"
+`;

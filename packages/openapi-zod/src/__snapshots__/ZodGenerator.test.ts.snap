@@ -36,7 +36,7 @@ export const delByTestErrorResponse = z.union([delByTestResponse401, delByTestRe
 /** queryParams */
 export const testIdGetQueryParams = z.object({
     /***/
-    fields: z.string().array(),
+    fields: z.string().array().optional(),
     /***/
     page: z.number(),
     /***/
@@ -45,9 +45,9 @@ export const testIdGetQueryParams = z.object({
 /** pathParams */
 export const testIdGetPathParams = z.object({
     /***/
-    testId: z.number(),
+    testId: z.number().optional(),
     /***/
-    testId2: z.string()
+    testId2: z.string().optional()
 });
 /** OK */
 export const testIdGetResponse = z.lazy(() => testDto2);
@@ -67,9 +67,9 @@ export const uploadImagePostPathParams = z.object({
 /** bodyParams */
 export const uploadImagePostBodyParams = z.object({
     /**Additional data to pass to server*/
-    additionalMetadata: z.string(),
+    additionalMetadata: z.string().optional(),
     /**file to upload*/
-    file: z.string()
+    file: z.string().optional()
 });
 /** successful operation */
 export const uploadImagePostResponse = z.lazy(() => apiResponse);
@@ -97,7 +97,7 @@ export const findByStatusGetQueryParams = z.object({
     status: z.string().array()
 });
 /** successful operation */
-export const findByStatusGetResponse = z.lazy(() => pet);
+export const findByStatusGetResponse = z.lazy(() => pet.array());
 /** */
 export const findByStatusGetResponse400 = z.unknown();
 /** */
@@ -108,7 +108,7 @@ export const findByTagsGetQueryParams = z.object({
     tags: z.string().array()
 });
 /** successful operation */
-export const findByTagsGetResponse = z.lazy(() => pet);
+export const findByTagsGetResponse = z.lazy(() => pet.array());
 /** */
 export const findByTagsGetResponse400 = z.unknown();
 /** */
@@ -134,9 +134,9 @@ export const petIdPostPathParams = z.object({
 /** bodyParams */
 export const petIdPostBodyParams = z.object({
     /**Updated name of the pet*/
-    name: z.string(),
+    name: z.string().optional(),
     /**Updated status of the pet*/
-    status: z.string()
+    status: z.string().optional()
 });
 /** */
 export const petIdPostResponse405 = z.unknown();
@@ -430,7 +430,7 @@ export const delByOrderIdErrorResponse = z.union([delByOrderIdResponse400, delBy
 /** */
 export const delByOrderIdResponse = z.unknown();
 /** successful operation */
-export const inventoryGetResponse = z.object();
+export const inventoryGetResponse = z.object({});
 /** */
 export const inventoryGetErrorResponse = z.unknown();
 /** Zod */
@@ -706,197 +706,197 @@ export namespace User {
 import { testdata } from "./testdata";
 import { z } from "zod";
 /** */
-export const test32145 = z.object(z.object({
+export const test32145 = z.object({
     /**description*/
-    code: z.number(),
+    code: z.number().optional(),
     /***/
-    meta: z.lazy(() => testdata.optional())
-}));
+    meta: z.lazy(() => testdata).optional()
+});
 
 import { z } from "zod";
 /** */
-export const test3214 = z.object(z.object({
+export const test3214 = z.object({
     /**默认值*/
-    columnDefault: z.string(),
+    columnDefault: z.string().optional(),
     /**description*/
-    columnLength: z.number(),
+    columnLength: z.number().optional(),
     /**description*/
-    columnName: z.string(),
+    columnName: z.string().optional(),
     /**description*/
-    columnRemark: z.string(),
+    columnRemark: z.string().optional(),
     /**description*/
-    columnScale: z.number(),
+    columnScale: z.number().optional(),
     /**description*/
-    columnType: z.string(),
+    columnType: z.string().optional(),
     /**description*/
-    delFlag: z.boolean(),
+    delFlag: z.boolean().optional(),
     /***/
-    formId: z.number(),
+    formId: z.number().optional(),
     /**id*/
-    id: z.number(),
+    id: z.number().optional(),
     /**description*/
-    notNull: z.boolean()
-}));
+    notNull: z.boolean().optional()
+});
 
 import { z } from "zod";
 /** */
-export const testdata = z.object(z.object({
+export const testdata = z.object({
     /**description*/
-    number: z.number(),
+    number: z.number().optional(),
     /**description*/
-    numberOfElements: z.number(),
+    numberOfElements: z.number().optional(),
     /**description*/
-    totalElements: z.number(),
+    totalElements: z.number().optional(),
     /**description*/
-    totalPages: z.number()
-}));
+    totalPages: z.number().optional()
+});
 
 import { z } from "zod";
 /** */
-export const sort = z.object(z.object({
+export const sort = z.object({
     /***/
-    empty: z.boolean(),
+    empty: z.boolean().optional(),
     /***/
-    sorted: z.boolean(),
+    sorted: z.boolean().optional(),
     /***/
-    unsorted: z.boolean()
-}));
+    unsorted: z.boolean().optional()
+});
 
 import { test3214 } from "./test3214";
 import { z } from "zod";
 /** */
-export const testDto3 = z.object(z.object({
+export const testDto3 = z.object({
     /***/
-    test3214: z.lazy(() => test3214)
-}));
+    test3214: z.lazy(() => test3214.array()).optional()
+});
 
 import { testDto3 } from "./testDto3";
 import { testdata } from "./testdata";
 import { z } from "zod";
 /** */
-export const testDto2 = z.object(z.object({
+export const testDto2 = z.object({
     /***/
-    content: z.lazy(() => testDto3.optional()),
+    content: z.lazy(() => testDto3).optional(),
     /***/
-    meta: z.lazy(() => testdata.optional())
-}));
+    meta: z.lazy(() => testdata).optional()
+});
 
 import { z } from "zod";
 /** */
-export const test321 = z.object(z.object({
+export const test321 = z.object({
     /***/
-    id: z.number()
-}));
+    id: z.number().optional()
+});
 
 import { test321 } from "./test321";
 import { z } from "zod";
 /** */
-export const testDto = z.object(z.object({
+export const testDto = z.object({
     /**test321*/
-    test321: z.lazy(() => test321)
-}));
+    test321: z.lazy(() => test321.array()).optional()
+});
 
 import { apiResponse } from "./apiResponse";
 import { z } from "zod";
 /** */
-export const refList = z.object(z.object({
+export const refList = z.object({
     /***/
-    content: z.lazy(() => apiResponse.optional()),
+    content: z.lazy(() => apiResponse).optional(),
     /**string*/
-    string: z.string(),
+    string: z.string().optional(),
     /***/
-    name: z.string(),
+    name: z.string().optional(),
     /**title*/
-    title: z.string(),
+    title: z.string().optional(),
     /**type*/
-    type: z.string()
-}));
+    type: z.string().optional()
+});
 
 import { z } from "zod";
 /** */
-export const apiResponse = z.object(z.object({
+export const apiResponse = z.object({
     /***/
-    code: z.number(),
+    code: z.number().optional(),
     /***/
-    type: z.string(),
+    type: z.string().optional(),
     /***/
-    message: z.string()
-}));
+    message: z.string().optional()
+});
 
 import { z } from "zod";
 /** */
-export const category = z.object(z.object({
+export const category = z.object({
     /***/
-    id: z.number(),
+    id: z.number().optional(),
     /***/
-    name: z.string()
-}));
+    name: z.string().optional()
+});
 
 import { category } from "./category";
 import { tag } from "./tag";
 import { z } from "zod";
 /** */
-export const pet = z.object(z.object({
+export const pet = z.object({
     /***/
-    id: z.number(),
+    id: z.number().optional(),
     /***/
-    category: z.lazy(() => category.optional()),
+    category: z.lazy(() => category).optional(),
     /***/
     name: z.string(),
     /***/
     photoUrls: z.string().array(),
     /***/
-    tags: z.lazy(() => tag),
+    tags: z.lazy(() => tag.array()).optional(),
     /**pet status in the store*/
-    status: z.string()
-}));
+    status: z.string().optional()
+});
 
 import { z } from "zod";
 /** */
-export const tag = z.object(z.object({
+export const tag = z.object({
     /***/
-    id: z.number(),
+    id: z.number().optional(),
     /***/
-    name: z.string()
-}));
+    name: z.string().optional()
+});
 
 import { z } from "zod";
 /** */
-export const order = z.object(z.object({
+export const order = z.object({
     /***/
-    id: z.number(),
+    id: z.number().optional(),
     /***/
-    petId: z.number(),
+    petId: z.number().optional(),
     /***/
-    quantity: z.number(),
+    quantity: z.number().optional(),
     /***/
-    shipDate: z.string(),
+    shipDate: z.string().optional(),
     /**Order Status*/
-    status: z.string(),
+    status: z.string().optional(),
     /***/
-    complete: z.boolean()
-}));
+    complete: z.boolean().optional()
+});
 
 import { z } from "zod";
 /** */
-export const user = z.object(z.object({
+export const user = z.object({
     /***/
-    id: z.number(),
+    id: z.number().optional(),
     /***/
-    username: z.string(),
+    username: z.string().optional(),
     /***/
-    firstName: z.string(),
+    firstName: z.string().optional(),
     /***/
-    lastName: z.string(),
+    lastName: z.string().optional(),
     /***/
-    email: z.string(),
+    email: z.string().optional(),
     /***/
-    password: z.string(),
+    password: z.string().optional(),
     /***/
-    phone: z.string(),
+    phone: z.string().optional(),
     /**User Status*/
-    userStatus: z.number()
-}));
+    userStatus: z.number().optional()
+});
 
 /** description */
 export const ColumnTypeLabel = {

@@ -168,7 +168,7 @@ export class Schema {
    */
   getZodFromProperties(baseSchema?: OasTypes.SchemaObject): string {
     if (!baseSchema) {
-      return "";
+      return "{}";
     }
 
     const properties = baseSchema?.properties || {};
@@ -196,12 +196,11 @@ export class Schema {
           value: this.openapi.isReference(schema)
             ? this.z
                 .head()
-                .lazy(
-                  this.openapi.getRefAlias(schema.$ref) +
-                    (isRequired ? "" : new Zod().optional().toString()),
-                )
+                .lazy(this.openapi.getRefAlias(schema.$ref))
+                .optional(isRequired)
                 .toString()
-            : this.formatterSchemaType(schema),
+            : this.formatterSchemaType(schema) +
+              this.z.optional(isRequired).toString(),
           docs: [{ description: _.get(schema, "description", "") }],
         };
       },
@@ -209,7 +208,7 @@ export class Schema {
 
     //todo additionalProperties
     if (additionalProperties) {
-      return "";
+      return "{}";
     }
 
     return this.ast.generateObject$2(objectStructure);
@@ -258,7 +257,11 @@ export class Schema {
     if (type === "array" && this.openapi.isReference(schema.items)) {
       return this.z
         .head()
-        .lazy(this.openapi.getRefAlias(schema.items.$ref))
+        .lazy(
+          new Zod()
+            .array(this.openapi.getRefAlias(schema.items.$ref))
+            .toString(),
+        )
         .toString();
     }
 

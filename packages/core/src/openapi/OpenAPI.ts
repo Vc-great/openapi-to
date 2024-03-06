@@ -48,6 +48,14 @@ export class OpenAPI {
     this.oas = oas;
   }
 
+  get currentTagName() {
+    return _.camelCase(this.currentTagMetadata && this.currentTagMetadata.name);
+  }
+
+  get upperFirstCurrentTagName(): string {
+    return _.upperFirst(this.currentTagName);
+  }
+
   //file name and class name
   get operationName(): string {
     return "";

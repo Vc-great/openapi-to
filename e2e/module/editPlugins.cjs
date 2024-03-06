@@ -8,6 +8,8 @@ const config =`import {
   createTSRequest,
   createTSType,
   createZod,
+  createFaker,
+  createMSW,
    } from'openapi-to'
 
 export default defineConfig({
@@ -23,6 +25,8 @@ export default defineConfig({
     }),
     createTSType(),
     createZod(),
+    createFaker(),
+    createMSW(),
   ]
 })`
 

@@ -1,7 +1,7 @@
 import CodeBlockWriter from "code-block-writer";
-import { Project, StructureKind, Writers } from "ts-morph";
+import { Project, StructureKind, Writers} from "ts-morph";
 
-import type { EnumDeclarationStructure } from "ts-morph";
+import type { EnumDeclarationStructure ,FunctionDeclarationStructure} from "ts-morph";
 import type {
   ClassDeclarationStructure,
   ExportDeclarationStructure,
@@ -60,6 +60,15 @@ export class AST {
       kind: StructureKind.Class,
       ...statements,
     };
+  }
+
+  generateFunctionStatements(
+      statement: Omit<FunctionDeclarationStructure, "kind">,
+  ): FunctionDeclarationStructure {
+      return {
+          kind: StructureKind.Function,
+          ...statement,
+      };
   }
 
   generateMethodStatements(
@@ -162,7 +171,10 @@ export class AST {
         if (index !== 0) {
           writer.newLine();
         }
-        writeDocs(item.docs || []);
+        if (item.docs) {
+          writeDocs(item.docs || []);
+        }
+
         const isEqual = item.key === item.value;
         writer.write(item.key);
         if (!isEqual) {

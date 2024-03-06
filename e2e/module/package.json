@@ -18,8 +18,10 @@
     "generate": "openapi g"
   },
   "dependencies": {
+    "@faker-js/faker": "^8.4.1",
     "@types/fs-extra": "^11.0.4",
     "fs-extra": "^11.2.0",
+    "msw": "^2.2.2",
     "openapi-to": "workspace:*",
     "zod": "^3.22.4"
   },

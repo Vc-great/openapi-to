@@ -404,20 +404,20 @@ export class TypeGenerator {
       });
     }
 
-    if (schema.type === "array") {
-      return this.ast.generateTypeAliasStatements({
-        name,
-        type: this.schema.formatterSchemaType(schema),
-        docs: [{ description: description || "" }],
+    if (schema.type === "object") {
+      return this.ast.generateInterfaceStatements({
         isExported: true,
+        name,
+        docs: [{ description: description || "" }],
+        properties: this.schema.getBaseTypeFromSchema(schema),
       });
     }
 
-    return this.ast.generateInterfaceStatements({
-      isExported: true,
+    return this.ast.generateTypeAliasStatements({
       name,
+      type: this.schema.formatterSchemaType(schema),
       docs: [{ description: description || "" }],
-      properties: this.schema.getBaseTypeFromSchema(schema),
+      isExported: true,
     });
   }
 
