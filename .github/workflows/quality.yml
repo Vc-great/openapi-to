@@ -1,7 +1,7 @@
 name: Quality
 on:
   push:
-    branches: [V2]
+    branches: [main]
 jobs:
   build:
       name: Build
