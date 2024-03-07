@@ -2,14 +2,15 @@
 
 ## openapi-to
 Generate SDKs,OpenAPI to:
-+ [ ] js request(jsDoc)
+
 + [x] ts request
 + [x] ts type
-+ [ ] request object
 + [x] zod
-+ [x] zod decorator
++ [x] Faker.js
++ [x] MSW
++ [ ] js request(jsDoc)
++ [ ] request object
 + [ ] vue-Query
-+ [ ] Faker.js
 
 OpenAPI Specifications are supported:
 - swagger 2.0
