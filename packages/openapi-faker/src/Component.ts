@@ -1,8 +1,6 @@
 import path from "node:path";
 
-import {
-  TYPE_MODEL_FOLDER_NAME,
-} from "@openapi-to/core/utils";
+import { TYPE_MODEL_FOLDER_NAME } from "@openapi-to/core/utils";
 
 import _ from "lodash";
 import { StructureKind } from "ts-morph";
@@ -137,7 +135,7 @@ export class Component {
       .map((item: ImportDeclarationStructure) =>
         _.get(item, "namedImports[0]", ""),
       )
-      .map((item) => _.camelCase(item))
+      .map((item: string) => _.camelCase(item))
       .value() as unknown as string[];
 
     _.forEach(names, (name) => this.modelIndex.add(name));
@@ -180,8 +178,7 @@ export class Component {
           {
             namedImports: [_.camelCase(this.openapi.getRefAlias(ref))],
             isTypeOnly: false,
-            moduleSpecifier:
-              `./` + _.camelCase(this.openapi.getRefAlias(ref)),
+            moduleSpecifier: `./` + _.camelCase(this.openapi.getRefAlias(ref)),
           },
         ]);
       })
