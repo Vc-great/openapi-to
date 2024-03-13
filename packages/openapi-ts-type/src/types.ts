@@ -4,8 +4,11 @@ import type {
   OpenapiToSingleConfigOfPlugin,
 } from "@openapi-to/core";
 import type Oas from "oas";
+import type { TypeOldNode } from "./TypeOldNode.ts";
 
-export type PluginConfig = object;
+export type PluginConfig = {
+  compare?: boolean;
+};
 
 export type Config = {
   oas: Oas;
@@ -13,4 +16,5 @@ export type Config = {
   ast: AST;
   pluginConfig?: PluginConfig;
   openapiToSingleConfig: OpenapiToSingleConfigOfPlugin;
+  oldNode: TypeOldNode;
 };

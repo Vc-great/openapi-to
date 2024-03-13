@@ -4,11 +4,13 @@ import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { Component } from "./Component.ts";
+import { FakerOldNode } from "./FakerOldNode.ts";
 import { Schema } from "./Schema.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
 import type OasTypes from "oas/types";
+import type { JSDocStructure } from "ts-morph";
 import type { ClassDeclarationStructure } from "ts-morph";
 import type {
   ImportDeclarationStructure,
@@ -40,6 +42,7 @@ export class FakerGenerator {
   private importCache: Set<string> = new Set<string>();
   private schema: Schema;
   private component: Component;
+  oldNode: FakerOldNode;
   constructor(config: Config) {
     this.oas = config.oas;
     this.ast = config.ast;
@@ -50,18 +53,26 @@ export class FakerGenerator {
 
     this.component = new Component(config);
     this.schema = new Schema(config);
-  }
-
-  get currentTagName() {
-    return _.camelCase(
-      this.openapi &&
-        this.openapi.currentTagMetadata &&
-        this.openapi.currentTagMetadata.name,
+    this.oldNode = new FakerOldNode(
+      config.pluginConfig,
+      config.openapiToSingleConfig,
     );
+  }
+  get compare(): boolean {
+    return this.pluginConfig?.compare || false;
+  }
+  get classOperationIdPrefix(): string {
+    return "Faker-";
+  }
+  get classOperationId(): string {
+    return this.classOperationIdPrefix + this.openapi.currentTagName;
   }
 
   get className() {
-    return _.upperFirst(this.currentTagName) + "Faker";
+    return (
+      this.oldNode.classDeclaration?.getName() ??
+      _.upperFirst(this.openapi.currentTagName) + "Faker"
+    );
   }
 
   get lowerFirstClassName() {
@@ -69,19 +80,40 @@ export class FakerGenerator {
   }
 
   get namespaceTypeName(): string {
-    return _.upperFirst(this.currentTagName);
+    return (
+      this.oldNode.typeNamespace.namedImport ||
+      _.upperFirst(this.openapi.currentTagName)
+    );
+  }
+  get methodOperationId(): string {
+    return this.operation?.getOperationId() || "";
   }
 
   build(context: PluginContext): void {
-    _.forEach(_.values(this.openapi.pathGroupByTag), (pathGroup) => {
-      const methodsStatements = _.map(pathGroup, ({ path, method, tag }) => {
-        this.operation = this.openapi.setCurrentOperation(path, method, tag);
-        return this.generatorMethod();
-      });
+    _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+      this.oldNode.setCurrentSourceFile(
+        this.classOperationIdPrefix + _.camelCase(tag),
+      );
+      const methodsStatements = _.chain(pathGroup)
+        .map(({ path, method, tag }) => {
+          this.operation = this.openapi.setCurrentOperation(path, method, tag);
+          this.oldNode.setCurrentMethod(this.methodOperationId);
+          return {
+            sort: _.isNumber(this.oldNode.currentMethod?.sort)
+              ? this.oldNode.currentMethod.sort
+              : Number.MAX_SAFE_INTEGER,
+            methodsStatements: this.generatorMethod(),
+          };
+        })
+        .sort((a, b) => a.sort - b.sort)
+        .map((x) => x.methodsStatements)
+        .value();
+
       const filePath = path.resolve(
         this.openapiToSingleConfig.output,
-        this.lowerFirstClassName + ".ts",
+        this.oldNode.baseName || this.lowerFirstClassName + ".ts",
       );
+
       const refKey = [...this.openapi.refCache.keys()];
       return this.ast.createSourceFile(filePath, {
         statements: [
@@ -116,10 +148,6 @@ export class FakerGenerator {
         ],
         isExported: true,
       }),
-      /*      this.ast.generateExportDeclarationStatements({
-        kind: StructureKind.ExportDeclaration,
-        namedExports: "apiName",
-      }),*/
     ];
   }
 
@@ -151,7 +179,9 @@ export class FakerGenerator {
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.namespaceTypeName],
-      moduleSpecifier: `./${this.namespaceTypeName}`,
+      moduleSpecifier:
+        this.oldNode.typeNamespace.moduleSpecifier ??
+        `./${this.namespaceTypeName}`,
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
@@ -186,6 +216,10 @@ export class FakerGenerator {
                 this.openapi.currentTagMetadata &&
                 this.openapi.currentTagMetadata.description,
             },
+            {
+              tagName: "uuid",
+              text: this.classOperationId,
+            },
           ],
         },
       ],
@@ -211,7 +245,7 @@ export class FakerGenerator {
    *  @description 详细描述
    * ```
    */
-  generatorMethodDocs() {
+  generatorMethodDocs(): OptionalKind<JSDocStructure>[] {
     return [
       {
         description: "\n",
@@ -223,6 +257,10 @@ export class FakerGenerator {
           {
             tagName: "description",
             text: this.operation?.getDescription(),
+          },
+          {
+            tagName: "uuid",
+            text: this.methodOperationId,
           },
         ],
       },
@@ -300,7 +338,7 @@ export class FakerGenerator {
 
   generatorMethod(): MethodDeclarationStructure {
     const statement = {
-      name: this.openapi.requestName,
+      name: this.oldNode.methodName ?? this.openapi.requestName,
       decorators: [],
       parameters: [],
       returnType: this.generatorReturnType(),

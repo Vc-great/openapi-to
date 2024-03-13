@@ -1,11 +1,13 @@
 import _ from "lodash";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { useEnumCache } from "./EnumCache.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type OasTypes from "oas/types";
 import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
+import type { JSDocTagStructure } from "ts-morph";
 import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
 
@@ -13,6 +15,7 @@ type OptionalKindOfPropertySignatureStructure =
   OptionalKind<PropertySignatureStructure>;
 export class Schema {
   private oas: Config["oas"];
+  private oldNode: Config["oldNode"];
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
@@ -21,18 +24,13 @@ export class Schema {
   private context: PluginContext | null = null;
 
   private enumCache: EnumCache = useEnumCache();
-  constructor({
-    oas,
-    openapi,
-    ast,
-    pluginConfig,
-    openapiToSingleConfig,
-  }: Config) {
-    this.oas = oas;
-    this.ast = ast;
-    this.pluginConfig = pluginConfig;
-    this.openapiToSingleConfig = openapiToSingleConfig;
-    this.openapi = openapi;
+  constructor(cofig: Config) {
+    this.oas = cofig.oas;
+    this.ast = cofig.ast;
+    this.pluginConfig = cofig.pluginConfig;
+    this.openapiToSingleConfig = cofig.openapiToSingleConfig;
+    this.openapi = cofig.openapi;
+    this.oldNode = cofig.oldNode;
   }
 
   getBaseTypeFromSchema(
@@ -167,12 +165,39 @@ export class Schema {
           this.enumCache.set(schema, this.enumCache.getName(name));
         }
 
+        const UUID =
+          UUIDPrefix +
+          (this.openapi.isReference(schema)
+            ? _.upperFirst(this.openapi.getRefAlias(schema.$ref))
+            : "");
+        const interfaceDeclaration =
+          this.oldNode.interfaceDeclarationCache.get(UUID);
+
         return {
           name: _.camelCase(name) + (isRequired ? "" : "?"),
           type: this.openapi.isReference(schema)
-            ? _.upperFirst(this.openapi.getRefAlias(schema.$ref))
+            ? interfaceDeclaration?.getName() ??
+              _.upperFirst(this.openapi.getRefAlias(schema.$ref))
             : this.formatterSchemaType(schema),
-          docs: [{ description: _.get(schema, "description", "") }],
+          docs: [
+            {
+              description: "\n",
+              tags: _.chain([] as OptionalKind<JSDocTagStructure>[])
+                .push({
+                  tagName: "description",
+                  text: _.get(schema, "description", ""),
+                })
+                .concat(
+                  this.openapi.isReference(schema)
+                    ? {
+                        tagName: "UUID",
+                        text: UUID,
+                      }
+                    : [],
+                )
+                .value(),
+            },
+          ],
         };
       });
 

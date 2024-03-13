@@ -21,7 +21,14 @@ export default defineConfig({
   ],
   plugins: [
     createTSRequest({
-      createZodDecorator: true
+      createZodDecorator: true,
+            compare: true,
+            zodDecoratorImportDeclaration: {
+        moduleSpecifier: "./test/zod",
+      },
+      requestImportDeclaration: {
+        moduleSpecifier: "./test/request",
+      },
     }),
     createTSType(),
     createZod(),

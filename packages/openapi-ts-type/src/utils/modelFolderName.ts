@@ -1,1 +1,1 @@
-export const modelFolderName = "models";
+export const modelFolderName = "typeModels";

@@ -3,11 +3,20 @@ import path from "node:path";
 import { URLPath } from "@openapi-to/core/utils";
 
 import _ from "lodash";
-import { StructureKind, VariableDeclarationKind } from "ts-morph";
+import { VariableDeclarationKind } from "ts-morph";
+
+import { RequestOldNode } from "./RequestOldNode.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3 } from "openapi-types";
+import type {
+  ClassDeclarationStructure,
+  VariableStatementStructure,
+} from "ts-morph";
+import type { ParameterDeclarationStructure } from "ts-morph";
+import type { JSDocStructure } from "ts-morph";
+import type { DecoratorStructure } from "ts-morph";
 import type {
   ImportDeclarationStructure,
   MethodDeclarationStructure,
@@ -25,7 +34,7 @@ export class RequestGenerator {
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-
+  oldNode: RequestOldNode;
   constructor({
     oas,
     openapi,
@@ -39,50 +48,83 @@ export class RequestGenerator {
     this.openapiToSingleConfig = openapiToSingleConfig;
     this.openapi = openapi;
     this.paramsZodSchema = "paramsZodSchema";
+
+    this.oldNode = new RequestOldNode(pluginConfig, openapiToSingleConfig);
   }
 
-  get currentTagName() {
-    return _.camelCase(
-      this.openapi &&
-        this.openapi.currentTagMetadata &&
-        this.openapi.currentTagMetadata.name,
+  get compare(): boolean {
+    return this.pluginConfig?.compare || false;
+  }
+
+  get classOperationIdPrefix(): string {
+    return "API-";
+  }
+  get classOperationId(): string {
+    return this.classOperationIdPrefix + this.openapi.currentTagName;
+  }
+
+  get methodOperationId(): string {
+    return this.operation?.getOperationId() || "";
+  }
+
+  get className(): string {
+    return (
+      this.oldNode.classDeclaration?.getName() ??
+      _.upperFirst(this.openapi.currentTagName) + "API"
     );
   }
 
-  get className() {
-    return _.upperFirst(this.currentTagName) + "API";
-  }
-
-  get lowerFirstClassName() {
+  get lowerFirstClassName(): string {
     return _.lowerFirst(this.className);
   }
 
   get namespaceTypeName(): string {
-    return _.upperFirst(this.currentTagName);
+    return (
+      this.oldNode.typeNamespace.namedImport ||
+      _.upperFirst(this.openapi.currentTagName)
+    );
   }
 
   get namespaceZodName(): string {
-    return this.currentTagName + "Zod";
+    return (
+      this.oldNode.zodNamespace.namedImport ||
+      this.openapi.currentTagName + "Zod"
+    );
   }
 
   get isCreateZodDecorator(): boolean {
     if (this.pluginConfig === undefined) {
       return false;
     }
-    return this.pluginConfig.createZodDecorator;
+    return this.pluginConfig.createZodDecorator || false;
   }
 
   build(context: PluginContext): void {
-    _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
-      const methodsStatements = _.map(pathGroup, ({ path, method, tag }) => {
-        this.operation = this.openapi.setCurrentOperation(path, method, tag);
-        return this.generatorMethod();
-      });
+    _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+      this.oldNode.setCurrentSourceFile(
+        this.classOperationIdPrefix + _.camelCase(tag),
+      );
+      const methodsStatements = _.chain(pathGroup)
+        .map(({ path, method, tag }) => {
+          this.operation = this.openapi.setCurrentOperation(path, method, tag);
+          this.oldNode.setCurrentMethod(this.methodOperationId);
+          return {
+            sort: _.isNumber(this.oldNode.currentMethod?.sort)
+              ? this.oldNode.currentMethod.sort
+              : Number.MAX_SAFE_INTEGER,
+            methodsStatements: this.generatorMethod(),
+          };
+        })
+        .sort((a, b) => a.sort - b.sort)
+        .map((x) => x.methodsStatements)
+        .value();
+
       const filePath = path.resolve(
         this.openapiToSingleConfig.output,
-        this.lowerFirstClassName + ".ts",
+        this.oldNode.baseName || this.lowerFirstClassName + ".ts",
       );
-      return this.ast.createSourceFile(filePath, {
+
+      this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(),
           this.generatorClass(methodsStatements),
@@ -99,7 +141,7 @@ export class RequestGenerator {
    * export { apiName }
    * ```
    */
-  generatorExport() {
+  generatorExport(): Array<VariableStatementStructure> {
     return [
       this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
@@ -111,10 +153,6 @@ export class RequestGenerator {
         ],
         isExported: true,
       }),
-      /*      this.ast.generateExportDeclarationStatements({
-        kind: StructureKind.ExportDeclaration,
-        namedExports: "apiName",
-      }),*/
     ];
   }
 
@@ -133,34 +171,44 @@ export class RequestGenerator {
    * import { Zod } from './drmsDynamicDataZod'
    * ```
    */
-  generateImport() {
+  generateImport(): Array<ImportDeclarationStructure> {
     const zodDecorator: ImportStatementsOmitKind = {
       namedImports: ["paramsZodSchema", "responseZodSchema", "zodValidate"],
-      moduleSpecifier: "@/utils/zod",
+      moduleSpecifier:
+        this.oldNode.zodDecoratorImport.moduleSpecifier ??
+        this.pluginConfig?.zodDecoratorImportDeclaration?.moduleSpecifier ??
+        "@/utils/zod",
     };
 
     const request: ImportStatementsOmitKind = {
       namedImports: ["request"],
-      moduleSpecifier: "@/api/request",
+      moduleSpecifier:
+        this.oldNode.requestImport.moduleSpecifier ??
+        this.pluginConfig?.requestImportDeclaration?.moduleSpecifier ??
+        "@/api/request",
     };
 
-    //todo model
-    //requestBody response
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.namespaceTypeName],
-      moduleSpecifier: `./${this.namespaceTypeName}`,
+      moduleSpecifier:
+        this.oldNode.typeNamespace.moduleSpecifier ??
+        `./${this.namespaceTypeName}`,
     };
 
     const zodModel: ImportStatementsOmitKind = {
       namedImports: [this.namespaceZodName],
-      moduleSpecifier: `./${this.namespaceZodName}`,
+      moduleSpecifier:
+        this.oldNode.zodNamespace.moduleSpecifier ??
+        `./${this.namespaceZodName}`,
     };
 
     const zodTypeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.namespaceTypeName],
-      moduleSpecifier: `./${this.namespaceZodName}`,
+      moduleSpecifier:
+        this.oldNode.zodNamespace.moduleSpecifier ??
+        `./${this.namespaceZodName}`,
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
@@ -177,7 +225,7 @@ export class RequestGenerator {
 
   generatorClass(
     methodsStatements: OptionalKind<MethodDeclarationStructure>[],
-  ) {
+  ): ClassDeclarationStructure {
     const statements = {
       name: this.className,
       docs: [
@@ -186,10 +234,7 @@ export class RequestGenerator {
           tags: [
             {
               tagName: "tag",
-              text:
-                this.openapi &&
-                this.openapi.currentTagMetadata &&
-                this.openapi.currentTagMetadata.name,
+              text: this.openapi.currentTagName,
             },
             {
               tagName: "description",
@@ -197,6 +242,10 @@ export class RequestGenerator {
                 this.openapi &&
                 this.openapi.currentTagMetadata &&
                 this.openapi.currentTagMetadata.description,
+            },
+            {
+              tagName: "uuid",
+              text: this.classOperationId,
             },
           ],
         },
@@ -213,7 +262,7 @@ export class RequestGenerator {
    *@responseZodSchema(ZOD.updateResponse)
    * ```
    */
-  generatorMethodDecorators() {
+  generatorMethodDecorators(): OptionalKind<DecoratorStructure>[] {
     return [
       {
         name: "zodValidate",
@@ -233,7 +282,7 @@ export class RequestGenerator {
    * id: ApiType.FindByIdPathRequest['id']
    * ```
    */
-  generatorMethodParameters() {
+  generatorMethodParameters(): OptionalKind<ParameterDeclarationStructure>[] {
     const queryParameters = {
       name: "queryParams",
       type:
@@ -313,32 +362,6 @@ export class RequestGenerator {
   /**
    * @example
    * ```
-   * export namespace tag {
-   *  export type queryRequest = object
-   * }
-   * ```
-   */
-  generateNamespaceType() {
-    return {
-      kind: StructureKind.Module,
-      docs: [{ description: this.openapi.currentTagMetadata?.description }],
-      isExported: true,
-      name: this.namespaceTypeName,
-      statements: [
-        {
-          kind: StructureKind.TypeAlias,
-          isExported: true,
-          name: "queryRequest",
-          docs: [{ description: "queryRequest" }],
-          type: "object",
-        },
-      ],
-    };
-  }
-
-  /**
-   * @example
-   * ```
    * Promise<[ApiType.ErrorResponse, ApiType.FindByIdResponse]>
    * ```
    */
@@ -355,7 +378,7 @@ export class RequestGenerator {
    *  @description 详细描述
    * ```
    */
-  generatorMethodDocs() {
+  generatorMethodDocs(): OptionalKind<JSDocStructure>[] {
     return [
       {
         description: "\n",
@@ -368,15 +391,27 @@ export class RequestGenerator {
             tagName: "description",
             text: this.operation?.getDescription(),
           },
+          {
+            tagName: "uuid",
+            text: this.methodOperationId,
+          },
         ],
       },
     ];
   }
 
   generatorParamsSerializer(): string {
-    return `paramsSerializer(params:${this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName}) {
+    if (!this.pluginConfig?.compare) {
+      return `paramsSerializer(params:${this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName}) {
             return qs.stringify(params)
         }`;
+    }
+
+    if (!this.oldNode.methodFullText?.includes("paramsSerializer")) {
+      return "";
+    }
+
+    return this.oldNode.paramsSerializer || "";
   }
 
   /**
@@ -432,16 +467,16 @@ export class RequestGenerator {
 
   generatorMethod(): MethodDeclarationStructure {
     const statement = {
-      name: this.openapi.requestName,
+      name: this.oldNode.methodName ?? this.openapi.requestName,
       decorators: this.isCreateZodDecorator
         ? this.generatorMethodDecorators()
         : [],
       parameters: this.generatorMethodParameters(),
       returnType: this.generatorReturnType(),
       docs: this.generatorMethodDocs(),
-      // scope: Scope.Public,
       statements: this.generatorMethodBody(),
     };
+
     return this.ast.generateMethodStatements(statement);
   }
 }

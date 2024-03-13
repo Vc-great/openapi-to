@@ -6,11 +6,14 @@ import type {
 import type Oas from "oas";
 
 export type PluginConfig = {
-  createZodDecorator: boolean;
-};
-
-export type PluginOptions = {
-  createZodDecorator: boolean;
+  createZodDecorator?: boolean;
+  compare?: boolean;
+  zodDecoratorImportDeclaration?: {
+    moduleSpecifier: string;
+  };
+  requestImportDeclaration?: {
+    moduleSpecifier: string;
+  };
 };
 
 export type Config = {

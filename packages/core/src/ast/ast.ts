@@ -1,7 +1,10 @@
 import CodeBlockWriter from "code-block-writer";
-import { Project, StructureKind, Writers} from "ts-morph";
+import { Project, StructureKind, Writers } from "ts-morph";
 
-import type { EnumDeclarationStructure ,FunctionDeclarationStructure} from "ts-morph";
+import type {
+  EnumDeclarationStructure,
+  FunctionDeclarationStructure,
+} from "ts-morph";
 import type {
   ClassDeclarationStructure,
   ExportDeclarationStructure,
@@ -24,7 +27,7 @@ type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 type InterfaceStatementsOmitKind = Omit<InterfaceDeclarationStructure, "kind">;
 
 export class AST {
-  private project: Project;
+  public project: Project;
   public sourceFile: Array<SourceFile>;
   constructor() {
     this.project = new Project();
@@ -34,12 +37,13 @@ export class AST {
   createSourceFile(
     path: string,
     sourceFileText: string | OptionalKind<SourceFileStructure> | WriterFunction,
-  ): void {
+  ): SourceFile {
     const sourceFile = this.project.createSourceFile(path, sourceFileText, {
       overwrite: true,
     });
     sourceFile.formatText();
     this.sourceFile.push(sourceFile);
+    return sourceFile;
   }
 
   generateImportStatements(
@@ -63,12 +67,12 @@ export class AST {
   }
 
   generateFunctionStatements(
-      statement: Omit<FunctionDeclarationStructure, "kind">,
+    statement: Omit<FunctionDeclarationStructure, "kind">,
   ): FunctionDeclarationStructure {
-      return {
-          kind: StructureKind.Function,
-          ...statement,
-      };
+    return {
+      kind: StructureKind.Function,
+      ...statement,
+    };
   }
 
   generateMethodStatements(

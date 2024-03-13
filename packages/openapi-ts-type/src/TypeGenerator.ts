@@ -4,13 +4,13 @@ import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Component } from "./Component.ts";
 import { useEnumCache } from "./EnumCache.ts";
 import { Schema } from "./Schema.ts";
 
 import type { Operation } from "oas/operation";
 import type OasTypes from "oas/types";
-import type { OpenAPIV3 } from "openapi-types";
 import type {
   ImportDeclarationStructure,
   InterfaceDeclarationStructure,
@@ -18,17 +18,13 @@ import type {
   TypeAliasDeclarationStructure,
 } from "ts-morph";
 import type { EnumCache } from "./EnumCache.ts";
+import type { TypeOldNode } from "./TypeOldNode.ts";
 import type { Config } from "./types.ts";
-
 type TypeStatements =
   | InterfaceDeclarationStructure
   | TypeAliasDeclarationStructure;
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
-type InterfaceStatementsOmitKind = Omit<InterfaceDeclarationStructure, "kind">;
-type ObjectSchema = OpenAPIV3.BaseSchemaObject & {
-  type: "object";
-};
 
 type ResponseObject = {
   code: string;
@@ -40,14 +36,9 @@ type ResponseObject = {
   };
 };
 
-type ComponentObject = {
-  [key: string]: OpenAPIV3.ReferenceObject | OasTypes.MediaTypeObject;
-};
-
 export class TypeGenerator {
   private operation: Operation | undefined;
   private oas: Config["oas"];
-  private readonly paramsZodSchema: string;
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
@@ -56,36 +47,39 @@ export class TypeGenerator {
   private importCache: Set<string> = new Set<string>();
   private component: Component;
   private schema: Schema;
-
   private readonly modelFolderName: string = modelFolderName;
+  private oldNode: TypeOldNode;
   constructor(config: Config) {
     this.oas = config.oas;
     this.ast = config.ast;
     this.pluginConfig = config.pluginConfig;
     this.openapiToSingleConfig = config.openapiToSingleConfig;
     this.openapi = config.openapi;
-    this.paramsZodSchema = "paramsZodSchema";
-    this.component = new Component(config);
+
     this.schema = new Schema(config);
+    this.oldNode = config.oldNode;
+    this.component = new Component(config);
   }
 
-  get currentTagName() {
-    return _.camelCase(
-      this.openapi &&
-        this.openapi.currentTagMetadata &&
-        this.openapi.currentTagMetadata.name,
-    );
+  get compare(): boolean {
+    return this.pluginConfig?.compare || false;
+  }
+
+  get namespaceUUID(): string {
+    return UUIDPrefix + this.openapi.currentTagName;
   }
   get nameSpaceName(): string {
-    return _.upperFirst(this.currentTagName);
+    return _.upperFirst(this.openapi.currentTagName);
   }
 
   get upperFirstNameSpaceName(): string {
-    return _.upperFirst(this.currentTagName);
+    return _.upperFirst(this.openapi.currentTagName);
   }
 
   build(): void {
-    _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+    _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+      this.oldNode.setCurrentSourceFile(UUIDPrefix + _.camelCase(tag));
+
       const typeStatements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);
@@ -102,7 +96,7 @@ export class TypeGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output,
-        this.upperFirstNameSpaceName + ".ts",
+        this.oldNode.baseName || this.upperFirstNameSpaceName + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -230,7 +224,7 @@ export class TypeGenerator {
       "enum" + ".ts",
     );
 
-    return this.ast.createSourceFile(enumPath, {
+    this.ast.createSourceFile(enumPath, {
       statements: [...labelStatements, ...valueStatements, ...optionStatements],
     });
   }
@@ -247,7 +241,12 @@ export class TypeGenerator {
     importModel: Array<string>,
   ): Array<ImportDeclarationStructure> {
     const model = _.chain(importModel)
-      .map(($ref: string) => _.upperFirst(this.openapi.getRefAlias($ref)))
+      .map(($ref: string) => {
+        const name = _.upperFirst(this.openapi.getRefAlias($ref));
+        const UUID = UUIDPrefix + name;
+        const declaration = this.oldNode.declarationCache.get(UUID);
+        return declaration?.getName() ?? name;
+      })
       .value();
 
     const typeModel: ImportStatementsOmitKind = {
@@ -276,9 +275,30 @@ export class TypeGenerator {
     typeStatements: Array<TypeStatements>,
   ): ModuleDeclarationStructure {
     return this.ast.generateModuleStatements({
-      docs: [{ description: this.openapi.currentTagMetadata?.description }],
+      docs: [
+        {
+          description: "\n",
+          tags: [
+            {
+              tagName: "tag",
+              text: this.openapi.currentTagName,
+            },
+            {
+              tagName: "description",
+              text:
+                this.openapi &&
+                this.openapi.currentTagMetadata &&
+                this.openapi.currentTagMetadata.description,
+            },
+            {
+              tagName: "UUID",
+              text: this.namespaceUUID,
+            },
+          ],
+        },
+      ],
       isExported: true,
-      name: this.nameSpaceName,
+      name: this.oldNode.namespaceName ?? this.nameSpaceName,
       statements: typeStatements,
     });
   }

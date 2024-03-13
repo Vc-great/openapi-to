@@ -6,11 +6,7 @@ import type {
 import type Oas from "oas";
 
 export type PluginConfig = {
-  createZodDecorator: boolean;
-};
-
-export type PluginOptions = {
-  createZodDecorator: boolean;
+  compare: boolean;
 };
 
 export type Config = {

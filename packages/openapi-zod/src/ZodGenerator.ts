@@ -238,7 +238,7 @@ export class ZodGenerator {
       "enum" + ".ts",
     );
 
-    return this.ast.createSourceFile(enumPath, {
+    this.ast.createSourceFile(enumPath, {
       statements: [...labelStatements, ...valueStatements, ...optionStatements],
     });
   }

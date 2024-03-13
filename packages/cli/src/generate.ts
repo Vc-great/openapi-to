@@ -1,12 +1,9 @@
-import path from "node:path";
-
-import { build, clean, PluginStatus } from "@openapi-to/core";
+import { build, PluginStatus } from "@openapi-to/core";
 import { createLogger, LogLevel, randomCliColour } from "@openapi-to/core";
 
 import c from "picocolors";
 import process from "process";
 
-import { folderName } from "./utils/folderName.ts";
 import { getSummary } from "./utils/getSummary.ts";
 import { spinner } from "./utils/spinner.ts";
 
@@ -50,9 +47,6 @@ export async function generate(
 
   spinner.start(`🚀 Building ${logLevel !== "silent" ? c.dim(inputPath) : ""}`);
 
-  await clean(
-    path.resolve(process.cwd(), folderName, openapiToSingleConfig.input.name),
-  );
   const { pluginManager, error } = await build(
     openapiToSingleConfig,
     CLIOptions,

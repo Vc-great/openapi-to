@@ -4,6 +4,7 @@ import _ from "lodash";
 import { StructureKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Schema } from "./Schema.ts";
 
 import type { PluginContext } from "@openapi-to/core";
@@ -17,6 +18,7 @@ import type {
 import type { Config } from "./types.ts";
 export class Component {
   private oas: Config["oas"];
+  private oldNode: Config["oldNode"];
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
@@ -32,6 +34,7 @@ export class Component {
     this.openapiToSingleConfig = config.openapiToSingleConfig;
     this.openapi = config.openapi;
     this.schema = new Schema(config);
+    this.oldNode = config.oldNode;
   }
 
   build() {}
@@ -64,24 +67,41 @@ export class Component {
     schema: OpenAPIV3.ReferenceObject,
     typeName: string,
   ): void {
+    const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
+    const upperFirstRefName = _.upperFirst(
+      this.openapi.getRefAlias(schema.$ref),
+    );
+    const UUID = UUIDPrefix + upperFirstTypeName + "-" + upperFirstRefName;
+    const typeDeclaration = this.oldNode.typeDeclarationCache.get(UUID);
     this.createModelSourceFile(
       [
         ...this.ast.generateImportStatements([
           {
-            namedImports: [_.upperFirst(this.openapi.getRefAlias(schema.$ref))],
+            namedImports: [
+              typeDeclaration?.getType()?.getText() ?? upperFirstRefName,
+            ],
             isTypeOnly: true,
-            moduleSpecifier: `/model/index`,
+            moduleSpecifier: `/${modelFolderName}/index`,
           },
         ]),
         this.ast.generateTypeAliasStatements({
-          name: _.upperFirst(_.camelCase(typeName)),
-          type: _.upperFirst(this.openapi.getRefAlias(schema.$ref)),
-          //todo
-          docs: [{ description: "" }],
+          name: typeDeclaration?.getName() ?? upperFirstTypeName,
+          type: typeDeclaration?.getType()?.getText() ?? upperFirstRefName,
+          docs: [
+            {
+              description: "\n",
+              tags: [
+                {
+                  tagName: "uuid",
+                  text: UUID,
+                },
+              ],
+            },
+          ],
           isExported: true,
         }),
       ],
-      _.upperFirst(_.camelCase(typeName)),
+      upperFirstTypeName,
     );
   }
 
@@ -140,20 +160,43 @@ export class Component {
   ): void {
     this.openapi.resetRefCache();
 
-    const schemaStatuments = this.ast.generateInterfaceStatements({
+    const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
+    const UUID = UUIDPrefix + upperFirstTypeName;
+    const interfaceDeclaration =
+      this.oldNode.interfaceDeclarationCache.get(UUID);
+
+    const schemaStatements = this.ast.generateInterfaceStatements({
       isExported: true,
-      name: _.upperFirst(_.camelCase(typeName)),
-      //todo
-      docs: [{ description: schema.description || "" }],
+      name: interfaceDeclaration?.getName() ?? upperFirstTypeName,
       properties: this.schema.getBaseTypeFromSchema(schema),
+      docs: [
+        {
+          description: "\n",
+          tags: [
+            {
+              tagName: "description",
+              text: schema.description || "",
+            },
+            {
+              tagName: "uuid",
+              text: UUID,
+            },
+          ],
+        },
+      ],
     });
+
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
+        const UUID = UUIDPrefix + _.upperFirst(this.openapi.getRefAlias(ref));
+        const declaration = this.oldNode.declarationCache.get(UUID);
+        const name =
+          declaration?.getName() ?? _.upperFirst(this.openapi.getRefAlias(ref));
         return this.ast.generateImportStatements([
           {
-            namedImports: [_.upperFirst(this.openapi.getRefAlias(ref))],
+            namedImports: [name],
             isTypeOnly: true,
-            moduleSpecifier: "./" + _.upperFirst(this.openapi.getRefAlias(ref)),
+            moduleSpecifier: "./" + name,
           },
         ]);
       })
@@ -161,7 +204,7 @@ export class Component {
       .value();
 
     this.createModelSourceFile(
-      [...importStatements, schemaStatuments],
+      [...importStatements, schemaStatements],
       _.upperFirst(_.camelCase(typeName)),
     );
   }

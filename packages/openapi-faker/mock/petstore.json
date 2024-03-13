@@ -50,7 +50,7 @@
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "operationIdpost",
         "requestBody": {
           "$ref": "#/components/requestBodies/testDto"
         },
@@ -92,7 +92,7 @@
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "operationIdput",
         "requestBody": {
           "$ref": "#/components/requestBodies/testDto"
         },
@@ -134,7 +134,7 @@
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "operationIddelete",
         "requestBody": {
           "content": {
             "application/json": {
@@ -187,7 +187,7 @@
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "get/pet/test/{test-id}",
         "parameters": [
           {
             "name": "fields",

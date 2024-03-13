@@ -20,21 +20,48 @@ describe("faker", async () => {
       path: "",
       name: "",
     },
-    output: path.resolve(__dirname, "../gen"),
+    output: path.resolve(__dirname, "../mock"),
     plugins: [],
   };
 
   const context = {
     output: "",
   };
-  const ast = new AST();
-  // @ts-expect-error Not a canonical document
-  const oas = new Oas(petStore);
-  const openapi = new OpenAPI({}, oas);
 
   test("getFullText", () => {
+    const ast = new AST();
+    // @ts-expect-error Not a canonical document
+    const oas = new Oas(petStore);
+    const openapi = new OpenAPI({}, oas);
     const pluginConfig = {
       createZodDecorator: true,
+      compare: false,
+    };
+
+    const requestGenerator = new FakerGenerator({
+      oas,
+      ast,
+      openapi,
+      pluginConfig,
+      openapiToSingleConfig,
+    });
+    requestGenerator.build(context);
+    const text = _.chain(ast.sourceFile)
+      .map((sourceFile) => sourceFile.getFullText())
+      .join("\n")
+      .value();
+
+    expect(text).toMatchSnapshot();
+  });
+
+  test("compare getFullText", () => {
+    const ast = new AST();
+    // @ts-expect-error Not a canonical document
+    const oas = new Oas(petStore);
+    const openapi = new OpenAPI({}, oas);
+    const pluginConfig = {
+      createZodDecorator: true,
+      compare: true,
     };
 
     const requestGenerator = new FakerGenerator({

@@ -1,9 +1,14 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`typerGenerator > TypeGenerator getFullText 1`] = `
-"import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
+"import type { TestDto2, Test32145, ApiResponse, Pet } from "./typeModels";
 
-/** Everything about your Pets */
+/**
+ *
+ * @tag pet
+ * @description Everything about your Pets
+ * @UUID type-pet
+ */
 export namespace Pet {
     /** OK */
     export type TestPostResponse = TestDto2;
@@ -38,19 +43,34 @@ export namespace Pet {
 
     /** queryParams */
     export interface TestIdGetQueryParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         fields?: Array<string>;
-        /** */
+        /**
+         *
+         * @description
+         */
         page: number;
-        /** */
+        /**
+         *
+         * @description
+         */
         size: number;
     }
 
     /** pathParams */
     export interface TestIdGetPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         testId?: number;
-        /** */
+        /**
+         *
+         * @description
+         */
         testId2?: string;
     }
 
@@ -67,15 +87,24 @@ export namespace Pet {
 
     /** pathParams */
     export interface UploadImagePostPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         petId: number;
     }
 
     /** bodyParams */
     export interface UploadImagePostBodyParams {
-        /** Additional data to pass to server */
+        /**
+         *
+         * @description Additional data to pass to server
+         */
         additionalMetadata?: string;
-        /** file to upload */
+        /**
+         *
+         * @description file to upload
+         */
         file?: string;
     }
 
@@ -102,7 +131,10 @@ export namespace Pet {
 
     /** queryParams */
     export interface FindByStatusGetQueryParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         status: Array<string>;
     }
 
@@ -115,7 +147,10 @@ export namespace Pet {
 
     /** queryParams */
     export interface FindByTagsGetQueryParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         tags: Array<string>;
     }
 
@@ -128,7 +163,10 @@ export namespace Pet {
 
     /** pathParams */
     export interface FindByPetIdPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         petId: number;
     }
 
@@ -143,15 +181,24 @@ export namespace Pet {
 
     /** pathParams */
     export interface PetIdPostPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         petId: number;
     }
 
     /** bodyParams */
     export interface PetIdPostBodyParams {
-        /** Updated name of the pet */
+        /**
+         *
+         * @description Updated name of the pet
+         */
         name?: string;
-        /** Updated status of the pet */
+        /**
+         *
+         * @description Updated status of the pet
+         */
         status?: string;
     }
 
@@ -164,7 +211,10 @@ export namespace Pet {
 
     /** pathParams */
     export interface DelByPetIdPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         petId: number;
     }
 
@@ -178,9 +228,14 @@ export namespace Pet {
     export type DelByPetIdResponse = unknown;
 }
 
-import type { Order } from "./models";
+import type { Order } from "./typeModels";
 
-/** Access to Petstore orders */
+/**
+ *
+ * @tag store
+ * @description Access to Petstore orders
+ * @UUID type-store
+ */
 export namespace Store {
     /** */
     export type CreateBodyParams = Order;
@@ -193,7 +248,10 @@ export namespace Store {
 
     /** pathParams */
     export interface FindByOrderIdPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         orderId: number;
     }
 
@@ -208,7 +266,10 @@ export namespace Store {
 
     /** pathParams */
     export interface DelByOrderIdPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         orderId: number;
     }
 
@@ -231,9 +292,14 @@ export namespace Store {
     export type InventoryGetErrorResponse = unknown;
 }
 
-import type { User } from "./models";
+import type { User } from "./typeModels";
 
-/** Operations about user */
+/**
+ *
+ * @tag user
+ * @description Operations about user
+ * @UUID type-user
+ */
 export namespace User {
     /** */
     export type CreateWithArrayPostErrorResponse = unknown;
@@ -246,7 +312,10 @@ export namespace User {
 
     /** pathParams */
     export interface FindByUsernamePathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         username: string;
     }
 
@@ -261,7 +330,10 @@ export namespace User {
 
     /** pathParams */
     export interface UsernamePutPathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         username: string;
     }
 
@@ -278,7 +350,10 @@ export namespace User {
 
     /** pathParams */
     export interface DelByUsernamePathParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         username: string;
     }
 
@@ -293,9 +368,15 @@ export namespace User {
 
     /** queryParams */
     export interface LoginGetQueryParams {
-        /** */
+        /**
+         *
+         * @description
+         */
         username: string;
-        /** */
+        /**
+         *
+         * @description
+         */
         password: string;
     }
 
@@ -319,187 +400,420 @@ export namespace User {
 
 import type { Testdata } from "./Testdata";
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Test32145
+ */
 export interface Test32145 {
-    /** description */
+    /**
+     *
+     * @description description
+     */
     code?: number;
-    /** */
+    /**
+     *
+     * @description
+     * @UUID type-Testdata
+     */
     meta?: Testdata;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Test3214
+ */
 export interface Test3214 {
-    /** 默认值 */
+    /**
+     *
+     * @description 默认值
+     */
     columnDefault?: string;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     columnLength?: number;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     columnName?: string;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     columnRemark?: string;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     columnScale?: number;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     columnType?: string;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     delFlag?: boolean;
-    /** */
+    /**
+     *
+     * @description
+     */
     formId?: number;
-    /** id */
+    /**
+     *
+     * @description id
+     */
     id?: number;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     notNull?: boolean;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Testdata
+ */
 export interface Testdata {
-    /** description */
+    /**
+     *
+     * @description description
+     */
     number?: number;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     numberOfElements?: number;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     totalElements?: number;
-    /** description */
+    /**
+     *
+     * @description description
+     */
     totalPages?: number;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Sort
+ */
 export interface Sort {
-    /** */
+    /**
+     *
+     * @description
+     */
     empty?: boolean;
-    /** */
+    /**
+     *
+     * @description
+     */
     sorted?: boolean;
-    /** */
+    /**
+     *
+     * @description
+     */
     unsorted?: boolean;
 }
 
 import type { Test3214 } from "./Test3214";
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-TestDto3
+ */
 export interface TestDto3 {
-    /** */
+    /**
+     *
+     * @description
+     */
     test3214?: Test3214[];
 }
 
 import type { TestDto3 } from "./TestDto3";
 import type { Testdata } from "./Testdata";
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-TestDto2
+ */
 export interface TestDto2 {
-    /** */
+    /**
+     *
+     * @description
+     * @UUID type-TestDto3
+     */
     content?: TestDto3;
-    /** */
+    /**
+     *
+     * @description
+     * @UUID type-Testdata
+     */
     meta?: Testdata;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Test321
+ */
 export interface Test321 {
-    /** */
+    /**
+     *
+     * @description
+     */
     id?: number;
 }
 
 import type { Test321 } from "./Test321";
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-TestDto
+ */
 export interface TestDto {
-    /** test321 */
+    /**
+     *
+     * @description test321
+     */
     test321?: Test321[];
 }
 
 import type { ApiResponse } from "./ApiResponse";
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-RefList
+ */
 export interface RefList {
-    /** */
+    /**
+     *
+     * @description
+     * @UUID type-ApiResponse
+     */
     content?: ApiResponse;
-    /** string */
+    /**
+     *
+     * @description string
+     */
     string?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     name?: string;
-    /** title */
+    /**
+     *
+     * @description title
+     */
     title?: string;
-    /** type */
+    /**
+     *
+     * @description type
+     */
     type?: string;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-ApiResponse
+ */
 export interface ApiResponse {
-    /** */
+    /**
+     *
+     * @description
+     */
     code?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     type?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     message?: string;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Category
+ */
 export interface Category {
-    /** */
+    /**
+     *
+     * @description
+     */
     id?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     name?: string;
 }
 
 import type { Category } from "./Category";
 import type { Tag } from "./Tag";
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Pet
+ */
 export interface Pet {
-    /** */
+    /**
+     *
+     * @description
+     */
     id?: number;
-    /** */
+    /**
+     *
+     * @description
+     * @UUID type-Category
+     */
     category?: Category;
-    /** */
+    /**
+     *
+     * @description
+     */
     name: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     photoUrls: Array<string>;
-    /** */
+    /**
+     *
+     * @description
+     */
     tags?: Tag[];
-    /** pet status in the store */
+    /**
+     *
+     * @description pet status in the store
+     */
     status?: string;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Tag
+ */
 export interface Tag {
-    /** */
+    /**
+     *
+     * @description
+     */
     id?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     name?: string;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-Order
+ */
 export interface Order {
-    /** */
+    /**
+     *
+     * @description
+     */
     id?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     petId?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     quantity?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     shipDate?: string;
-    /** Order Status */
+    /**
+     *
+     * @description Order Status
+     */
     status?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     complete?: boolean;
 }
 
-/** */
+/**
+ *
+ * @description
+ * @uuid type-User
+ */
 export interface User {
-    /** */
+    /**
+     *
+     * @description
+     */
     id?: number;
-    /** */
+    /**
+     *
+     * @description
+     */
     username?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     firstName?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     lastName?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     email?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     password?: string;
-    /** */
+    /**
+     *
+     * @description
+     */
     phone?: string;
-    /** User Status */
+    /**
+     *
+     * @description User Status
+     */
     userStatus?: number;
 }
 
@@ -589,6 +903,916 @@ export * from "./TestDto";
 export * from "./RefList";
 export * from "./ApiResponse";
 export * from "./Category";
+export * from "./Pet";
+export * from "./Tag";
+export * from "./Order";
+export * from "./User";
+"
+`;
+
+exports[`typerGenerator > compare TypeGenerator getFullText 1`] = `
+"import type { TestDto2, Test32145, ApiResponse, Pet } from "./typeModels";
+
+/**
+ *
+ * @tag pet
+ * @description Everything about your Pets
+ * @UUID type-pet
+ */
+export namespace NewPet {
+    /** OK */
+    export type TestPostResponse = TestDto2;
+    /** */
+    export type TestPostResponse401 = unknown;
+    /** */
+    export type TestPostResponse403 = unknown;
+    /** */
+    export type TestPostResponse404 = unknown;
+    /** */
+    export type TestPostErrorResponse = TestPostResponse401 | TestPostResponse403 | TestPostResponse404;
+    /** OK */
+    export type TestPutResponse = TestDto2;
+    /** */
+    export type TestPutResponse401 = unknown;
+    /** */
+    export type TestPutResponse403 = unknown;
+    /** */
+    export type TestPutResponse404 = unknown;
+    /** */
+    export type TestPutErrorResponse = TestPutResponse401 | TestPutResponse403 | TestPutResponse404;
+    /** */
+    export type DelByTestBodyParams = Array<number>;
+    /** OK */
+    export type DelByTestResponse = Test32145;
+    /** */
+    export type DelByTestResponse401 = unknown;
+    /** */
+    export type DelByTestResponse403 = unknown;
+    /** */
+    export type DelByTestErrorResponse = DelByTestResponse401 | DelByTestResponse403;
+
+    /** queryParams */
+    export interface TestIdGetQueryParams {
+        /**
+         *
+         * @description
+         */
+        fields?: Array<string>;
+        /**
+         *
+         * @description
+         */
+        page: number;
+        /**
+         *
+         * @description
+         */
+        size: number;
+    }
+
+    /** pathParams */
+    export interface TestIdGetPathParams {
+        /**
+         *
+         * @description
+         */
+        testId?: number;
+        /**
+         *
+         * @description
+         */
+        testId2?: string;
+    }
+
+    /** OK */
+    export type TestIdGetResponse = TestDto2;
+    /** */
+    export type TestIdGetResponse401 = unknown;
+    /** */
+    export type TestIdGetResponse403 = unknown;
+    /** */
+    export type TestIdGetResponse404 = unknown;
+    /** */
+    export type TestIdGetErrorResponse = TestIdGetResponse401 | TestIdGetResponse403 | TestIdGetResponse404;
+
+    /** pathParams */
+    export interface UploadImagePostPathParams {
+        /**
+         *
+         * @description
+         */
+        petId: number;
+    }
+
+    /** bodyParams */
+    export interface UploadImagePostBodyParams {
+        /**
+         *
+         * @description Additional data to pass to server
+         */
+        additionalMetadata?: string;
+        /**
+         *
+         * @description file to upload
+         */
+        file?: string;
+    }
+
+    /** successful operation */
+    export type UploadImagePostResponse = ApiResponse;
+    /** */
+    export type UploadImagePostErrorResponse = unknown;
+    /** */
+    export type CreateResponse405 = unknown;
+    /** */
+    export type CreateErrorResponse = CreateResponse405;
+    /** */
+    export type CreateResponse = unknown;
+    /** */
+    export type UpdateResponse400 = unknown;
+    /** */
+    export type UpdateResponse404 = unknown;
+    /** */
+    export type UpdateResponse405 = unknown;
+    /** */
+    export type UpdateErrorResponse = UpdateResponse400 | UpdateResponse404 | UpdateResponse405;
+    /** */
+    export type UpdateResponse = unknown;
+
+    /** queryParams */
+    export interface FindByStatusGetQueryParams {
+        /**
+         *
+         * @description
+         */
+        status: Array<string>;
+    }
+
+    /** successful operation */
+    export type FindByStatusGetResponse = Pet[];
+    /** */
+    export type FindByStatusGetResponse400 = unknown;
+    /** */
+    export type FindByStatusGetErrorResponse = FindByStatusGetResponse400;
+
+    /** queryParams */
+    export interface FindByTagsGetQueryParams {
+        /**
+         *
+         * @description
+         */
+        tags: Array<string>;
+    }
+
+    /** successful operation */
+    export type FindByTagsGetResponse = Pet[];
+    /** */
+    export type FindByTagsGetResponse400 = unknown;
+    /** */
+    export type FindByTagsGetErrorResponse = FindByTagsGetResponse400;
+
+    /** pathParams */
+    export interface FindByPetIdPathParams {
+        /**
+         *
+         * @description
+         */
+        petId: number;
+    }
+
+    /** successful operation */
+    export type FindByPetIdResponse = Pet;
+    /** */
+    export type FindByPetIdResponse400 = unknown;
+    /** */
+    export type FindByPetIdResponse404 = unknown;
+    /** */
+    export type FindByPetIdErrorResponse = FindByPetIdResponse400 | FindByPetIdResponse404;
+
+    /** pathParams */
+    export interface PetIdPostPathParams {
+        /**
+         *
+         * @description
+         */
+        petId: number;
+    }
+
+    /** bodyParams */
+    export interface PetIdPostBodyParams {
+        /**
+         *
+         * @description Updated name of the pet
+         */
+        name?: string;
+        /**
+         *
+         * @description Updated status of the pet
+         */
+        status?: string;
+    }
+
+    /** */
+    export type PetIdPostResponse405 = unknown;
+    /** */
+    export type PetIdPostErrorResponse = PetIdPostResponse405;
+    /** */
+    export type PetIdPostResponse = unknown;
+
+    /** pathParams */
+    export interface DelByPetIdPathParams {
+        /**
+         *
+         * @description
+         */
+        petId: number;
+    }
+
+    /** */
+    export type DelByPetIdResponse400 = unknown;
+    /** */
+    export type DelByPetIdResponse404 = unknown;
+    /** */
+    export type DelByPetIdErrorResponse = DelByPetIdResponse400 | DelByPetIdResponse404;
+    /** */
+    export type DelByPetIdResponse = unknown;
+}
+
+import type { Order } from "./typeModels";
+
+/**
+ *
+ * @tag store
+ * @description Access to Petstore orders
+ * @UUID type-store
+ */
+export namespace Store {
+    /** */
+    export type CreateBodyParams = Order;
+    /** successful operation */
+    export type CreateResponse = Order;
+    /** */
+    export type CreateResponse400 = unknown;
+    /** */
+    export type CreateErrorResponse = CreateResponse400;
+
+    /** pathParams */
+    export interface FindByOrderIdPathParams {
+        /**
+         *
+         * @description
+         */
+        orderId: number;
+    }
+
+    /** successful operation */
+    export type FindByOrderIdResponse = Order;
+    /** */
+    export type FindByOrderIdResponse400 = unknown;
+    /** */
+    export type FindByOrderIdResponse404 = unknown;
+    /** */
+    export type FindByOrderIdErrorResponse = FindByOrderIdResponse400 | FindByOrderIdResponse404;
+
+    /** pathParams */
+    export interface DelByOrderIdPathParams {
+        /**
+         *
+         * @description
+         */
+        orderId: number;
+    }
+
+    /** */
+    export type DelByOrderIdResponse400 = unknown;
+    /** */
+    export type DelByOrderIdResponse404 = unknown;
+    /** */
+    export type DelByOrderIdErrorResponse = DelByOrderIdResponse400 | DelByOrderIdResponse404;
+    /** */
+    export type DelByOrderIdResponse = unknown;
+
+    /** successful operation */
+    export interface InventoryGetResponse {
+        /** */
+        [key: string]: unknown;
+    }
+
+    /** */
+    export type InventoryGetErrorResponse = unknown;
+}
+
+import type { User } from "./typeModels";
+
+/**
+ *
+ * @tag user
+ * @description Operations about user
+ * @UUID type-user
+ */
+export namespace User {
+    /** */
+    export type CreateWithArrayPostErrorResponse = unknown;
+    /** */
+    export type CreateWithArrayPostResponse = unknown;
+    /** */
+    export type CreateWithListPostErrorResponse = unknown;
+    /** */
+    export type CreateWithListPostResponse = unknown;
+
+    /** pathParams */
+    export interface FindByUsernamePathParams {
+        /**
+         *
+         * @description
+         */
+        username: string;
+    }
+
+    /** successful operation */
+    export type FindByUsernameResponse = User;
+    /** */
+    export type FindByUsernameResponse400 = unknown;
+    /** */
+    export type FindByUsernameResponse404 = unknown;
+    /** */
+    export type FindByUsernameErrorResponse = FindByUsernameResponse400 | FindByUsernameResponse404;
+
+    /** pathParams */
+    export interface UsernamePutPathParams {
+        /**
+         *
+         * @description
+         */
+        username: string;
+    }
+
+    /** */
+    export type UsernamePutBodyParams = User;
+    /** */
+    export type UsernamePutResponse400 = unknown;
+    /** */
+    export type UsernamePutResponse404 = unknown;
+    /** */
+    export type UsernamePutErrorResponse = UsernamePutResponse400 | UsernamePutResponse404;
+    /** */
+    export type UsernamePutResponse = unknown;
+
+    /** pathParams */
+    export interface DelByUsernamePathParams {
+        /**
+         *
+         * @description
+         */
+        username: string;
+    }
+
+    /** */
+    export type DelByUsernameResponse400 = unknown;
+    /** */
+    export type DelByUsernameResponse404 = unknown;
+    /** */
+    export type DelByUsernameErrorResponse = DelByUsernameResponse400 | DelByUsernameResponse404;
+    /** */
+    export type DelByUsernameResponse = unknown;
+
+    /** queryParams */
+    export interface LoginGetQueryParams {
+        /**
+         *
+         * @description
+         */
+        username: string;
+        /**
+         *
+         * @description
+         */
+        password: string;
+    }
+
+    /** successful operation */
+    export type LoginGetResponse = string;
+    /** */
+    export type LoginGetResponse400 = unknown;
+    /** */
+    export type LoginGetErrorResponse = LoginGetResponse400;
+    /** */
+    export type LogoutGetErrorResponse = unknown;
+    /** */
+    export type LogoutGetResponse = unknown;
+    /** */
+    export type CreateBodyParams = User;
+    /** */
+    export type CreateErrorResponse = unknown;
+    /** */
+    export type CreateResponse = unknown;
+}
+
+import type { Testdata } from "./Testdata";
+
+/**
+ *
+ * @description
+ * @uuid type-Test32145
+ */
+export interface Test32145 {
+    /**
+     *
+     * @description description
+     */
+    code?: number;
+    /**
+     *
+     * @description
+     * @UUID type-Testdata
+     */
+    meta?: Testdata;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Test3214
+ */
+export interface Test3214 {
+    /**
+     *
+     * @description 默认值
+     */
+    columnDefault?: string;
+    /**
+     *
+     * @description description
+     */
+    columnLength?: number;
+    /**
+     *
+     * @description description
+     */
+    columnName?: string;
+    /**
+     *
+     * @description description
+     */
+    columnRemark?: string;
+    /**
+     *
+     * @description description
+     */
+    columnScale?: number;
+    /**
+     *
+     * @description description
+     */
+    columnType?: string;
+    /**
+     *
+     * @description description
+     */
+    delFlag?: boolean;
+    /**
+     *
+     * @description
+     */
+    formId?: number;
+    /**
+     *
+     * @description id
+     */
+    id?: number;
+    /**
+     *
+     * @description description
+     */
+    notNull?: boolean;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Testdata
+ */
+export interface Testdata {
+    /**
+     *
+     * @description description
+     */
+    number?: number;
+    /**
+     *
+     * @description description
+     */
+    numberOfElements?: number;
+    /**
+     *
+     * @description description
+     */
+    totalElements?: number;
+    /**
+     *
+     * @description description
+     */
+    totalPages?: number;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Sort
+ */
+export interface Sort {
+    /**
+     *
+     * @description
+     */
+    empty?: boolean;
+    /**
+     *
+     * @description
+     */
+    sorted?: boolean;
+    /**
+     *
+     * @description
+     */
+    unsorted?: boolean;
+}
+
+import type { Test3214 } from "./Test3214";
+
+/**
+ *
+ * @description
+ * @uuid type-TestDto3
+ */
+export interface TestDto3 {
+    /**
+     *
+     * @description
+     */
+    test3214?: Test3214[];
+}
+
+import type { TestDto3 } from "./TestDto3";
+import type { Testdata } from "./Testdata";
+
+/**
+ *
+ * @description
+ * @uuid type-TestDto2
+ */
+export interface TestDto2 {
+    /**
+     *
+     * @description
+     * @UUID type-TestDto3
+     */
+    content?: TestDto3;
+    /**
+     *
+     * @description
+     * @UUID type-Testdata
+     */
+    meta?: Testdata;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Test321
+ */
+export interface Test321 {
+    /**
+     *
+     * @description
+     */
+    id?: number;
+}
+
+import type { Test321 } from "./Test321";
+
+/**
+ *
+ * @description
+ * @uuid type-TestDto
+ */
+export interface NewTestDto {
+    /**
+     *
+     * @description test321
+     */
+    test321?: Test321[];
+}
+
+import type { ApiResponse } from "./ApiResponse";
+
+/**
+ *
+ * @description
+ * @uuid type-RefList
+ */
+export interface RefList {
+    /**
+     *
+     * @description
+     * @UUID type-ApiResponse
+     */
+    content?: ApiResponse;
+    /**
+     *
+     * @description string
+     */
+    string?: string;
+    /**
+     *
+     * @description
+     */
+    name?: string;
+    /**
+     *
+     * @description title
+     */
+    title?: string;
+    /**
+     *
+     * @description type
+     */
+    type?: string;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-ApiResponse
+ */
+export interface ApiResponse {
+    /**
+     *
+     * @description
+     */
+    code?: number;
+    /**
+     *
+     * @description
+     */
+    type?: string;
+    /**
+     *
+     * @description
+     */
+    message?: string;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Category
+ */
+export interface NewCategory {
+    /**
+     *
+     * @description
+     */
+    id?: number;
+    /**
+     *
+     * @description
+     */
+    name?: string;
+}
+
+import type { NewCategory } from "./NewCategory";
+import type { Tag } from "./Tag";
+
+/**
+ *
+ * @description
+ * @uuid type-Pet
+ */
+export interface Pet {
+    /**
+     *
+     * @description
+     */
+    id?: number;
+    /**
+     *
+     * @description
+     * @UUID type-Category
+     */
+    category?: NewCategory;
+    /**
+     *
+     * @description
+     */
+    name: string;
+    /**
+     *
+     * @description
+     */
+    photoUrls: Array<string>;
+    /**
+     *
+     * @description
+     */
+    tags?: Tag[];
+    /**
+     *
+     * @description pet status in the store
+     */
+    status?: string;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Tag
+ */
+export interface Tag {
+    /**
+     *
+     * @description
+     */
+    id?: number;
+    /**
+     *
+     * @description
+     */
+    name?: string;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-Order
+ */
+export interface Order {
+    /**
+     *
+     * @description
+     */
+    id?: number;
+    /**
+     *
+     * @description
+     */
+    petId?: number;
+    /**
+     *
+     * @description
+     */
+    quantity?: number;
+    /**
+     *
+     * @description
+     */
+    shipDate?: string;
+    /**
+     *
+     * @description Order Status
+     */
+    status?: string;
+    /**
+     *
+     * @description
+     */
+    complete?: boolean;
+}
+
+/**
+ *
+ * @description
+ * @uuid type-User
+ */
+export interface User {
+    /**
+     *
+     * @description
+     */
+    id?: number;
+    /**
+     *
+     * @description
+     */
+    username?: string;
+    /**
+     *
+     * @description
+     */
+    firstName?: string;
+    /**
+     *
+     * @description
+     */
+    lastName?: string;
+    /**
+     *
+     * @description
+     */
+    email?: string;
+    /**
+     *
+     * @description
+     */
+    password?: string;
+    /**
+     *
+     * @description
+     */
+    phone?: string;
+    /**
+     *
+     * @description User Status
+     */
+    userStatus?: number;
+}
+
+/** description */
+export const ColumnTypeLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/** pet status in the store */
+export const StatusLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/** Order Status */
+export const Status1Label = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+
+/** description */
+const enum ColumnType {
+    Char = "CHAR",
+    Char2 = "CHAR2",
+    Char3 = "CHAR3"
+}
+
+/** pet status in the store */
+const enum Status {
+    Available = "available",
+    Pending = "pending",
+    Sold = "sold"
+}
+
+/** Order Status */
+const enum Status1 {
+    Placed = "placed",
+    Approved = "approved",
+    Delivered = "delivered"
+}
+
+/** description */
+export const columnTypeOption = [{
+    label: ColumnTypeLabel.Char,
+    value: ColumnType.Char
+}, {
+    label: ColumnTypeLabel.Char2,
+    value: ColumnType.Char2
+}, {
+    label: ColumnTypeLabel.Char3,
+    value: ColumnType.Char3
+}];
+/** pet status in the store */
+export const statusOption = [{
+    label: StatusLabel.Available,
+    value: Status.Available
+}, {
+    label: StatusLabel.Pending,
+    value: Status.Pending
+}, {
+    label: StatusLabel.Sold,
+    value: Status.Sold
+}];
+/** Order Status */
+export const status1Option = [{
+    label: Status1Label.Placed,
+    value: Status1.Placed
+}, {
+    label: Status1Label.Approved,
+    value: Status1.Approved
+}, {
+    label: Status1Label.Delivered,
+    value: Status1.Delivered
+}];
+
+export * from "./enum";
+export * from "./Test32145";
+export * from "./Test3214";
+export * from "./Testdata";
+export * from "./Sort";
+export * from "./TestDto3";
+export * from "./TestDto2";
+export * from "./Test321";
+export * from "./NewTestDto";
+export * from "./RefList";
+export * from "./ApiResponse";
+export * from "./NewCategory";
 export * from "./Pet";
 export * from "./Tag";
 export * from "./Order";
