@@ -95,7 +95,7 @@ export class TypeGenerator {
         .value();
 
       const filePath = path.resolve(
-        this.openapiToSingleConfig.output,
+        this.openapiToSingleConfig.output.dir,
         this.oldNode.baseName || this.upperFirstNameSpaceName + ".ts",
       );
 
@@ -219,7 +219,7 @@ export class TypeGenerator {
       .value();
 
     const enumPath = path.resolve(
-      this.openapiToSingleConfig.output || "",
+      this.openapiToSingleConfig.output.dir || "",
       this.modelFolderName,
       "enum" + ".ts",
     );

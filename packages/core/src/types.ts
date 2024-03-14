@@ -1,16 +1,6 @@
 import type { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { LogLevel } from "./logger.ts";
 export * from "./ast/type.ts";
-export type OpenapiToConfigSingleInput = {
-  /**
-   * Project name, which is used to output the name of the folder
-   */
-  name: string;
-  /**
-   * api document path
-   */
-  path: string;
-};
 
 export type PluginName = {
   name: string;
@@ -41,20 +31,36 @@ export type PluginFactory = ({
   openapiToSingleConfig,
 }: {
   openapiDocument: OpenAPIDocument;
-  openapiToSingleConfig: OpenapiToSingleConfigOfPlugin;
+  openapiToSingleConfig: OpenapiToSingleConfig;
 }) => LifeCycle & PluginName;
 
 export type OpenapiToSingleConfig = {
   input: OpenapiToConfigSingleInput;
-  output?: string;
+  output: OpenapiToConfigSingleOutput;
   plugins: Array<PluginFactory>;
 };
 
-export type OpenapiToSingleConfigOfPlugin = Omit<
-  OpenapiToSingleConfig,
-  "output"
-> & {
-  output: string;
+export type OpenapiToConfigSingleInput = {
+  /**
+   * Project name, which is used to output the name of the folder
+   */
+  name: string;
+  /**
+   * api document path
+   */
+  path: string;
+};
+
+export type OpenapiToConfigSingleOutput = {
+  /**
+   * dir
+   */
+  dir: string;
+};
+
+export type OpenapiToConfigServer = {
+  input: OpenapiToConfigSingleInput;
+  output?: OpenapiToConfigSingleOutput;
 };
 
 /**
@@ -62,7 +68,7 @@ export type OpenapiToSingleConfigOfPlugin = Omit<
  */
 export type OpenapiToConfig = {
   /** Array of OpenapiTo project to use.*/
-  input: Array<OpenapiToConfigSingleInput>;
+  servers: Array<OpenapiToConfigServer>;
   /**
    * Array of OpenapiTo plugins to use.
    * The plugin/package can forsee some options that you need to pass through.

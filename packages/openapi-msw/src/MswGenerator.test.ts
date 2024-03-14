@@ -10,17 +10,19 @@ import Oas from "oas";
 import petStore from "../mock/petstore.json";
 import { MswGenerator } from "./MswGenerator.ts";
 
-import type { OpenapiToSingleConfigOfPlugin } from "@openapi-to/core";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe("MswGenerator", async () => {
-  const openapiToSingleConfig: OpenapiToSingleConfigOfPlugin = {
+  const openapiToSingleConfig: OpenapiToSingleConfig = {
     input: {
       path: "",
       name: "",
     },
-    output: path.resolve(__dirname, "../gen"),
+    output: {
+      dir: path.resolve(__dirname, "../gen"),
+    },
     plugins: [],
   };
 

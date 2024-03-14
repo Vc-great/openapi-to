@@ -162,7 +162,7 @@ export class RequestOldNode {
     }
 
     const project = new Project();
-    const folderName = this.openapiToSingleConfig.output + "/*.ts";
+    const folderName = this.openapiToSingleConfig.output.dir + "/*.ts";
     const sourceFiles = project.addSourceFilesAtPaths(folderName);
     _.forEach(sourceFiles, (sourceFile) => {
       const classDeclaration = _.head(sourceFile.getClasses());

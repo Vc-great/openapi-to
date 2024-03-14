@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import {URLPath} from '@openapi-to/core/utils'
+import { URLPath } from "@openapi-to/core/utils";
 
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
@@ -62,7 +62,7 @@ export class MswGenerator {
       });
 
       const filePath = path.resolve(
-        this.openapiToSingleConfig.output,
+        this.openapiToSingleConfig.output.dir,
         this.handlersName + ".ts",
       );
       this.handlerCahce.add(this.handlersName);
@@ -126,7 +126,7 @@ export class MswGenerator {
     });
 
     const filePath = path.resolve(
-      this.openapiToSingleConfig.output,
+      this.openapiToSingleConfig.output.dir,
       "handlers" + ".ts",
     );
 
@@ -214,7 +214,7 @@ export class MswGenerator {
       },
       {
         key: "msw",
-        value: `http.${method}('${ new URLPath(path).toURLPath}', (req) => {
+        value: `http.${method}('${new URLPath(path).toURLPath}', (req) => {
                 return HttpResponse.json(${this.fakerName}.${this.openapi.requestName}())
             })`,
       },

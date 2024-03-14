@@ -110,7 +110,7 @@ export class FakerGenerator {
         .value();
 
       const filePath = path.resolve(
-        this.openapiToSingleConfig.output,
+        this.openapiToSingleConfig.output.dir,
         this.oldNode.baseName || this.lowerFirstClassName + ".ts",
       );
 

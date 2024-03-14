@@ -5,12 +5,15 @@ export const commonPresetMeta = `const {
    }= require('openapi-to')
 
 module.exports = defineConfig({
-  input:[
-    {
+servers:[
+  {
+    input: {
       name:'swagger',  // output file folder name
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
     }
   ],
+  }
+],
   plugins:[
     createTSRequest({
       createZodDecorator: true

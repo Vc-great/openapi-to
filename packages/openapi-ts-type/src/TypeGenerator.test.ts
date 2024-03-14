@@ -10,18 +10,20 @@ import petStore from "../mock/petstore.json";
 import { TypeGenerator } from "./TypeGenerator.ts";
 import { TypeOldNode } from "./TypeOldNode.ts";
 
-import type { OpenapiToSingleConfigOfPlugin } from "@openapi-to/core";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe("typerGenerator", async () => {
-  const openapiToSingleConfig: OpenapiToSingleConfigOfPlugin = {
+  const openapiToSingleConfig: OpenapiToSingleConfig = {
     input: {
       path: "",
       name: "",
     },
-    output: path.resolve(__dirname, "../mock"),
+    output: {
+      dir: path.resolve(__dirname, "../mock"),
+    },
     plugins: [],
   };
 

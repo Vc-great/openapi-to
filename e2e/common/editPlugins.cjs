@@ -22,7 +22,7 @@ module.exports = defineConfig({
   plugins:[
     createTSRequest({
       createZodDecorator: true,
-                  compare: true,
+            compare: true,
             zodDecoratorImportDeclaration: {
         moduleSpecifier: "./test/zod",
       },
@@ -30,9 +30,13 @@ module.exports = defineConfig({
         moduleSpecifier: "./test/request",
       },
     }),
-    createTSType(),
+    createTSType({
+     compare: true
+    }),
     createZod(),
-    createFaker(),
+    createFaker({
+      compare: true
+    }),
     createMSW(),
   ]
 })`

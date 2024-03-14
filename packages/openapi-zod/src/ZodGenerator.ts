@@ -107,7 +107,7 @@ export class ZodGenerator {
         .value();
 
       const filePath = path.resolve(
-        this.openapiToSingleConfig.output,
+        this.openapiToSingleConfig.output.dir,
         this.zodNameSpaceName + ".ts",
       );
 
@@ -233,7 +233,7 @@ export class ZodGenerator {
       .value();
 
     const enumPath = path.resolve(
-      this.openapiToSingleConfig.output || "",
+      this.openapiToSingleConfig.output.dir || "",
       this.modelFolderName,
       "enum" + ".ts",
     );

@@ -1,7 +1,5 @@
 import _ from "lodash";
-import process from "process";
 
-import { folderName } from "./folderName.ts";
 import { LogLevel } from "./logger.ts";
 import { LifeCycleEnum } from "./types.ts";
 
@@ -44,19 +42,6 @@ export class PluginManager {
     this.openapiDocument = openapiDocument;
     this.logger = logger;
   }
-
-  get openapiToSingleConfigOfPlugin() {
-    return {
-      ...this.openapiToSingleConfig,
-      output:
-        this.openapiToSingleConfig.output ||
-        process.cwd() +
-          "/" +
-          folderName +
-          "/" +
-          this.openapiToSingleConfig.input.name,
-    };
-  }
   get context(): PluginContext {
     return {};
   }
@@ -68,7 +53,7 @@ export class PluginManager {
   execute(plugin: PluginFactory): void {
     const lifeCycle = plugin({
       openapiDocument: this.openapiDocument,
-      openapiToSingleConfig: this.openapiToSingleConfigOfPlugin,
+      openapiToSingleConfig: this.openapiToSingleConfig,
     });
     const pluginStatus = {
       name: lifeCycle.name,

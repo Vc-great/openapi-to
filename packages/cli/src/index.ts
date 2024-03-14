@@ -1,10 +1,11 @@
 import path from "node:path";
 
 import { Warning } from "@openapi-to/core";
+import {formatOpenapiToConfig} from "@openapi-to/core/src/utils/formatOpenapiToConfig.ts";
 
 import { cac } from "cac";
-import _ from "lodash";
 import c from "picocolors";
+import process from "process";
 
 // @ts-ignore
 import { version } from "../../openapi/package.json";
@@ -15,7 +16,6 @@ import { spinner } from "./utils/spinner.ts";
 import { generate } from "./generate.ts";
 import { init } from "./init.ts";
 
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type { CLIOptions } from "@openapi-to/core";
 
 const moduleName = "openapi";
@@ -42,12 +42,8 @@ async function generateAction(CLIOptions: CLIOptions) {
 
   const openapiToConfig = getDefineConfig(result);
 
-  for (const input of openapiToConfig.input) {
-    const openapiToSingleConfig: OpenapiToSingleConfig = {
-      input: input,
-      ..._.omit(openapiToConfig, ["input", "plugins"]),
-      plugins: openapiToConfig.plugins,
-    };
+  for (const server of openapiToConfig.servers) {
+    const openapiToSingleConfig = formatOpenapiToConfig(server,openapiToConfig)
     await generate(openapiToSingleConfig, CLIOptions);
   }
 

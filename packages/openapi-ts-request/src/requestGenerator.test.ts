@@ -11,18 +11,20 @@ import { describe } from "vitest";
 import petStore from "../mock/petstore.json";
 import { RequestGenerator } from "./RequestGenerator";
 
-import type { OpenapiToSingleConfigOfPlugin } from "@openapi-to/core";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type { PluginConfig } from "./types.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe("RequestGenerator", async () => {
-  const openapiToSingleConfig: OpenapiToSingleConfigOfPlugin = {
+  const openapiToSingleConfig: OpenapiToSingleConfig = {
     input: {
       path: "",
       name: "",
     },
-    output: path.resolve(__dirname, "../mock"),
+    output: {
+      dir: path.resolve(__dirname, "../mock"),
+    },
     plugins: [],
   };
 

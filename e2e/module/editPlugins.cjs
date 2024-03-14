@@ -30,9 +30,13 @@ export default defineConfig({
         moduleSpecifier: "./test/request",
       },
     }),
-    createTSType(),
+    createTSType({
+     compare: true
+    }),
     createZod(),
-    createFaker(),
+    createFaker({
+      compare: true
+    }),
     createMSW(),
   ]
 })`

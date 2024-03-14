@@ -103,7 +103,7 @@ export class Component {
     fileName: string,
   ): void {
     const filePath = path.resolve(
-      this.openapiToSingleConfig.output || "./",
+      this.openapiToSingleConfig.output.dir || "./",
       this.modelFolderName + "/" + fileName + ".ts",
     );
 

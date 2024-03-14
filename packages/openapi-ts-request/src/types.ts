@@ -1,8 +1,4 @@
-import type {
-  AST,
-  OpenAPI,
-  OpenapiToSingleConfigOfPlugin,
-} from "@openapi-to/core";
+import type { AST, OpenAPI, OpenapiToSingleConfig } from "@openapi-to/core";
 import type Oas from "oas";
 
 export type PluginConfig = {
@@ -21,5 +17,5 @@ export type Config = {
   openapi: OpenAPI;
   ast: AST;
   pluginConfig: PluginConfig | undefined;
-  openapiToSingleConfig: OpenapiToSingleConfigOfPlugin;
+  openapiToSingleConfig: OpenapiToSingleConfig;
 };

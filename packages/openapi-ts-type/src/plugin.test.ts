@@ -3,21 +3,21 @@ import { describe, expect } from "vitest";
 import petStore from "../mock/petstore.json";
 import { definePlugin } from "./plugin.ts";
 
-import type { OpenapiToSingleConfigOfPlugin } from "@openapi-to/core";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 describe("ts request plugin", () => {
-  const openapiToSingleConfig: OpenapiToSingleConfigOfPlugin = {
+  const openapiToSingleConfig: OpenapiToSingleConfig = {
     input: {
       path: "",
       name: "",
     },
-    output: "",
+    output: {
+      dir: "",
+    },
     plugins: [],
   };
 
   test("plugin", () => {
-    const lifeCycle = definePlugin({
-      createZodDecorator: true,
-    })({
+    const lifeCycle = definePlugin({})({
       // @ts-expect-error Not a canonical document
       openapiDocument: petStore,
       openapiToSingleConfig: openapiToSingleConfig,
