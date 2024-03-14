@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import { Warning } from "@openapi-to/core";
-import {formatOpenapiToConfig} from "@openapi-to/core/src/utils/formatOpenapiToConfig.ts";
+import { formatOpenapiToConfig } from "@openapi-to/core/utils";
 
 import { cac } from "cac";
 import c from "picocolors";
@@ -43,7 +43,10 @@ async function generateAction(CLIOptions: CLIOptions) {
   const openapiToConfig = getDefineConfig(result);
 
   for (const server of openapiToConfig.servers) {
-    const openapiToSingleConfig = formatOpenapiToConfig(server,openapiToConfig)
+    const openapiToSingleConfig = formatOpenapiToConfig(
+      server,
+      openapiToConfig,
+    );
     await generate(openapiToSingleConfig, CLIOptions);
   }
 

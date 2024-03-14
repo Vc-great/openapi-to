@@ -13,10 +13,12 @@ const config =`import {
    } from'openapi-to'
 
 export default defineConfig({
-  input:[
+  servers:[
     {
+    input: {
       name:'swagger',  // output file folder name
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+    }
     }
   ],
   plugins: [

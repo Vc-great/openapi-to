@@ -11,7 +11,6 @@ servers:[
       name:'swagger',  // output file folder name
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
     }
-  ],
   }
 ],
   plugins:[
@@ -25,18 +24,22 @@ servers:[
 export const modulePresetMeta = `import {
   defineConfig,
   createTSRequest,
+  createTSType
    } from'openapi-to'
 
-export default defineConfig({
-  input:[
-    {
+export default  defineConfig({
+servers:[
+  {
+    input: {
       name:'swagger',  // output file folder name
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
     }
-  ],
-  plugins: [
+  }
+],
+  plugins:[
     createTSRequest({
       createZodDecorator: true
-    })
+    }),
+    createTSType()
   ]
 })`;
