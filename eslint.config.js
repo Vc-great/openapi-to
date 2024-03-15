@@ -41,7 +41,12 @@ export default [
   },
   {
     files: ["packages/**", "examples/**"],
-    ignores: ["e2e/**", "docs/**", "vitest.config.ts", "vite.config.ts"],
+    ignores: [
+      "e2e/**",
+      "docs/**",
+      "vitest.config.ts",
+      "vite.config.ts",
+    ],
     languageOptions: {
       parserOptions: {
         ecmaVersion: "latest",
@@ -52,6 +57,6 @@ export default [
           "./packages/config/*/tsconfig.json",
         ],
       },
-    },
+    }
   },
 ];

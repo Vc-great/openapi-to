@@ -1,10 +1,12 @@
 import path from "node:path";
 
+import {UUID_TAG_NAME} from '@openapi-to/core/utils'
+
 import _ from "lodash";
 import { StructureKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
-import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
+import {UUIDPrefix} from "./utils/UUIDPrefix.ts";
 import { Schema } from "./Schema.ts";
 
 import type { PluginContext } from "@openapi-to/core";
@@ -92,7 +94,7 @@ export class Component {
               description: "\n",
               tags: [
                 {
-                  tagName: "uuid",
+                  tagName: UUID_TAG_NAME,
                   text: UUID,
                 },
               ],
@@ -178,7 +180,7 @@ export class Component {
               text: schema.description || "",
             },
             {
-              tagName: "uuid",
+              tagName: UUID_TAG_NAME,
               text: UUID,
             },
           ],

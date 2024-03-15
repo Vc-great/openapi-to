@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
@@ -285,13 +287,10 @@ export class TypeGenerator {
             },
             {
               tagName: "description",
-              text:
-                this.openapi &&
-                this.openapi.currentTagMetadata &&
-                this.openapi.currentTagMetadata.description,
+              text: this.openapi.currentTagMetadata?.description,
             },
             {
-              tagName: "UUID",
+              tagName: UUID_TAG_NAME,
               text: this.namespaceUUID,
             },
           ],

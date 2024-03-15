@@ -11,8 +11,10 @@ import type {
   PluginContext,
 } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
-import type { VariableStatementStructure } from "ts-morph";
-import type { ImportDeclarationStructure } from "ts-morph";
+import type {
+  ImportDeclarationStructure,
+  VariableStatementStructure,
+} from "ts-morph";
 import type { Config } from "./types.ts";
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 

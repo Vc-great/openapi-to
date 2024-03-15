@@ -34,7 +34,6 @@ export async function requestRemoteData(
 
 //读取本地文件
 async function readLocalFiles(filePath: string): Promise<OpenAPIAllDocument> {
-  console.log("-> readLocalFiles");
   return fs.readJsonSync(filePath);
 }
 

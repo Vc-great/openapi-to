@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { URLPath } from "@openapi-to/core/utils";
+import { URLPath, UUID_TAG_NAME } from "@openapi-to/core/utils";
 
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
@@ -244,7 +244,7 @@ export class RequestGenerator {
                 this.openapi.currentTagMetadata.description,
             },
             {
-              tagName: "uuid",
+              tagName: UUID_TAG_NAME,
               text: this.classOperationId,
             },
           ],
@@ -392,7 +392,7 @@ export class RequestGenerator {
             text: this.operation?.getDescription(),
           },
           {
-            tagName: "uuid",
+            tagName: UUID_TAG_NAME,
             text: this.methodOperationId,
           },
         ],

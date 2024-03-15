@@ -7,32 +7,6 @@
       "bun-types",
       "@openapi-to/ts-config"
     ],
-    "paths": {
-      "@openapi-to/core": [
-        "packages/core/src/index.ts"
-      ],
-      "@openapi-to/core/utils": [
-        "packages/core/src/utils/index.ts"
-      ],
-      "@openapi-to/swagger": [
-        "packages/swagger/src/index.ts"
-      ],
-      "@openapi-to/swagger-ts": [
-        "packages/swagger-ts/src/index.ts"
-      ],
-      "@openapi-to/swagger-ts/hooks": [
-        "packages/swagger-ts/src/hooks/index.ts"
-      ],
-      "@openapi-to/swagger/hooks": [
-        "packages/swagger/src/hooks/index.ts"
-      ],
-      "@openapi-to/swagger/utils": [
-        "packages/swagger/src/utils/index.ts"
-      ],
-      "@openapi-to/react": [
-        "packages/react/src/index.ts"
-      ]
-    }
   },
   "include": [
     "./package.json",

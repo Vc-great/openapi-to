@@ -36,7 +36,6 @@
     "openapi": "bin/openapi.js"
   },
   "files": [
-    "src",
     "dist",
     "bin",
     "!/**/**.test.**",

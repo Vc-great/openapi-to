@@ -1,3 +1,5 @@
+import {UUID_TAG_NAME} from "@openapi-to/core/utils";
+
 import _ from "lodash";
 import { Project } from "ts-morph";
 
@@ -115,7 +117,7 @@ export class FakerOldNode {
     return _.chain(JsDocs)
       .map((x) => x.getTags())
       .flatten()
-      .filter((x) => x.getTagName() === "uuid")
+      .filter((x) => x.getTagName() === UUID_TAG_NAME)
       .map((x) => x.getCommentText())
       .head()
       .value();

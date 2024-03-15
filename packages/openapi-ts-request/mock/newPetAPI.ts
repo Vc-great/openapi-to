@@ -8,14 +8,14 @@ import { request } from "./newRequest";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid API-pet
+ * @UUID API-pet
  */
 class NewPetAPI {
   /**
    *
    * @summary summary
    * @description
-   * @uuid test
+   * @UUID test
    */
   @zodValidate
   @responseZodSchema(newPetZod.testPostResponse)
@@ -34,7 +34,7 @@ class NewPetAPI {
    *
    * @summary summary
    * @description
-   * @uuid testput
+   * @UUID testput
    */
   @zodValidate
   @responseZodSchema(newPetZod.testPutResponse)
@@ -53,7 +53,7 @@ class NewPetAPI {
    *
    * @summary summary
    * @description
-   * @uuid testdelete
+   * @UUID testdelete
    */
   @zodValidate
   @responseZodSchema(newPetZod.delByTestResponse)
@@ -72,7 +72,7 @@ class NewPetAPI {
    *
    * @summary summary
    * @description
-   * @uuid test-idget
+   * @UUID test-idget
    */
   @zodValidate
   @responseZodSchema(newPetZod.testIdGetResponse)
@@ -96,7 +96,7 @@ class NewPetAPI {
    *
    * @summary uploads an image
    * @description pet
-   * @uuid uploadFile
+   * @UUID uploadFile
    */
   @zodValidate
   @responseZodSchema(newPetZod.uploadImagePostResponse)
@@ -122,7 +122,7 @@ class NewPetAPI {
    *
    * @summary Add a new pet to the store
    * @description
-   * @uuid addPet
+   * @UUID addPet
    */
   @zodValidate
   @responseZodSchema(newPetZod.createResponse)
@@ -141,7 +141,7 @@ class NewPetAPI {
    *
    * @summary Update an existing pet
    * @description
-   * @uuid updatePet
+   * @UUID updatePet
    */
   @zodValidate
   @responseZodSchema(newPetZod.updateResponse)
@@ -160,7 +160,7 @@ class NewPetAPI {
    *
    * @summary Finds Pets by status
    * @description Multiple status values can be provided with comma separated strings
-   * @uuid findPetsByStatus
+   * @UUID findPetsByStatus
    */
   @zodValidate
   @responseZodSchema(newPetZod.findByStatusGetResponse)
@@ -184,7 +184,7 @@ class NewPetAPI {
    *
    * @summary Finds Pets by tags
    * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-   * @uuid findPetsByTags
+   * @UUID findPetsByTags
    */
   @zodValidate
   @responseZodSchema(newPetZod.findByTagsGetResponse)
@@ -208,7 +208,7 @@ class NewPetAPI {
    *
    * @summary Find pet by ID
    * @description Returns a single pet
-   * @uuid getPetById
+   * @UUID getPetById
    */
   @zodValidate
   @responseZodSchema(newPetZod.findByPetIdResponse)
@@ -226,7 +226,7 @@ class NewPetAPI {
    *
    * @summary Updates a pet in the store with form data
    * @description
-   * @uuid updatePetWithForm
+   * @UUID updatePetWithForm
    */
   @zodValidate
   @responseZodSchema(newPetZod.petIdPostResponse)
@@ -250,7 +250,7 @@ class NewPetAPI {
    *
    * @summary Deletes a pet
    * @description
-   * @uuid deletePet
+   * @UUID deletePet
    */
   @zodValidate
   @responseZodSchema(newPetZod.delByPetIdResponse)

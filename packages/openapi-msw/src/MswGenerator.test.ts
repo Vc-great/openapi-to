@@ -1,5 +1,4 @@
 import path from "node:path";
-import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { AST, OpenAPI } from "@openapi-to/core";
@@ -12,7 +11,7 @@ import { MswGenerator } from "./MswGenerator.ts";
 
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 describe("MswGenerator", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {

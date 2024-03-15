@@ -9,14 +9,14 @@ import type { Pet } from "./newPet";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid Faker-pet
+ * @UUID Faker-pet
  */
 class PetFaker {
     /**
      *
      * @summary summary
      * @description
-     * @uuid operationIdpost
+     * @UUID operationIdpost
      */
     newtestPost(): NonNullable<Pet.TestPostResponse> {
         return testDto2()
@@ -26,7 +26,7 @@ class PetFaker {
      *
      * @summary summary
      * @description
-     * @uuid operationIdput
+     * @UUID operationIdput
      */
     newtestPut(): NonNullable<Pet.TestPutResponse> {
         return testDto2()
@@ -36,7 +36,7 @@ class PetFaker {
      *
      * @summary summary
      * @description
-     * @uuid operationIddelete
+     * @UUID operationIddelete
      */
     delByTest(): NonNullable<Pet.DelByTestResponse> {
         return test32145()
@@ -46,7 +46,7 @@ class PetFaker {
      *
      * @summary summary
      * @description
-     * @uuid get/pet/test/{test-id}
+     * @UUID get/pet/test/{test-id}
      */
     testIdGet(): NonNullable<Pet.TestIdGetResponse> {
         return testDto2()
@@ -56,7 +56,7 @@ class PetFaker {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     uploadImagePost(): NonNullable<Pet.UploadImagePostResponse> {
         return apiResponse()
@@ -66,7 +66,7 @@ class PetFaker {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     create(): NonNullable<Pet.CreateResponse> {
         return {}
@@ -76,7 +76,7 @@ class PetFaker {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     update(): NonNullable<Pet.UpdateResponse> {
         return {}
@@ -86,7 +86,7 @@ class PetFaker {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     findByStatusGet(): NonNullable<Pet.FindByStatusGetResponse> {
         return faker.helpers.multiple(() => pet(), {
@@ -98,7 +98,7 @@ class PetFaker {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     findByTagsGet(): NonNullable<Pet.FindByTagsGetResponse> {
         return faker.helpers.multiple(() => pet(), {
@@ -110,7 +110,7 @@ class PetFaker {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     findByPetId(): NonNullable<Pet.FindByPetIdResponse> {
         return pet()
@@ -120,7 +120,7 @@ class PetFaker {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     petIdPost(): NonNullable<Pet.PetIdPostResponse> {
         return {}
@@ -130,7 +130,7 @@ class PetFaker {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     delByPetId(): NonNullable<Pet.DelByPetIdResponse> {
         return {}
@@ -147,14 +147,14 @@ import type { Pet } from "./Pet";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid Faker-store
+ * @UUID Faker-store
  */
 class StoreFaker {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     create(): NonNullable<Pet.CreateResponse> {
         return order()
@@ -164,7 +164,7 @@ class StoreFaker {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     findByOrderId(): NonNullable<Pet.FindByOrderIdResponse> {
         return order()
@@ -174,7 +174,7 @@ class StoreFaker {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     delByOrderId(): NonNullable<Pet.DelByOrderIdResponse> {
         return {}
@@ -184,7 +184,7 @@ class StoreFaker {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     inventoryGet(): NonNullable<Pet.InventoryGetResponse> {
         return {}
@@ -201,14 +201,14 @@ import type { Pet } from "./Pet";
  *
  * @tag user
  * @description Operations about user
- * @uuid Faker-user
+ * @UUID Faker-user
  */
 class UserFaker {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     createWithArrayPost(): NonNullable<Pet.CreateWithArrayPostResponse> {
         return {}
@@ -218,7 +218,7 @@ class UserFaker {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     createWithListPost(): NonNullable<Pet.CreateWithListPostResponse> {
         return {}
@@ -228,7 +228,7 @@ class UserFaker {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     findByUsername(): NonNullable<Pet.FindByUsernameResponse> {
         return user()
@@ -238,7 +238,7 @@ class UserFaker {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     usernamePut(): NonNullable<Pet.UsernamePutResponse> {
         return {}
@@ -248,7 +248,7 @@ class UserFaker {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     delByUsername(): NonNullable<Pet.DelByUsernameResponse> {
         return {}
@@ -258,7 +258,7 @@ class UserFaker {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     loginGet(): NonNullable<Pet.LoginGetResponse> {
         return
@@ -268,7 +268,7 @@ class UserFaker {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     logoutGet(): NonNullable<Pet.LogoutGetResponse> {
         return {}
@@ -278,7 +278,7 @@ class UserFaker {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     create(): NonNullable<Pet.CreateResponse> {
         return {}
@@ -577,14 +577,14 @@ import type { Pet } from "./Pet";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid Faker-pet
+ * @UUID Faker-pet
  */
 class PetFaker {
     /**
      *
      * @summary summary
      * @description
-     * @uuid operationIdpost
+     * @UUID operationIdpost
      */
     testPost(): NonNullable<Pet.TestPostResponse> {
         return testDto2()
@@ -594,7 +594,7 @@ class PetFaker {
      *
      * @summary summary
      * @description
-     * @uuid operationIdput
+     * @UUID operationIdput
      */
     testPut(): NonNullable<Pet.TestPutResponse> {
         return testDto2()
@@ -604,7 +604,7 @@ class PetFaker {
      *
      * @summary summary
      * @description
-     * @uuid operationIddelete
+     * @UUID operationIddelete
      */
     delByTest(): NonNullable<Pet.DelByTestResponse> {
         return test32145()
@@ -614,7 +614,7 @@ class PetFaker {
      *
      * @summary summary
      * @description
-     * @uuid get/pet/test/{test-id}
+     * @UUID get/pet/test/{test-id}
      */
     testIdGet(): NonNullable<Pet.TestIdGetResponse> {
         return testDto2()
@@ -624,7 +624,7 @@ class PetFaker {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     uploadImagePost(): NonNullable<Pet.UploadImagePostResponse> {
         return apiResponse()
@@ -634,7 +634,7 @@ class PetFaker {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     create(): NonNullable<Pet.CreateResponse> {
         return {}
@@ -644,7 +644,7 @@ class PetFaker {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     update(): NonNullable<Pet.UpdateResponse> {
         return {}
@@ -654,7 +654,7 @@ class PetFaker {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     findByStatusGet(): NonNullable<Pet.FindByStatusGetResponse> {
         return faker.helpers.multiple(() => pet(), {
@@ -666,7 +666,7 @@ class PetFaker {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     findByTagsGet(): NonNullable<Pet.FindByTagsGetResponse> {
         return faker.helpers.multiple(() => pet(), {
@@ -678,7 +678,7 @@ class PetFaker {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     findByPetId(): NonNullable<Pet.FindByPetIdResponse> {
         return pet()
@@ -688,7 +688,7 @@ class PetFaker {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     petIdPost(): NonNullable<Pet.PetIdPostResponse> {
         return {}
@@ -698,7 +698,7 @@ class PetFaker {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     delByPetId(): NonNullable<Pet.DelByPetIdResponse> {
         return {}
@@ -715,14 +715,14 @@ import type { Store } from "./Store";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid Faker-store
+ * @UUID Faker-store
  */
 class StoreFaker {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     create(): NonNullable<Store.CreateResponse> {
         return order()
@@ -732,7 +732,7 @@ class StoreFaker {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     findByOrderId(): NonNullable<Store.FindByOrderIdResponse> {
         return order()
@@ -742,7 +742,7 @@ class StoreFaker {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     delByOrderId(): NonNullable<Store.DelByOrderIdResponse> {
         return {}
@@ -752,7 +752,7 @@ class StoreFaker {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     inventoryGet(): NonNullable<Store.InventoryGetResponse> {
         return {}
@@ -769,14 +769,14 @@ import type { User } from "./User";
  *
  * @tag user
  * @description Operations about user
- * @uuid Faker-user
+ * @UUID Faker-user
  */
 class UserFaker {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     createWithArrayPost(): NonNullable<User.CreateWithArrayPostResponse> {
         return {}
@@ -786,7 +786,7 @@ class UserFaker {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     createWithListPost(): NonNullable<User.CreateWithListPostResponse> {
         return {}
@@ -796,7 +796,7 @@ class UserFaker {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     findByUsername(): NonNullable<User.FindByUsernameResponse> {
         return user()
@@ -806,7 +806,7 @@ class UserFaker {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     usernamePut(): NonNullable<User.UsernamePutResponse> {
         return {}
@@ -816,7 +816,7 @@ class UserFaker {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     delByUsername(): NonNullable<User.DelByUsernameResponse> {
         return {}
@@ -826,7 +826,7 @@ class UserFaker {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     loginGet(): NonNullable<User.LoginGetResponse> {
         return
@@ -836,7 +836,7 @@ class UserFaker {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     logoutGet(): NonNullable<User.LogoutGetResponse> {
         return {}
@@ -846,7 +846,7 @@ class UserFaker {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     create(): NonNullable<User.CreateResponse> {
         return {}

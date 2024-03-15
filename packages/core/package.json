@@ -34,13 +34,7 @@
   "module": "dist/es/index.js",
   "types": "./dist/es/index.d.ts",
   "files": [
-    "src",
-    "dist",
-    "*.d.ts",
-    "*.d.cts",
-    "schema.json",
-    "!/**/**.test.**",
-    "!/**/__tests__/**"
+    "dist"
   ],
   "scripts": {
     "build": "tsup",

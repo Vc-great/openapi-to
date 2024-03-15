@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import {UUID_TAG_NAME} from "@openapi-to/core/utils";
+
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
@@ -217,7 +219,7 @@ export class FakerGenerator {
                 this.openapi.currentTagMetadata.description,
             },
             {
-              tagName: "uuid",
+              tagName: UUID_TAG_NAME,
               text: this.classOperationId,
             },
           ],
@@ -259,7 +261,7 @@ export class FakerGenerator {
             text: this.operation?.getDescription(),
           },
           {
-            tagName: "uuid",
+            tagName: UUID_TAG_NAME,
             text: this.methodOperationId,
           },
         ],

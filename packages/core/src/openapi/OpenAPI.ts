@@ -13,7 +13,7 @@ import type { Operation } from "oas/operation";
 import type OasTypes from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
-import type { HttpMethod, PathGroup, PathGroupByTag } from "../types.js";
+import type { HttpMethod, PathGroup, PathGroupByTag } from "../types";
 
 const enum WriteModel {
   await = "await",

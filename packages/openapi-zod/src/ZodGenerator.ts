@@ -1,9 +1,13 @@
 import path from "node:path";
 
+import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { NAMESPACE } from "./utils/namespace.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Component } from "./Component.ts";
 import { useEnumCache } from "./EnumCache.ts";
 import { Schema } from "./Schema.ts";
@@ -12,26 +16,16 @@ import { Zod } from "./zod.ts";
 import type { ObjectStructure } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
 import type OasTypes from "oas/types";
-import type { OpenAPIV3 } from "openapi-types";
 import type { VariableStatementStructure } from "ts-morph";
 import type {
   ImportDeclarationStructure,
-  InterfaceDeclarationStructure,
   ModuleDeclarationStructure,
-  TypeAliasDeclarationStructure,
 } from "ts-morph";
 import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
-
-type TypeStatements =
-  | InterfaceDeclarationStructure
-  | TypeAliasDeclarationStructure;
+import type { ZodOldNode } from "./ZodOldNode.ts";
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
-type InterfaceStatementsOmitKind = Omit<InterfaceDeclarationStructure, "kind">;
-type ObjectSchema = OpenAPIV3.BaseSchemaObject & {
-  type: "object";
-};
 
 type ResponseObject = {
   code: string;
@@ -41,10 +35,6 @@ type ResponseObject = {
     schema: OasTypes.SchemaObject;
     type: string | string[];
   };
-};
-
-type ComponentObject = {
-  [key: string]: OpenAPIV3.ReferenceObject | OasTypes.MediaTypeObject;
 };
 
 export class ZodGenerator {
@@ -59,6 +49,7 @@ export class ZodGenerator {
   private importCache: Set<string> = new Set<string>();
   private component: Component;
   private schema: Schema;
+  private oldNode: ZodOldNode;
 
   private readonly modelFolderName: string = modelFolderName;
   constructor(config: Config) {
@@ -70,28 +61,34 @@ export class ZodGenerator {
     this.paramsZodSchema = "paramsZodSchema";
     this.component = new Component(config);
     this.schema = new Schema(config);
+    this.oldNode = config.oldNode;
+  }
+
+  get compare(): boolean {
+    return this.pluginConfig?.compare || false;
+  }
+
+  get namespaceUUID(): string {
+    return UUIDPrefix + this.openapi.currentTagName;
   }
 
   get z(): Zod {
     return new Zod();
   }
   get currentTagName() {
-    return _.camelCase(
-      this.openapi &&
-        this.openapi.currentTagMetadata &&
-        this.openapi.currentTagMetadata.name,
-    );
+    return _.camelCase(this.openapi.currentTagMetadata?.name);
   }
   get nameSpaceName(): string {
     return _.upperFirst(this.currentTagName);
   }
 
   get zodNameSpaceName(): string {
-    return this.currentTagName + "Zod";
+    return this.currentTagName + NAMESPACE;
   }
 
   build(): void {
-    _.mapValues(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+    _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
+      this.oldNode.setCurrentSourceFile(UUIDPrefix + _.camelCase(tag));
       const statements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);
@@ -108,7 +105,7 @@ export class ZodGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.zodNameSpaceName + ".ts",
+        this.oldNode.baseName || this.zodNameSpaceName + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -292,7 +289,7 @@ export class ZodGenerator {
       .map((item) => {
         const name = _.get(item, "declarations[0].name", "");
         return this.ast.generateTypeAliasStatements({
-          name: _.upperFirst(name),
+          name: this.oldNode.TypeNameSpaceName ?? _.upperFirst(name),
           type: this.z.head().infer(name).toString(),
           docs: item.docs,
           isExported: true,
@@ -301,7 +298,25 @@ export class ZodGenerator {
       .value();
 
     return this.ast.generateModuleStatements({
-      docs: [{ description: this.openapi.currentTagMetadata?.description }],
+      docs: [
+        {
+          description: "\n",
+          tags: [
+            {
+              tagName: "tag",
+              text: this.openapi.currentTagName,
+            },
+            {
+              tagName: "description",
+              text: this.openapi.currentTagMetadata?.description,
+            },
+            {
+              tagName: UUID_TAG_NAME,
+              text: this.namespaceUUID,
+            },
+          ],
+        },
+      ],
       isExported: true,
       name: this.nameSpaceName,
       statements: typeStatements,
@@ -320,17 +335,37 @@ export class ZodGenerator {
         };
       })
       .value() as Array<ObjectStructure>;
+    const aaa = this.oldNode.currentZodNamespace;
+    const aa = this.oldNode.zodNameSpaceName;
 
     return this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: true,
       declarations: [
         {
-          name: this.zodNameSpaceName,
+          name: this.oldNode.zodNameSpaceName ?? this.zodNameSpaceName,
           initializer: this.ast.generateObject$2(objectStructure),
         },
       ],
-      docs: [{ description: "Zod" }],
+      docs: [
+        {
+          description: "\n",
+          tags: [
+            {
+              tagName: "tag",
+              text: this.openapi.currentTagName,
+            },
+            {
+              tagName: "description",
+              text: this.openapi.currentTagMetadata?.description,
+            },
+            {
+              tagName: UUID_TAG_NAME,
+              text: this.namespaceUUID,
+            },
+          ],
+        },
+      ],
     });
   }
 
@@ -339,7 +374,7 @@ export class ZodGenerator {
       this.openapi.parameter?.getParametersSchema("query") || [];
     const queryStatements = this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
-      isExported: true,
+      isExported: false,
       docs: [{ description: "queryParams" }],
       declarations: [
         {
@@ -410,7 +445,7 @@ export class ZodGenerator {
     const errorType = [
       this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
-        isExported: true,
+        isExported: false,
         docs: [{ description: "" }],
         declarations: [
           {
@@ -428,7 +463,7 @@ export class ZodGenerator {
     const successDefaultType = [
       this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
-        isExported: true,
+        isExported: false,
         docs: [{ description: "" }],
         declarations: [
           {
@@ -461,7 +496,7 @@ export class ZodGenerator {
     if (!schema) {
       return this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
-        isExported: true,
+        isExported: false,
         docs: [{ description: "" }],
         declarations: [
           {
@@ -475,7 +510,7 @@ export class ZodGenerator {
     if (this.openapi.isReference(schema)) {
       return this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
-        isExported: true,
+        isExported: false,
         docs: [{ description: description || "" }],
         declarations: [
           {
@@ -492,7 +527,7 @@ export class ZodGenerator {
     if (schema.type === "array") {
       return this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
-        isExported: true,
+        isExported: false,
         docs: [{ description: description || "" }],
         declarations: [
           {
@@ -505,7 +540,7 @@ export class ZodGenerator {
 
     return this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
-      isExported: true,
+      isExported: false,
       docs: [{ description: description || "" }],
       declarations: [
         {
@@ -543,7 +578,7 @@ export class ZodGenerator {
       return [
         this.ast.generateVariableStatements({
           declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
+          isExported: false,
           docs: [{ description: "bodyParams" }],
           declarations: [
             {
@@ -562,7 +597,7 @@ export class ZodGenerator {
       return [
         this.ast.generateVariableStatements({
           declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
+          isExported: false,
           docs: [{ description: "bodyParams" }],
           declarations: [
             {
@@ -577,7 +612,7 @@ export class ZodGenerator {
     return [
       this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
-        isExported: true,
+        isExported: false,
         docs: [{ description: "bodyParams" }],
         declarations: [
           {

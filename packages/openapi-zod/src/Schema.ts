@@ -1,18 +1,18 @@
 import _ from "lodash";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { useEnumCache } from "./EnumCache.ts";
 import { Zod } from "./zod.ts";
 
 import type { ObjectStructure, PluginContext } from "@openapi-to/core";
 import type OasTypes from "oas/types";
-import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
 import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
-type OptionalKindOfPropertySignatureStructure =
-  OptionalKind<PropertySignatureStructure>;
+
 export class Schema {
   private oas: Config["oas"];
+  private oldNode: Config["oldNode"];
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
@@ -21,18 +21,13 @@ export class Schema {
   private context: PluginContext | null = null;
   private enumCache: EnumCache = useEnumCache();
 
-  constructor({
-    oas,
-    openapi,
-    ast,
-    pluginConfig,
-    openapiToSingleConfig,
-  }: Config) {
-    this.oas = oas;
-    this.ast = ast;
-    this.pluginConfig = pluginConfig;
-    this.openapiToSingleConfig = openapiToSingleConfig;
-    this.openapi = openapi;
+  constructor(config: Config) {
+    this.oas = config.oas;
+    this.ast = config.ast;
+    this.pluginConfig = config.pluginConfig;
+    this.openapiToSingleConfig = config.openapiToSingleConfig;
+    this.openapi = config.openapi;
+    this.oldNode = config.oldNode;
   }
 
   get z(): Zod {
@@ -191,12 +186,23 @@ export class Schema {
           this.enumCache.set(schema, this.enumCache.getName(name));
         }
 
+        const UUID =
+          UUIDPrefix +
+          (this.openapi.isReference(schema)
+            ? _.upperFirst(this.openapi.getRefAlias(schema.$ref))
+            : "");
+        const variableDeclaration =
+          this.oldNode.variableDeclarationCache.get(UUID);
+
         return {
           key: name,
           value: this.openapi.isReference(schema)
             ? this.z
                 .head()
-                .lazy(this.openapi.getRefAlias(schema.$ref))
+                .lazy(
+                  variableDeclaration?.getName() ??
+                    this.openapi.getRefAlias(schema.$ref),
+                )
                 .optional(isRequired)
                 .toString()
             : this.formatterSchemaType(schema) +

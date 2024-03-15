@@ -10,6 +10,12 @@
     },
     {
       "path": "../../openapi-ts-request"
+    },
+    {
+      "path": "../../openapi-ts-type"
+    },
+    {
+      "path": "../../openapi-msw"
     }
   ]
 }

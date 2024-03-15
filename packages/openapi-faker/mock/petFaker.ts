@@ -7,14 +7,14 @@ import type { Pet } from "./newPet";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid Faker-pet
+ * @UUID Faker-pet
  */
 class PetFaker {
   /**
    *
    * @summary summary
    * @description
-   * @uuid operationIdpost
+   * @UUID operationIdpost
    */
   newtestPost(): NonNullable<Pet.TestPostResponse> {
     return testDto2();
@@ -24,7 +24,7 @@ class PetFaker {
    *
    * @summary summary
    * @description
-   * @uuid operationIdput
+   * @UUID operationIdput
    */
   newtestPut(): NonNullable<Pet.TestPutResponse> {
     return testDto2();
@@ -34,7 +34,7 @@ class PetFaker {
    *
    * @summary summary
    * @description
-   * @uuid operationIddelete
+   * @UUID operationIddelete
    */
   delByTest(): NonNullable<Pet.DelByTestResponse> {
     return test32145();
@@ -44,7 +44,7 @@ class PetFaker {
    *
    * @summary summary
    * @description
-   * @uuid get/pet/test/{test-id}
+   * @UUID get/pet/test/{test-id}
    */
   testIdGet(): NonNullable<Pet.TestIdGetResponse> {
     return testDto2();
@@ -54,7 +54,7 @@ class PetFaker {
    *
    * @summary uploads an image
    * @description pet
-   * @uuid uploadFile
+   * @UUID uploadFile
    */
   uploadImagePost(): NonNullable<Pet.UploadImagePostResponse> {
     return apiResponse();
@@ -64,7 +64,7 @@ class PetFaker {
    *
    * @summary Add a new pet to the store
    * @description
-   * @uuid addPet
+   * @UUID addPet
    */
   create(): NonNullable<Pet.CreateResponse> {
     return {};
@@ -74,7 +74,7 @@ class PetFaker {
    *
    * @summary Update an existing pet
    * @description
-   * @uuid updatePet
+   * @UUID updatePet
    */
   update(): NonNullable<Pet.UpdateResponse> {
     return {};
@@ -84,7 +84,7 @@ class PetFaker {
    *
    * @summary Finds Pets by status
    * @description Multiple status values can be provided with comma separated strings
-   * @uuid findPetsByStatus
+   * @UUID findPetsByStatus
    */
   findByStatusGet(): NonNullable<Pet.FindByStatusGetResponse> {
     return faker.helpers.multiple(() => pet(), {
@@ -96,7 +96,7 @@ class PetFaker {
    *
    * @summary Finds Pets by tags
    * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-   * @uuid findPetsByTags
+   * @UUID findPetsByTags
    */
   findByTagsGet(): NonNullable<Pet.FindByTagsGetResponse> {
     return faker.helpers.multiple(() => pet(), {
@@ -108,7 +108,7 @@ class PetFaker {
    *
    * @summary Find pet by ID
    * @description Returns a single pet
-   * @uuid getPetById
+   * @UUID getPetById
    */
   findByPetId(): NonNullable<Pet.FindByPetIdResponse> {
     return pet();
@@ -118,7 +118,7 @@ class PetFaker {
    *
    * @summary Updates a pet in the store with form data
    * @description
-   * @uuid updatePetWithForm
+   * @UUID updatePetWithForm
    */
   petIdPost(): NonNullable<Pet.PetIdPostResponse> {
     return {};
@@ -128,7 +128,7 @@ class PetFaker {
    *
    * @summary Deletes a pet
    * @description
-   * @uuid deletePet
+   * @UUID deletePet
    */
   delByPetId(): NonNullable<Pet.DelByPetIdResponse> {
     return {};

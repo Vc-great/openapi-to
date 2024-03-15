@@ -3,7 +3,7 @@
   "version": "2.0.0-alpha.3",
   "sideEffects": false,
   "type": "module",
-  "description": "Generator ts",
+  "description": "generator ts request",
   "exports": {
     ".": {
       "import": "./dist/es/index.js",
@@ -34,7 +34,6 @@
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "devDependencies": {
-    "@openapi-to/core": "workspace:*",
     "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
     "@openapi-to/tsup-config": "workspace:*"
@@ -44,7 +43,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "oas": "^24.1.0"
+    "@openapi-to/core": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

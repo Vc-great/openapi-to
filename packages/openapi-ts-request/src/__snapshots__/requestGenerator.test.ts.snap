@@ -8,14 +8,14 @@ import { request } from "./newRequest";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid API-pet
+ * @UUID API-pet
  */
 class NewPetAPI {
     /**
      *
      * @summary summary
      * @description
-     * @uuid test
+     * @UUID test
      */
     newtestPost(bodyParams: newPet.TestPostBodyParams): Promise<[newPet.TestPostErrorResponse, newPet.TestPostResponse]> {
         return request({
@@ -29,7 +29,7 @@ class NewPetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testput
+     * @UUID testput
      */
     newtestPut(bodyParams: newPet.TestPutBodyParams): Promise<[newPet.TestPutErrorResponse, newPet.TestPutResponse]> {
         return request({
@@ -43,7 +43,7 @@ class NewPetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testdelete
+     * @UUID testdelete
      */
     newdelByTest(bodyParams: newPet.DelByTestBodyParams): Promise<[newPet.DelByTestErrorResponse, newPet.DelByTestResponse]> {
         return request({
@@ -57,7 +57,7 @@ class NewPetAPI {
      *
      * @summary summary
      * @description
-     * @uuid test-idget
+     * @UUID test-idget
      */
     newtestIdGet(queryParams: newPet.TestIdGetQueryParams, testId: newPet.TestIdGetPathParams['testId']): Promise<[newPet.TestIdGetErrorResponse, newPet.TestIdGetResponse]> {
         return request({
@@ -74,7 +74,7 @@ class NewPetAPI {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     newuploadImagePost(bodyParams: newPet.UploadImagePostBodyParams, petId: newPet.UploadImagePostPathParams['petId']): Promise<[newPet.UploadImagePostErrorResponse, newPet.UploadImagePostResponse]> {
         return request({
@@ -91,7 +91,7 @@ class NewPetAPI {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     newcreate(bodyParams: newPet.CreateBodyParams): Promise<[newPet.CreateErrorResponse, newPet.CreateResponse]> {
         return request({
@@ -105,7 +105,7 @@ class NewPetAPI {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     newupdate(bodyParams: newPet.UpdateBodyParams): Promise<[newPet.UpdateErrorResponse, newPet.UpdateResponse]> {
         return request({
@@ -119,7 +119,7 @@ class NewPetAPI {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     newfindByStatusGet(queryParams: newPet.FindByStatusGetQueryParams): Promise<[newPet.FindByStatusGetErrorResponse, newPet.FindByStatusGetResponse]> {
         return request({
@@ -136,7 +136,7 @@ class NewPetAPI {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     newfindByTagsGet(queryParams: newPet.FindByTagsGetQueryParams): Promise<[newPet.FindByTagsGetErrorResponse, newPet.FindByTagsGetResponse]> {
         return request({
@@ -153,7 +153,7 @@ class NewPetAPI {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     newfindByPetId(petId: newPet.FindByPetIdPathParams['petId']): Promise<[newPet.FindByPetIdErrorResponse, newPet.FindByPetIdResponse]> {
         return request({
@@ -166,7 +166,7 @@ class NewPetAPI {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     newpetIdPost(bodyParams: newPet.PetIdPostBodyParams, petId: newPet.PetIdPostPathParams['petId']): Promise<[newPet.PetIdPostErrorResponse, newPet.PetIdPostResponse]> {
         return request({
@@ -183,7 +183,7 @@ class NewPetAPI {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     newdelByPetId(petId: newPet.DelByPetIdPathParams['petId']): Promise<[newPet.DelByPetIdErrorResponse, newPet.DelByPetIdResponse]> {
         return request({
@@ -202,14 +202,14 @@ import { request } from "@/api/request";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid API-store
+ * @UUID API-store
  */
 class StoreAPI {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     create(bodyParams: newPet.CreateBodyParams): Promise<[newPet.CreateErrorResponse, newPet.CreateResponse]> {
         return request({
@@ -223,7 +223,7 @@ class StoreAPI {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     findByOrderId(orderId: newPet.FindByOrderIdPathParams['orderId']): Promise<[newPet.FindByOrderIdErrorResponse, newPet.FindByOrderIdResponse]> {
         return request({
@@ -236,7 +236,7 @@ class StoreAPI {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     delByOrderId(orderId: newPet.DelByOrderIdPathParams['orderId']): Promise<[newPet.DelByOrderIdErrorResponse, newPet.DelByOrderIdResponse]> {
         return request({
@@ -249,7 +249,7 @@ class StoreAPI {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     inventoryGet(): Promise<[newPet.InventoryGetErrorResponse, newPet.InventoryGetResponse]> {
         return request({
@@ -268,14 +268,14 @@ import { request } from "@/api/request";
  *
  * @tag user
  * @description Operations about user
- * @uuid API-user
+ * @UUID API-user
  */
 class UserAPI {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     createWithArrayPost(bodyParams: newPet.CreateWithArrayPostBodyParams): Promise<[newPet.CreateWithArrayPostErrorResponse, newPet.CreateWithArrayPostResponse]> {
         return request({
@@ -289,7 +289,7 @@ class UserAPI {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     createWithListPost(bodyParams: newPet.CreateWithListPostBodyParams): Promise<[newPet.CreateWithListPostErrorResponse, newPet.CreateWithListPostResponse]> {
         return request({
@@ -303,7 +303,7 @@ class UserAPI {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     findByUsername(username: newPet.FindByUsernamePathParams['username']): Promise<[newPet.FindByUsernameErrorResponse, newPet.FindByUsernameResponse]> {
         return request({
@@ -316,7 +316,7 @@ class UserAPI {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     usernamePut(bodyParams: newPet.UsernamePutBodyParams, username: newPet.UsernamePutPathParams['username']): Promise<[newPet.UsernamePutErrorResponse, newPet.UsernamePutResponse]> {
         return request({
@@ -330,7 +330,7 @@ class UserAPI {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     delByUsername(username: newPet.DelByUsernamePathParams['username']): Promise<[newPet.DelByUsernameErrorResponse, newPet.DelByUsernameResponse]> {
         return request({
@@ -343,7 +343,7 @@ class UserAPI {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     loginGet(queryParams: newPet.LoginGetQueryParams): Promise<[newPet.LoginGetErrorResponse, newPet.LoginGetResponse]> {
         return request({
@@ -357,7 +357,7 @@ class UserAPI {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     logoutGet(): Promise<[newPet.LogoutGetErrorResponse, newPet.LogoutGetResponse]> {
         return request({
@@ -370,7 +370,7 @@ class UserAPI {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     create(bodyParams: newPet.CreateBodyParams): Promise<[newPet.CreateErrorResponse, newPet.CreateResponse]> {
         return request({
@@ -395,14 +395,14 @@ import { request } from "./newRequest";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid API-pet
+ * @UUID API-pet
  */
 class NewPetAPI {
     /**
      *
      * @summary summary
      * @description
-     * @uuid test
+     * @UUID test
      */
     @zodValidate
     @responseZodSchema(newPetZod.testPostResponse)
@@ -418,7 +418,7 @@ class NewPetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testput
+     * @UUID testput
      */
     @zodValidate
     @responseZodSchema(newPetZod.testPutResponse)
@@ -434,7 +434,7 @@ class NewPetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testdelete
+     * @UUID testdelete
      */
     @zodValidate
     @responseZodSchema(newPetZod.delByTestResponse)
@@ -450,7 +450,7 @@ class NewPetAPI {
      *
      * @summary summary
      * @description
-     * @uuid test-idget
+     * @UUID test-idget
      */
     @zodValidate
     @responseZodSchema(newPetZod.testIdGetResponse)
@@ -469,7 +469,7 @@ class NewPetAPI {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     @zodValidate
     @responseZodSchema(newPetZod.uploadImagePostResponse)
@@ -488,7 +488,7 @@ class NewPetAPI {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     @zodValidate
     @responseZodSchema(newPetZod.createResponse)
@@ -504,7 +504,7 @@ class NewPetAPI {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     @zodValidate
     @responseZodSchema(newPetZod.updateResponse)
@@ -520,7 +520,7 @@ class NewPetAPI {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     @zodValidate
     @responseZodSchema(newPetZod.findByStatusGetResponse)
@@ -539,7 +539,7 @@ class NewPetAPI {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     @zodValidate
     @responseZodSchema(newPetZod.findByTagsGetResponse)
@@ -558,7 +558,7 @@ class NewPetAPI {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     @zodValidate
     @responseZodSchema(newPetZod.findByPetIdResponse)
@@ -573,7 +573,7 @@ class NewPetAPI {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     @zodValidate
     @responseZodSchema(newPetZod.petIdPostResponse)
@@ -592,7 +592,7 @@ class NewPetAPI {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     @zodValidate
     @responseZodSchema(newPetZod.delByPetIdResponse)
@@ -615,14 +615,14 @@ import { request } from "@/api/request";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid API-store
+ * @UUID API-store
  */
 class StoreAPI {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     @zodValidate
     @responseZodSchema(newPetZod.createResponse)
@@ -638,7 +638,7 @@ class StoreAPI {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     @zodValidate
     @responseZodSchema(newPetZod.findByOrderIdResponse)
@@ -653,7 +653,7 @@ class StoreAPI {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     @zodValidate
     @responseZodSchema(newPetZod.delByOrderIdResponse)
@@ -668,7 +668,7 @@ class StoreAPI {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     @zodValidate
     @responseZodSchema(newPetZod.inventoryGetResponse)
@@ -691,14 +691,14 @@ import { request } from "@/api/request";
  *
  * @tag user
  * @description Operations about user
- * @uuid API-user
+ * @UUID API-user
  */
 class UserAPI {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     @zodValidate
     @responseZodSchema(newPetZod.createWithArrayPostResponse)
@@ -714,7 +714,7 @@ class UserAPI {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     @zodValidate
     @responseZodSchema(newPetZod.createWithListPostResponse)
@@ -730,7 +730,7 @@ class UserAPI {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     @zodValidate
     @responseZodSchema(newPetZod.findByUsernameResponse)
@@ -745,7 +745,7 @@ class UserAPI {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     @zodValidate
     @responseZodSchema(newPetZod.usernamePutResponse)
@@ -761,7 +761,7 @@ class UserAPI {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     @zodValidate
     @responseZodSchema(newPetZod.delByUsernameResponse)
@@ -776,7 +776,7 @@ class UserAPI {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     @zodValidate
     @responseZodSchema(newPetZod.loginGetResponse)
@@ -792,7 +792,7 @@ class UserAPI {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     @zodValidate
     @responseZodSchema(newPetZod.logoutGetResponse)
@@ -807,7 +807,7 @@ class UserAPI {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     @zodValidate
     @responseZodSchema(newPetZod.createResponse)
@@ -832,14 +832,14 @@ import { request } from "@/api/request";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid API-pet
+ * @UUID API-pet
  */
 class PetAPI {
     /**
      *
      * @summary summary
      * @description
-     * @uuid test
+     * @UUID test
      */
     testPost(bodyParams: Pet.TestPostBodyParams): Promise<[Pet.TestPostErrorResponse, Pet.TestPostResponse]> {
         return request({
@@ -853,7 +853,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testput
+     * @UUID testput
      */
     testPut(bodyParams: Pet.TestPutBodyParams): Promise<[Pet.TestPutErrorResponse, Pet.TestPutResponse]> {
         return request({
@@ -867,7 +867,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testdelete
+     * @UUID testdelete
      */
     delByTest(bodyParams: Pet.DelByTestBodyParams): Promise<[Pet.DelByTestErrorResponse, Pet.DelByTestResponse]> {
         return request({
@@ -881,7 +881,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid test-idget
+     * @UUID test-idget
      */
     testIdGet(queryParams: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']): Promise<[Pet.TestIdGetErrorResponse, Pet.TestIdGetResponse]> {
         return request({
@@ -898,7 +898,7 @@ class PetAPI {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     uploadImagePost(bodyParams: Pet.UploadImagePostBodyParams, petId: Pet.UploadImagePostPathParams['petId']): Promise<[Pet.UploadImagePostErrorResponse, Pet.UploadImagePostResponse]> {
         return request({
@@ -915,7 +915,7 @@ class PetAPI {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     create(bodyParams: Pet.CreateBodyParams): Promise<[Pet.CreateErrorResponse, Pet.CreateResponse]> {
         return request({
@@ -929,7 +929,7 @@ class PetAPI {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     update(bodyParams: Pet.UpdateBodyParams): Promise<[Pet.UpdateErrorResponse, Pet.UpdateResponse]> {
         return request({
@@ -943,7 +943,7 @@ class PetAPI {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     findByStatusGet(queryParams: Pet.FindByStatusGetQueryParams): Promise<[Pet.FindByStatusGetErrorResponse, Pet.FindByStatusGetResponse]> {
         return request({
@@ -960,7 +960,7 @@ class PetAPI {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     findByTagsGet(queryParams: Pet.FindByTagsGetQueryParams): Promise<[Pet.FindByTagsGetErrorResponse, Pet.FindByTagsGetResponse]> {
         return request({
@@ -977,7 +977,7 @@ class PetAPI {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     findByPetId(petId: Pet.FindByPetIdPathParams['petId']): Promise<[Pet.FindByPetIdErrorResponse, Pet.FindByPetIdResponse]> {
         return request({
@@ -990,7 +990,7 @@ class PetAPI {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     petIdPost(bodyParams: Pet.PetIdPostBodyParams, petId: Pet.PetIdPostPathParams['petId']): Promise<[Pet.PetIdPostErrorResponse, Pet.PetIdPostResponse]> {
         return request({
@@ -1007,7 +1007,7 @@ class PetAPI {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     delByPetId(petId: Pet.DelByPetIdPathParams['petId']): Promise<[Pet.DelByPetIdErrorResponse, Pet.DelByPetIdResponse]> {
         return request({
@@ -1026,14 +1026,14 @@ import { request } from "@/api/request";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid API-store
+ * @UUID API-store
  */
 class StoreAPI {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     create(bodyParams: Store.CreateBodyParams): Promise<[Store.CreateErrorResponse, Store.CreateResponse]> {
         return request({
@@ -1047,7 +1047,7 @@ class StoreAPI {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']): Promise<[Store.FindByOrderIdErrorResponse, Store.FindByOrderIdResponse]> {
         return request({
@@ -1060,7 +1060,7 @@ class StoreAPI {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']): Promise<[Store.DelByOrderIdErrorResponse, Store.DelByOrderIdResponse]> {
         return request({
@@ -1073,7 +1073,7 @@ class StoreAPI {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     inventoryGet(): Promise<[Store.InventoryGetErrorResponse, Store.InventoryGetResponse]> {
         return request({
@@ -1092,14 +1092,14 @@ import { request } from "@/api/request";
  *
  * @tag user
  * @description Operations about user
- * @uuid API-user
+ * @UUID API-user
  */
 class UserAPI {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     createWithArrayPost(bodyParams: User.CreateWithArrayPostBodyParams): Promise<[User.CreateWithArrayPostErrorResponse, User.CreateWithArrayPostResponse]> {
         return request({
@@ -1113,7 +1113,7 @@ class UserAPI {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     createWithListPost(bodyParams: User.CreateWithListPostBodyParams): Promise<[User.CreateWithListPostErrorResponse, User.CreateWithListPostResponse]> {
         return request({
@@ -1127,7 +1127,7 @@ class UserAPI {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     findByUsername(username: User.FindByUsernamePathParams['username']): Promise<[User.FindByUsernameErrorResponse, User.FindByUsernameResponse]> {
         return request({
@@ -1140,7 +1140,7 @@ class UserAPI {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     usernamePut(bodyParams: User.UsernamePutBodyParams, username: User.UsernamePutPathParams['username']): Promise<[User.UsernamePutErrorResponse, User.UsernamePutResponse]> {
         return request({
@@ -1154,7 +1154,7 @@ class UserAPI {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     delByUsername(username: User.DelByUsernamePathParams['username']): Promise<[User.DelByUsernameErrorResponse, User.DelByUsernameResponse]> {
         return request({
@@ -1167,7 +1167,7 @@ class UserAPI {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     loginGet(queryParams: User.LoginGetQueryParams): Promise<[User.LoginGetErrorResponse, User.LoginGetResponse]> {
         return request({
@@ -1181,7 +1181,7 @@ class UserAPI {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     logoutGet(): Promise<[User.LogoutGetErrorResponse, User.LogoutGetResponse]> {
         return request({
@@ -1194,7 +1194,7 @@ class UserAPI {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     create(bodyParams: User.CreateBodyParams): Promise<[User.CreateErrorResponse, User.CreateResponse]> {
         return request({
@@ -1219,14 +1219,14 @@ import { request } from "@/api/request";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid API-pet
+ * @UUID API-pet
  */
 class PetAPI {
     /**
      *
      * @summary summary
      * @description
-     * @uuid test
+     * @UUID test
      */
     @zodValidate
     @responseZodSchema(petZod.testPostResponse)
@@ -1242,7 +1242,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testput
+     * @UUID testput
      */
     @zodValidate
     @responseZodSchema(petZod.testPutResponse)
@@ -1258,7 +1258,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testdelete
+     * @UUID testdelete
      */
     @zodValidate
     @responseZodSchema(petZod.delByTestResponse)
@@ -1274,7 +1274,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid test-idget
+     * @UUID test-idget
      */
     @zodValidate
     @responseZodSchema(petZod.testIdGetResponse)
@@ -1293,7 +1293,7 @@ class PetAPI {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     @zodValidate
     @responseZodSchema(petZod.uploadImagePostResponse)
@@ -1312,7 +1312,7 @@ class PetAPI {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     @zodValidate
     @responseZodSchema(petZod.createResponse)
@@ -1328,7 +1328,7 @@ class PetAPI {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     @zodValidate
     @responseZodSchema(petZod.updateResponse)
@@ -1344,7 +1344,7 @@ class PetAPI {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     @zodValidate
     @responseZodSchema(petZod.findByStatusGetResponse)
@@ -1363,7 +1363,7 @@ class PetAPI {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     @zodValidate
     @responseZodSchema(petZod.findByTagsGetResponse)
@@ -1382,7 +1382,7 @@ class PetAPI {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     @zodValidate
     @responseZodSchema(petZod.findByPetIdResponse)
@@ -1397,7 +1397,7 @@ class PetAPI {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     @zodValidate
     @responseZodSchema(petZod.petIdPostResponse)
@@ -1416,7 +1416,7 @@ class PetAPI {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     @zodValidate
     @responseZodSchema(petZod.delByPetIdResponse)
@@ -1439,14 +1439,14 @@ import { request } from "@/api/request";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid API-store
+ * @UUID API-store
  */
 class StoreAPI {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     @zodValidate
     @responseZodSchema(storeZod.createResponse)
@@ -1462,7 +1462,7 @@ class StoreAPI {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     @zodValidate
     @responseZodSchema(storeZod.findByOrderIdResponse)
@@ -1477,7 +1477,7 @@ class StoreAPI {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     @zodValidate
     @responseZodSchema(storeZod.delByOrderIdResponse)
@@ -1492,7 +1492,7 @@ class StoreAPI {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     @zodValidate
     @responseZodSchema(storeZod.inventoryGetResponse)
@@ -1515,14 +1515,14 @@ import { request } from "@/api/request";
  *
  * @tag user
  * @description Operations about user
- * @uuid API-user
+ * @UUID API-user
  */
 class UserAPI {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     @zodValidate
     @responseZodSchema(userZod.createWithArrayPostResponse)
@@ -1538,7 +1538,7 @@ class UserAPI {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     @zodValidate
     @responseZodSchema(userZod.createWithListPostResponse)
@@ -1554,7 +1554,7 @@ class UserAPI {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     @zodValidate
     @responseZodSchema(userZod.findByUsernameResponse)
@@ -1569,7 +1569,7 @@ class UserAPI {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     @zodValidate
     @responseZodSchema(userZod.usernamePutResponse)
@@ -1585,7 +1585,7 @@ class UserAPI {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     @zodValidate
     @responseZodSchema(userZod.delByUsernameResponse)
@@ -1600,7 +1600,7 @@ class UserAPI {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     @zodValidate
     @responseZodSchema(userZod.loginGetResponse)
@@ -1616,7 +1616,7 @@ class UserAPI {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     @zodValidate
     @responseZodSchema(userZod.logoutGetResponse)
@@ -1631,7 +1631,7 @@ class UserAPI {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     @zodValidate
     @responseZodSchema(userZod.createResponse)
@@ -1658,14 +1658,14 @@ import { request } from "./test/request";
  *
  * @tag pet
  * @description Everything about your Pets
- * @uuid API-pet
+ * @UUID API-pet
  */
 class PetAPI {
     /**
      *
      * @summary summary
      * @description
-     * @uuid test
+     * @UUID test
      */
     @zodValidate
     @responseZodSchema(petZod.testPostResponse)
@@ -1681,7 +1681,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testput
+     * @UUID testput
      */
     @zodValidate
     @responseZodSchema(petZod.testPutResponse)
@@ -1697,7 +1697,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid testdelete
+     * @UUID testdelete
      */
     @zodValidate
     @responseZodSchema(petZod.delByTestResponse)
@@ -1713,7 +1713,7 @@ class PetAPI {
      *
      * @summary summary
      * @description
-     * @uuid test-idget
+     * @UUID test-idget
      */
     @zodValidate
     @responseZodSchema(petZod.testIdGetResponse)
@@ -1732,7 +1732,7 @@ class PetAPI {
      *
      * @summary uploads an image
      * @description pet
-     * @uuid uploadFile
+     * @UUID uploadFile
      */
     @zodValidate
     @responseZodSchema(petZod.uploadImagePostResponse)
@@ -1751,7 +1751,7 @@ class PetAPI {
      *
      * @summary Add a new pet to the store
      * @description
-     * @uuid addPet
+     * @UUID addPet
      */
     @zodValidate
     @responseZodSchema(petZod.createResponse)
@@ -1767,7 +1767,7 @@ class PetAPI {
      *
      * @summary Update an existing pet
      * @description
-     * @uuid updatePet
+     * @UUID updatePet
      */
     @zodValidate
     @responseZodSchema(petZod.updateResponse)
@@ -1783,7 +1783,7 @@ class PetAPI {
      *
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @uuid findPetsByStatus
+     * @UUID findPetsByStatus
      */
     @zodValidate
     @responseZodSchema(petZod.findByStatusGetResponse)
@@ -1802,7 +1802,7 @@ class PetAPI {
      *
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @uuid findPetsByTags
+     * @UUID findPetsByTags
      */
     @zodValidate
     @responseZodSchema(petZod.findByTagsGetResponse)
@@ -1821,7 +1821,7 @@ class PetAPI {
      *
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @uuid getPetById
+     * @UUID getPetById
      */
     @zodValidate
     @responseZodSchema(petZod.findByPetIdResponse)
@@ -1836,7 +1836,7 @@ class PetAPI {
      *
      * @summary Updates a pet in the store with form data
      * @description
-     * @uuid updatePetWithForm
+     * @UUID updatePetWithForm
      */
     @zodValidate
     @responseZodSchema(petZod.petIdPostResponse)
@@ -1855,7 +1855,7 @@ class PetAPI {
      *
      * @summary Deletes a pet
      * @description
-     * @uuid deletePet
+     * @UUID deletePet
      */
     @zodValidate
     @responseZodSchema(petZod.delByPetIdResponse)
@@ -1878,14 +1878,14 @@ import { request } from "./test/request";
  *
  * @tag store
  * @description Access to Petstore orders
- * @uuid API-store
+ * @UUID API-store
  */
 class StoreAPI {
     /**
      *
      * @summary Place an order for a pet
      * @description
-     * @uuid placeOrder
+     * @UUID placeOrder
      */
     @zodValidate
     @responseZodSchema(storeZod.createResponse)
@@ -1901,7 +1901,7 @@ class StoreAPI {
      *
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @uuid getOrderById
+     * @UUID getOrderById
      */
     @zodValidate
     @responseZodSchema(storeZod.findByOrderIdResponse)
@@ -1916,7 +1916,7 @@ class StoreAPI {
      *
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @uuid deleteOrder
+     * @UUID deleteOrder
      */
     @zodValidate
     @responseZodSchema(storeZod.delByOrderIdResponse)
@@ -1931,7 +1931,7 @@ class StoreAPI {
      *
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @uuid getInventory
+     * @UUID getInventory
      */
     @zodValidate
     @responseZodSchema(storeZod.inventoryGetResponse)
@@ -1954,14 +1954,14 @@ import { request } from "./test/request";
  *
  * @tag user
  * @description Operations about user
- * @uuid API-user
+ * @UUID API-user
  */
 class UserAPI {
     /**
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithArrayInput
+     * @UUID createUsersWithArrayInput
      */
     @zodValidate
     @responseZodSchema(userZod.createWithArrayPostResponse)
@@ -1977,7 +1977,7 @@ class UserAPI {
      *
      * @summary Creates list of users with given input array
      * @description
-     * @uuid createUsersWithListInput
+     * @UUID createUsersWithListInput
      */
     @zodValidate
     @responseZodSchema(userZod.createWithListPostResponse)
@@ -1993,7 +1993,7 @@ class UserAPI {
      *
      * @summary Get user by user name
      * @description
-     * @uuid getUserByName
+     * @UUID getUserByName
      */
     @zodValidate
     @responseZodSchema(userZod.findByUsernameResponse)
@@ -2008,7 +2008,7 @@ class UserAPI {
      *
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @uuid updateUser
+     * @UUID updateUser
      */
     @zodValidate
     @responseZodSchema(userZod.usernamePutResponse)
@@ -2024,7 +2024,7 @@ class UserAPI {
      *
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @uuid deleteUser
+     * @UUID deleteUser
      */
     @zodValidate
     @responseZodSchema(userZod.delByUsernameResponse)
@@ -2039,7 +2039,7 @@ class UserAPI {
      *
      * @summary Logs user into the system
      * @description
-     * @uuid loginUser
+     * @UUID loginUser
      */
     @zodValidate
     @responseZodSchema(userZod.loginGetResponse)
@@ -2055,7 +2055,7 @@ class UserAPI {
      *
      * @summary Logs out current logged in user session
      * @description
-     * @uuid logoutUser
+     * @UUID logoutUser
      */
     @zodValidate
     @responseZodSchema(userZod.logoutGetResponse)
@@ -2070,7 +2070,7 @@ class UserAPI {
      *
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @uuid createUser
+     * @UUID createUser
      */
     @zodValidate
     @responseZodSchema(userZod.createResponse)

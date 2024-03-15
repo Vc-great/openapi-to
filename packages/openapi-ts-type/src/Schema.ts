@@ -1,3 +1,5 @@
+import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+
 import _ from "lodash";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
@@ -190,7 +192,7 @@ export class Schema {
                 .concat(
                   this.openapi.isReference(schema)
                     ? {
-                        tagName: "UUID",
+                        tagName: UUID_TAG_NAME,
                         text: UUID,
                       }
                     : [],

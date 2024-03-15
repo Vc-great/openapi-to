@@ -1,7 +1,9 @@
+import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+
 import _ from "lodash";
 import { Project } from "ts-morph";
 
-import { UUID, UUIDPrefix } from "./utils/UUIDPrefix.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 
 import type {
   InterfaceDeclaration,
@@ -11,11 +13,6 @@ import type {
   TypeAliasDeclaration,
 } from "ts-morph";
 import type { Config } from "./types.ts";
-
-interface ImportNameSpace {
-  namedImport: string;
-  moduleSpecifier: string;
-}
 
 export class TypeOldNode {
   public currentSourceFile: SourceFile | undefined;
@@ -108,6 +105,7 @@ export class TypeOldNode {
             ? this.uuid(interfaceDeclaration?.getJsDocs())
             : [],
         )
+        .filter(Boolean)
         .forEach((uuid: string) => {
           if (uuid.startsWith(UUIDPrefix)) {
             this.sourceFileCache.set(uuid, sourceFile);
@@ -121,7 +119,7 @@ export class TypeOldNode {
     return _.chain(JsDocs)
       .map((x) => x.getTags())
       .flatten()
-      .filter((x) => x.getTagName() === UUID)
+      .filter((x) => x.getTagName() === UUID_TAG_NAME)
       .map((x) => x.getCommentText())
       .head()
       .value();

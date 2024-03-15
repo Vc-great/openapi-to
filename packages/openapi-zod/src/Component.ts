@@ -1,9 +1,12 @@
 import path from "node:path";
 
+import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+
 import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Schema } from "./Schema.ts";
 import { Zod } from "./zod.ts";
 
@@ -15,6 +18,7 @@ import type { StatementStructures } from "ts-morph";
 import type { Config } from "./types.ts";
 export class Component {
   private oas: Config["oas"];
+  private oldNode: Config["oldNode"];
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
@@ -31,6 +35,7 @@ export class Component {
     this.openapiToSingleConfig = config.openapiToSingleConfig;
     this.openapi = config.openapi;
     this.schema = new Schema(config);
+    this.oldNode = config.oldNode;
   }
 
   get z(): Zod {
@@ -65,6 +70,13 @@ export class Component {
     schema: OpenAPIV3.ReferenceObject,
     typeName: string,
   ): void {
+    const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
+    const upperFirstRefName = _.upperFirst(
+      this.openapi.getRefAlias(schema.$ref),
+    );
+    const UUID = UUIDPrefix + upperFirstTypeName + "-" + upperFirstRefName;
+    const variableDeclaration = this.oldNode.variableDeclarationCache.get(UUID);
+
     this.createModelSourceFile(
       [
         ...this.ast.generateImportStatements([
@@ -74,7 +86,7 @@ export class Component {
             moduleSpecifier: `zod`,
           },
           {
-            namedImports: [this.openapi.getRefAlias(schema.$ref)],
+            namedImports: [variableDeclaration?.getName() ?? upperFirstRefName],
             isTypeOnly: false,
             moduleSpecifier: `/${this.modelFolderName}/index`,
           },
@@ -84,17 +96,17 @@ export class Component {
           isExported: true,
           declarations: [
             {
-              name: _.upperFirst(_.camelCase(typeName)),
+              name: variableDeclaration?.getName() ?? upperFirstTypeName,
               initializer: this.z
                 .head()
-                .lazy(this.openapi.getRefAlias(schema.$ref))
+                .lazy(variableDeclaration?.getName() ?? upperFirstRefName)
                 .toString(),
             },
           ],
           docs: [{ description: "" }],
         }),
       ],
-      _.upperFirst(_.camelCase(typeName)),
+      variableDeclaration?.getName() ?? upperFirstTypeName,
     );
   }
 
@@ -152,16 +164,34 @@ export class Component {
   ): void {
     this.openapi.resetRefCache();
 
-    const schemaStatuments = this.ast.generateVariableStatements({
+    const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
+    const UUID = UUIDPrefix + upperFirstTypeName;
+    const variableDeclaration = this.oldNode.variableDeclarationCache.get(UUID);
+
+    const schemaStatements = this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: true,
       declarations: [
         {
-          name: _.camelCase(typeName),
+          name: variableDeclaration?.getName() ?? _.camelCase(typeName),
           initializer: this.schema.getZodFromSchema(schema),
         },
       ],
-      docs: [{ description: schema.description || "" }],
+      docs: [
+        {
+          description: "\n",
+          tags: [
+            {
+              tagName: "description",
+              text: schema.description || "",
+            },
+            {
+              tagName: UUID_TAG_NAME,
+              text: UUID,
+            },
+          ],
+        },
+      ],
     });
 
     const zodImport = this.ast.generateImportStatements([
@@ -174,11 +204,16 @@ export class Component {
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
+        const UUID = UUIDPrefix + _.camelCase(this.openapi.getRefAlias(ref));
+        const declaration = this.oldNode.declarationCache.get(UUID);
+        const name =
+          declaration?.getName() ?? _.camelCase(this.openapi.getRefAlias(ref));
+
         return this.ast.generateImportStatements([
           {
-            namedImports: [_.camelCase(this.openapi.getRefAlias(ref))],
+            namedImports: [name],
             isTypeOnly: false,
-            moduleSpecifier: "./" + _.camelCase(this.openapi.getRefAlias(ref)),
+            moduleSpecifier: "./" + name,
           },
         ]);
       })
@@ -186,7 +221,7 @@ export class Component {
       .value();
 
     this.createModelSourceFile(
-      [...importStatements, ...zodImport, schemaStatuments],
+      [...importStatements, ...zodImport, schemaStatements],
       _.camelCase(typeName),
     );
   }

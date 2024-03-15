@@ -27,7 +27,6 @@
   "module": "dist/es/index.js",
   "types": "./dist/es/index.d.ts",
   "files": [
-    "src",
     "dist",
     "!/**/**.test.**",
     "!/**/__tests__/**"
