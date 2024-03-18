@@ -61,6 +61,75 @@ export default defineConfig({
   ],
 });
 ```
+ 
+## Zod 
+增加 zod 主要用于端到端的校验.zodDecorator 会在请求方法上增加三个方法,需要自己去实现具体逻辑,给出示例供大家参考
+
+- paramsZodSchema
+
+  收集请求参数 zodSchema
+
+```ts
+@paramsZodSchema(ZOD.uploadImagePostBodyRequest)
+```
+- responseZodSchema 响应Zod模式
+
+  收集响应数据 zodSchema
+
+```ts
+@responseZodSchema(ZOD.uploadImagePostResponse)
+```
+- zodValidate zod验证
+
+  根据 zodSchema 进行校验
+
+@zodValidate
+example 例子
+```ts
+
+import _ from "lodash";
+export function zodValidate(target: object, propertyKey: string, descriptor) {
+const fn = descriptor.value;
+descriptor.value = async (...args) => {
+args.forEach((item, index) => {
+const zodSchema = _.get(target, `_zodSchema.${propertyKey}.${index}`);
+if (!zodSchema) {
+return "";
+}
+const safeParse = zodSchema.safeParse(item);
+!safeParse.success &&
+console.error(
+`[${propertyKey}]request params error`,
+safeParse.error
+);
+});
+//
+const result = await fn(...args);
+//response 校验
+const responseZodSchema = _.get(
+target,
+`_zodSchema.${propertyKey}.responseZodSchema`
+);
+const safeParse = responseZodSchema.safeParse(result[1]);
+result[1] &&
+!safeParse.success &&
+console.error(`[${propertyKey}]response error`, safeParse.error);
+
+    return result;
+};
+}
+
+export const responseZodSchema =
+(zodSchema) => (target: object, propertyKey: string, descriptor) => {
+_.set(target, `_zodSchema.${propertyKey}.responseZodSchema`, zodSchema);
+};
+
+export const paramsZodSchema =
+(zodSchema) => (target: object, propertyKey: string, index) => {
+_.set(target, `_zodSchema.${propertyKey}.${index}`, zodSchema);
+};
+```
+
 
 
 <details> 

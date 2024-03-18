@@ -1,5 +1,22 @@
 # openapi-to
 
+## 2.0.0-alpha.6
+
+### Major Changes
+
+- fix bug
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/cli@2.0.0-alpha.4
+  - @openapi-to/core@2.0.0-alpha.4
+  - @openapi-to/openapi-faker@2.0.0-alpha.1
+  - @openapi-to/openapi-msw@2.0.0-alpha.1
+  - @openapi-to/openapi-ts-request@2.0.0-alpha.4
+  - @openapi-to/openapi-ts-type@2.0.0-alpha.4
+  - @openapi-to/openapi-zod@2.0.0-alpha.4
+
 ## 2.0.0-alpha.5
 
 ### Major Changes

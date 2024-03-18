@@ -7,12 +7,15 @@
     "openapi-to": "2.0.0-alpha.2",
     "@openapi-to/openapi-ts-request": "2.0.0-alpha.2",
     "@openapi-to/openapi-ts-type": "2.0.0-alpha.2",
-    "@openapi-to/openapi-zod": "2.0.0-alpha.2"
+    "@openapi-to/openapi-zod": "2.0.0-alpha.2",
+    "@openapi-to/openapi-faker": "2.0.0-alpha.0",
+    "@openapi-to/openapi-msw": "2.0.0-alpha.0"
   },
   "changesets": [
     "fifty-kiwis-roll",
     "many-shoes-change",
     "new-stingrays-teach",
+    "popular-flowers-wash",
     "yellow-paws-chew"
   ]
 }
