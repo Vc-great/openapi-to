@@ -1,4 +1,4 @@
-import { LogLevel, PluginStatus, randomCliColour } from "@openapi-to/core";
+import { LogLevel, PluginStatus,randomCliColour  } from "@openapi-to/core";
 
 import _ from "lodash";
 import c from "picocolors";

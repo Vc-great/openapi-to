@@ -115,3 +115,8 @@ export type OpenAPIAllDocument =
   | OpenAPIV3_1.Document;
 
 export type PossiblePromise<T> = Promise<T> | T;
+
+export enum PluginStatus {
+  Succeeded = "succeeded",
+  Failed = "failed",
+}

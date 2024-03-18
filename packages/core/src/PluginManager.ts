@@ -1,7 +1,7 @@
 import _ from "lodash";
 
 import { LogLevel } from "./logger.ts";
-import { LifeCycleEnum } from "./types.ts";
+import { LifeCycleEnum, PluginStatus } from "./types.ts";
 
 import type { Logger } from "./logger.ts";
 import type {
@@ -15,10 +15,6 @@ export function createPlugin<T>(
   pluginConfigFactory: PluginConfigFactory<T>,
 ): PluginConfigFactory<T> {
   return pluginConfigFactory;
-}
-export const enum PluginStatus {
-  Succeeded = "succeeded",
-  Failed = "failed",
 }
 
 export type PluginStatusValue = `${PluginStatus}`;
