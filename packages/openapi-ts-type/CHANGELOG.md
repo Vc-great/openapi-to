@@ -1,5 +1,16 @@
 # @openapi-to/openapi-ts-type
 
+## 2.0.0-rc.5
+
+### Major Changes
+
+- rc
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/core@2.0.0-rc.5
+
 ## 2.0.0-alpha.4
 
 ### Major Changes

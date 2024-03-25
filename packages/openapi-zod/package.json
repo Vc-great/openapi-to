@@ -1,6 +1,6 @@
 {
   "name": "@openapi-to/openapi-zod",
-  "version": "2.0.0-alpha.4",
+  "version": "2.0.0-rc.5",
   "sideEffects": false,
   "type": "module",
   "description": "Generator ts",

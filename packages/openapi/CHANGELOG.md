@@ -1,5 +1,22 @@
 # openapi-to
 
+## 2.0.0-rc.7
+
+### Major Changes
+
+- rc
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/cli@2.0.0-rc.5
+  - @openapi-to/core@2.0.0-rc.5
+  - @openapi-to/openapi-faker@2.0.0-rc.2
+  - @openapi-to/openapi-msw@2.0.0-rc.2
+  - @openapi-to/openapi-ts-request@2.0.0-rc.5
+  - @openapi-to/openapi-ts-type@2.0.0-rc.5
+  - @openapi-to/openapi-zod@2.0.0-rc.5
+
 ## 2.0.0-alpha.6
 
 ### Major Changes
