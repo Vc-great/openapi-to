@@ -164,7 +164,7 @@ export class RequestGenerator {
    * import {} './type'
    * #zod
    * //zod decorator
-   * import { paramsZodSchema, responseZodSchema, zodValidate } from '@/utils/zod'
+   * import { paramsZodSchema, responseZodSchema, ZodValidation } from '@/utils/zod'
    * // ts type
    * import type { DrmsDynamicDataType } from './drmsDynamicDataZod'
    * // zod
@@ -173,7 +173,7 @@ export class RequestGenerator {
    */
   generateImport(): Array<ImportDeclarationStructure> {
     const zodDecorator: ImportStatementsOmitKind = {
-      namedImports: ["paramsZodSchema", "responseZodSchema", "zodValidate"],
+      namedImports: ["paramsZodSchema", "responseZodSchema", "ZodValidation"],
       moduleSpecifier:
         this.oldNode.zodDecoratorImport.moduleSpecifier ??
         this.pluginConfig?.zodDecoratorImportDeclaration?.moduleSpecifier ??
@@ -258,14 +258,14 @@ export class RequestGenerator {
   /**
    * @example
    * ```
-   *@zodValidate
+   *@ZodValidation
    *@responseZodSchema(ZOD.updateResponse)
    * ```
    */
   generatorMethodDecorators(): OptionalKind<DecoratorStructure>[] {
     return [
       {
-        name: "zodValidate",
+        name: "ZodValidation",
       },
       {
         name: "responseZodSchema",
