@@ -10,6 +10,7 @@ const config =`import {
   createZod,
   createFaker,
   createMSW,
+  createNestjs,
    } from'openapi-to'
 
 export default defineConfig({
@@ -40,6 +41,7 @@ export default defineConfig({
       compare: true
     }),
     createMSW(),
+    createNestjs()
   ]
 })`
 

@@ -1,0 +1,324 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RequestGenerator > controllerGenerator 1`] = `
+"import { Controller, HttpStatus, HttpCode, Get, Query, Post, Body, Put, Delete, ParseArrayPipe, Param, ParseIntPipe } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } from "@nestjs/swagger";
+import { Permissions } from "@/common/decorators/auth.decorator";
+import { ApiTag } from "@/common/swagger";
+import { PetService } from "./pet.service";
+import { FindAllQueryDto } from "./domain/findAll-query.dto";
+import { FindAllUserVo } from "./domain/FindAllUser.vo";
+import { testBodyDto } from "./domain/testBodyDto.dto";
+import { testDto2 } from "./domain/testDto2.vo";
+import { test32145 } from "./domain/test32145.vo";
+import { CreateUpdateUserDto } from "./domain/CreateUpdateUserDto.dto";
+import { TestidgetQueryDto } from "./domain/testidget-query.dto";
+import { ApiResponse } from "./domain/ApiResponse.vo";
+import { Pet } from "./domain/Pet.dto";
+import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
+import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
+
+@ApiTag({
+    name: 'pet',
+    description: 'Everything about your Pets',
+})
+@Controller('pet')
+@ApiBearerAuth()
+export class PetController {
+    constructor(private readonly petService: PetService) {
+    }
+
+    @ApiOperation({ summary: 'get接口', description: '获取用户列表' })
+    @ApiResponse({ status: HttpStatus.OK, description: "success111111", FindAllUserVo })
+    @Get('/test')
+    @HttpCode(HttpStatus.OK)
+    async findAll(@Query() query: FindAllQueryDto): Promise<FindAllUserVo> {
+        return await this.petService.findAll(query)
+    }
+
+    @ApiOperation({ summary: 'summary' })
+    @ApiResponse({ status: HttpStatus.OK, description: "OK", testDto2 })
+    @Post('/test')
+    @Permissions("admin")
+    @HttpCode(HttpStatus.OK)
+    async test(@Body() data: testBodyDto): Promise<testDto2> {
+        return await this.petService.test(data)
+    }
+
+    @ApiOperation({ summary: 'summary' })
+    @ApiResponse({ status: HttpStatus.OK, description: "OK", testDto2 })
+    @Put('/test')
+    @HttpCode(HttpStatus.OK)
+    async testput(@Body() data: testBodyDto): Promise<testDto2> {
+        return await this.petService.testput(data)
+    }
+
+    @ApiOperation({ summary: 'summary' })
+    @ApiResponse({ status: HttpStatus.OK, description: "OK", test32145 })
+    @ApiBody({ "required": true, "type": "array", "isArray": true, "description": "ids" })
+    @Delete('/test')
+    @HttpCode(HttpStatus.OK)
+    async testdelete(@Body(new ParseArrayPipe({ items: Number })) data: number[]): Promise<test32145> {
+        return await this.petService.testdelete(data)
+    }
+
+    @ApiOperation({ summary: 'summary' })
+    @ApiResponse({ status: HttpStatus.OK, description: "OK", testDto2 })
+    @ApiBody({ "required": true, "type": "array", "isArray": true, "description": "批量创建用户dto", "examples": { "a": { "summary": "概要", "description": "事例说明", "value": { "a": 1, "b": "2" } } } })
+    @Post('/test/batch-create')
+    @Permissions("admin")
+    @HttpCode(HttpStatus.OK)
+    async batchCreate(@Body() data: CreateUpdateUserDto[]): Promise<testDto2> {
+        return await this.petService.batchCreate(data)
+    }
+
+    @ApiOperation({ summary: 'summary' })
+    @ApiResponse({ status: HttpStatus.OK, description: "OK", testDto2 })
+    @ApiParam({
+        name: "testId",
+        description: "test-id"
+    })
+    @Get('/test/:testId')
+    @HttpCode(HttpStatus.OK)
+    async testidget(@Param("testId", ParseIntPipe) testId: number, @Query() query: TestidgetQueryDto): Promise<testDto2> {
+        return await this.petService.testidget(testId, query)
+    }
+
+    @ApiOperation({ summary: 'uploads an image', description: 'pet' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", ApiResponse })
+    @ApiParam({
+        name: "petId",
+        description: "ID of pet to update"
+    })
+    @Post('/:petId/uploadImage')
+    @HttpCode(HttpStatus.OK)
+    async uploadFile(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<ApiResponse> {
+        return await this.petService.uploadFile(petId, data)
+    }
+
+    @ApiOperation({ summary: 'Add a new pet to the store' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post()
+    @HttpCode(HttpStatus.OK)
+    async addPet(@Body() data: Pet): Promise<void> {
+        return await this.petService.addPet(data)
+    }
+
+    @ApiOperation({ summary: 'Update an existing pet' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Put()
+    @HttpCode(HttpStatus.OK)
+    async updatePet(@Body() data: Pet): Promise<void> {
+        return await this.petService.updatePet(data)
+    }
+
+    @ApiOperation({ summary: 'Finds Pets by status', description: 'Multiple status values can be provided with comma separated strings' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
+    @Get('/findByStatus')
+    @HttpCode(HttpStatus.OK)
+    async findPetsByStatus(@Query() query: FindPetsByStatusQueryDto): Promise<Pet[]> {
+        return await this.petService.findPetsByStatus(query)
+    }
+
+    @ApiOperation({ summary: 'Finds Pets by tags', description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
+    @Get('/findByTags')
+    @HttpCode(HttpStatus.OK)
+    async findPetsByTags(@Query() query: FindPetsByTagsQueryDto): Promise<Pet[]> {
+        return await this.petService.findPetsByTags(query)
+    }
+
+    @ApiOperation({ summary: 'Find pet by ID', description: 'Returns a single pet' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", Pet })
+    @ApiParam({
+        name: "petId",
+        description: "ID of pet to return"
+    })
+    @Get('/:petId')
+    @HttpCode(HttpStatus.OK)
+    async getPetById(@Param("petId", ParseIntPipe) petId: number): Promise<Pet> {
+        return await this.petService.getPetById(petId)
+    }
+
+    @ApiOperation({ summary: 'Updates a pet in the store with form data' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "petId",
+        description: "ID of pet that needs to be updated"
+    })
+    @Post('/:petId')
+    @HttpCode(HttpStatus.OK)
+    async updatePetWithForm(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<void> {
+        return await this.petService.updatePetWithForm(petId, data)
+    }
+
+    @ApiOperation({ summary: 'Deletes a pet' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "petId",
+        description: "Pet id to delete"
+    })
+    @Delete('/:petId')
+    @HttpCode(HttpStatus.OK)
+    async deletePet(@Param("petId", ParseIntPipe) petId: number): Promise<void> {
+        return await this.petService.deletePet(petId)
+    }
+}
+
+import { Controller, HttpStatus, HttpCode, Get, Query, Post, Body, Put, Delete, ParseArrayPipe, Param, ParseIntPipe } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } from "@nestjs/swagger";
+import { Permissions } from "@/common/decorators/auth.decorator";
+import { ApiTag } from "@/common/swagger";
+import { StoreService } from "./store.service";
+import { Order } from "./domain/Order.dto";
+
+@ApiTag({
+    name: 'store',
+    description: 'Access to Petstore orders',
+})
+@Controller('store')
+@ApiBearerAuth()
+export class StoreController {
+    constructor(private readonly storeService: StoreService) {
+    }
+
+    @ApiOperation({ summary: 'Place an order for a pet' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", Order })
+    @Post('/order')
+    @HttpCode(HttpStatus.OK)
+    async placeOrder(@Body() data: Order): Promise<Order> {
+        return await this.storeService.placeOrder(data)
+    }
+
+    @ApiOperation({ summary: 'Find purchase order by ID', description: 'For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", Order })
+    @ApiParam({
+        name: "orderId",
+        description: "ID of pet that needs to be fetched"
+    })
+    @Get('/order/:orderId')
+    @HttpCode(HttpStatus.OK)
+    async getOrderById(@Param("orderId", ParseIntPipe) orderId: number): Promise<Order> {
+        return await this.storeService.getOrderById(orderId)
+    }
+
+    @ApiOperation({ summary: 'Delete purchase order by ID', description: 'For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "orderId",
+        description: "ID of the order that needs to be deleted"
+    })
+    @Delete('/order/:orderId')
+    @HttpCode(HttpStatus.OK)
+    async deleteOrder(@Param("orderId", ParseIntPipe) orderId: number): Promise<void> {
+        return await this.storeService.deleteOrder(orderId)
+    }
+
+    @ApiOperation({ summary: 'Returns pet inventories by status', description: 'Returns a map of status codes to quantities' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation" })
+    @Get('/inventory')
+    @HttpCode(HttpStatus.OK)
+    async getInventory(): Promise<void> {
+        return await this.storeService.getInventory()
+    }
+}
+
+import { Controller, HttpStatus, HttpCode, Get, Query, Post, Body, Put, Delete, ParseArrayPipe, Param, ParseIntPipe } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiParam } from "@nestjs/swagger";
+import { Permissions } from "@/common/decorators/auth.decorator";
+import { ApiTag } from "@/common/swagger";
+import { UserService } from "./user.service";
+import { UserArray } from "./domain/UserArray.dto";
+import { User } from "./domain/User.vo";
+import { LoginUserQueryDto } from "./domain/loginUser-query.dto";
+
+@ApiTag({
+    name: 'user',
+    description: 'Operations about user',
+})
+@Controller('user')
+@ApiBearerAuth()
+export class UserController {
+    constructor(private readonly userService: UserService) {
+    }
+
+    @ApiOperation({ summary: 'Creates list of users with given input array' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiBody({ "type": "array", "isArray": true, "description": "List of user object" })
+    @Post('/createWithArray')
+    @HttpCode(HttpStatus.OK)
+    async createUsersWithArrayInput(@Body() data: UserArray[]): Promise<void> {
+        return await this.userService.createUsersWithArrayInput(data)
+    }
+
+    @ApiOperation({ summary: 'Creates list of users with given input array' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiBody({ "type": "array", "isArray": true, "description": "List of user object" })
+    @Post('/createWithList')
+    @HttpCode(HttpStatus.OK)
+    async createUsersWithListInput(@Body() data: UserArray[]): Promise<void> {
+        return await this.userService.createUsersWithListInput(data)
+    }
+
+    @ApiOperation({ summary: 'Get user by user name' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", User })
+    @ApiParam({
+        name: "username",
+        description: "The name that needs to be fetched. Use user1 for testing. "
+    })
+    @Get('/:username')
+    @HttpCode(HttpStatus.OK)
+    async getUserByName(@Param() username: string): Promise<User> {
+        return await this.userService.getUserByName(username)
+    }
+
+    @ApiOperation({ summary: 'Updated user', description: 'This can only be done by the logged in user.' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "username",
+        description: "name that need to be updated"
+    })
+    @Put('/:username')
+    @HttpCode(HttpStatus.OK)
+    async updateUser(@Param() username: string, @Body() data: User): Promise<void> {
+        return await this.userService.updateUser(username, data)
+    }
+
+    @ApiOperation({ summary: 'Delete user', description: 'This can only be done by the logged in user.' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "username",
+        description: "The name that needs to be deleted"
+    })
+    @Delete('/:username')
+    @HttpCode(HttpStatus.OK)
+    async deleteUser(@Param() username: string): Promise<void> {
+        return await this.userService.deleteUser(username)
+    }
+
+    @ApiOperation({ summary: 'Logs user into the system' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation" })
+    @Get('/login')
+    @HttpCode(HttpStatus.OK)
+    async loginUser(@Query() query: LoginUserQueryDto): Promise<void> {
+        return await this.userService.loginUser(query)
+    }
+
+    @ApiOperation({ summary: 'Logs out current logged in user session' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Get('/logout')
+    @HttpCode(HttpStatus.OK)
+    async logoutUser(): Promise<void> {
+        return await this.userService.logoutUser()
+    }
+
+    @ApiOperation({ summary: 'Create user', description: 'This can only be done by the logged in user.' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post()
+    @HttpCode(HttpStatus.OK)
+    async createUser(@Body() data: User): Promise<void> {
+        return await this.userService.createUser(data)
+    }
+}
+"
+`;

@@ -1,0 +1,1071 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`domainGenerator > domainGenerator 1`] = `
+"import { User } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class Get-userVo extends IntersectionType(User) {
+}
+
+import { IntersectionType, ApiProperty } from "@nestjs/swagger";
+import { IsString, Type, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class FindAllQueryDto extends IntersectionType(Ref1, PaginationDto) {
+
+    @IsString()
+    @ApiProperty({
+        description: '创建时间',
+        format: 'date',
+        required: true
+    })
+    createTime: string;
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @IsOptional()
+    @ApiProperty({
+        description: '时间',
+        example: [
+            '1',
+            '2'
+        ],
+        uniqueItems: true,
+        isArray: true
+    })
+    time?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'a:1,b,c:3',
+        enum: [
+            'a',
+            'b',
+            'c'
+        ]
+    })
+    enumString?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: '枚举值',
+        enum: [
+            'a',
+            'b',
+            'c'
+        ],
+        default: 'a'
+    })
+    enum1?: string = "a";
+}
+
+import { User } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description 我是FindOne的描述
+ */
+export class FindAllVo extends IntersectionType(User) {
+}
+
+import { CreateUserDTO } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class Post-petVo extends IntersectionType(CreateUserDTO) {
+}
+
+import { Type, IsString, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { order } from "order";
+
+
+/**
+ *
+ * @description 我是bodyschema描述
+ */
+export class put-petDto {
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'a'
+    })
+    a ?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'b'
+    })
+    b ?: string;
+
+    @IsOptional()
+    @ApiProperty({
+        $ref: '#/components/schemas/order',
+        required: false,
+        name: 'c'
+    })
+    c ?: order;
+
+    @Type(() => Object)
+    @IsOptional()
+    @ApiProperty({
+        isArray: true,
+        required: false,
+        name: 'data'
+    })
+    data ?: object[];
+}
+
+import { IsString, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class Ref1 {
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'ref 引入',
+        required: false
+    })
+    ref?: string;
+}
+
+import { IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class Times {
+
+    @IsOptional()
+    @ApiProperty({
+        description: '时间啊',
+        format: 'time',
+        required: false
+    })
+    times?: unknown;
+}
+
+import { Type, IsString, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class Sort {
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @IsOptional()
+    @ApiProperty({
+        description: '排序',
+        example: '[\\'id:asc\\',\\'name:desc\\']',
+        isArray: true
+    })
+    sort?: string[];
+}
+
+import { IsNumber } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class Id {
+
+    @IsNumber()
+    @ApiProperty({
+        description: 'path id',
+        required: true
+    })
+    id: number;
+}
+
+import { IsString, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class UserId {
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: '用户id',
+        required: false
+    })
+    userId?: string;
+}
+
+import { IsString, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class Cooickid {
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'cooickid',
+        required: false
+    })
+    cooickid?: string;
+}
+
+import { IsNumber, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class PaginationDto {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: '当前页',
+        exclusiveMinimum: true,
+        minimum: 1,
+        default: 1
+    })
+    pageNo?: number = 1;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: '数据条数',
+        format: 'float'
+    })
+    pageSize?: number;
+}
+"
+`;
+
+exports[`domainGenerator > domainGenerator petstore 1`] = `
+"import { IsString, IsOptional, IsBoolean, Type, IsNumber } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class FindAllQueryDto {
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false
+    })
+    email?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false
+    })
+    name?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    @ApiProperty({
+        required: false
+    })
+    bol?: boolean;
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @IsOptional()
+    @ApiProperty({
+        description: '排序,默认排序顺序为升序',
+        isArray: true,
+        required: false
+    })
+    sort?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false
+    })
+    createTime?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: '0:第一个枚举值,1:第二个枚举值,3:第三个枚举值',
+        default: '123',
+        enum: [
+            '1',
+            '2',
+            '3'
+        ],
+        required: false
+    })
+    status?: string = "123";
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: '页码 (0..N)',
+        default: 1,
+        required: false
+    })
+    page?: number = 1;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: '每页显示条目个数',
+        default: 10,
+        required: false
+    })
+    pageSize?: number = 10;
+}
+
+import { FindAllUserVo } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description success111111
+ */
+export class FindAllVo extends IntersectionType(FindAllUserVo) {
+}
+
+import { Type, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { test321 } from "test321";
+
+
+/**
+ *
+ * @description resources
+ */
+export class testBodyDto {
+
+    @Type(() => test321)
+    @IsOptional()
+    @ApiProperty({
+        description: 'test321',
+        isArray: true,
+        required: false,
+        name: 'test321'
+    })
+    test321?: test321;
+}
+
+import { testDto2 } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class TestidgetVo extends IntersectionType(testDto2) {
+}
+
+import { Type, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { test321 } from "test321";
+
+
+/**
+ *
+ * @description resources
+ */
+export class testBodyDto {
+
+    @Type(() => test321)
+    @IsOptional()
+    @ApiProperty({
+        description: 'test321',
+        isArray: true,
+        required: false,
+        name: 'test321'
+    })
+    test321?: test321;
+}
+
+import { testDto2 } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class TestidgetVo extends IntersectionType(testDto2) {
+}
+
+import { test32145 } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class TestdeleteVo extends IntersectionType(test32145) {
+}
+
+import { testDto2 } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class TestidgetVo extends IntersectionType(testDto2) {
+}
+
+import { IntersectionType, ApiProperty } from "@nestjs/swagger";
+import { Type, IsString, IsOptional, IsBoolean } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class TestidgetQueryDto extends IntersectionType(Sort, PaginationDto) {
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @IsOptional()
+    @ApiProperty({
+        description: 'fields',
+        isArray: true,
+        required: false
+    })
+    fields?: string;
+
+    @IsString()
+    @ApiProperty({
+        format: 'date',
+        default: '2024-01-01 11:11:11',
+        required: true
+    })
+    createTime: string = "2024-01-01 11:11:11";
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @IsOptional()
+    @ApiProperty({
+        example: [
+            '2022-01-02 11:11:11',
+            '2022-01-02 11:12:11'
+        ],
+        uniqueItems: true,
+        isArray: true
+    })
+    time?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'a:1,b,c:3',
+        default: 'a',
+        enum: [
+            'a',
+            'b',
+            'c'
+        ]
+    })
+    enumString?: string = "a";
+
+    @IsBoolean()
+    @IsOptional()
+    @ApiProperty({
+        description: '布尔值',
+        default: false
+    })
+    bool?: boolean = false;
+}
+
+import { testDto2 } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description OK
+ */
+export class TestidgetVo extends IntersectionType(testDto2) {
+}
+
+import { ApiResponse } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class UploadFileVo extends IntersectionType(ApiResponse) {
+}
+
+import { Type, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { Category } from "Category";
+import { Tag } from "Tag";
+
+
+/**
+ *
+ * @description Pet object that needs to be added to the store
+ */
+export class Pet {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'id'
+    })
+    id?: number;
+
+    @IsOptional()
+    @ApiProperty({
+        $ref: '#/components/schemas/Category',
+        required: false,
+        name: 'category'
+    })
+    category?: Category;
+
+    @IsString()
+    @ApiProperty({
+        example: 'doggie',
+        required: true,
+        name: 'name'
+    })
+    name: string;
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @ApiProperty({
+        xml: {
+            wrapped: true
+        },
+        isArray: true,
+        required: true,
+        name: 'photoUrls'
+    })
+    photoUrls: string[];
+
+    @Type(() => Tag)
+    @IsOptional()
+    @ApiProperty({
+        xml: {
+            wrapped: true
+        },
+        isArray: true,
+        required: false,
+        name: 'tags'
+    })
+    tags?: Tag;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'pet status in the store',
+        enum: [
+            'available',
+            'pending',
+            'sold'
+        ],
+        required: false,
+        name: 'status'
+    })
+    status?: string;
+}
+
+import { Type, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { Category } from "Category";
+import { Tag } from "Tag";
+
+
+/**
+ *
+ * @description Pet object that needs to be added to the store
+ */
+export class Pet {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'id'
+    })
+    id?: number;
+
+    @IsOptional()
+    @ApiProperty({
+        $ref: '#/components/schemas/Category',
+        required: false,
+        name: 'category'
+    })
+    category?: Category;
+
+    @IsString()
+    @ApiProperty({
+        example: 'doggie',
+        required: true,
+        name: 'name'
+    })
+    name: string;
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @ApiProperty({
+        xml: {
+            wrapped: true
+        },
+        isArray: true,
+        required: true,
+        name: 'photoUrls'
+    })
+    photoUrls: string[];
+
+    @Type(() => Tag)
+    @IsOptional()
+    @ApiProperty({
+        xml: {
+            wrapped: true
+        },
+        isArray: true,
+        required: false,
+        name: 'tags'
+    })
+    tags?: Tag;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'pet status in the store',
+        enum: [
+            'available',
+            'pending',
+            'sold'
+        ],
+        required: false,
+        name: 'status'
+    })
+    status?: string;
+}
+
+import { Type, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class FindPetsByStatusQueryDto {
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @ApiProperty({
+        description: 'Status values that need to be considered for filter',
+        isArray: true,
+        required: true
+    })
+    status: string;
+}
+
+import { Pet } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetPetByIdVo extends IntersectionType(Pet) {
+}
+
+import { Type, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class FindPetsByTagsQueryDto {
+
+    @Type(() => String)
+    @IsString({ "each": true })
+    @ApiProperty({
+        description: 'Tags to filter by',
+        isArray: true,
+        required: true
+    })
+    tags: string;
+}
+
+import { Pet } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetPetByIdVo extends IntersectionType(Pet) {
+}
+
+import { Pet } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetPetByIdVo extends IntersectionType(Pet) {
+}
+
+import { Type, IsNumber, IsOptional, IsString, IsBoolean } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description order placed for purchasing the pet
+ */
+export class Order {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'id'
+    })
+    id?: number;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'petId'
+    })
+    petId?: number;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int32',
+        required: false,
+        name: 'quantity'
+    })
+    quantity?: number;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        format: 'date-time',
+        required: false,
+        name: 'shipDate'
+    })
+    shipDate?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'Order Status',
+        enum: [
+            'placed',
+            'approved',
+            'delivered'
+        ],
+        required: false,
+        name: 'status'
+    })
+    status?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'complete'
+    })
+    complete?: boolean;
+}
+
+import { Order } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetOrderByIdVo extends IntersectionType(Order) {
+}
+
+import { Order } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetOrderByIdVo extends IntersectionType(Order) {
+}
+
+import { Type, IsOptional } from "class-validator";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetInventoryVo {
+}
+
+import { User } from "@/common/domain";
+import { IntersectionType } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class GetUserByNameVo extends IntersectionType(User) {
+}
+
+import { Type, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description Created user object
+ */
+export class User {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'id'
+    })
+    id?: number;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'username'
+    })
+    username?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'firstName'
+    })
+    firstName?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'lastName'
+    })
+    lastName?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'email'
+    })
+    email?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'password'
+    })
+    password?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'phone'
+    })
+    phone?: string;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: 'User Status',
+        format: 'int32',
+        required: false,
+        name: 'userStatus'
+    })
+    userStatus?: number;
+}
+
+import { IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class LoginUserQueryDto {
+
+    @IsString()
+    @ApiProperty({
+        description: 'The user name for login',
+        required: true
+    })
+    username: string;
+
+    @IsString()
+    @ApiProperty({
+        description: 'The password for login in clear text',
+        required: true
+    })
+    password: string;
+}
+
+import { IsString, IsOptional } from "class-validator";
+
+
+/**
+ *
+ * @description successful operation
+ */
+export class LoginUserVo {
+}
+
+import { Type, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+/**
+ *
+ * @description Created user object
+ */
+export class User {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'id'
+    })
+    id?: number;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'username'
+    })
+    username?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'firstName'
+    })
+    firstName?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'lastName'
+    })
+    lastName?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'email'
+    })
+    email?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'password'
+    })
+    password?: string;
+
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        required: false,
+        name: 'phone'
+    })
+    phone?: string;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: 'User Status',
+        format: 'int32',
+        required: false,
+        name: 'userStatus'
+    })
+    userStatus?: number;
+}
+
+import { IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class Sort {
+
+    @IsOptional()
+    @ApiProperty({
+        description: '排序',
+        example: '[\\'id:asc\\',\\'name:desc\\']',
+        isArray: true
+    })
+    sort?: any[];
+}
+
+import { IsNumber, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+
+
+export class PaginationDto {
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: '当前页',
+        exclusiveMinimum: true,
+        minimum: 1,
+        default: 1
+    })
+    pageNo?: number = 1;
+
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        description: '数据条数',
+        format: 'float',
+        default: 10
+    })
+    pageSize?: number = 10;
+}
+"
+`;

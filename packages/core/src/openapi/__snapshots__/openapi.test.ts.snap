@@ -145,3 +145,173 @@ exports[`openapi get pathGroupByTag > get pathGroupByTag 1`] = `
   ],
 }
 `;
+
+exports[`openapi requestbody > tag requestBody 1`] = `
+[
+  {
+    "$ref": "#/components/requestBodies/testDto",
+    "refName": "testDto",
+    "requestBodyObject": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/testDto",
+          },
+        },
+      },
+      "description": "resources",
+      "required": true,
+    },
+    "tags": [
+      "pet",
+    ],
+  },
+  {
+    "$ref": "#/components/requestBodies/Pet",
+    "refName": "Pet",
+    "requestBodyObject": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Pet",
+          },
+        },
+        "application/xml": {
+          "schema": {
+            "$ref": "#/components/schemas/Pet",
+          },
+        },
+      },
+      "description": "Pet object that needs to be added to the store",
+      "required": true,
+    },
+    "tags": [
+      "pet",
+    ],
+  },
+  {
+    "$ref": "#/components/requestBodies/UserArray",
+    "refName": "UserArray",
+    "requestBodyObject": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "items": {
+              "$ref": "#/components/schemas/User",
+            },
+            "type": "array",
+          },
+        },
+      },
+      "description": "List of user object",
+      "required": true,
+    },
+    "tags": [
+      "user",
+    ],
+  },
+]
+`;
+
+exports[`openapi response > getResponseAsJSONSchema 200 1`] = `
+{
+  "description": "Example response",
+  "refName": "test3214",
+  "schema": {
+    "properties": {
+      "columnDefault": {
+        "description": "默认值",
+        "type": "string",
+      },
+      "columnLength": {
+        "description": "description",
+        "format": "int32",
+        "type": "integer",
+      },
+      "columnName": {
+        "description": "description",
+        "type": "string",
+      },
+      "columnRemark": {
+        "description": "description",
+        "type": "string",
+      },
+      "columnScale": {
+        "description": "description",
+        "format": "int32",
+        "type": "integer",
+      },
+      "columnType": {
+        "description": "description",
+        "enum": [
+          "CHAR",
+        ],
+        "type": "string",
+      },
+      "delFlag": {
+        "description": "description",
+        "type": "boolean",
+      },
+      "formId": {
+        "format": "int64",
+        "type": "integer",
+      },
+      "id": {
+        "description": "id",
+        "format": "int64",
+        "type": "integer",
+      },
+      "notNull": {
+        "description": "description",
+        "type": "boolean",
+      },
+    },
+    "title": "test3214",
+    "type": "object",
+  },
+  "type": "object",
+}
+`;
+
+exports[`openapi response > successResponseJSONSchema 1`] = `
+{
+  "description": "OK",
+  "refName": "testDto2",
+  "schema": {
+    "properties": {
+      "content": {
+        "$ref": "#/components/schemas/testDto3",
+      },
+      "meta": {
+        "$ref": "#/components/schemas/testdata",
+      },
+    },
+    "title": "Response«testDto3»",
+    "type": "object",
+  },
+  "type": "object",
+}
+`;
+
+exports[`openapi response > tag groupResponsesByTag 1`] = `
+[
+  {
+    "$ref": "#/components/responses/FindOne",
+    "description": "This can only be done by the logged in user.",
+    "refName": "FindOne",
+    "responseObject": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/test3214",
+          },
+        },
+      },
+      "description": "Example response",
+    },
+    "tags": [
+      "user",
+    ],
+  },
+]
+`;

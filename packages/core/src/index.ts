@@ -9,6 +9,7 @@ export * from "./types.ts";
 export default build;*/
 export { AST } from "./ast/ast.ts";
 export { build, requestRemoteData } from "./build.ts";
+export * from "./constants.ts";
 export { folderName } from "./folderName.ts";
 export * from "./fs";
 export * from "./logger.ts";

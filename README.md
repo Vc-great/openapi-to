@@ -1,5 +1,8 @@
 [![codecov](https://codecov.io/github/Vc-great/openapi-to/branch/V2/graph/badge.svg?token=5UB04YYCEB)](https://codecov.io/github/Vc-great/openapi-to)
 
+The current version is not compatible with V1.[V1 document](https://github.com/Vc-great/openapi-to/tree/v1)
+
+
 ## openapi-to
 Generate SDKs,OpenAPI to:
 
@@ -8,7 +11,7 @@ Generate SDKs,OpenAPI to:
 + [x] zod
 + [x] Faker.js
 + [x] MSW
-+ [ ] js request(jsDoc)
++ [x] nestjs
 + [ ] request object
 + [ ] vue-Query
 
@@ -1105,4 +1108,434 @@ class PetFaker {
 export const petFaker = new PetFaker;
 
 ```
+</details>
+
+## nestjs
+**ApiTag**
+
+Since the ApiTags in @/common/swagger don't support the description attribute, we create an ApiTag method that supports it
+```ts
+// users.controller.ts
+@ApiTag({
+  name: 'users',
+  description: 'Get all users',
+})
+@Controller('users')
+export class UsersController {}
+
+
+// ApiTag.decorator.ts
+import { swaggerConfig } from '@/common/swagger';
+import { TagObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
+import { ApiTags } from '@nestjs/swagger';
+import { applyDecorators } from '@nestjs/common';
+
+export const ApiTag = (tagObject: TagObject) => {
+  swaggerConfig.tags.unshift(tagObject);
+  return applyDecorators(ApiTags(tagObject.name));
+};
+
+//  common/swagger.ts
+import { DocumentBuilder } from '@nestjs/swagger';
+
+const swaggerConfig = new DocumentBuilder()
+  .setTitle('title')
+  .setDescription('api docs')
+  .setVersion('1.0')
+  .addBearerAuth()
+  .build();
+
+export { swaggerConfig };
+
+//main.ts
+  const options: SwaggerDocumentOptions = {
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
+  };
+  const document = SwaggerModule.createDocument(app, swaggerConfig, options);
+  SwaggerModule.setup('docs', app, document);
+```
+
+**tree**
+```
+.
+├── pet
+│   ├── domain
+│   │   ├── ApiResponse.vo.ts
+│   │   ├── Pet.dto.ts
+│   │   ├── Pet.vo.ts
+│   │   ├── findPetsByStatus-query.dto.ts
+│   │   └── findPetsByTags-query.dto.ts
+│   ├── pet.controller.ts
+│   ├── pet.service.ts
+│   └── repository
+│       ├── pet-repository.module.ts
+│       ├── pet.mapper.ts
+│       └── pet.repository.ts
+├── store
+│   ├── domain
+│   │   ├── Order.dto.ts
+│   │   └── Order.vo.ts
+│   ├── repository
+│   │   ├── store-repository.module.ts
+│   │   ├── store.mapper.ts
+│   │   └── store.repository.ts
+│   ├── store.controller.ts
+│   └── store.service.ts
+└── user
+    ├── domain
+    │   ├── User.dto.ts
+    │   ├── User.vo.ts
+    │   └── loginUser-query.dto.ts
+    ├── repository
+    │   ├── user-repository.module.ts
+    │   ├── user.mapper.ts
+    │   └── user.repository.ts
+    ├── user.controller.ts
+    └── user.service.ts
+
+```
+
+<details> 
+<summary>controller</summary>
+import { Controller, HttpStatus, HttpCode, Post, Param, Body, ParseIntPipe, Put, Get, Query, Delete } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiParam } from "@nestjs/swagger";
+import { Permissions } from "@/common/decorators/auth.decorator";
+import { ApiTag } from "@/common/swagger";
+import { PetService } from "./pet.service";
+import { ApiResponse } from "./domain/ApiResponse.vo";
+import { Pet } from "./domain/Pet.dto";
+import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
+import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
+
+@ApiTag({
+name: 'pet',
+description: 'Everything about your Pets',
+})
+@Controller('pet')
+export class PetController {
+constructor(private readonly petService: PetService) {
+}
+
+    @ApiOperation({ summary: 'uploads an image' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", ApiResponse })
+    @ApiParam({
+        name: "petId",
+        description: "ID of pet to update"
+    })
+    @Post('/:petId/uploadImage')
+    @HttpCode(HttpStatus.OK)
+    async uploadFile(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<ApiResponse> {
+        return await this.petService.uploadFile(petId, data)
+    }
+
+    @ApiOperation({ summary: 'Add a new pet to the store' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Post()
+    @HttpCode(HttpStatus.OK)
+    async addPet(@Body() data: Pet): Promise<void> {
+        return await this.petService.addPet(data)
+    }
+
+    @ApiOperation({ summary: 'Update an existing pet' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @Put()
+    @HttpCode(HttpStatus.OK)
+    async updatePet(@Body() data: Pet): Promise<void> {
+        return await this.petService.updatePet(data)
+    }
+
+    @ApiOperation({ summary: 'Finds Pets by status', description: 'Multiple status values can be provided with comma separated strings' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
+    @Get('/findByStatus')
+    @HttpCode(HttpStatus.OK)
+    async findPetsByStatus(@Query() query: FindPetsByStatusQueryDto): Promise<Pet[]> {
+        return await this.petService.findPetsByStatus(query)
+    }
+
+    @ApiOperation({ summary: 'Finds Pets by tags', description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
+    @Get('/findByTags')
+    @HttpCode(HttpStatus.OK)
+    async findPetsByTags(@Query() query: FindPetsByTagsQueryDto): Promise<Pet[]> {
+        return await this.petService.findPetsByTags(query)
+    }
+
+    @ApiOperation({ summary: 'Find pet by ID', description: 'Returns a single pet' })
+    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", Pet })
+    @ApiParam({
+        name: "petId",
+        description: "ID of pet to return"
+    })
+    @Get('/:petId')
+    @HttpCode(HttpStatus.OK)
+    async getPetById(@Param("petId", ParseIntPipe) petId: number): Promise<Pet> {
+        return await this.petService.getPetById(petId)
+    }
+
+    @ApiOperation({ summary: 'Updates a pet in the store with form data' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "petId",
+        description: "ID of pet that needs to be updated"
+    })
+    @Post('/:petId')
+    @HttpCode(HttpStatus.OK)
+    async updatePetWithForm(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<void> {
+        return await this.petService.updatePetWithForm(petId, data)
+    }
+
+    @ApiOperation({ summary: 'Deletes a pet' })
+    @ApiResponse({ status: HttpStatus.OK })
+    @ApiParam({
+        name: "petId",
+        description: "Pet id to delete"
+    })
+    @Delete('/:petId')
+    @HttpCode(HttpStatus.OK)
+    async deletePet(@Param("petId", ParseIntPipe) petId: number): Promise<void> {
+        return await this.petService.deletePet(petId)
+    }
+}
+
+</details>
+
+<details> 
+<summary>service</summary>
+import { Injectable } from "@nestjs/common";
+import { PetRepository } from "./repository/pet.repository";
+import { ApiResponse } from "./domain/ApiResponse.vo";
+import { Pet } from "./domain/Pet.dto";
+import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
+import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
+
+@Injectable
+export class PetService {
+constructor(private readonly petRepository: PetRepository) {
+}
+
+    async uploadFile(petId: number, data: any): Promise<ApiResponse> {
+        return await this.petRepository.uploadFile(petId, data)
+    }
+
+    async addPet(data: Pet): Promise<void> {
+        return await this.petRepository.addPet(data)
+    }
+
+    async updatePet(data: Pet): Promise<void> {
+        return await this.petRepository.updatePet(data)
+    }
+
+    async findPetsByStatus(query: FindPetsByStatusQueryDto): Promise<Pet[]> {
+        return await this.petRepository.findPetsByStatus(query)
+    }
+
+    async findPetsByTags(query: FindPetsByTagsQueryDto): Promise<Pet[]> {
+        return await this.petRepository.findPetsByTags(query)
+    }
+
+    async getPetById(petId: number): Promise<Pet> {
+        return await this.petRepository.getPetById(petId)
+    }
+
+    async updatePetWithForm(petId: number, data: any): Promise<void> {
+        return await this.petRepository.updatePetWithForm(petId, data)
+    }
+
+    async deletePet(petId: number): Promise<void> {
+        return await this.petRepository.deletePet(petId)
+    }
+}
+
+</details>
+
+<details> 
+<summary>repository</summary>
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { petEntity } from "../entities/pet.entity.ts";
+import { PetMappers } from "./PetMappers";
+import { Repository } from "typeorm";
+import { plainToInstance } from "class-transformer";
+import { ApiResponse } from "./domain/ApiResponse.vo";
+import { Pet } from "./domain/Pet.dto";
+import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
+import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
+
+@Injectable
+export class PetRepository {
+constructor(@InjectRepository(petEntity) private readonly petRepository: Repository<petEntity>) {
+}
+
+    async uploadFile(petId: number, data: any): Promise<ApiResponse> {
+        const newEntity = PetMappers.toPersistence(data);
+
+        const savedEntity = await this.petRepository.save(newEntity);
+
+        return plainToInstance(ApiResponse, savedEntity, {
+            excludeExtraneousValues: true,
+        });
+    }
+
+    async addPet(data: Pet): Promise<void> {
+        const newEntity = PetMappers.toPersistence(data);
+
+        const savedEntity = await this.petRepository.save(newEntity);
+
+        return plainToInstance(undefined, savedEntity, {
+            excludeExtraneousValues: true,
+        });
+    }
+
+    async updatePet(data: Pet): Promise<void> {
+        const detail = await this.petRepository.findOneBy({});
+        if (!detail) {
+            throw new NotFoundException(`id ${id} not found`);
+        }
+
+        const savedEntity = await this.petRepository.save(
+            PetMappers.toPersistence(_.assign(detail, data)),
+        );
+        return plainToInstance(FindOneUserVo, savedEntity, {
+            excludeExtraneousValues: true,
+        });
+    }
+
+    async findPetsByStatus(query: FindPetsByStatusQueryDto): Promise<Pet[]> {
+
+        const [data, total] = await this.petRepository.find({
+            where: { status: query.status },
+
+
+
+        });
+
+        return plainToInstance(
+            undefined,
+            { data, total },
+            {
+                exposeDefaultValues: true,
+            },
+        );
+    }
+
+    async findPetsByTags(query: FindPetsByTagsQueryDto): Promise<Pet[]> {
+
+        const [data, total] = await this.petRepository.find({
+            where: { tags: query.tags },
+
+
+
+        });
+
+        return plainToInstance(
+            undefined,
+            { data, total },
+            {
+                exposeDefaultValues: true,
+            },
+        );
+    }
+
+    async getPetById(petId: number): Promise<Pet> {
+        const newEntity = await this.petRepository.findOne({ where: { petId: query.petId });
+        return plainToInstance(FindOneUserVo, newEntity, {
+            exposeDefaultValues: true,
+        });
+    }
+
+    async updatePetWithForm(petId: number, data: any): Promise<void> {
+        const newEntity = PetMappers.toPersistence(data);
+
+        const savedEntity = await this.petRepository.save(newEntity);
+
+        return plainToInstance(undefined, savedEntity, {
+            excludeExtraneousValues: true,
+        });
+    }
+
+    async deletePet(petId: number): Promise<void> {
+        return this.petRepository.softRemove(_.assign(new petEntity(), { petId }));
+    }
+}
+
+</details>
+
+<details> 
+<summary>domain</summary>
+import { Type, IsNumber, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { Category } from "Category";
+import { Tag } from "Tag";
+
+
+/**
+*
+* @description Pet object that needs to be added to the store
+  */
+  export class Pet {
+
+  @IsNumber()
+  @IsOptional()
+  @ApiProperty({
+  format: 'int64',
+  required: false,
+  name: 'id'
+  })
+  id?: number;
+
+  @IsOptional()
+  @ApiProperty({
+  $ref: '#/components/schemas/Category',
+  required: false,
+  name: 'category'
+  })
+  category?: Category;
+
+  @IsString()
+  @ApiProperty({
+  example: 'doggie',
+  required: true,
+  name: 'name'
+  })
+  name: string;
+
+  @Type(() => String)
+  @IsString({ "each": true })
+  @ApiProperty({
+  xml: {
+  wrapped: true
+  },
+  isArray: true,
+  required: true,
+  name: 'photoUrls'
+  })
+  photoUrls: string[];
+
+  @Type(() => Tag)
+  @IsOptional()
+  @ApiProperty({
+  xml: {
+  wrapped: true
+  },
+  isArray: true,
+  required: false,
+  name: 'tags'
+  })
+  tags?: Tag;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({
+  description: 'pet status in the store',
+  enum: [
+  'available',
+  'pending',
+  'sold'
+  ],
+  required: false,
+  name: 'status'
+  })
+  status?: string;
+  }
+
 </details>

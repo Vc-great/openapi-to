@@ -12,6 +12,9 @@
       "path": "../../openapi-ts-request"
     },
     {
+      "path": "../../openapi-nestjs"
+    },
+    {
       "path": "../../openapi-ts-type"
     },
     {

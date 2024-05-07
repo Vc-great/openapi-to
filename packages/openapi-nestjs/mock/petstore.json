@@ -45,14 +45,125 @@
   ],
   "paths": {
     "/pet/test": {
+  "get": {
+    "operationId": "findAll",
+    "summary": "get接口",
+    "description": "获取用户列表",
+    "parameters": [
+      {
+        "name": "email",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "name",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "bol",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "boolean"
+        }
+      },
+      {
+        "name": "sort",
+        "required": false,
+        "in": "query",
+        "description": "排序,默认排序顺序为升序",
+        "example": [
+          "id:asc",
+          "name:desc"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "createTime",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "status",
+        "required": false,
+        "in": "query",
+        "description": "0:第一个枚举值,1:第二个枚举值,3:第三个枚举值",
+        "example": "2",
+        "schema": {
+          "default": "123",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ],
+          "type": "string"
+        }
+      },
+      {
+        "name": "page",
+        "required": false,
+        "in": "query",
+        "description": "页码 (0..N)",
+        "schema": {
+          "default": 1,
+          "type": "number"
+        }
+      },
+      {
+        "name": "pageSize",
+        "required": false,
+        "in": "query",
+        "description": "每页显示条目个数",
+        "schema": {
+          "default": 10,
+          "type": "number"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "success111111",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FindAllUserVo"
+            }
+          }
+        }
+      }
+    },
+    "tags": [
+      "pet"
+    ],
+    "security": [
+      {
+        "bearer": []
+      }
+    ]
+  },
       "post": {
         "tags": [
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "test",
         "requestBody": {
-          "$ref": "#/components/requestBodies/testDto"
+          "$ref": "#/components/requestBodies/testBodyDto"
         },
         "responses": {
           "200": {
@@ -85,6 +196,9 @@
             ]
           }
         ],
+        "x-permissions": [
+          "admin"
+        ],
         "deprecated": false
       },
       "put": {
@@ -92,9 +206,9 @@
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "testput",
         "requestBody": {
-          "$ref": "#/components/requestBodies/testDto"
+          "$ref": "#/components/requestBodies/testBodyDto"
         },
         "responses": {
           "200": {
@@ -134,7 +248,7 @@
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "testdelete",
         "requestBody": {
           "content": {
             "application/json": {
@@ -181,38 +295,37 @@
         "deprecated": false
       }
     },
-    "/pet/test/{id}": {
-      "get": {
+    "/pet/test/batch-create": {
+      "post": {
         "tags": [
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
-        "parameters": [
-          {
-            "name": "fields",
-            "in": "query",
-            "description": "fields",
-            "required": false,
-            "explode": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
+        "operationId": "batchCreate",
+        "requestBody": {
+          "required": true,
+          "description": "批量创建用户dto",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreateUpdateUserDto"
+                }
+              },
+              "examples": {
+                "a": {
+                  "summary": "概要",
+                  "description": "事例说明",
+                  "value": {
+                    "a": 1,
+                    "b": "2"
+                  }
+                }
               }
             }
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "description": "id",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -223,6 +336,9 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "Created"
           },
           "401": {
             "description": "Unauthorized"
@@ -241,16 +357,19 @@
             ]
           }
         ],
+        "x-permissions": [
+          "admin"
+        ],
         "deprecated": false
       }
     },
-    "/pet/{id}": {
+    "/pet/test/{test-id}": {
       "get": {
         "tags": [
           "pet"
         ],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "testidget",
         "parameters": [
           {
             "name": "fields",
@@ -266,14 +385,71 @@
             }
           },
           {
-            "name": "id",
+            "name": "test-id",
             "in": "path",
-            "description": "id",
+            "description": "test-id",
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "default": 1
             }
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "default": "2024-01-01 11:11:11"
+            },
+            "in": "query",
+            "name": "createTime",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "array",
+              "example": [
+                "2022-01-02 11:11:11","2022-01-02 11:12:11"],
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "in": "query",
+            "name": "time",
+            "style": "form"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "default": "a",
+              "enum": [
+                "a",
+                "b",
+                "c"
+              ]
+            },
+            "in": "query",
+            "name": "enumString",
+            "description": "a:1,b,c:3"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "in": "query",
+            "name": "bool",
+            "description": "布尔值"
+          },
+          {
+            "$ref": "#/components/parameters/pageNo"
+          },
+          {
+            "$ref": "#/components/parameters/pageSize"
+          },
+          {
+            "$ref": "#/components/parameters/sort"
           }
         ],
         "responses": {
@@ -365,60 +541,6 @@
       }
     },
     "/pet": {
-      "get": {
-        "tags": ["pet"],
-        "summary": "get pet",
-        "description": "separated strings",
-        "operationId": "getPet",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "description": "Status values that need to be considered for filter",
-            "required": true,
-            "explode": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": ["available", "pending", "sold"],
-                "default": "available"
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Pet"
-                  }
-                }
-              },
-              "application/xml": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Pet"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid status value"
-          }
-        },
-        "security": [
-          {
-            "petstore_auth": ["write:pets", "read:pets"]
-          }
-        ]
-      },
       "post": {
         "tags": ["pet"],
         "summary": "Add a new pet to the store",
@@ -462,57 +584,6 @@
             "petstore_auth": ["write:pets", "read:pets"]
           }
         ]
-      },
-      "delete": {
-        "tags": [
-          "pet"
-        ],
-        "summary": "summary",
-        "operationId": "operationId",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "type": "integer",
-                  "format": "int64"
-                }
-              }
-            }
-          },
-          "description": "ids",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/test32145"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          }
-        },
-        "security": [
-          {
-            "Authorization": [
-              "global"
-            ]
-          }
-        ],
-        "deprecated": false
       }
     },
     "/pet/findByStatus": {
@@ -1130,8 +1201,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "$ref": "#/components/responses/FindOne"
+          "default": {
+            "description": "successful operation"
           }
         }
       }
@@ -1151,11 +1222,11 @@
   ],
   "components": {
     "requestBodies": {
-      "testDto": {
+      "testBodyDto": {
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/testDto"
+              "$ref": "#/components/schemas/testBodyDto"
             }
           }
         },
@@ -1194,6 +1265,12 @@
       }
     },
     "securitySchemes": {
+      "http": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "asd"
+      },
       "api_key": {
         "type": "apiKey",
         "name": "api_key",
@@ -1213,6 +1290,78 @@
       }
     },
     "schemas": {
+  "FindOneUserVo": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "number"
+      },
+      "name": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string",
+        "description": "邮箱"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "email"
+    ]
+  },
+  "FindAllUserVo": {
+    "type": "object",
+    "properties": {
+      "data": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FindOneUserVo"
+        }
+      }
+    },
+    "required": [
+      "data"
+    ]
+  },
+  "CreateUpdateUserDto": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "description": "邮箱"
+      },
+      "name": {
+        "type": "string",
+        "description": "名称"
+      },
+      "profiles": {
+        "description": "啊啊啊",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "photos": {
+        "description": "照片",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "freeze": {
+        "type": "boolean",
+        "description": "是否冻结"
+      }
+    },
+    "required": [
+      "email",
+      "name",
+      "profiles",
+      "photos",
+      "freeze"
+    ]
+  },
       "test32145": {
         "type": "object",
         "properties": {
@@ -1356,7 +1505,7 @@
         },
         "title": "test321"
       },
-      "testDto": {
+      "testBodyDto": {
         "type": "object",
         "required": [
           "formTable"
@@ -1370,7 +1519,7 @@
             }
           }
         },
-        "title": "testDto"
+        "title": "testBodyDto"
       },
       "refList": {
         "type": "object",
@@ -1555,16 +1704,36 @@
         }
       }
     },
-    "responses": {
-      "FindOne": {
-        "description": "Example response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/test3214"
-            }
-          }
-        }
+    "parameters": {
+      "pageNo": {
+        "schema": {
+          "type": "number",
+          "exclusiveMinimum": true,
+          "minimum": 1,
+          "default": 1
+        },
+        "in": "query",
+        "name": "pageNo",
+        "description": "当前页"
+      },
+      "pageSize": {
+        "schema": {
+          "type": "number",
+          "format": "float",
+          "default": 10
+        },
+        "in": "query",
+        "name": "pageSize",
+        "description": "数据条数"
+      },
+      "sort": {
+        "name": "sort",
+        "in": "query",
+        "schema": {
+          "type": "array",
+          "example": "['id:asc','name:desc']"
+        },
+        "description": "排序"
       }
     }
   }

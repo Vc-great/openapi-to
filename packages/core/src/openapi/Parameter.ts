@@ -7,9 +7,14 @@ import type {
   getParametersAsJSONSchemaOptions,
   SchemaWrapper,
 } from "oas/operation/get-parameters-as-json-schema";
-import type { ParameterObject } from "oas/types";
 import type OasTypes from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
+import type { OpenAPIParameterObject } from "./types.ts";
+
+type OasTypesParameterObject = OasTypes.ParameterObject & {
+  $ref: string | undefined;
+};
+
 export class Parameter {
   constructor(private operation: Operation) {
     this.operation = operation;
@@ -24,15 +29,48 @@ export class Parameter {
     return _.some(this.parameters || [], ["in", "query"]);
   }
 
-  get parameters(): ParameterObject[] {
-    return this.operation.getParameters();
+  get componentsParameters() {
+    return _.chain(this.operation.api.components?.parameters)
+      .map((item: OasTypesParameterObject, name: string) => {
+        return {
+          ...this.findSchema(item),
+          refName: item.$ref?.replace(/.+\//, ""),
+          $ref: item.$ref,
+          key: name,
+        };
+      })
+      .value() as unknown as OpenAPIParameterObject[];
   }
-  get parametersOfPath(): ParameterObject[] {
+
+  get parameters(): OpenAPIParameterObject[] {
+    return _.chain(this.operation.getParameters())
+      .map((item: OasTypesParameterObject) => {
+        return {
+          ...this.findSchema(item),
+          refName: item.$ref?.replace(/.+\//, ""),
+          $ref: item.$ref,
+        };
+      })
+      .value() as unknown as OpenAPIParameterObject[];
+  }
+  get parametersOfPath(): OpenAPIParameterObject[] {
     return _.chain(this.parameters).filter(["in", "path"]).value();
   }
 
-  get parametersOfQuery(): ParameterObject[] {
+  get parametersOfQuery(): Array<OpenAPIParameterObject> {
     return _.chain(this.parameters).filter(["in", "query"]).value();
+  }
+
+  findSchema(
+    parameterObject: OasTypesParameterObject,
+  ): OasTypes.ParameterObject {
+    if ("$ref" in parameterObject && parameterObject.$ref) {
+      return findSchemaDefinition(
+        parameterObject.$ref,
+        this.operation?.api,
+      ) as OasTypes.ParameterObject;
+    }
+    return parameterObject;
   }
 
   getParametersAsJSONSchema(
@@ -44,8 +82,8 @@ export class Parameter {
   get parametersName(): string {
     return _.chain(this.parameters || [])
       .filter(["in", "path"])
+      .filter((item) => !!item.name)
       .map((parameter) => {
-        if ("$ref" in parameter) return "";
         return `${_.camelCase(parameter.name)}`;
       })
       .join()

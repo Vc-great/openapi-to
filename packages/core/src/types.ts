@@ -1,6 +1,7 @@
 import type { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { LogLevel } from "./logger.ts";
 export * from "./ast/type.ts";
+export * from "./openapi/types.ts";
 
 export type PluginName = {
   name: string;

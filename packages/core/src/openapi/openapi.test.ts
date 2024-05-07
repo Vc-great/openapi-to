@@ -54,3 +54,25 @@ describe("openapi get pathGroupByTag", () => {
     expect(pathGroup).toMatchSnapshot();
   });
 });
+
+describe("openapi requestbody", () => {
+  // @ts-expect-error Not a canonical document
+  const oas = new Oas(petStore);
+  const openapi = new OpenAPI({}, oas);
+  openapi.setCurrentOperation("/pet/test", "post", "");
+  test("tag requestBody", () => {
+    const groupRequestBody = openapi.requestBody?.groupRequestBodyByTag;
+    expect(groupRequestBody).toMatchSnapshot();
+  });
+});
+
+describe("openapi response", () => {
+  // @ts-expect-error Not a canonical document
+  const oas = new Oas(petStore);
+  const openapi = new OpenAPI({}, oas);
+  openapi.setCurrentOperation("/pet/test", "post", "");
+  test("tag groupResponsesByTag", () => {
+    const groupRequestBody = openapi.response?.groupResponsesByTag;
+    expect(groupRequestBody).toMatchSnapshot();
+  });
+});

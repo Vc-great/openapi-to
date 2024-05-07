@@ -30,8 +30,8 @@
     "./package.json": "./package.json",
     "./*": "./*"
   },
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/es/index.js",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/es/index.js",
   "types": "./dist/es/index.d.ts",
   "files": [
     "dist"
@@ -49,6 +49,7 @@
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@types/json-schema": "^7.0.15",
     "axios": "^1.6.7",
     "code-block-writer": "^12.0.0",
     "directory-tree": "^3.5.1",
@@ -56,6 +57,7 @@
     "find-up": "^7.0.0",
     "fs-extra": "^11.2.0",
     "js-runtime": "^0.0.7",
+    "json-schema": "^0.4.0",
     "natural-orderby": "^3.0.2",
     "picocolors": "^1.0.0",
     "seedrandom": "^3.0.5",

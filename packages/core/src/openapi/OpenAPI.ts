@@ -68,6 +68,10 @@ export class OpenAPI {
   get requestName(): string {
     return this.methodName;
   }
+
+  get operationId(): string {
+    return this.operation?.getOperationId() || "";
+  }
   get upperFirstRequestName(): string {
     return _.upperFirst(this.methodName);
   }
@@ -119,6 +123,10 @@ export class OpenAPI {
     return _.lowerFirst(this.responseName);
   }
 
+  get permissions(): Array<string> | undefined {
+    return this.operation?.schema["x-permissions"] as Array<string> | undefined;
+  }
+
   get pathGroupByTag(): PathGroupByTag {
     return _.chain(this.oas.getPaths())
       .map((item) => _.map(item))
@@ -149,8 +157,8 @@ export class OpenAPI {
       .find((tag) => tag.name === tagName);
     //
     this.parameter = new Parameter(this.operation);
-    this.requestBody = new RequestBody(this.operation);
-    this.response = new Response(this.operation);
+    this.requestBody = new RequestBody(this.operation, this);
+    this.response = new Response(this.operation, this);
     this.schema = new Schema(this.operation, this);
     return this.operation;
   }
@@ -266,6 +274,10 @@ export class OpenAPI {
     return _.camelCase(typeName);
   }
 
+  getDomainNameByRef($ref: string): string {
+    return $ref.replace(/.+\//, "");
+  }
+
   hasRefByCache($ref: string): boolean {
     return [...this.refCache.keys()].includes($ref);
   }
@@ -295,5 +307,46 @@ export class OpenAPI {
       writeModel: "await",
     });
     return schema;
+  }
+
+  findSchemaDefinition($ref: string): unknown {
+    return findSchemaDefinition($ref, this.operation?.api);
+  }
+
+  formatterSchemaType(type: string | undefined): string {
+    const numberEnum = [
+      "int32",
+      "int64",
+      "float",
+      "double",
+      "integer",
+      "long",
+      "number",
+      "int",
+    ];
+
+    const stringEnum = ["string", "email", "password", "url", "byte", "binary"];
+    // const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
+
+    if (typeof type !== "string") {
+      return "unknown";
+    }
+
+    if (numberEnum.includes(type)) {
+      return "number";
+    }
+
+    /*   if (dateEnum.includes(type)) {
+      return "Date";
+    }*/
+
+    if (stringEnum.includes(type || "")) {
+      return "string";
+    }
+
+    if (type === "boolean") {
+      return "boolean";
+    }
+    return type;
   }
 }

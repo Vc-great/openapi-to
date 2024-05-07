@@ -10,6 +10,7 @@ const config =`const {
   createZod,
   createFaker,
   createMSW,
+  createNestjs
    }= require('openapi-to')
 
 module.exports = defineConfig({
@@ -40,6 +41,7 @@ module.exports = defineConfig({
       compare: true
     }),
     createMSW(),
+    createNestjs()
   ]
 })`
 
