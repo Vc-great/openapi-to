@@ -41,6 +41,7 @@ import {
   createZod,
   createFaker,
   createMSW,
+  createNestjs,
 } from "openapi-to";
 import * as path from "path";
 
@@ -61,6 +62,7 @@ export default defineConfig({
     createZod(),
     createFaker(),
     createMSW(),
+    createNestjs(),
   ],
 });
 ```
