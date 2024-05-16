@@ -55,14 +55,14 @@ async function generateAction(CLIOptions: CLIOptions) {
 
 export async function run(argv?: string[]): Promise<void> {
   const program = cac(moduleName);
+
+  program.command("init", "Generate openapi.config.js file").action(init);
   //todo
   program
     .command("g", "Generate code from the openapi.config.js file")
     .option("-l, --log-level <type>", "Info, silent or debug")
     .option("-w, --watch", "Watch mode based on the input file")
     .action(generateAction);
-
-  program.command("init", "Generate openapi.config.js file").action(init);
 
   program.help();
   program.version(version);
