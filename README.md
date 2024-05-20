@@ -43,7 +43,6 @@ import {
   createMSW,
   createNestjs,
 } from "openapi-to";
-import * as path from "path";
 
 export default defineConfig({
   servers: [

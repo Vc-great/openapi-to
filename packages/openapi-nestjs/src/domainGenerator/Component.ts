@@ -321,8 +321,7 @@ export class Component extends NestjsGenerator {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       REQUEST_BODIES_DIR,
-      _.kebabCase(refName.endsWith("Dto") ? refName.slice(0, -2) : refName) +
-        ".dto.ts",
+      this.handleDtoFileName(refName) + ".dto.ts",
     );
 
     const nestjsSwagger: ImportStatementsOmitKind = {
@@ -526,8 +525,7 @@ export class Component extends NestjsGenerator {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       RESPONSES_DIR,
-      _.kebabCase(title.endsWith("Dto") ? title.slice(0, -2) : title) +
-        ".dto.ts",
+      this.handleDtoFileName(title) + ".dto.ts",
     );
 
     const nestjsSwagger: ImportStatementsOmitKind = {

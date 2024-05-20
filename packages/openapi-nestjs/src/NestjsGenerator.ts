@@ -381,4 +381,11 @@ export class NestjsGenerator {
   ): ImportStatementsOmitKind[] {
     return this.domainImport.mergeNamedImports(imports);
   }
+
+  handleDtoFileName(dtoName: string): string {
+    return _.chain(dtoName.endsWith("Dto") ? dtoName.slice(0, -2) : dtoName)
+      .lowerFirst()
+      .kebabCase()
+      .value();
+  }
 }
