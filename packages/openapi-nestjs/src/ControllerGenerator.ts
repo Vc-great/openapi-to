@@ -25,7 +25,6 @@ type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 export class ControllerGenerator extends NestjsGenerator {
   private nestjsCommonImports: Set<string> = new Set<string>();
   private swaggerImports: Set<string> = new Set<string>();
-  private authImports: Set<string> = new Set<string>();
 
   constructor(config: Config) {
     super(config);
