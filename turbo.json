@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": [
         "^build"
@@ -15,7 +15,7 @@
       ],
       "outputs": [],
       "cache": false,
-      "outputMode": "new-only"
+      "outputLogs": "new-only"
     },
     "start": {
       "dependsOn": [
@@ -41,7 +41,7 @@
     "lint-fix": {
       "outputs": [],
       "cache": false,
-      "outputMode": "new-only"
+      "outputLogs": "new-only"
     },
     "typecheck": {
       "dependsOn": [],
@@ -74,7 +74,7 @@
         "gen/**",
         "src/gen/**"
       ],
-      "outputMode": "new-only"
+      "outputLogs": "new-only"
     }
   }
 }

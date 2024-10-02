@@ -10,7 +10,7 @@ import { Faker } from "./Faker";
 import { Schema } from "./Schema.ts";
 
 import type { PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { ImportDeclarationStructure } from "ts-morph";
 import type { StatementStructures } from "ts-morph";
@@ -158,10 +158,7 @@ export class Component {
    * @param schema
    * @param typeName
    */
-  generateComponentSchemaType(
-    schema: OasTypes.SchemaObject,
-    typeName: string,
-  ): void {
+  generateComponentSchemaType(schema: SchemaObject, typeName: string): void {
     this.openapi.resetRefCache();
 
     const schemaStatuments = this.ast.generateFunctionStatements({
@@ -203,64 +200,4 @@ export class Component {
       _.camelCase(typeName),
     );
   }
-
-  /*  generateComponentObjectType(
-    componentObject: ComponentObject | null | undefined,
-  ): void {
-    if (!componentObject) {
-      return;
-    }
-
-    const name = _.chain(Object.keys(componentObject))
-      .head()
-      .camelCase()
-      .upperFirst()
-      .value();
-    const typeName = _.upperFirst(_.camelCase(name));
-    const value:
-      | OpenAPIV3.ReferenceObject
-      | OasTypes.MediaTypeObject
-      | undefined = _.head(Object.values(componentObject));
-
-    if (!name || !value) {
-      return;
-    }
-
-    if (this.openapi.isReference(value)) {
-      this.generateComponentRefType(value, typeName);
-      return;
-    }
-
-    let schema: OasTypes.SchemaObject | null = null;
-
-    if ("schema" in value) {
-      schema = value.schema || (null as OasTypes.SchemaObject | null);
-    }
-
-    if (schema === null) {
-      return;
-    }
-    if (this.openapi.isReference(schema)) {
-      this.generateComponentRefType(schema, typeName);
-      return;
-    }
-
-    if (schema.type === "array") {
-      this.createModelSourceFile(
-        [
-          this.ast.generateTypeAliasStatements({
-            name: _.upperFirst(_.camelCase(typeName)),
-            type: this.formatterSchemaType(schema),
-            //todo
-            docs: [{ description: "" }],
-            isExported: true,
-          }),
-        ],
-        name,
-      );
-      return;
-    }
-
-    this.generateComponentSchemaType(schema, typeName);
-  }*/
 }

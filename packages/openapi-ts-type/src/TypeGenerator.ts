@@ -12,7 +12,7 @@ import { useEnumCache } from "./EnumCache.ts";
 import { Schema } from "./Schema.ts";
 
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type {
   ImportDeclarationStructure,
   InterfaceDeclarationStructure,
@@ -33,7 +33,7 @@ type ResponseObject = {
   jsonSchema?: {
     description?: string;
     label: string;
-    schema: OasTypes.SchemaObject;
+    schema: SchemaObject;
     type: string | string[];
   };
 };
@@ -446,17 +446,13 @@ export class TypeGenerator {
     if (_bodySchema === undefined || _.isBoolean(_bodySchema)) {
       return null;
     }
-    let schema: OasTypes.SchemaObject | null = null;
+    let schema: SchemaObject | null = null;
     if ("schema" in _bodySchema) {
-      schema = _bodySchema.schema || (null as OasTypes.SchemaObject | null);
+      schema = _bodySchema.schema || (null as SchemaObject | null);
     }
 
     if (_.isArray(_bodySchema)) {
-      schema = _.get(
-        _bodySchema,
-        "[1].schema",
-        null,
-      ) as OasTypes.SchemaObject | null;
+      schema = _.get(_bodySchema, "[1].schema", null) as SchemaObject | null;
     }
 
     if (schema === null) {
@@ -466,7 +462,7 @@ export class TypeGenerator {
     if (this.openapi.isReference(schema)) {
       return [
         this.ast.generateTypeAliasStatements({
-          name: this.openapi.upperFirstRequestName + "BodyParams",
+          name: this.openapi.upperFirstBodyDataName,
           type: _.upperFirst(this.openapi.getRefAlias(schema.$ref)),
           docs: [{ description: "" }],
           isExported: true,
@@ -477,9 +473,9 @@ export class TypeGenerator {
     if (schema.type === "array") {
       return [
         this.ast.generateTypeAliasStatements({
-          name: this.openapi.upperFirstRequestName + "BodyParams",
+          name: this.openapi.upperFirstBodyDataName,
           type: this.schema.formatterSchemaType(schema),
-          docs: [{ description: "" }],
+          docs: schema.description ? [{ description: "" }] : undefined,
           isExported: true,
         }),
       ];
@@ -488,8 +484,8 @@ export class TypeGenerator {
     return [
       this.ast.generateInterfaceStatements({
         isExported: true,
-        name: this.openapi.upperFirstRequestName + "BodyParams",
-        docs: [{ description: "bodyParams" }],
+        name: this.openapi.upperFirstBodyDataName,
+        docs: schema.description ? [{ description: "" }] : undefined,
         properties: this.schema.getBaseTypeFromSchema(schema),
       }),
     ];

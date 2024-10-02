@@ -1,7 +1,7 @@
 import _ from "lodash";
 
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { OpenAPI } from "./OpenAPI.ts";
 import type { ParseRef } from "./types.ts";
@@ -32,7 +32,7 @@ export class Schema {
   }
 
   parseSchema(
-    schema: OasTypes.SchemaObject,
+    schema: SchemaObject,
   ): OpenAPIV3.SchemaObject | OpenAPIV3_1.SchemaObject {
     if (this.isOpenAPIV3) {
       return schema as OpenAPIV3.SchemaObject;

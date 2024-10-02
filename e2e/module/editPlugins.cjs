@@ -3,7 +3,7 @@ const path = require("path");
 
 const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.ts");
 
-const config =`import {
+const config = `import {
   defineConfig,
   createTSRequest,
   createTSType,
@@ -25,7 +25,8 @@ export default defineConfig({
   plugins: [
     createTSRequest({
       createZodDecorator: true,
-            compare: true,
+      compare: true,
+       requestType:'axios',
             zodDecoratorImportDeclaration: {
         moduleSpecifier: "./test/zod",
       },
@@ -43,9 +44,6 @@ export default defineConfig({
     createMSW(),
     createNestjs()
   ]
-})`
+})`;
 
-
-fs.writeFileSync(filePath,config);
-
-
+fs.writeFileSync(filePath, config);

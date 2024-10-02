@@ -1,7 +1,7 @@
 import _ from "lodash";
 
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { OperationObject, ResponseObject, SchemaObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { OpenAPI } from "./OpenAPI.ts";
@@ -42,7 +42,7 @@ export class Response {
     | {
         description?: string;
         label: string;
-        schema: OasTypes.SchemaObject;
+        schema: SchemaObject;
         type: string | string[];
       }[]
     | undefined {
@@ -51,7 +51,7 @@ export class Response {
 
   get successResponse(): OpenAPIResponseObject | undefined {
     const response:
-      | OasTypes.ResponseObject
+      | ResponseObject
       | OpenAPIV3_1.ReferenceObject
       | OpenAPIV3.ReferenceObject
       | undefined = _.get(
@@ -64,7 +64,7 @@ export class Response {
     if (ref) {
       const responseObject = this.openapi.findSchemaDefinition(
         ref,
-      ) as OasTypes.ResponseObject;
+      ) as ResponseObject;
       const mediaTypeObject =
         responseObject.content?.["application/json"] ||
         responseObject.content?.["*/*"];
@@ -74,8 +74,8 @@ export class Response {
         "$ref" in mediaTypeObject.schema
           ? (this.openapi.findSchemaDefinition(
               mediaTypeObject?.schema.$ref,
-            ) as OasTypes.SchemaObject)
-          : (mediaTypeObject?.schema as OasTypes.SchemaObject);
+            ) as SchemaObject)
+          : (mediaTypeObject?.schema as SchemaObject);
 
       return {
         type: schemaObject?.type,
@@ -94,8 +94,8 @@ export class Response {
         "$ref" in mediaTypeObject.schema
           ? (this.openapi.findSchemaDefinition(
               mediaTypeObject?.schema.$ref,
-            ) as OasTypes.SchemaObject)
-          : (mediaTypeObject?.schema as OasTypes.SchemaObject);
+            ) as SchemaObject)
+          : (mediaTypeObject?.schema as SchemaObject);
 
       return {
         type:
@@ -117,7 +117,7 @@ export class Response {
 
   /*  getResponseAsJSONSchema(statusCode: string | number): ResponseJSONSchema {
     const response:
-      | OasTypes.ResponseObject
+      | ResponseObject
       | OpenAPIV3_1.ReferenceObject
       | OpenAPIV3.ReferenceObject
       | undefined = _.get(
@@ -134,7 +134,7 @@ export class Response {
     if (ref) {
       const responseObject = this.openapi.findSchemaDefinition(
         ref,
-      ) as OasTypes.ResponseObject;
+      ) as ResponseObject;
       const mediaTypeObject =
         responseObject.content?.["application/json"] ||
         responseObject.content?.["*!/!*"];
@@ -144,8 +144,8 @@ export class Response {
         "$ref" in mediaTypeObject.schema
           ? (this.openapi.findSchemaDefinition(
               mediaTypeObject?.schema.$ref,
-            ) as OasTypes.SchemaObject)
-          : (mediaTypeObject?.schema as OasTypes.SchemaObject);
+            ) as SchemaObject)
+          : (mediaTypeObject?.schema as SchemaObject);
 
       return {
         type: schemaObject?.type || "any",
@@ -164,8 +164,8 @@ export class Response {
         "$ref" in mediaTypeObject.schema
           ? (this.openapi.findSchemaDefinition(
               mediaTypeObject?.schema.$ref,
-            ) as OasTypes.SchemaObject)
-          : (mediaTypeObject?.schema as OasTypes.SchemaObject);
+            ) as SchemaObject)
+          : (mediaTypeObject?.schema as SchemaObject);
 
       return {
         type: schemaObject?.type || "any",
@@ -197,7 +197,7 @@ export class Response {
     const responseRefs = _.chain(this.operation.api.paths)
       .map((pathObject, path) => {
         return _.chain(pathObject)
-          .map((operationObject: OasTypes.OperationObject) => {
+          .map((operationObject: OperationObject) => {
             const refs = _.chain(operationObject.responses)
               .map((item) => ("$ref" in item ? item.$ref : undefined))
               .filter(Boolean)
@@ -247,7 +247,7 @@ export class Response {
             refName: string;
             tags: string[];
             description: string | undefined;
-            responseObject: OasTypes.ResponseObject;
+            responseObject: ResponseObject;
           }[],
           { tags, description },
           $ref,
@@ -261,7 +261,7 @@ export class Response {
               refName: $ref.replace(/.+\//, ""),
               responseObject: this.openapi.findSchemaDefinition(
                 $ref,
-              ) as OasTypes.ResponseObject,
+              ) as ResponseObject,
             },
           ];
         },

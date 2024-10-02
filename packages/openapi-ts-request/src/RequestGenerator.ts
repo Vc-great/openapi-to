@@ -147,9 +147,7 @@ export class RequestGenerator {
   }
 
   get requestDataType(): string {
-    return (
-      this.namespaceTypeName + "." + this.openapi.upperFirstBodyRequestName
-    );
+    return this.namespaceTypeName + "." + this.openapi.upperFirstBodyDataName;
   }
 
   build(context: PluginContext): void {
@@ -367,7 +365,7 @@ export class RequestGenerator {
             {
               name: this.paramsZodSchema,
               arguments: [
-                this.namespaceZodName + "." + this.openapi.bodyRequestName,
+                this.namespaceZodName + "." + this.openapi.bodyDataName,
               ],
             },
           ]

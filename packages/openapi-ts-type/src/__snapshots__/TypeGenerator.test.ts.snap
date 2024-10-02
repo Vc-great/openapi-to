@@ -30,8 +30,7 @@ export namespace Pet {
     export type TestPutResponse404 = unknown;
     /** */
     export type TestPutErrorResponse = TestPutResponse401 | TestPutResponse403 | TestPutResponse404;
-    /** */
-    export type DelByTestBodyParams = Array<number>;
+    export type DelByTestRequest = Array<number>;
     /** OK */
     export type DelByTestResponse = Test32145;
     /** */
@@ -94,8 +93,7 @@ export namespace Pet {
         petId: number;
     }
 
-    /** bodyParams */
-    export interface UploadImagePostBodyParams {
+    export interface UploadImagePostRequest {
         /**
          *
          * @description Additional data to pass to server
@@ -188,8 +186,7 @@ export namespace Pet {
         petId: number;
     }
 
-    /** bodyParams */
-    export interface PetIdPostBodyParams {
+    export interface PetIdPostRequest {
         /**
          *
          * @description Updated name of the pet
@@ -238,7 +235,7 @@ import type { Order } from "./typeModels";
  */
 export namespace Store {
     /** */
-    export type CreateBodyParams = Order;
+    export type CreateRequest = Order;
     /** successful operation */
     export type CreateResponse = Order;
     /** */
@@ -338,7 +335,7 @@ export namespace User {
     }
 
     /** */
-    export type UsernamePutBodyParams = User;
+    export type UsernamePutRequest = User;
     /** */
     export type UsernamePutResponse400 = unknown;
     /** */
@@ -391,7 +388,7 @@ export namespace User {
     /** */
     export type LogoutGetResponse = unknown;
     /** */
-    export type CreateBodyParams = User;
+    export type CreateRequest = User;
     /** */
     export type CreateErrorResponse = unknown;
     /** */
@@ -940,8 +937,7 @@ export namespace NewPet {
     export type TestPutResponse404 = unknown;
     /** */
     export type TestPutErrorResponse = TestPutResponse401 | TestPutResponse403 | TestPutResponse404;
-    /** */
-    export type DelByTestBodyParams = Array<number>;
+    export type DelByTestRequest = Array<number>;
     /** OK */
     export type DelByTestResponse = Test32145;
     /** */
@@ -1004,8 +1000,7 @@ export namespace NewPet {
         petId: number;
     }
 
-    /** bodyParams */
-    export interface UploadImagePostBodyParams {
+    export interface UploadImagePostRequest {
         /**
          *
          * @description Additional data to pass to server
@@ -1098,8 +1093,7 @@ export namespace NewPet {
         petId: number;
     }
 
-    /** bodyParams */
-    export interface PetIdPostBodyParams {
+    export interface PetIdPostRequest {
         /**
          *
          * @description Updated name of the pet
@@ -1148,7 +1142,7 @@ import type { Order } from "./typeModels";
  */
 export namespace Store {
     /** */
-    export type CreateBodyParams = Order;
+    export type CreateRequest = Order;
     /** successful operation */
     export type CreateResponse = Order;
     /** */
@@ -1248,7 +1242,7 @@ export namespace User {
     }
 
     /** */
-    export type UsernamePutBodyParams = User;
+    export type UsernamePutRequest = User;
     /** */
     export type UsernamePutResponse400 = unknown;
     /** */
@@ -1301,7 +1295,7 @@ export namespace User {
     /** */
     export type LogoutGetResponse = unknown;
     /** */
-    export type CreateBodyParams = User;
+    export type CreateRequest = User;
     /** */
     export type CreateErrorResponse = unknown;
     /** */

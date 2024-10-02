@@ -1,5 +1,10 @@
 import type { JSONSchema4TypeName, JSONSchema7TypeName } from "json-schema";
-import type OasTypes from "oas/types";
+import type {
+  ParameterObject,
+  RequestBodyObject,
+  ResponseObject,
+  SchemaObject,
+} from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 export type ParseRef = {
@@ -9,7 +14,7 @@ export type ParseRef = {
   type: string;
 };
 
-export type OpenAPIParameterObject = OasTypes.ParameterObject & {
+export type OpenAPIParameterObject = ParameterObject & {
   refName: string | undefined;
   $ref: string | undefined;
   key: string;
@@ -19,7 +24,7 @@ export type GroupRequest = {
   $ref: string;
   tags: string[];
   refName: string;
-  requestBodyObject: OasTypes.RequestBodyObject;
+  requestBodyObject: RequestBodyObject;
 };
 
 export type OpenAPIRequestBodyObject = {
@@ -31,7 +36,7 @@ export type OpenAPIRequestBodyObject = {
   description: string | undefined;
   refName: string | undefined;
   schemaObject:
-    | OasTypes.SchemaObject
+    | SchemaObject
     | OpenAPIV3.ReferenceObject
     | OpenAPIV3_1.ReferenceObject
     | undefined;
@@ -39,7 +44,7 @@ export type OpenAPIRequestBodyObject = {
 
 export interface OpenAPIResponseObject {
   description: string | undefined;
-  schema: OasTypes.SchemaObject | undefined;
+  schema: SchemaObject | undefined;
   refName: string | undefined;
   type:
     | OpenAPIV3.ArraySchemaObjectType
@@ -55,12 +60,12 @@ export type GroupResponse = {
   $ref: string;
   refName: string;
   tags: string[];
-  responseObject: OasTypes.ResponseObject;
+  responseObject: ResponseObject;
 }[];
 
 export type ArrayBody = {
   isArray: boolean;
   itemRefName: string;
   itemRef: string;
-  schemaObject: OasTypes.SchemaObject;
+  schemaObject: SchemaObject;
 };

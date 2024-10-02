@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { isRef } from "oas/types";
+import { isRef, type SchemaObject } from "oas/types";
 import { findSchemaDefinition } from "oas/utils";
 
 import type { Operation } from "oas/operation";
@@ -7,11 +7,11 @@ import type {
   getParametersAsJSONSchemaOptions,
   SchemaWrapper,
 } from "oas/operation/get-parameters-as-json-schema";
-import type OasTypes from "oas/types";
+import type { ParameterObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIParameterObject } from "./types.ts";
 
-type OasTypesParameterObject = OasTypes.ParameterObject & {
+type OasTypesParameterObject = ParameterObject & {
   $ref: string | undefined;
 };
 
@@ -61,14 +61,12 @@ export class Parameter {
     return _.chain(this.parameters).filter(["in", "query"]).value();
   }
 
-  findSchema(
-    parameterObject: OasTypesParameterObject,
-  ): OasTypes.ParameterObject {
+  findSchema(parameterObject: OasTypesParameterObject): ParameterObject {
     if ("$ref" in parameterObject && parameterObject.$ref) {
       return findSchemaDefinition(
         parameterObject.$ref,
         this.operation?.api,
-      ) as OasTypes.ParameterObject;
+      ) as ParameterObject;
     }
     return parameterObject;
   }
@@ -111,19 +109,17 @@ export class Parameter {
     return "`" + path + "`";
   }
 
-  getParametersSchema(
-    inKey: "path" | "query" | "header",
-  ): OasTypes.SchemaObject | null {
+  getParametersSchema(inKey: "path" | "query" | "header"): SchemaObject | null {
     const params = _.chain(this.parameters)
       .filter(["in", inKey])
       .map((item) => {
         const parameter = item as unknown as OpenAPIV3.ReferenceObject &
-          OasTypes.ParameterObject;
+          ParameterObject;
         if (isRef(parameter)) {
           return findSchemaDefinition(
             parameter.$ref,
             this.operation.api,
-          ) as OasTypes.ParameterObject;
+          ) as ParameterObject;
         }
 
         return parameter;
@@ -138,7 +134,7 @@ export class Parameter {
       (schema, pathParameters) => {
         const property =
           pathParameters.content?.[this.operation.getContentType()]?.schema ??
-          (pathParameters.schema as OasTypes.SchemaObject);
+          (pathParameters.schema as SchemaObject);
 
         const required = [
           ...(schema.required || ([] as any)),
@@ -159,7 +155,7 @@ export class Parameter {
           },
         };
       },
-      { type: "object", required: [], properties: {} } as OasTypes.SchemaObject,
+      { type: "object", required: [], properties: {} } as SchemaObject,
     );
   }
 }

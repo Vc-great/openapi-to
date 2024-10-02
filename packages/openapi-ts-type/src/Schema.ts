@@ -7,7 +7,7 @@ import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { useEnumCache } from "./EnumCache.ts";
 
 import type { PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
 import type { JSDocTagStructure } from "ts-morph";
 import type { EnumCache } from "./EnumCache.ts";
@@ -36,7 +36,7 @@ export class Schema {
   }
 
   getBaseTypeFromSchema(
-    schema: OasTypes.SchemaObject | null,
+    schema: SchemaObject | null,
   ): Array<OptionalKindOfPropertySignatureStructure> | undefined {
     const version = this.oas.getVersion();
 
@@ -145,7 +145,7 @@ export class Schema {
   }
 
   getTypeStringFromProperties(
-    baseSchema?: OasTypes.SchemaObject,
+    baseSchema?: SchemaObject,
   ): Array<OptionalKindOfPropertySignatureStructure> | undefined {
     const properties = baseSchema?.properties || {};
     const required = baseSchema?.required;
@@ -153,7 +153,7 @@ export class Schema {
 
     const typeStatements: Array<OptionalKindOfPropertySignatureStructure> =
       Object.keys(properties).map((name) => {
-        const schema = properties[name] as OasTypes.SchemaObject;
+        const schema = properties[name] as SchemaObject;
 
         const isRequired = _.chain([] as Array<string>)
           .push(_.isBoolean(required) ? name : "")
@@ -178,8 +178,8 @@ export class Schema {
         return {
           name: _.camelCase(name) + (isRequired ? "" : "?"),
           type: this.openapi.isReference(schema)
-            ? interfaceDeclaration?.getName() ??
-              _.upperFirst(this.openapi.getRefAlias(schema.$ref))
+            ? (interfaceDeclaration?.getName() ??
+              _.upperFirst(this.openapi.getRefAlias(schema.$ref)))
             : this.formatterSchemaType(schema),
           docs: [
             {
@@ -217,7 +217,7 @@ export class Schema {
     return typeStatements;
   }
 
-  formatterSchemaType(schema: OasTypes.SchemaObject | undefined): string {
+  formatterSchemaType(schema: SchemaObject | undefined): string {
     const numberEnum = [
       "int32",
       "int64",
@@ -262,9 +262,7 @@ export class Schema {
     }
 
     if (type === "array" && !this.openapi.isReference(schema.items)) {
-      const arrayType = this.formatterSchemaType(
-        schema.items as OasTypes.SchemaObject,
-      );
+      const arrayType = this.formatterSchemaType(schema.items as SchemaObject);
       return `Array<${arrayType}>`;
     }
 

@@ -13,6 +13,7 @@ import type {
   OptionalKind,
 } from "ts-morph";
 import type { Config, ImportStatementsOmitKind } from "../types.ts";
+import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 export class TypeormGenerator extends NestjsGenerator {
   constructor(config: Config) {
@@ -44,8 +45,12 @@ export class TypeormGenerator extends NestjsGenerator {
       .filter((item) => DATE_ENUM.includes(_.get(item, "schema.format", "")))
       .value();
 
+    //todo Array<OpenAPIParameterObject>
     const hasPagination = _.chain(this.openapi.parameter?.parametersOfQuery)
-      .some((item) => item.name === "pageNo" || item.name === "pageSize")
+      .some(
+        (item: OpenAPIV3.ParameterObject | OpenAPIV3_1.ParameterObject) =>
+          item.name === "pageNo" || item.name === "pageSize",
+      )
       .value();
 
     // user/:id  findOne

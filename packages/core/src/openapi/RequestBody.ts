@@ -2,8 +2,13 @@ import _ from "lodash";
 import { OpenAPIV3 } from "openapi-types";
 
 import type { Operation } from "oas/operation";
-import type { MediaTypeObject } from "oas/types";
-import type OasTypes from "oas/types";
+import type {
+  MediaTypeObject,
+  OperationObject,
+  RequestBodyObject,
+  SchemaObject,
+} from "oas/types";
+
 import type { OpenAPI } from "./OpenAPI.ts";
 import type {
   ArrayBody,
@@ -49,7 +54,7 @@ export class RequestBody {
       itemRef,
       schemaObject: (this.openapi.findSchemaDefinition(itemRef) ||
         _.get(requestBodyObject, "schemaObject.items") ||
-        requestBodyObject?.schemaObject) as OasTypes.SchemaObject,
+        requestBodyObject?.schemaObject) as SchemaObject,
     };
   }
 
@@ -112,7 +117,7 @@ export class RequestBody {
     if (requestBody && "$ref" in requestBody && requestBody.$ref) {
       const _requestBody = this.openapi.findSchemaDefinition(
         requestBody.$ref,
-      ) as OasTypes.RequestBodyObject; //Pick<OpenAPIRequestBodyObject, "schemaObject">
+      ) as RequestBodyObject; //Pick<OpenAPIRequestBodyObject, "schemaObject">
 
       const mediaTypeObject =
         _requestBody.content?.["application/json"] ||
@@ -166,7 +171,7 @@ export class RequestBody {
     const refBody = _.chain(this.operation.api.paths)
       .map((pathObject, path) => {
         return _.chain(pathObject)
-          .map((operationObject: OasTypes.OperationObject, method) => {
+          .map((operationObject: OperationObject, method) => {
             if (
               !Object.keys(OpenAPIV3.HttpMethods)
                 .map((item) => _.lowerCase(item))
@@ -180,9 +185,7 @@ export class RequestBody {
             };
           })
           .filter(Boolean)
-          .value() as unknown as Array<
-          OasTypes.OperationObject & { tags: string[] }
-        >;
+          .value() as unknown as Array<OperationObject & { tags: string[] }>;
       })
       .flatten()
       .filter((item) => !!item.$ref)
@@ -205,39 +208,10 @@ export class RequestBody {
             refName: $ref.replace(/.+\//, ""),
             requestBodyObject: this.openapi.findSchemaDefinition(
               $ref,
-            ) as OasTypes.RequestBodyObject,
+            ) as RequestBodyObject,
           },
         ];
       }, [])
       .value();
   }
-
-  /*getRequestBodySchema$2(): {
-    refName: string | undefined;
-    schema: OasTypes.SchemaObject | undefined;
-  } {
-    const requestBody = this.operation.schema.requestBody;
-    if (!requestBody) {
-      return {
-        refName: undefined,
-        schema: undefined,
-      };
-    }
-    if ("$ref" in requestBody) {
-      return {
-        refName: requestBody.$ref.replace(/.+\//, ""),
-        schema: findSchemaDefinition(
-          requestBody.$ref,
-          this.operation?.api,
-        ) as OasTypes.SchemaObject,
-      };
-    }
-
-    const mediaType = _.head(_.keys(requestBody.content));
-    const mediaTypeObject = _.get(requestBody.content, mediaType || "");
-    return {
-      refName: undefined,
-      schema: mediaTypeObject.schema,
-    };
-  }*/
 }

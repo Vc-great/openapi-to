@@ -1,7 +1,7 @@
 import _ from "lodash";
 
 import type Oas from "oas";
-import type OasTypes from "oas/types";
+import type { MediaTypeObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { OpenAPI } from "./OpenAPI.ts";
@@ -15,7 +15,7 @@ type RequestBodies = {
 };
 
 type RequestBodyObject = {
-  [key: string]: OpenAPIV3.ReferenceObject | OasTypes.MediaTypeObject;
+  [key: string]: OpenAPIV3.ReferenceObject | MediaTypeObject;
 };
 
 export class Component {

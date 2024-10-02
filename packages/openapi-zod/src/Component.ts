@@ -11,7 +11,7 @@ import { Schema } from "./Schema.ts";
 import { Zod } from "./zod.ts";
 
 import type { PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { VariableStatementStructure } from "ts-morph";
 import type { StatementStructures } from "ts-morph";
@@ -158,10 +158,7 @@ export class Component {
    * @param schema
    * @param typeName
    */
-  generateComponentSchemaType(
-    schema: OasTypes.SchemaObject,
-    typeName: string,
-  ): void {
+  generateComponentSchemaType(schema: SchemaObject, typeName: string): void {
     this.openapi.resetRefCache();
 
     const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
@@ -241,7 +238,7 @@ export class Component {
     const typeName = _.upperFirst(_.camelCase(name));
     const value:
       | OpenAPIV3.ReferenceObject
-      | OasTypes.MediaTypeObject
+      | MediaTypeObject
       | undefined = _.head(Object.values(componentObject));
 
     if (!name || !value) {
@@ -253,10 +250,10 @@ export class Component {
       return;
     }
 
-    let schema: OasTypes.SchemaObject | null = null;
+    let schema: SchemaObject | null = null;
 
     if ("schema" in value) {
-      schema = value.schema || (null as OasTypes.SchemaObject | null);
+      schema = value.schema || (null as SchemaObject | null);
     }
 
     if (schema === null) {

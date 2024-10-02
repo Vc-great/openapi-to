@@ -5,7 +5,7 @@ import { formatterType, objectToStringify } from "../utils.ts";
 import type { Type } from "@nestjs/common";
 import type { ApiPropertyOptions } from "@nestjs/swagger";
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { ParameterObject, SchemaObject } from "oas/types";
 import type { DecoratorStructure, OptionalKind } from "ts-morph";
 import type { Config, ImportStatementsOmitKind } from "../types.ts";
 
@@ -29,8 +29,8 @@ export class SwaggerGenerator {
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
 
-  private parameterObject: OasTypes.ParameterObject | undefined;
-  private schemaObject: OasTypes.SchemaObject | undefined;
+  private parameterObject: ParameterObject | undefined;
+  private schemaObject: SchemaObject | undefined;
 
   constructor(config: Config) {
     this.oas = config.oas;
@@ -48,9 +48,9 @@ export class SwaggerGenerator {
   }
 
   generatorDecoratorFromParameterObject(
-    parameterObject: OasTypes.ParameterObject,
+    parameterObject: ParameterObject,
   ): OptionalKind<DecoratorStructure>[] {
-    const schemaObject: OasTypes.SchemaObject =
+    const schemaObject: SchemaObject =
       parameterObject.schema && "$ref" in parameterObject.schema
         ? this.openapi.findSchemaBy$ref(parameterObject?.schema.$ref)
         : parameterObject?.schema;
@@ -82,7 +82,7 @@ export class SwaggerGenerator {
     isRequired,
     name,
   }: {
-    schemaObject: OasTypes.SchemaObject;
+    schemaObject: SchemaObject;
     isRequired: boolean | undefined;
     name: string | undefined;
   }): OptionalKind<DecoratorStructure>[] {
@@ -128,7 +128,7 @@ export class SwaggerGenerator {
       description,
     }: {
       description: string | undefined;
-      schemaObject: OasTypes.SchemaObject;
+      schemaObject: SchemaObject;
     },
   ): string {
     const apiPropertyOptions = {

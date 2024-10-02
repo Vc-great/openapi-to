@@ -4,7 +4,7 @@ import { modelFolderName } from "./utils/modelFolderName.ts";
 import { Faker } from "./Faker.ts";
 
 import type { ObjectStructure, PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { Config } from "./types.ts";
 
 export class Schema {
@@ -43,7 +43,7 @@ export class Schema {
    * z.object({})
    * ```
    */
-  getStatementsFromSchema(schema: OasTypes.SchemaObject | undefined): string {
+  getStatementsFromSchema(schema: SchemaObject | undefined): string {
     const version = this.oas.getVersion();
 
     if (!schema) {
@@ -161,7 +161,7 @@ export class Schema {
    * ```
    *
    */
-  getZodFromProperties(baseSchema?: OasTypes.SchemaObject): string {
+  getZodFromProperties(baseSchema?: SchemaObject): string {
     if (!baseSchema) {
       return "";
     }
@@ -172,7 +172,7 @@ export class Schema {
 
     const objectStructure: Array<ObjectStructure> = Object.keys(properties).map(
       (name) => {
-        const schema = properties[name] as OasTypes.SchemaObject;
+        const schema = properties[name] as SchemaObject;
 
         const isRequired = _.chain([] as Array<string>)
           .push(_.isBoolean(required) ? name : "")
@@ -201,7 +201,7 @@ export class Schema {
     return this.ast.generateObject$2(objectStructure);
   }
 
-  formatterSchemaType(schema: OasTypes.SchemaObject | undefined): string {
+  formatterSchemaType(schema: SchemaObject | undefined): string {
     const numberEnum = [
       "int32",
       "int64",
@@ -252,9 +252,7 @@ export class Schema {
       !this.openapi.isReference(schema.items) &&
       !_.isBoolean(schema.items)
     ) {
-      const arrayType = this.formatterSchemaType(
-        schema.items as OasTypes.SchemaObject,
-      );
+      const arrayType = this.formatterSchemaType(schema.items as SchemaObject);
       return this.faker.helpers.multiple(arrayType);
     }
 

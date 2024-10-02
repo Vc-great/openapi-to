@@ -8,14 +8,14 @@ import { DOMAIN_DIR, OUTPUT_DIR } from "./constants.ts";
 
 import type { OpenAPIResponseObject } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { Config, ImportStatementsOmitKind } from "./types.ts";
 
-type ArraySchemaObject = Omit<OasTypes.SchemaObject, "type"> & {
+type ArraySchemaObject = Omit<SchemaObject, "type"> & {
   type: "array";
 };
 
-type ObjectSchemaObject = Omit<OasTypes.SchemaObject, "type"> & {
+type ObjectSchemaObject = Omit<SchemaObject, "type"> & {
   type: "object";
 };
 
@@ -174,7 +174,7 @@ export class DomainImport {
   }
 
   generateDomainNamedImportsBySchema(
-    schemaObject: OasTypes.SchemaObject,
+    schemaObject: SchemaObject,
   ): string[] | undefined {
     switch (schemaObject.type) {
       case "array":

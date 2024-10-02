@@ -9,7 +9,7 @@ import { useEnumCache } from "./EnumCache.ts";
 import { SwaggerGenerator } from "./SwaggerGenerator.ts";
 
 import type { PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { DecoratorStructure } from "ts-morph";
 import type { OptionalKind, PropertyDeclarationStructure } from "ts-morph";
@@ -35,22 +35,22 @@ export class Schema extends NestjsGenerator {
     this.swaggerGenerator = new SwaggerGenerator(config);
   }
 
-  getSchemaType(schemaObject: OasTypes.SchemaObject): unknown {
+  getSchemaType(schemaObject: SchemaObject): unknown {
     if (schemaObject.type !== "array") {
       //todo
       return this.openapi.formatterSchemaType(schemaObject.type as string);
     }
 
     const ref: string = _.get(schemaObject, "items.$ref", "");
-    const _schemaObject: OasTypes.SchemaObject | undefined = ref
-      ? (this.openapi.findSchemaDefinition(ref) as OasTypes.SchemaObject)
-      : (schemaObject?.items as OasTypes.SchemaObject);
+    const _schemaObject: SchemaObject | undefined = ref
+      ? (this.openapi.findSchemaDefinition(ref) as SchemaObject)
+      : (schemaObject?.items as SchemaObject);
 
     return _.get(_schemaObject, "type", "");
   }
 
   getPropertyStructureFromSchemaObject(
-    schema: OasTypes.SchemaObject | undefined,
+    schema: SchemaObject | undefined,
   ): OptionalKindOfPropertySignatureStructure | undefined {
     const version = this.oas.getVersion();
 
@@ -144,7 +144,7 @@ export class Schema extends NestjsGenerator {
   }
 
   getDomainFromProperties(
-    baseSchema?: OasTypes.SchemaObject,
+    baseSchema?: SchemaObject,
   ): OptionalKindOfPropertySignatureStructure | undefined {
     const properties = baseSchema?.properties || {};
     const required = baseSchema?.required;
@@ -157,7 +157,7 @@ export class Schema extends NestjsGenerator {
     const propertiesStructure = _.chain(properties)
       .keys()
       .map((name) => {
-        const schemaObject = properties[name] as OasTypes.SchemaObject;
+        const schemaObject = properties[name] as SchemaObject;
 
         const isRequired = _.chain([] as Array<string>)
           .push(_.isBoolean(required) ? name : "")
@@ -220,7 +220,7 @@ export class Schema extends NestjsGenerator {
     };
   }
 
-  formatterSchemaType(schema: OasTypes.SchemaObject | undefined): string {
+  formatterSchemaType(schema: SchemaObject | undefined): string {
     const numberEnum = [
       "int32",
       "int64",
@@ -269,9 +269,7 @@ export class Schema extends NestjsGenerator {
     }
 
     if (type === "array" && !this.openapi.isReference(schema.items)) {
-      const arrayType = this.formatterSchemaType(
-        schema.items as OasTypes.SchemaObject,
-      );
+      const arrayType = this.formatterSchemaType(schema.items as SchemaObject);
       return `Array<${arrayType}>`;
     }
 

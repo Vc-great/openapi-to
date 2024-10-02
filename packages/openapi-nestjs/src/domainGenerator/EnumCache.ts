@@ -1,16 +1,16 @@
 import _ from "lodash";
 
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 
 export class EnumCache {
-  private enumCache: Map<OasTypes.SchemaObject, string> = new Map<
-    OasTypes.SchemaObject,
+  private enumCache: Map<SchemaObject, string> = new Map<
+    SchemaObject,
     string
   >();
   private name: { [key: string]: number } = {};
   constructor() {}
 
-  entries(): Array<[OasTypes.SchemaObject, string]> {
+  entries(): Array<[SchemaObject, string]> {
     return [...this.enumCache.entries()];
   }
   getName(name: string): string {
@@ -21,7 +21,7 @@ export class EnumCache {
     return name + (index || "");
   }
 
-  set(schema: OasTypes.SchemaObject, name: string): void {
+  set(schema: SchemaObject, name: string): void {
     this.enumCache.set(schema, name);
   }
 

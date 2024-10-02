@@ -4,7 +4,7 @@ import { Scope } from "ts-morph";
 import { NestjsGenerator } from "./NestjsGenerator.ts";
 
 import type { PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { ParameterObject } from "oas/types";
 import type { ClassDeclarationStructure } from "ts-morph";
 import type {
   ImportDeclarationStructure,
@@ -95,7 +95,7 @@ export class ServiceGenerator extends NestjsGenerator {
   generatorMethodBody(): string {
     const pathParameters = _.chain(this.openapi.parameter?.parameters)
       .filter(["in", "path"])
-      .map((item: OasTypes.ParameterObject) => _.camelCase(item.name))
+      .map((item: ParameterObject) => _.camelCase(item.name))
       .value() as unknown as string[];
 
     const args = _.chain([] as string[])

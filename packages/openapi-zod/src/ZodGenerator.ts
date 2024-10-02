@@ -15,7 +15,7 @@ import { Zod } from "./zod.ts";
 
 import type { ObjectStructure } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { VariableStatementStructure } from "ts-morph";
 import type {
   ImportDeclarationStructure,
@@ -32,7 +32,7 @@ type ResponseObject = {
   jsonSchema?: {
     description?: string;
     label: string;
-    schema: OasTypes.SchemaObject;
+    schema: SchemaObject;
     type: string | string[];
   };
 };
@@ -557,17 +557,13 @@ export class ZodGenerator {
     if (_bodySchema === undefined || _.isBoolean(_bodySchema)) {
       return null;
     }
-    let schema: OasTypes.SchemaObject | null = null;
+    let schema: SchemaObject | null = null;
     if ("schema" in _bodySchema) {
-      schema = _bodySchema.schema || (null as OasTypes.SchemaObject | null);
+      schema = _bodySchema.schema || (null as SchemaObject | null);
     }
 
     if (_.isArray(_bodySchema)) {
-      schema = _.get(
-        _bodySchema,
-        "[1].schema",
-        null,
-      ) as OasTypes.SchemaObject | null;
+      schema = _.get(_bodySchema, "[1].schema", null) as SchemaObject | null;
     }
 
     if (schema === null) {
@@ -579,10 +575,10 @@ export class ZodGenerator {
         this.ast.generateVariableStatements({
           declarationKind: VariableDeclarationKind.Const,
           isExported: false,
-          docs: [{ description: "bodyParams" }],
+          docs: undefined,
           declarations: [
             {
-              name: this.openapi.requestName + "BodyParams",
+              name: this.openapi.bodyDataName,
               initializer: this.z
                 .head()
                 .lazy(this.openapi.getRefAlias(schema.$ref))
@@ -598,10 +594,12 @@ export class ZodGenerator {
         this.ast.generateVariableStatements({
           declarationKind: VariableDeclarationKind.Const,
           isExported: false,
-          docs: [{ description: "bodyParams" }],
+          docs: schema.description
+            ? [{ description: schema.description }]
+            : undefined,
           declarations: [
             {
-              name: this.openapi.requestName + "BodyParams",
+              name: this.openapi.bodyDataName,
               initializer: this.schema.formatterSchemaType(schema),
             },
           ],
@@ -613,10 +611,12 @@ export class ZodGenerator {
       this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
         isExported: false,
-        docs: [{ description: "bodyParams" }],
+        docs: schema.description
+          ? [{ description: schema.description }]
+          : undefined,
         declarations: [
           {
-            name: this.openapi.requestName + "BodyParams",
+            name: this.openapi.bodyDataName,
             initializer: this.schema.getZodFromSchema(schema),
           },
         ],

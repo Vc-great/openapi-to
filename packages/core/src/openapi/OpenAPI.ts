@@ -10,7 +10,7 @@ import { Schema } from "./Schema.ts";
 
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { HttpMethod, PathGroup, PathGroupByTag } from "../types";
@@ -21,7 +21,7 @@ const enum WriteModel {
 }
 
 type RefCacheValue = {
-  schema?: OasTypes.SchemaObject;
+  schema?: SchemaObject;
   type?: "";
   isWriteIndex?: boolean;
   //等待写入 写入完成
@@ -92,11 +92,11 @@ export class OpenAPI {
     return `${_.upperFirst(_.camelCase(this.methodName))}PathParams`;
   }
 
-  get bodyRequestName(): string {
+  get bodyDataName(): string {
     return `${_.camelCase(this.methodName)}Request`;
   }
 
-  get upperFirstBodyRequestName(): string {
+  get upperFirstBodyDataName(): string {
     return `${_.upperFirst(_.camelCase(this.methodName))}Request`;
   }
 
@@ -116,7 +116,7 @@ export class OpenAPI {
   }
 
   get bodyRequestNameForLowerFirst(): string {
-    return _.lowerFirst(this.bodyRequestName);
+    return _.lowerFirst(this.bodyDataName);
   }
 
   get responseNameForLowFirst(): string {
@@ -300,7 +300,7 @@ export class OpenAPI {
     const schema = findSchemaDefinition(
       $ref,
       this.operation?.api,
-    ) as OasTypes.SchemaObject;
+    ) as SchemaObject;
 
     this.refCache.set($ref, {
       schema: schema,

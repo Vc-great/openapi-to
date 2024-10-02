@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import {UUID_TAG_NAME} from "@openapi-to/core/utils";
+import { UUID_TAG_NAME } from "@openapi-to/core/utils";
 
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
@@ -11,7 +11,7 @@ import { Schema } from "./Schema.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { JSDocStructure } from "ts-morph";
 import type { ClassDeclarationStructure } from "ts-morph";
 import type {
@@ -28,7 +28,7 @@ type ResponseObject = {
   jsonSchema?: {
     description?: string;
     label: string;
-    schema: OasTypes.SchemaObject;
+    schema: SchemaObject;
     type: string | string[];
   };
 };

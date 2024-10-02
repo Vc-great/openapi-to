@@ -15,7 +15,7 @@ import { Schema } from "./Schema.ts";
 import { SwaggerGenerator } from "./SwaggerGenerator.ts";
 
 import type { OpenAPIParameterObject, PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type {
   ClassDeclarationStructure,
@@ -50,7 +50,7 @@ export class Component extends NestjsGenerator {
   }
 
   generateParametersStatements(item: OpenAPIParameterObject) {
-    const schema = item.schema as OasTypes.SchemaObject;
+    const schema = item.schema as SchemaObject;
     const isArrayOfSchema = schema.type === "array";
 
     const validatorDecorator =
@@ -89,18 +89,18 @@ export class Component extends NestjsGenerator {
     };
   }
 
-  generatePaginationDto(pagination: Pagination) {
+  generatePaginationDto(pagination: Pagination): Parameter {
     const pageNoParameterObject = pagination.pageNoParameterObject;
     const pageSizeParameterObject = pagination.pageSizeParameterObject;
 
     const pageNoValidatorDecorator = this.validatorDecorator.generatorDecorator(
-      pageNoParameterObject?.schema as OasTypes.SchemaObject,
+      pageNoParameterObject?.schema as SchemaObject,
       pageNoParameterObject?.required,
     );
 
     const pageSizeValidatorDecorator =
       this.validatorDecorator.generatorDecorator(
-        pageSizeParameterObject?.schema as OasTypes.SchemaObject,
+        pageSizeParameterObject?.schema as SchemaObject,
         pageSizeParameterObject?.required,
       );
 
@@ -124,10 +124,10 @@ export class Component extends NestjsGenerator {
           decorators: _.chain([] as OptionalKind<DecoratorStructure>[])
             .concat(
               pagination.pageNoParameterObject?.schema
-                ? this.validatorDecorator.generatorDecorator(
+                ? (this.validatorDecorator.generatorDecorator(
                     pagination.pageNoParameterObject?.schema,
                     pagination.pageNoParameterObject?.required,
-                  ) ?? []
+                  ) ?? [])
                 : [],
             )
             .concat(
@@ -155,10 +155,10 @@ export class Component extends NestjsGenerator {
           decorators: _.chain([] as OptionalKind<DecoratorStructure>[])
             .concat(
               pagination.pageSizeParameterObject?.schema
-                ? this.validatorDecorator.generatorDecorator(
+                ? (this.validatorDecorator.generatorDecorator(
                     pagination.pageSizeParameterObject?.schema,
                     pagination.pageSizeParameterObject?.required,
-                  ) ?? []
+                  ) ?? [])
                 : [],
             )
             .concat(
@@ -201,6 +201,7 @@ export class Component extends NestjsGenerator {
     const pagination = new Pagination(
       this.openapi.parameter?.componentsParameters,
     );
+
     const parametersStatements: Parameter[] = _.chain(
       pagination.filterPaginationByParameters,
     )
@@ -258,7 +259,7 @@ export class Component extends NestjsGenerator {
             return item.schema;
           })
           .filter(Boolean)
-          .value() as OasTypes.SchemaObject[];
+          .value() as SchemaObject[];
 
         return {
           refName,
@@ -268,7 +269,7 @@ export class Component extends NestjsGenerator {
       })
       .value() as {
       refName: string;
-      schema: OasTypes.SchemaObject;
+      schema: SchemaObject;
       description: string;
     }[];
 
@@ -290,7 +291,7 @@ export class Component extends NestjsGenerator {
   }: {
     description: string | undefined;
     refName: string;
-    schema: OasTypes.SchemaObject;
+    schema: SchemaObject;
   }) {
     //t { propertiesStructure, validatorImports }
     const property = this.schema.getPropertyStructureFromSchemaObject(schema);
@@ -363,7 +364,7 @@ export class Component extends NestjsGenerator {
     const responseBody = _.chain(responses)
       .map(({ refName, responseObject }) => {
         const mediaTypeObjects: Array<
-          OasTypes.SchemaObject | OpenAPIV3.ReferenceObject | undefined
+          SchemaObject | OpenAPIV3.ReferenceObject | undefined
         > = _.chain(responseObject.content)
           .values()
           .map((item) => item.schema)
@@ -376,16 +377,14 @@ export class Component extends NestjsGenerator {
       })
       .value() as {
       refName: string;
-      schema: OasTypes.SchemaObject | OpenAPIV3.ReferenceObject;
+      schema: SchemaObject | OpenAPIV3.ReferenceObject;
     }[];
 
     _.chain(responseBody)
       .forEach(({ refName, schema }) => {
-        const schemaObject: OasTypes.SchemaObject =
+        const schemaObject: SchemaObject =
           "$ref" in schema && schema.$ref
-            ? (this.openapi.findSchemaDefinition(
-                schema.$ref,
-              ) as OasTypes.SchemaObject)
+            ? (this.openapi.findSchemaDefinition(schema.$ref) as SchemaObject)
             : schema;
 
         this.generateResponseSchema({
@@ -407,7 +406,7 @@ export class Component extends NestjsGenerator {
   }: {
     description: string | undefined;
     refName: string;
-    schema: OasTypes.SchemaObject;
+    schema: SchemaObject;
   }) {
     // const isError = /^([3-5][0-9][0-9])$/.test(code);
     const property = this.schema.getPropertyStructureFromSchemaObject(schema);
@@ -482,11 +481,9 @@ export class Component extends NestjsGenerator {
 
     _.chain(this.openapi.component.schemas)
       .forEach((schema) => {
-        const schemaObject: OasTypes.SchemaObject =
+        const schemaObject: SchemaObject =
           "$ref" in schema && schema.$ref
-            ? (this.openapi.findSchemaDefinition(
-                schema.$ref,
-              ) as OasTypes.SchemaObject)
+            ? (this.openapi.findSchemaDefinition(schema.$ref) as SchemaObject)
             : schema;
 
         this.generateSchema(schemaObject);
@@ -494,7 +491,7 @@ export class Component extends NestjsGenerator {
       .value();
   }
 
-  generateSchema(schema: OasTypes.SchemaObject): void {
+  generateSchema(schema: SchemaObject): void {
     const propertyStructure =
       this.schema.getPropertyStructureFromSchemaObject(schema);
     const title = schema.title ?? "";

@@ -8,7 +8,7 @@ import { HttpStatusObject } from "./http-status.ts";
 import { NestjsGenerator } from "./NestjsGenerator.ts";
 
 import type { PluginContext } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { ParameterObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { ClassDeclarationStructure } from "ts-morph";
 import type { ParameterDeclarationStructure } from "ts-morph";
@@ -49,9 +49,12 @@ export class ControllerGenerator extends NestjsGenerator {
       requestBodyObject?.refName ||
       _.get(requestBodyObject, "schemaObject.$ref") ||
       _.get(requestBodyObject, "schemaObject.type");
+
     return (
       this.isArrayOfRequestBody ||
-      ["string", "number", "boolean"].includes(requestBodyType ?? "")
+      ["string", "number", "boolean"].includes(
+        _.isArray(requestBodyType) ? "" : (requestBodyType ?? ""),
+      )
     );
   }
 
@@ -85,6 +88,10 @@ export class ControllerGenerator extends NestjsGenerator {
       this.openapi.requestBody?.getRequestBodySchemaOfApplicationJson;
 
     const type = _.get(mediaTypeObject, "schema.items.type", "");
+    //todo ("array" | NonArraySchemaObjectType)[]
+    if (_.isArray(type)) {
+      return undefined;
+    }
 
     const isBaseTypeOfBodyArrayItems = !["object", "array"].includes(type);
 
@@ -428,7 +435,7 @@ export class ControllerGenerator extends NestjsGenerator {
   generatorMethodBody(): string {
     const pathParameters = _.chain(this.openapi.parameter?.parameters)
       .filter(["in", "path"])
-      .map((item: OasTypes.ParameterObject) => _.camelCase(item.name))
+      .map((item: ParameterObject) => _.camelCase(item.name))
       .value() as unknown as string[];
 
     const args = _.chain([] as string[])

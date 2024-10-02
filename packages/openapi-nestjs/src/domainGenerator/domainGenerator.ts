@@ -13,7 +13,7 @@ import type {
   OpenAPIResponseObject,
   PluginContext,
 } from "@openapi-to/core";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OptionalKind, PropertyDeclarationStructure } from "ts-morph";
 import type { ClassDeclarationStructure } from "ts-morph";
 import type { Config } from "../types.ts";
@@ -70,7 +70,7 @@ export class DomainGenerator extends NestjsGenerator {
       properties: _.chain(this.openapi.parameter?.parametersOfQuery)
         .filter((item) => !item.$ref)
         .map((item) => {
-          const schema = item.schema as OasTypes.SchemaObject;
+          const schema = item.schema as SchemaObject;
           const validatorDecorator =
             this.validatorDecorator.generatorDecorator(schema, item.required) ??
             [];
@@ -164,8 +164,8 @@ export class DomainGenerator extends NestjsGenerator {
       methods: [],
       properties: responseObject.refName
         ? []
-        : this.schema.getPropertyStructureFromSchemaObject(schema)
-            ?.propertiesStructure ?? [],
+        : (this.schema.getPropertyStructureFromSchemaObject(schema)
+            ?.propertiesStructure ?? []),
     };
 
     this.ast.createSourceFile(this.responseDtoFilePath, {
@@ -220,8 +220,8 @@ export class DomainGenerator extends NestjsGenerator {
       requestBodyObject.schemaObject.$ref
         ? (this.openapi.findSchemaDefinition(
             requestBodyObject?.schemaObject.$ref,
-          ) as OasTypes.SchemaObject)
-        : (requestBodyObject.schemaObject as OasTypes.SchemaObject);
+          ) as SchemaObject)
+        : (requestBodyObject.schemaObject as SchemaObject);
 
     const propertyStructures =
       this.schema.getPropertyStructureFromSchemaObject(schema);

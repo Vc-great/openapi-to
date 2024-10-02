@@ -10,7 +10,7 @@ import { DomainImport } from "./DomainImport.ts";
 
 import type { OpenAPIParameterObject } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type {
   DecoratorStructure,
@@ -220,7 +220,7 @@ export class NestjsGenerator {
     const namedImports = _.chain(parameters)
       .filter((item) => !item.$ref)
       .reduce((validatorImports, item) => {
-        const schema = item.schema as OasTypes.SchemaObject;
+        const schema = item.schema as SchemaObject;
         const validatorDecorator = this.validatorDecorator.generatorDecorator(
           schema,
           item.required,
@@ -239,7 +239,7 @@ export class NestjsGenerator {
   }
 
   validatorImportsOfSchema(
-    schemaObject: OasTypes.SchemaObject | undefined,
+    schemaObject: SchemaObject | undefined,
   ): ImportStatementsOmitKind | undefined {
     if (schemaObject === undefined) {
       return undefined;
@@ -256,7 +256,7 @@ export class NestjsGenerator {
   }
 
   generateDomainImportsBySchema(
-    schemaObject: OasTypes.SchemaObject,
+    schemaObject: SchemaObject,
   ): Array<ImportStatementsOmitKind> | undefined {
     const namedImports =
       this.domainImport.generateDomainNamedImportsBySchema(schemaObject);

@@ -1,12 +1,12 @@
 import _ from "lodash";
 
 import type { ValidationOptions } from "class-validator";
-import type OasTypes from "oas/types";
+import type { SchemaObject } from "oas/types";
 import type { DecoratorStructure, OptionalKind } from "ts-morph";
 import type { Config } from "../types.ts";
 
 interface Option {
-  schema: OasTypes.SchemaObject | undefined;
+  schema: SchemaObject | undefined;
   required: boolean | undefined;
   validationOptions?: ValidationOptions | undefined;
 }
@@ -17,14 +17,12 @@ export class ValidatorDecorator {
     this.openapi = config.openapi;
   }
 
-  ValidatorNames(
-    schemaObject: OasTypes.SchemaObject | undefined,
-  ): Array<string> {
+  ValidatorNames(schemaObject: SchemaObject | undefined): Array<string> {
     const names = this.getDecoratorName(schemaObject);
     return names;
   }
 
-  getDecoratorName(schemaObject: OasTypes.SchemaObject | undefined) {
+  getDecoratorName(schemaObject: SchemaObject | undefined) {
     const names = [];
     switch (schemaObject?.type) {
       case "number":
@@ -63,10 +61,10 @@ export class ValidatorDecorator {
       }, []);
   }
 
-  getObjectDecoratorName(schemaObject: OasTypes.SchemaObject): Array<string> {
+  getObjectDecoratorName(schemaObject: SchemaObject): Array<string> {
     const ref: string = _.get(schemaObject, "$ref", "");
-    const schemaObjectByRef: OasTypes.SchemaObject | undefined = ref
-      ? (this.openapi.findSchemaDefinition(ref) as OasTypes.SchemaObject)
+    const schemaObjectByRef: SchemaObject | undefined = ref
+      ? (this.openapi.findSchemaDefinition(ref) as SchemaObject)
       : schemaObject;
 
     const type = ref
@@ -110,12 +108,12 @@ export class ValidatorDecorator {
       .value();
   }
 
-  getArrayDecoratorName(schemaObject: OasTypes.SchemaObject): Array<string> {
+  getArrayDecoratorName(schemaObject: SchemaObject): Array<string> {
     const ref: string = _.get(schemaObject, "items.$ref", "");
-    const schemaObjectByItems: OasTypes.SchemaObject | undefined = _.get(
+    const schemaObjectByItems: SchemaObject | undefined = _.get(
       schemaObject,
       "items",
-    );
+    ) as SchemaObject;
 
     const type = ref ? _.last(ref.split("/")) : undefined;
 
@@ -128,7 +126,7 @@ export class ValidatorDecorator {
   getTypeName(type: string) {}
 
   generatorDecorator(
-    schema: OasTypes.SchemaObject,
+    schema: SchemaObject,
     required?: boolean | undefined,
   ): OptionalKind<DecoratorStructure>[] | undefined {
     return _.chain([] as OptionalKind<DecoratorStructure>[])
@@ -157,9 +155,9 @@ export class ValidatorDecorator {
 
   IsArray(option: Option): OptionalKind<DecoratorStructure>[] {
     const ref: string = _.get(option.schema, "items.$ref", "");
-    const schemaObject: OasTypes.SchemaObject | undefined = ref
-      ? (this.openapi.findSchemaDefinition(ref) as OasTypes.SchemaObject)
-      : _.get(option.schema, "items");
+    const schemaObject: SchemaObject | undefined = ref
+      ? (this.openapi.findSchemaDefinition(ref) as SchemaObject)
+      : (_.get(option.schema, "items") as SchemaObject);
 
     const type = ref
       ? _.last(ref.split("/"))
