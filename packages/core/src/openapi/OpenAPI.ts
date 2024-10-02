@@ -93,11 +93,11 @@ export class OpenAPI {
   }
 
   get bodyRequestName(): string {
-    return `${_.camelCase(this.methodName)}BodyParams`;
+    return `${_.camelCase(this.methodName)}Request`;
   }
 
   get upperFirstBodyRequestName(): string {
-    return `${_.upperFirst(_.camelCase(this.methodName))}BodyParams`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}Request`;
   }
 
   get responseName(): string {

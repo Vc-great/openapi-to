@@ -65,7 +65,26 @@ export default defineConfig({
   ],
 });
 ```
- 
+## createTSRequest
+
+
+| Name                                          | Description                          | Type    | Default |
+| --------------------------------------------- | ------------------------------------ | ------- | ------- |
+| createZodDecorator                            | create zod decorator                 | boolean | false   |
+| compare                                       | Experimental features                | boolean | false   |
+| zodDecoratorImportDeclaration.moduleSpecifier | zod Ddecorator Import from           | string  | -       |
+| requestImportDeclaration.moduleSpecifier      | request Import from                  | string  | -       |
+| requestType                                   | axios,common,commonWithArrayResponse | enum    | Axios   |
+
+
+
+
+
+
+
+
+
+
 ## Zod 
 增加 zod 主要用于端到端的校验.zodDecorator 会在请求方法上增加三个方法,需要自己去实现具体逻辑,给出示例供大家参考
 
@@ -1228,7 +1247,7 @@ constructor(private readonly petService: PetService) {
     async uploadFile(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<ApiResponse> {
         return await this.petService.uploadFile(petId, data)
     }
-
+    
     @ApiOperation({ summary: 'Add a new pet to the store' })
     @ApiResponse({ status: HttpStatus.OK })
     @Post()
@@ -1236,7 +1255,7 @@ constructor(private readonly petService: PetService) {
     async addPet(@Body() data: Pet): Promise<void> {
         return await this.petService.addPet(data)
     }
-
+    
     @ApiOperation({ summary: 'Update an existing pet' })
     @ApiResponse({ status: HttpStatus.OK })
     @Put()
@@ -1244,7 +1263,7 @@ constructor(private readonly petService: PetService) {
     async updatePet(@Body() data: Pet): Promise<void> {
         return await this.petService.updatePet(data)
     }
-
+    
     @ApiOperation({ summary: 'Finds Pets by status', description: 'Multiple status values can be provided with comma separated strings' })
     @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
     @Get('/findByStatus')
@@ -1252,7 +1271,7 @@ constructor(private readonly petService: PetService) {
     async findPetsByStatus(@Query() query: FindPetsByStatusQueryDto): Promise<Pet[]> {
         return await this.petService.findPetsByStatus(query)
     }
-
+    
     @ApiOperation({ summary: 'Finds Pets by tags', description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.' })
     @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
     @Get('/findByTags')
@@ -1260,7 +1279,7 @@ constructor(private readonly petService: PetService) {
     async findPetsByTags(@Query() query: FindPetsByTagsQueryDto): Promise<Pet[]> {
         return await this.petService.findPetsByTags(query)
     }
-
+    
     @ApiOperation({ summary: 'Find pet by ID', description: 'Returns a single pet' })
     @ApiResponse({ status: HttpStatus.OK, description: "successful operation", Pet })
     @ApiParam({
@@ -1272,7 +1291,7 @@ constructor(private readonly petService: PetService) {
     async getPetById(@Param("petId", ParseIntPipe) petId: number): Promise<Pet> {
         return await this.petService.getPetById(petId)
     }
-
+    
     @ApiOperation({ summary: 'Updates a pet in the store with form data' })
     @ApiResponse({ status: HttpStatus.OK })
     @ApiParam({
@@ -1284,7 +1303,7 @@ constructor(private readonly petService: PetService) {
     async updatePetWithForm(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<void> {
         return await this.petService.updatePetWithForm(petId, data)
     }
-
+    
     @ApiOperation({ summary: 'Deletes a pet' })
     @ApiResponse({ status: HttpStatus.OK })
     @ApiParam({
@@ -1317,31 +1336,31 @@ constructor(private readonly petRepository: PetRepository) {
     async uploadFile(petId: number, data: any): Promise<ApiResponse> {
         return await this.petRepository.uploadFile(petId, data)
     }
-
+    
     async addPet(data: Pet): Promise<void> {
         return await this.petRepository.addPet(data)
     }
-
+    
     async updatePet(data: Pet): Promise<void> {
         return await this.petRepository.updatePet(data)
     }
-
+    
     async findPetsByStatus(query: FindPetsByStatusQueryDto): Promise<Pet[]> {
         return await this.petRepository.findPetsByStatus(query)
     }
-
+    
     async findPetsByTags(query: FindPetsByTagsQueryDto): Promise<Pet[]> {
         return await this.petRepository.findPetsByTags(query)
     }
-
+    
     async getPetById(petId: number): Promise<Pet> {
         return await this.petRepository.getPetById(petId)
     }
-
+    
     async updatePetWithForm(petId: number, data: any): Promise<void> {
         return await this.petRepository.updatePetWithForm(petId, data)
     }
-
+    
     async deletePet(petId: number): Promise<void> {
         return await this.petRepository.deletePet(petId)
     }
@@ -1369,30 +1388,30 @@ constructor(@InjectRepository(petEntity) private readonly petRepository: Reposit
 
     async uploadFile(petId: number, data: any): Promise<ApiResponse> {
         const newEntity = PetMappers.toPersistence(data);
-
+    
         const savedEntity = await this.petRepository.save(newEntity);
-
+    
         return plainToInstance(ApiResponse, savedEntity, {
             excludeExtraneousValues: true,
         });
     }
-
+    
     async addPet(data: Pet): Promise<void> {
         const newEntity = PetMappers.toPersistence(data);
-
+    
         const savedEntity = await this.petRepository.save(newEntity);
-
+    
         return plainToInstance(undefined, savedEntity, {
             excludeExtraneousValues: true,
         });
     }
-
+    
     async updatePet(data: Pet): Promise<void> {
         const detail = await this.petRepository.findOneBy({});
         if (!detail) {
             throw new NotFoundException(`id ${id} not found`);
         }
-
+    
         const savedEntity = await this.petRepository.save(
             PetMappers.toPersistence(_.assign(detail, data)),
         );
@@ -1400,16 +1419,16 @@ constructor(@InjectRepository(petEntity) private readonly petRepository: Reposit
             excludeExtraneousValues: true,
         });
     }
-
+    
     async findPetsByStatus(query: FindPetsByStatusQueryDto): Promise<Pet[]> {
-
+    
         const [data, total] = await this.petRepository.find({
             where: { status: query.status },
 
 
 
         });
-
+    
         return plainToInstance(
             undefined,
             { data, total },
@@ -1418,16 +1437,16 @@ constructor(@InjectRepository(petEntity) private readonly petRepository: Reposit
             },
         );
     }
-
+    
     async findPetsByTags(query: FindPetsByTagsQueryDto): Promise<Pet[]> {
-
+    
         const [data, total] = await this.petRepository.find({
             where: { tags: query.tags },
 
 
 
         });
-
+    
         return plainToInstance(
             undefined,
             { data, total },
@@ -1436,24 +1455,24 @@ constructor(@InjectRepository(petEntity) private readonly petRepository: Reposit
             },
         );
     }
-
+    
     async getPetById(petId: number): Promise<Pet> {
         const newEntity = await this.petRepository.findOne({ where: { petId: query.petId });
         return plainToInstance(FindOneUserVo, newEntity, {
             exposeDefaultValues: true,
         });
     }
-
+    
     async updatePetWithForm(petId: number, data: any): Promise<void> {
         const newEntity = PetMappers.toPersistence(data);
-
+    
         const savedEntity = await this.petRepository.save(newEntity);
-
+    
         return plainToInstance(undefined, savedEntity, {
             excludeExtraneousValues: true,
         });
     }
-
+    
     async deletePet(petId: number): Promise<void> {
         return this.petRepository.softRemove(_.assign(new petEntity(), { petId }));
     }

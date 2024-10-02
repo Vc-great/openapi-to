@@ -10,6 +10,7 @@ import { describe } from "vitest";
 
 import petStore from "../mock/petstore.json";
 import { RequestGenerator } from "./RequestGenerator";
+import { RequestTypeEnum } from "./types.ts";
 
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type { PluginConfig } from "./types.ts";
@@ -32,33 +33,7 @@ describe("RequestGenerator", async () => {
     output: "",
   };
 
-  test("createZodDecorator true getFullText", () => {
-    const ast = new AST();
-    // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
-    const pluginConfig = {
-      createZodDecorator: true,
-      compare: false,
-    };
-
-    const requestGenerator = new RequestGenerator({
-      oas,
-      ast,
-      openapi,
-      pluginConfig,
-      openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
-    const text = _.chain(ast.sourceFile)
-      .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
-
-    expect(text).toMatchSnapshot();
-  });
-
-  test("compare createZodDecorator true getFullText", () => {
+  test("all true getFullText", () => {
     const ast = new AST();
     // @ts-expect-error Not a canonical document
     const oas = new Oas(petStore);
@@ -66,83 +41,6 @@ describe("RequestGenerator", async () => {
     const pluginConfig = {
       createZodDecorator: true,
       compare: true,
-    };
-
-    const requestGenerator = new RequestGenerator({
-      oas,
-      ast,
-      openapi,
-      pluginConfig,
-      openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
-    const text = _.chain(ast.sourceFile)
-      .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
-
-    expect(text).toMatchSnapshot();
-  });
-
-  test("createZodDecorator false getFullText", () => {
-    const ast = new AST();
-    // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
-    const pluginConfig = {
-      createZodDecorator: false,
-    };
-
-    const requestGenerator = new RequestGenerator({
-      oas,
-      ast,
-      openapi,
-      pluginConfig,
-      openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
-    const text = _.chain(ast.sourceFile)
-      .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
-
-    expect(text).toMatchSnapshot();
-  });
-
-  test("compare createZodDecorator false getFullText", () => {
-    const ast = new AST();
-    // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
-    const pluginConfig = {
-      createZodDecorator: false,
-      compare: true,
-    };
-
-    const requestGenerator = new RequestGenerator({
-      oas,
-      ast,
-      openapi,
-      pluginConfig,
-      openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
-    const text = _.chain(ast.sourceFile)
-      .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
-
-    expect(text).toMatchSnapshot();
-  });
-
-  test("zodDecoratorImportDeclaration requestImportDeclaration  getFullText", () => {
-    const ast = new AST();
-    // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
-    const pluginConfig: PluginConfig = {
-      createZodDecorator: true,
-      compare: false,
       zodDecoratorImportDeclaration: {
         moduleSpecifier: "./test/zod",
       },
@@ -164,6 +62,80 @@ describe("RequestGenerator", async () => {
       .join("\n")
       .value();
 
+    expect(text).toMatchSnapshot();
+  });
+
+  test("all false  getFullText", () => {
+    const ast = new AST();
+    // @ts-expect-error Not a canonical document
+    const oas = new Oas(petStore);
+    const openapi = new OpenAPI({}, oas);
+    const pluginConfig: PluginConfig = {
+      createZodDecorator: false,
+      compare: false,
+    };
+
+    const requestGenerator = new RequestGenerator({
+      oas,
+      ast,
+      openapi,
+      pluginConfig,
+      openapiToSingleConfig,
+    });
+    requestGenerator.build(context);
+    const text = _.chain(ast.sourceFile)
+      .map((sourceFile) => sourceFile.getFullText())
+      .join("\n")
+      .value();
+
+    expect(text).toMatchSnapshot();
+  });
+
+  test("requestType common getFullText", () => {
+    const ast = new AST();
+    // @ts-expect-error Not a canonical document
+    const oas = new Oas(petStore);
+    const openapi = new OpenAPI({}, oas);
+    const pluginConfig: PluginConfig = {
+      requestType: RequestTypeEnum.COMMON,
+    };
+
+    const requestGenerator = new RequestGenerator({
+      oas,
+      ast,
+      openapi,
+      pluginConfig,
+      openapiToSingleConfig,
+    });
+    requestGenerator.build(context);
+    const text = _.chain(ast.sourceFile)
+      .map((sourceFile) => sourceFile.getFullText())
+      .join("\n")
+      .value();
+    expect(text).toMatchSnapshot();
+  });
+
+  test("requestType commonWithArrayResponse getFullText", () => {
+    const ast = new AST();
+    // @ts-expect-error Not a canonical document
+    const oas = new Oas(petStore);
+    const openapi = new OpenAPI({}, oas);
+    const pluginConfig: PluginConfig = {
+      requestType: RequestTypeEnum.COMMON_WITH_ARRAY_RESPONSE,
+    };
+
+    const requestGenerator = new RequestGenerator({
+      oas,
+      ast,
+      openapi,
+      pluginConfig,
+      openapiToSingleConfig,
+    });
+    requestGenerator.build(context);
+    const text = _.chain(ast.sourceFile)
+      .map((sourceFile) => sourceFile.getFullText())
+      .join("\n")
+      .value();
     expect(text).toMatchSnapshot();
   });
 });

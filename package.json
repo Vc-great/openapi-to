@@ -85,7 +85,8 @@
     "@types/lodash": "^4.14.202",
     "lodash": "^4.17.21",
     "oas": "^24.1.0",
-    "ts-morph": "^21.0.1"
+    "ts-morph": "^21.0.1",
+    "utility-types": "^3.11.0"
   },
   "publishConfig": {
     "access": "public",

@@ -6,35 +6,39 @@ import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { RequestOldNode } from "./RequestOldNode.ts";
+import { RequestTypeEnum } from "./types.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3 } from "openapi-types";
 import type {
   ClassDeclarationStructure,
-  VariableStatementStructure,
-} from "ts-morph";
-import type { ParameterDeclarationStructure } from "ts-morph";
-import type { JSDocStructure } from "ts-morph";
-import type { DecoratorStructure } from "ts-morph";
-import type {
+  DecoratorStructure,
   ImportDeclarationStructure,
+  JSDocStructure,
   MethodDeclarationStructure,
   OptionalKind,
+  ParameterDeclarationStructure,
+  VariableStatementStructure,
 } from "ts-morph";
+import type { Required } from "utility-types";
+import type { PluginConfig } from "./types.ts";
 import type { Config } from "./types.ts";
-
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 
 export class RequestGenerator {
   private operation: Operation | undefined;
   private oas: Config["oas"];
-  private readonly paramsZodSchema: string;
+  private readonly paramsZodSchema: string = "paramsZodSchema";
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
-  private readonly pluginConfig: Config["pluginConfig"];
+  private readonly pluginConfig: Required<
+    PluginConfig,
+    "createZodDecorator" | "requestType" | "compare"
+  >;
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  oldNode: RequestOldNode;
+  private oldNode: RequestOldNode;
+
   constructor({
     oas,
     openapi,
@@ -44,10 +48,16 @@ export class RequestGenerator {
   }: Config) {
     this.oas = oas;
     this.ast = ast;
-    this.pluginConfig = pluginConfig;
+    this.pluginConfig = _.merge(
+      {
+        createZodDecorator: false,
+        requestType: RequestTypeEnum.AXIOS,
+        compare: false,
+      },
+      pluginConfig,
+    );
     this.openapiToSingleConfig = openapiToSingleConfig;
     this.openapi = openapi;
-    this.paramsZodSchema = "paramsZodSchema";
 
     this.oldNode = new RequestOldNode(pluginConfig, openapiToSingleConfig);
   }
@@ -96,7 +106,50 @@ export class RequestGenerator {
     if (this.pluginConfig === undefined) {
       return false;
     }
-    return this.pluginConfig.createZodDecorator || false;
+    return this.pluginConfig.createZodDecorator;
+  }
+
+  get isAxiosRequestType(): boolean {
+    const requestType = this.pluginConfig.requestType;
+    return requestType === RequestTypeEnum.AXIOS;
+  }
+
+  get isCommonRequestType(): boolean {
+    const requestType = this.pluginConfig.requestType;
+    return requestType === RequestTypeEnum.COMMON;
+  }
+
+  get isCommonWithArrayResponseRequestType(): boolean {
+    const requestType = this.pluginConfig.requestType;
+    return requestType === RequestTypeEnum.COMMON_WITH_ARRAY_RESPONSE;
+  }
+
+  get responseDataType(): string {
+    return this.namespaceTypeName + "." + this.openapi.upperFirstResponseName;
+  }
+
+  /**
+   * Promise<[ApiType.FindByIdResponse]>
+   */
+  get returnType(): string {
+    if (this.isAxiosRequestType) {
+      return "";
+    }
+    const errorResponseType =
+      this.namespaceTypeName +
+      "." +
+      this.openapi.upperFirstRequestName +
+      "ErrorResponse";
+
+    return this.isCommonWithArrayResponseRequestType
+      ? `Promise<[${errorResponseType},${this.responseDataType}]>`
+      : `Promise<${this.responseDataType}>`;
+  }
+
+  get requestDataType(): string {
+    return (
+      this.namespaceTypeName + "." + this.openapi.upperFirstBodyRequestName
+    );
   }
 
   build(context: PluginContext): void {
@@ -112,7 +165,7 @@ export class RequestGenerator {
             sort: _.isNumber(this.oldNode.currentMethod?.sort)
               ? this.oldNode.currentMethod.sort
               : Number.MAX_SAFE_INTEGER,
-            methodsStatements: this.generatorMethod(),
+            methodsStatements: this.generatorMethodsStatements(),
           };
         })
         .sort((a, b) => a.sort - b.sort)
@@ -211,11 +264,18 @@ export class RequestGenerator {
         `./${this.namespaceZodName}`,
     };
 
+    const axiosType: ImportStatementsOmitKind = {
+      isTypeOnly: true,
+      namedImports: ["AxiosResponse"],
+      moduleSpecifier: "axios",
+    };
+
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
       .concat(
         this.isCreateZodDecorator ? [zodModel, zodTypeModel, zodDecorator] : [],
       )
       .concat(this.isCreateZodDecorator ? [] : [typeModel])
+      .concat(this.isAxiosRequestType ? [axiosType] : [])
       .push(request)
       .filter(Boolean)
       .value();
@@ -230,7 +290,7 @@ export class RequestGenerator {
       name: this.className,
       docs: [
         {
-          description: "\n",
+          description: "",
           tags: [
             {
               tagName: "tag",
@@ -284,7 +344,7 @@ export class RequestGenerator {
    */
   generatorMethodParameters(): OptionalKind<ParameterDeclarationStructure>[] {
     const queryParameters = {
-      name: "queryParams",
+      name: "params",
       type:
         this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName,
       decorators: this.isCreateZodDecorator
@@ -299,10 +359,9 @@ export class RequestGenerator {
         : [],
     };
 
-    const bodyParameters = {
-      name: "bodyParams",
-      type:
-        this.namespaceTypeName + "." + this.openapi.upperFirstBodyRequestName,
+    const bodyDataParameters = {
+      name: "data",
+      type: this.requestDataType,
       decorators: this.isCreateZodDecorator
         ? [
             {
@@ -350,25 +409,15 @@ export class RequestGenerator {
           : undefined,
       )
       .push(
-        this.openapi.requestBody?.hasRequestBody ? bodyParameters : undefined,
+        this.openapi.requestBody?.hasRequestBody
+          ? bodyDataParameters
+          : undefined,
       )
       .concat(
         this.openapi.parameter?.hasPathParameters ? pathParameters : undefined,
       )
       .filter(Boolean)
       .value();
-  }
-
-  /**
-   * @example
-   * ```
-   * Promise<[ApiType.ErrorResponse, ApiType.FindByIdResponse]>
-   * ```
-   */
-  generatorReturnType(): string {
-    const resultType =
-      this.namespaceTypeName + "." + this.openapi.upperFirstResponseName;
-    return `Promise<[${this.namespaceTypeName}.${this.openapi.upperFirstRequestName}ErrorResponse,${resultType}]>`;
   }
 
   /**
@@ -381,7 +430,7 @@ export class RequestGenerator {
   generatorMethodDocs(): OptionalKind<JSDocStructure>[] {
     return [
       {
-        description: "\n",
+        description: "",
         tags: [
           {
             tagName: "summary",
@@ -447,10 +496,8 @@ export class RequestGenerator {
       .push("method:" + "'" + this.operation?.method + "'")
       .push(header())
       .push("url:" + url.requestPath)
-      .push(
-        this.openapi.parameter?.hasQueryParameters ? "params:queryParams" : "",
-      )
-      .push(this.openapi.requestBody?.hasRequestBody ? "data:bodyParams" : "")
+      .push(this.openapi.parameter?.hasQueryParameters ? "params" : "")
+      .push(this.openapi.requestBody?.hasRequestBody ? `data` : "")
       .push(this.openapi.response?.isDownLoad ? "responseType:'blob'" : "")
       .push(
         this.openapi.parameter?.hasQueryParametersArray
@@ -460,19 +507,40 @@ export class RequestGenerator {
       .filter(Boolean)
       .join(",\n")
       .value();
-    return `return request({
-             ${requestFuncContent}
-})`;
+    return this.isAxiosRequestType
+      ? `const res = await request${this.generatorAxiosType()}({
+                 ${requestFuncContent}
+    })
+    return res.data`
+      : `return request({
+                 ${requestFuncContent}
+    })`;
   }
 
-  generatorMethod(): MethodDeclarationStructure {
+  /**
+   * <ResponseData,ResponseConfig<RequestData>,unknown>
+   */
+  generatorAxiosType(): string {
+    const requestData = this.openapi.requestBody?.hasRequestBody
+      ? this.requestDataType
+      : undefined;
+    const responseConfigType = requestData
+      ? `AxiosResponse<${requestData}>`
+      : "AxiosResponse";
+    const a = `<${this.responseDataType},${responseConfigType},${requestData ?? "unknown"}>`;
+
+    return `<${this.responseDataType},${responseConfigType},${requestData ?? "unknown"}>`;
+  }
+
+  generatorMethodsStatements(): MethodDeclarationStructure {
     const statement = {
+      isAsync: this.isAxiosRequestType,
       name: this.oldNode.methodName ?? this.openapi.requestName,
       decorators: this.isCreateZodDecorator
         ? this.generatorMethodDecorators()
         : [],
       parameters: this.generatorMethodParameters(),
-      returnType: this.generatorReturnType(),
+      returnType: this.returnType,
       docs: this.generatorMethodDocs(),
       statements: this.generatorMethodBody(),
     };
