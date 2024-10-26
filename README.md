@@ -12,8 +12,10 @@ Generate SDKs,OpenAPI to:
 + [x] Faker.js
 + [x] MSW
 + [x] nestjs
-+ [ ] request object
++ [ ] SWR
 + [ ] vue-Query
++ [ ] react-Query
+
 
 OpenAPI Specifications are supported:
 - swagger 2.0
@@ -76,9 +78,67 @@ export default defineConfig({
 | requestImportDeclaration.moduleSpecifier      | request Import from                  | string  | -       |
 | requestType                                   | axios,common,commonWithArrayResponse | enum    | Axios   |
 
+### example
 
+```ts
+createTSRequest({
+    createZodDecorator: true,
+    requestType:'axios',
+    zodDecoratorImportDeclaration: {
+        moduleSpecifier: "./test/zod",
+    },
+    requestImportDeclaration: {
+        moduleSpecifier: "./test/request",
+    },
+})
 
+```
 
+### requestType
+
+axios
+
+```ts
+//...
+async create(data: Pet.CreateMutationRequest) {
+    const res = await request<Pet.CreateMutationResponse, AxiosResponse<Pet.CreateMutationRequest>, Pet.CreateMutationRequest>({
+        method: 'post',
+        url: `/pet`,
+        data
+    })
+    return res.data
+}
+//...
+```
+
+common
+
+```ts
+//...
+create(data: Pet.CreateMutationRequest): Promise<Pet.CreateMutationResponse> {
+    return request({
+        method: 'post',
+        url: `/pet`,
+        data
+    })
+}
+//...
+```
+
+commonWithArrayResponse
+
+```ts
+//...
+async create(data: Pet.CreateMutationRequest): Promise<[Pet.CreateError, Pet.CreateMutationResponse]> {
+    const res = await request({
+        method: 'post',
+        url: `/pet`,
+        data
+    })
+    return res.data
+}
+//...
+```
 
 
 
@@ -86,28 +146,29 @@ export default defineConfig({
 
 
 ## Zod 
-增加 zod 主要用于端到端的校验.zodDecorator 会在请求方法上增加三个方法,需要自己去实现具体逻辑,给出示例供大家参考
+Adding zod is mainly used for end-to-end verification. ZodDecorator will add three methods to the request method. You need to implement the specific logic yourself. An example is given for your reference.
 
 - paramsZodSchema
 
-  收集请求参数 zodSchema
+  Collect request parameters zodSchema
 
 ```ts
 @paramsZodSchema(ZOD.uploadImagePostBodyRequest)
 ```
-- responseZodSchema 响应Zod模式
+- responseZodSchema 
 
-  收集响应数据 zodSchema
+  Collect response parameters zodSchema
 
 ```ts
 @responseZodSchema(ZOD.uploadImagePostResponse)
 ```
-- zodValidate zod验证
+- zodValidate 
 
-  根据 zodSchema 进行校验
+  Use  zodSchema for verification
 
 @zodValidate
-example 例子
+example 
+
 ```ts
 
 import _ from "lodash";
@@ -128,7 +189,7 @@ safeParse.error
 });
 //
 const result = await fn(...args);
-//response 校验
+//response 
 const responseZodSchema = _.get(
 target,
 `_zodSchema.${propertyKey}.responseZodSchema`
