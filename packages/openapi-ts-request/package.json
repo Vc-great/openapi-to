@@ -37,7 +37,6 @@
     "@openapi-to/ts-config": "workspace:*",
     "@openapi-to/tsup-config": "workspace:*"
   },
-  "packageManager": "pnpm@8.6.12",
   "keywords": [],
   "author": "",
   "license": "MIT",
