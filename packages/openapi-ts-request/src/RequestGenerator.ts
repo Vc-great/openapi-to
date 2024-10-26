@@ -139,7 +139,7 @@ export class RequestGenerator {
       this.namespaceTypeName +
       "." +
       this.openapi.upperFirstRequestName +
-      "ErrorResponse";
+      "Error";
 
     return this.isCommonWithArrayResponseRequestType
       ? `Promise<[${errorResponseType},${this.responseDataType}]>`
@@ -510,9 +510,10 @@ export class RequestGenerator {
                  ${requestFuncContent}
     })
     return res.data`
-      : `return request({
+      : `const res = await request({
                  ${requestFuncContent}
-    })`;
+    })
+    return res.data`;
   }
 
   /**
@@ -531,7 +532,7 @@ export class RequestGenerator {
 
   generatorMethodsStatements(): MethodDeclarationStructure {
     const statement = {
-      isAsync: this.isAxiosRequestType,
+      isAsync: true,
       name: this.oldNode.methodName ?? this.openapi.requestName,
       decorators: this.isCreateZodDecorator
         ? this.generatorMethodDecorators()

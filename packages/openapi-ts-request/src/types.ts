@@ -1,11 +1,11 @@
 import type { AST, OpenAPI, OpenapiToSingleConfig } from "@openapi-to/core";
 import type Oas from "oas";
 
-export const RequestTypeEnum = {
-  AXIOS: "axios",
-  COMMON: "common",
-  COMMON_WITH_ARRAY_RESPONSE: "commonWithArrayResponse",
-};
+export const enum RequestTypeEnum {
+  AXIOS = "axios",
+  COMMON = "common",
+  COMMON_WITH_ARRAY_RESPONSE = "commonWithArrayResponse",
+}
 
 export type RequestType =
   (typeof RequestTypeEnum)[keyof typeof RequestTypeEnum];
