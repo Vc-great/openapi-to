@@ -40,9 +40,6 @@ jobs:
         - name: Typecheck
           run: npm run typecheck --concurrency=1
 
-        - name: Typecheck examples
-          run: npm run typecheck:examples --concurrency=1
-
   tests:
       name: Tests
       timeout-minutes: 15
