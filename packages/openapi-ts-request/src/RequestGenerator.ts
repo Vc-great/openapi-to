@@ -491,7 +491,7 @@ export class RequestGenerator {
     };
 
     const requestFuncContent = _.chain([] as string[])
-      .push("method:" + "'" + this.operation?.method + "'")
+      .push("method:" + "'" + this.operation?.method.toUpperCase() + "'")
       .push(header())
       .push("url:" + url.requestPath)
       .push(this.openapi.parameter?.hasQueryParameters ? "params" : "")

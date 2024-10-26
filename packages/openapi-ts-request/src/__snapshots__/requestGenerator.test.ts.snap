@@ -17,7 +17,7 @@ class PetAPI {
      */
     async testPost(data: Pet.TestPostMutationRequest) {
         const res = await request<Pet.TestPostMutationResponse, AxiosResponse<Pet.TestPostMutationResponse>, Pet.TestPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/pet/test\`,
             data
         })
@@ -30,7 +30,7 @@ class PetAPI {
      */
     async testPut(data: Pet.TestPutMutationRequest) {
         const res = await request<Pet.TestPutMutationResponse, AxiosResponse<Pet.TestPutMutationResponse>, Pet.TestPutMutationRequest>({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet/test\`,
             data
         })
@@ -43,7 +43,7 @@ class PetAPI {
      */
     async delByTest(data: Pet.DelByTestMutationRequest) {
         const res = await request<Pet.DelByTestMutationResponse, AxiosResponse<Pet.DelByTestMutationResponse>, Pet.DelByTestMutationRequest>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/test\`,
             data
         })
@@ -56,7 +56,7 @@ class PetAPI {
      */
     async testIdGet(params: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
         const res = await request<Pet.TestIdGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
             paramsSerializer(params: Pet.TestIdGetQueryParams) {
@@ -73,7 +73,7 @@ class PetAPI {
      */
     async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
         const res = await request<Pet.UploadImagePostMutationResponse, AxiosResponse<Pet.UploadImagePostMutationResponse>, Pet.UploadImagePostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
@@ -89,7 +89,7 @@ class PetAPI {
      */
     async create(data: Pet.CreateMutationRequest) {
         const res = await request<Pet.CreateMutationResponse, AxiosResponse<Pet.CreateMutationResponse>, Pet.CreateMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/pet\`,
             data
         })
@@ -102,7 +102,7 @@ class PetAPI {
      */
     async update(data: Pet.UpdateMutationRequest) {
         const res = await request<Pet.UpdateMutationResponse, AxiosResponse<Pet.UpdateMutationResponse>, Pet.UpdateMutationRequest>({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet\`,
             data
         })
@@ -116,7 +116,7 @@ class PetAPI {
      */
     async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         const res = await request<Pet.FindByStatusGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
             paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
@@ -133,7 +133,7 @@ class PetAPI {
      */
     async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         const res = await request<Pet.FindByTagsGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByTags\`,
             params,
             paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
@@ -150,7 +150,7 @@ class PetAPI {
      */
     async findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
         const res = await request<Pet.FindByPetIdQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -162,7 +162,7 @@ class PetAPI {
      */
     async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
         const res = await request<Pet.PetIdPostMutationResponse, AxiosResponse<Pet.PetIdPostMutationResponse>, Pet.PetIdPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -178,7 +178,7 @@ class PetAPI {
      */
     async delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
         const res = await request<Pet.DelByPetIdMutationResponse, AxiosResponse, unknown>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -203,7 +203,7 @@ class StoreAPI {
      */
     async create(data: Store.CreateMutationRequest) {
         const res = await request<Store.CreateMutationResponse, AxiosResponse<Store.CreateMutationResponse>, Store.CreateMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/store/order\`,
             data
         })
@@ -217,7 +217,7 @@ class StoreAPI {
      */
     async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
         const res = await request<Store.FindByOrderIdQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -230,7 +230,7 @@ class StoreAPI {
      */
     async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
         const res = await request<Store.DelByOrderIdMutationResponse, AxiosResponse, unknown>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -243,7 +243,7 @@ class StoreAPI {
      */
     async inventoryGet() {
         const res = await request<Store.InventoryGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/store/inventory\`
         })
         return res.data
@@ -268,7 +268,7 @@ class UserAPI {
      */
     async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
         const res = await request<User.CreateWithArrayPostMutationResponse, AxiosResponse<User.CreateWithArrayPostMutationResponse>, User.CreateWithArrayPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithArray\`,
             data
         })
@@ -281,7 +281,7 @@ class UserAPI {
      */
     async createWithListPost(data: User.CreateWithListPostMutationRequest) {
         const res = await request<User.CreateWithListPostMutationResponse, AxiosResponse<User.CreateWithListPostMutationResponse>, User.CreateWithListPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithList\`,
             data
         })
@@ -294,7 +294,7 @@ class UserAPI {
      */
     async findByUsername(username: User.FindByUsernamePathParams['username']) {
         const res = await request<User.FindByUsernameQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -307,7 +307,7 @@ class UserAPI {
      */
     async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
         const res = await request<User.UsernamePutMutationResponse, AxiosResponse<User.UsernamePutMutationResponse>, User.UsernamePutMutationRequest>({
-            method: 'put',
+            method: 'PUT',
             url: \`/user/\${username}\`,
             data
         })
@@ -321,7 +321,7 @@ class UserAPI {
      */
     async delByUsername(username: User.DelByUsernamePathParams['username']) {
         const res = await request<User.DelByUsernameMutationResponse, AxiosResponse, unknown>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -333,7 +333,7 @@ class UserAPI {
      */
     async loginGet(params: User.LoginGetQueryParams) {
         const res = await request<User.LoginGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/user/login\`,
             params
         })
@@ -346,7 +346,7 @@ class UserAPI {
      */
     async logoutGet() {
         const res = await request<User.LogoutGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/user/logout\`
         })
         return res.data
@@ -359,7 +359,7 @@ class UserAPI {
      */
     async create(data: User.CreateMutationRequest) {
         const res = await request<User.CreateMutationResponse, AxiosResponse<User.CreateMutationResponse>, User.CreateMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/user\`,
             data
         })
@@ -392,7 +392,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.testPostMutationMutationResponse)
     async newtestPost(@paramsZodSchema(newPetZod.testPostMutationRequest) data: newPet.TestPostMutationRequest) {
         const res = await request<newPet.TestPostMutationResponse, AxiosResponse<newPet.TestPostMutationResponse>, newPet.TestPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/pet/test\`,
             data
         })
@@ -407,7 +407,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.testPutMutationMutationResponse)
     async newtestPut(@paramsZodSchema(newPetZod.testPutMutationRequest) data: newPet.TestPutMutationRequest) {
         const res = await request<newPet.TestPutMutationResponse, AxiosResponse<newPet.TestPutMutationResponse>, newPet.TestPutMutationRequest>({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet/test\`,
             data
         })
@@ -422,7 +422,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.delByTestMutationMutationResponse)
     async newdelByTest(@paramsZodSchema(newPetZod.delByTestMutationRequest) data: newPet.DelByTestMutationRequest) {
         const res = await request<newPet.DelByTestMutationResponse, AxiosResponse<newPet.DelByTestMutationResponse>, newPet.DelByTestMutationRequest>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/test\`,
             data
         })
@@ -437,7 +437,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.testIdGetQueryQueryResponse)
     async newtestIdGet(@paramsZodSchema(newPetZod.testIdGetQueryParams) params: newPet.TestIdGetQueryParams, @paramsZodSchema(newPetZod.testIdGetPathParams.shape.testId) testId: newPet.TestIdGetPathParams['testId']) {
         const res = await request<newPet.TestIdGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
             paramsSerializer(params: newPet.TestIdGetQueryParams) {
@@ -456,7 +456,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.uploadImagePostMutationMutationResponse)
     async newuploadImagePost(@paramsZodSchema(newPetZod.uploadImagePostMutationRequest) data: newPet.UploadImagePostMutationRequest, @paramsZodSchema(newPetZod.uploadImagePostPathParams.shape.petId) petId: newPet.UploadImagePostPathParams['petId']) {
         const res = await request<newPet.UploadImagePostMutationResponse, AxiosResponse<newPet.UploadImagePostMutationResponse>, newPet.UploadImagePostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
@@ -474,7 +474,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.createMutationMutationResponse)
     async newcreate(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/pet\`,
             data
         })
@@ -489,7 +489,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.updateMutationMutationResponse)
     async newupdate(@paramsZodSchema(newPetZod.updateMutationRequest) data: newPet.UpdateMutationRequest) {
         const res = await request<newPet.UpdateMutationResponse, AxiosResponse<newPet.UpdateMutationResponse>, newPet.UpdateMutationRequest>({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet\`,
             data
         })
@@ -505,7 +505,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.findByStatusGetQueryQueryResponse)
     async newfindByStatusGet(@paramsZodSchema(newPetZod.findByStatusGetQueryParams) params: newPet.FindByStatusGetQueryParams) {
         const res = await request<newPet.FindByStatusGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
             paramsSerializer(params: newPet.FindByStatusGetQueryParams) {
@@ -524,7 +524,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.findByTagsGetQueryQueryResponse)
     async newfindByTagsGet(@paramsZodSchema(newPetZod.findByTagsGetQueryParams) params: newPet.FindByTagsGetQueryParams) {
         const res = await request<newPet.FindByTagsGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByTags\`,
             params,
             paramsSerializer(params: newPet.FindByTagsGetQueryParams) {
@@ -543,7 +543,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.findByPetIdQueryQueryResponse)
     async newfindByPetId(@paramsZodSchema(newPetZod.findByPetIdPathParams.shape.petId) petId: newPet.FindByPetIdPathParams['petId']) {
         const res = await request<newPet.FindByPetIdQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -557,7 +557,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.petIdPostMutationMutationResponse)
     async newpetIdPost(@paramsZodSchema(newPetZod.petIdPostMutationRequest) data: newPet.PetIdPostMutationRequest, @paramsZodSchema(newPetZod.petIdPostPathParams.shape.petId) petId: newPet.PetIdPostPathParams['petId']) {
         const res = await request<newPet.PetIdPostMutationResponse, AxiosResponse<newPet.PetIdPostMutationResponse>, newPet.PetIdPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -575,7 +575,7 @@ class NewPetAPI {
     @responseZodSchema(newPetZod.delByPetIdMutationMutationResponse)
     async newdelByPetId(@paramsZodSchema(newPetZod.delByPetIdPathParams.shape.petId) petId: newPet.DelByPetIdPathParams['petId']) {
         const res = await request<newPet.DelByPetIdMutationResponse, AxiosResponse, unknown>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -604,7 +604,7 @@ class StoreAPI {
     @responseZodSchema(newPetZod.createMutationMutationResponse)
     async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/store/order\`,
             data
         })
@@ -620,7 +620,7 @@ class StoreAPI {
     @responseZodSchema(newPetZod.findByOrderIdQueryQueryResponse)
     async findByOrderId(@paramsZodSchema(newPetZod.findByOrderIdPathParams.shape.orderId) orderId: newPet.FindByOrderIdPathParams['orderId']) {
         const res = await request<newPet.FindByOrderIdQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -635,7 +635,7 @@ class StoreAPI {
     @responseZodSchema(newPetZod.delByOrderIdMutationMutationResponse)
     async delByOrderId(@paramsZodSchema(newPetZod.delByOrderIdPathParams.shape.orderId) orderId: newPet.DelByOrderIdPathParams['orderId']) {
         const res = await request<newPet.DelByOrderIdMutationResponse, AxiosResponse, unknown>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -650,7 +650,7 @@ class StoreAPI {
     @responseZodSchema(newPetZod.inventoryGetQueryQueryResponse)
     async inventoryGet() {
         const res = await request<newPet.InventoryGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/store/inventory\`
         })
         return res.data
@@ -679,7 +679,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.createWithArrayPostMutationMutationResponse)
     async createWithArrayPost(@paramsZodSchema(newPetZod.createWithArrayPostMutationRequest) data: newPet.CreateWithArrayPostMutationRequest) {
         const res = await request<newPet.CreateWithArrayPostMutationResponse, AxiosResponse<newPet.CreateWithArrayPostMutationResponse>, newPet.CreateWithArrayPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithArray\`,
             data
         })
@@ -694,7 +694,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.createWithListPostMutationMutationResponse)
     async createWithListPost(@paramsZodSchema(newPetZod.createWithListPostMutationRequest) data: newPet.CreateWithListPostMutationRequest) {
         const res = await request<newPet.CreateWithListPostMutationResponse, AxiosResponse<newPet.CreateWithListPostMutationResponse>, newPet.CreateWithListPostMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithList\`,
             data
         })
@@ -709,7 +709,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.findByUsernameQueryQueryResponse)
     async findByUsername(@paramsZodSchema(newPetZod.findByUsernamePathParams.shape.username) username: newPet.FindByUsernamePathParams['username']) {
         const res = await request<newPet.FindByUsernameQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -724,7 +724,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.usernamePutMutationMutationResponse)
     async usernamePut(@paramsZodSchema(newPetZod.usernamePutMutationRequest) data: newPet.UsernamePutMutationRequest, @paramsZodSchema(newPetZod.usernamePutPathParams.shape.username) username: newPet.UsernamePutPathParams['username']) {
         const res = await request<newPet.UsernamePutMutationResponse, AxiosResponse<newPet.UsernamePutMutationResponse>, newPet.UsernamePutMutationRequest>({
-            method: 'put',
+            method: 'PUT',
             url: \`/user/\${username}\`,
             data
         })
@@ -740,7 +740,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.delByUsernameMutationMutationResponse)
     async delByUsername(@paramsZodSchema(newPetZod.delByUsernamePathParams.shape.username) username: newPet.DelByUsernamePathParams['username']) {
         const res = await request<newPet.DelByUsernameMutationResponse, AxiosResponse, unknown>({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -754,7 +754,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.loginGetQueryQueryResponse)
     async loginGet(@paramsZodSchema(newPetZod.loginGetQueryParams) params: newPet.LoginGetQueryParams) {
         const res = await request<newPet.LoginGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/user/login\`,
             params
         })
@@ -769,7 +769,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.logoutGetQueryQueryResponse)
     async logoutGet() {
         const res = await request<newPet.LogoutGetQueryResponse, AxiosResponse, unknown>({
-            method: 'get',
+            method: 'GET',
             url: \`/user/logout\`
         })
         return res.data
@@ -784,7 +784,7 @@ class UserAPI {
     @responseZodSchema(newPetZod.createMutationMutationResponse)
     async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
-            method: 'post',
+            method: 'POST',
             url: \`/user\`,
             data
         })
@@ -812,7 +812,7 @@ class PetAPI {
      */
     async testPost(data: Pet.TestPostMutationRequest): Promise<Pet.TestPostMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/pet/test\`,
             data
         })
@@ -825,7 +825,7 @@ class PetAPI {
      */
     async testPut(data: Pet.TestPutMutationRequest): Promise<Pet.TestPutMutationResponse> {
         const res = await request({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet/test\`,
             data
         })
@@ -838,7 +838,7 @@ class PetAPI {
      */
     async delByTest(data: Pet.DelByTestMutationRequest): Promise<Pet.DelByTestMutationResponse> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/test\`,
             data
         })
@@ -851,7 +851,7 @@ class PetAPI {
      */
     async testIdGet(params: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']): Promise<Pet.TestIdGetQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
             paramsSerializer(params: Pet.TestIdGetQueryParams) {
@@ -868,7 +868,7 @@ class PetAPI {
      */
     async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']): Promise<Pet.UploadImagePostMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
@@ -884,7 +884,7 @@ class PetAPI {
      */
     async create(data: Pet.CreateMutationRequest): Promise<Pet.CreateMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/pet\`,
             data
         })
@@ -897,7 +897,7 @@ class PetAPI {
      */
     async update(data: Pet.UpdateMutationRequest): Promise<Pet.UpdateMutationResponse> {
         const res = await request({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet\`,
             data
         })
@@ -911,7 +911,7 @@ class PetAPI {
      */
     async findByStatusGet(params: Pet.FindByStatusGetQueryParams): Promise<Pet.FindByStatusGetQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
             paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
@@ -928,7 +928,7 @@ class PetAPI {
      */
     async findByTagsGet(params: Pet.FindByTagsGetQueryParams): Promise<Pet.FindByTagsGetQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByTags\`,
             params,
             paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
@@ -945,7 +945,7 @@ class PetAPI {
      */
     async findByPetId(petId: Pet.FindByPetIdPathParams['petId']): Promise<Pet.FindByPetIdQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -957,7 +957,7 @@ class PetAPI {
      */
     async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']): Promise<Pet.PetIdPostMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -973,7 +973,7 @@ class PetAPI {
      */
     async delByPetId(petId: Pet.DelByPetIdPathParams['petId']): Promise<Pet.DelByPetIdMutationResponse> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -997,7 +997,7 @@ class StoreAPI {
      */
     async create(data: Store.CreateMutationRequest): Promise<Store.CreateMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/store/order\`,
             data
         })
@@ -1011,7 +1011,7 @@ class StoreAPI {
      */
     async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']): Promise<Store.FindByOrderIdQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -1024,7 +1024,7 @@ class StoreAPI {
      */
     async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']): Promise<Store.DelByOrderIdMutationResponse> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -1037,7 +1037,7 @@ class StoreAPI {
      */
     async inventoryGet(): Promise<Store.InventoryGetQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/store/inventory\`
         })
         return res.data
@@ -1061,7 +1061,7 @@ class UserAPI {
      */
     async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest): Promise<User.CreateWithArrayPostMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithArray\`,
             data
         })
@@ -1074,7 +1074,7 @@ class UserAPI {
      */
     async createWithListPost(data: User.CreateWithListPostMutationRequest): Promise<User.CreateWithListPostMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithList\`,
             data
         })
@@ -1087,7 +1087,7 @@ class UserAPI {
      */
     async findByUsername(username: User.FindByUsernamePathParams['username']): Promise<User.FindByUsernameQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -1100,7 +1100,7 @@ class UserAPI {
      */
     async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']): Promise<User.UsernamePutMutationResponse> {
         const res = await request({
-            method: 'put',
+            method: 'PUT',
             url: \`/user/\${username}\`,
             data
         })
@@ -1114,7 +1114,7 @@ class UserAPI {
      */
     async delByUsername(username: User.DelByUsernamePathParams['username']): Promise<User.DelByUsernameMutationResponse> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -1126,7 +1126,7 @@ class UserAPI {
      */
     async loginGet(params: User.LoginGetQueryParams): Promise<User.LoginGetQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/user/login\`,
             params
         })
@@ -1139,7 +1139,7 @@ class UserAPI {
      */
     async logoutGet(): Promise<User.LogoutGetQueryResponse> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/user/logout\`
         })
         return res.data
@@ -1152,7 +1152,7 @@ class UserAPI {
      */
     async create(data: User.CreateMutationRequest): Promise<User.CreateMutationResponse> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/user\`,
             data
         })
@@ -1180,7 +1180,7 @@ class PetAPI {
      */
     async testPost(data: Pet.TestPostMutationRequest): Promise<[Pet.TestPostError, Pet.TestPostMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/pet/test\`,
             data
         })
@@ -1193,7 +1193,7 @@ class PetAPI {
      */
     async testPut(data: Pet.TestPutMutationRequest): Promise<[Pet.TestPutError, Pet.TestPutMutationResponse]> {
         const res = await request({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet/test\`,
             data
         })
@@ -1206,7 +1206,7 @@ class PetAPI {
      */
     async delByTest(data: Pet.DelByTestMutationRequest): Promise<[Pet.DelByTestError, Pet.DelByTestMutationResponse]> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/test\`,
             data
         })
@@ -1219,7 +1219,7 @@ class PetAPI {
      */
     async testIdGet(params: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']): Promise<[Pet.TestIdGetError, Pet.TestIdGetQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
             paramsSerializer(params: Pet.TestIdGetQueryParams) {
@@ -1236,7 +1236,7 @@ class PetAPI {
      */
     async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']): Promise<[Pet.UploadImagePostError, Pet.UploadImagePostMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
@@ -1252,7 +1252,7 @@ class PetAPI {
      */
     async create(data: Pet.CreateMutationRequest): Promise<[Pet.CreateError, Pet.CreateMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/pet\`,
             data
         })
@@ -1265,7 +1265,7 @@ class PetAPI {
      */
     async update(data: Pet.UpdateMutationRequest): Promise<[Pet.UpdateError, Pet.UpdateMutationResponse]> {
         const res = await request({
-            method: 'put',
+            method: 'PUT',
             url: \`/pet\`,
             data
         })
@@ -1279,7 +1279,7 @@ class PetAPI {
      */
     async findByStatusGet(params: Pet.FindByStatusGetQueryParams): Promise<[Pet.FindByStatusGetError, Pet.FindByStatusGetQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
             paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
@@ -1296,7 +1296,7 @@ class PetAPI {
      */
     async findByTagsGet(params: Pet.FindByTagsGetQueryParams): Promise<[Pet.FindByTagsGetError, Pet.FindByTagsGetQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/findByTags\`,
             params,
             paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
@@ -1313,7 +1313,7 @@ class PetAPI {
      */
     async findByPetId(petId: Pet.FindByPetIdPathParams['petId']): Promise<[Pet.FindByPetIdError, Pet.FindByPetIdQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -1325,7 +1325,7 @@ class PetAPI {
      */
     async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']): Promise<[Pet.PetIdPostError, Pet.PetIdPostMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -1341,7 +1341,7 @@ class PetAPI {
      */
     async delByPetId(petId: Pet.DelByPetIdPathParams['petId']): Promise<[Pet.DelByPetIdError, Pet.DelByPetIdMutationResponse]> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/pet/\${petId}\`
         })
         return res.data
@@ -1365,7 +1365,7 @@ class StoreAPI {
      */
     async create(data: Store.CreateMutationRequest): Promise<[Store.CreateError, Store.CreateMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/store/order\`,
             data
         })
@@ -1379,7 +1379,7 @@ class StoreAPI {
      */
     async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']): Promise<[Store.FindByOrderIdError, Store.FindByOrderIdQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -1392,7 +1392,7 @@ class StoreAPI {
      */
     async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']): Promise<[Store.DelByOrderIdError, Store.DelByOrderIdMutationResponse]> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/store/order/\${orderId}\`
         })
         return res.data
@@ -1405,7 +1405,7 @@ class StoreAPI {
      */
     async inventoryGet(): Promise<[Store.InventoryGetError, Store.InventoryGetQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/store/inventory\`
         })
         return res.data
@@ -1429,7 +1429,7 @@ class UserAPI {
      */
     async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest): Promise<[User.CreateWithArrayPostError, User.CreateWithArrayPostMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithArray\`,
             data
         })
@@ -1442,7 +1442,7 @@ class UserAPI {
      */
     async createWithListPost(data: User.CreateWithListPostMutationRequest): Promise<[User.CreateWithListPostError, User.CreateWithListPostMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/user/createWithList\`,
             data
         })
@@ -1455,7 +1455,7 @@ class UserAPI {
      */
     async findByUsername(username: User.FindByUsernamePathParams['username']): Promise<[User.FindByUsernameError, User.FindByUsernameQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -1468,7 +1468,7 @@ class UserAPI {
      */
     async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']): Promise<[User.UsernamePutError, User.UsernamePutMutationResponse]> {
         const res = await request({
-            method: 'put',
+            method: 'PUT',
             url: \`/user/\${username}\`,
             data
         })
@@ -1482,7 +1482,7 @@ class UserAPI {
      */
     async delByUsername(username: User.DelByUsernamePathParams['username']): Promise<[User.DelByUsernameError, User.DelByUsernameMutationResponse]> {
         const res = await request({
-            method: 'delete',
+            method: 'DELETE',
             url: \`/user/\${username}\`
         })
         return res.data
@@ -1494,7 +1494,7 @@ class UserAPI {
      */
     async loginGet(params: User.LoginGetQueryParams): Promise<[User.LoginGetError, User.LoginGetQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/user/login\`,
             params
         })
@@ -1507,7 +1507,7 @@ class UserAPI {
      */
     async logoutGet(): Promise<[User.LogoutGetError, User.LogoutGetQueryResponse]> {
         const res = await request({
-            method: 'get',
+            method: 'GET',
             url: \`/user/logout\`
         })
         return res.data
@@ -1520,7 +1520,7 @@ class UserAPI {
      */
     async create(data: User.CreateMutationRequest): Promise<[User.CreateError, User.CreateMutationResponse]> {
         const res = await request({
-            method: 'post',
+            method: 'POST',
             url: \`/user\`,
             data
         })
