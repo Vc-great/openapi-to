@@ -202,7 +202,7 @@ export class FakerGenerator {
       name: this.className,
       docs: [
         {
-          description: "\n",
+          // description: "\n",
           tags: [
             {
               tagName: "tag",
@@ -222,7 +222,7 @@ export class FakerGenerator {
               tagName: UUID_TAG_NAME,
               text: this.classOperationId,
             },
-          ],
+          ].filter((x) => x.text),
         },
       ],
       methods: methodsStatements,
@@ -250,7 +250,7 @@ export class FakerGenerator {
   generatorMethodDocs(): OptionalKind<JSDocStructure>[] {
     return [
       {
-        description: "\n",
+        // description: "\n",
         tags: [
           {
             tagName: "summary",
@@ -264,7 +264,7 @@ export class FakerGenerator {
             tagName: UUID_TAG_NAME,
             text: this.methodOperationId,
           },
-        ],
+        ].filter((x) => x.text),
       },
     ];
   }

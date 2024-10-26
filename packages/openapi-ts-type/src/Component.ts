@@ -91,7 +91,7 @@ export class Component {
           type: typeDeclaration?.getType()?.getText() ?? upperFirstRefName,
           docs: [
             {
-              description: "\n",
+              description: "",
               tags: [
                 {
                   tagName: UUID_TAG_NAME,
@@ -170,7 +170,7 @@ export class Component {
       properties: this.schema.getBaseTypeFromSchema(schema),
       docs: [
         {
-          description: "\n",
+          // description: "\n",
           tags: [
             {
               tagName: "description",
@@ -180,7 +180,7 @@ export class Component {
               tagName: UUID_TAG_NAME,
               text: UUID,
             },
-          ],
+          ].filter((x) => x.text),
         },
       ],
     });

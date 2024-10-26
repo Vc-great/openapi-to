@@ -103,7 +103,7 @@ export class Component {
                 .toString(),
             },
           ],
-          docs: [{ description: "" }],
+          docs: [], //[{ description: "" }],
         }),
       ],
       variableDeclaration?.getName() ?? upperFirstTypeName,
@@ -176,7 +176,7 @@ export class Component {
       ],
       docs: [
         {
-          description: "\n",
+          //   description: "\n",
           tags: [
             {
               tagName: "description",
@@ -186,7 +186,7 @@ export class Component {
               tagName: UUID_TAG_NAME,
               text: UUID,
             },
-          ],
+          ].filter((x) => x.text),
         },
       ],
     });

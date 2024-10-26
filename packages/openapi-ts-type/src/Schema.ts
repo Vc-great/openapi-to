@@ -183,7 +183,7 @@ export class Schema {
             : this.formatterSchemaType(schema),
           docs: [
             {
-              description: "\n",
+              //  description: "\n",
               tags: _.chain([] as OptionalKind<JSDocTagStructure>[])
                 .push({
                   tagName: "description",
@@ -197,9 +197,10 @@ export class Schema {
                       }
                     : [],
                 )
+                .filter((x) => Boolean(x.text))
                 .value(),
             },
-          ],
+          ].filter((x) => !_.isEmpty(x.tags)),
         };
       });
 
@@ -209,7 +210,7 @@ export class Schema {
         {
           name: `[key:string]`,
           type: "unknown",
-          docs: [{ description: "" }],
+          // docs: [{ description: "" }],
         },
       ];
     }

@@ -11,9 +11,11 @@ import { Schema } from "./Schema.ts";
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type { SchemaObject } from "oas/types";
-import type { OpenAPIV3 } from "openapi-types";
+import { type OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { HttpMethod, PathGroup, PathGroupByTag } from "../types";
+import isChinese from "is-chinese";
+import { pinyin } from "pinyin-pro";
 
 const enum WriteModel {
   await = "await",
@@ -93,18 +95,23 @@ export class OpenAPI {
   }
 
   get bodyDataName(): string {
-    return `${_.camelCase(this.methodName)}Request`;
+    return `${_.camelCase(this.methodName)}MutationRequest`;
   }
 
   get upperFirstBodyDataName(): string {
-    return `${_.upperFirst(_.camelCase(this.methodName))}Request`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}MutationRequest`;
+  }
+
+  get responseTypeName(): string {
+    return this.operation?.method === "get" ? "Query" : "Mutation";
   }
 
   get responseName(): string {
-    return `${_.camelCase(this.methodName)}Response`;
+    return `${_.camelCase(this.methodName)}${this.responseTypeName}${this.responseTypeName}Response`;
   }
+
   get upperFirstResponseName(): string {
-    return `${_.upperFirst(_.camelCase(this.methodName))}Response`;
+    return `${_.upperFirst(_.camelCase(this.methodName))}${this.responseTypeName}Response`;
   }
 
   get queryRequestNameForLowerFirst(): string {
@@ -271,7 +278,10 @@ export class OpenAPI {
     //todo ref cache
     this.refCache.set($ref, null);
     const typeName = $ref.replace(/.+\//, "");
-    return _.camelCase(typeName);
+    const text = isChinese(typeName)
+      ? pinyin(typeName, { toneType: "none", type: "array" }).join()
+      : typeName;
+    return _.camelCase(text);
   }
 
   getDomainNameByRef($ref: string): string {

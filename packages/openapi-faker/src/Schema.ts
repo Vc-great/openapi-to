@@ -181,14 +181,14 @@ export class Schema {
           .includes(name)
           .value();
 
-        //
-
         return {
           key: name,
           value: this.openapi.isReference(schema)
             ? `${this.openapi.getRefAlias(schema.$ref)}()`
             : this.formatterSchemaType(schema),
-          docs: [{ description: _.get(schema, "description", "") }],
+          docs: _.get(schema, "description")
+            ? [{ description: _.get(schema, "description") }]
+            : [],
         };
       },
     );

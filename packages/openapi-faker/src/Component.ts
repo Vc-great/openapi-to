@@ -96,7 +96,7 @@ export class Component {
             "." +
             _.upperFirst(_.camelCase(typeName)),
           isExported: true,
-          docs: [{ description: "" }],
+          docs: [], // [{ description: "" }],
         }),
       ],
       _.upperFirst(_.camelCase(typeName)),
@@ -166,7 +166,7 @@ export class Component {
       statements: `return ${this.schema.getStatementsFromSchema(schema)}`,
       returnType: _.upperFirst(_.camelCase(typeName)),
       isExported: true,
-      docs: [{ description: schema.description || "" }],
+      docs: schema.description ? [{ description: schema.description }] : [],
     });
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])

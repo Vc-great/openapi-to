@@ -16,7 +16,7 @@
   "tags": [
     {
       "name": "test",
-      "description": "description",
+      "description": "this is description",
       "externalDocs": {
         "description": "test",
         "url": "http://swagger.io"
@@ -1080,7 +1080,7 @@
           "code": {
             "type": "integer",
             "format": "int32",
-            "description": "description"
+            "description": "this is description"
           },
           "meta": {
             "$ref": "#/components/schemas/testdata"
@@ -1098,24 +1098,24 @@
           "columnLength": {
             "type": "integer",
             "format": "int32",
-            "description": "description"
+            "description": "this is description"
           },
           "columnName": {
             "type": "string",
-            "description": "description"
+            "description": "this is description"
           },
           "columnRemark": {
             "type": "string",
-            "description": "description"
+            "description": "this is description"
           },
           "columnScale": {
             "type": "integer",
             "format": "int32",
-            "description": "description"
+            "description": "this is description"
           },
           "columnType": {
             "type": "string",
-            "description": "description",
+            "description": "this is description",
             "enum": [
               "CHAR",
               "CHAR2",
@@ -1124,7 +1124,7 @@
           },
           "delFlag": {
             "type": "boolean",
-            "description": "description"
+            "description": "this is description"
           },
           "formId": {
             "type": "integer",
@@ -1137,7 +1137,7 @@
           },
           "notNull": {
             "type": "boolean",
-            "description": "description"
+            "description": "this is description"
           }
         },
         "title": "test3214"
@@ -1148,22 +1148,22 @@
           "number": {
             "type": "integer",
             "format": "int32",
-            "description": "description"
+            "description": "this is description"
           },
           "numberOfElements": {
             "type": "integer",
             "format": "int64",
-            "description": "description"
+            "description": "this is description"
           },
           "totalElements": {
             "type": "integer",
             "format": "int64",
-            "description": "description"
+            "description": "this is description"
           },
           "totalPages": {
             "type": "integer",
             "format": "int32",
-            "description": "description"
+            "description": "this is description"
           }
         },
         "title": "title"

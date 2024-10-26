@@ -22,6 +22,7 @@ import type {
   WriterFunction,
 } from "ts-morph";
 import type { JSDoc, ObjectStructure } from "./type.ts";
+import _ from "lodash";
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 type InterfaceStatementsOmitKind = Omit<InterfaceDeclarationStructure, "kind">;
@@ -175,8 +176,8 @@ export class AST {
         if (index !== 0) {
           writer.newLine();
         }
-        if (item.docs) {
-          writeDocs(item.docs || []);
+        if (_.isArray(item.docs) && !_.isEmpty(item.docs)) {
+          writeDocs(item.docs);
         }
 
         const isEqual = item.key === item.value;

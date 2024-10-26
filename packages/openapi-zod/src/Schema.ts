@@ -207,7 +207,9 @@ export class Schema {
                 .toString()
             : this.formatterSchemaType(schema) +
               this.z.optional(isRequired).toString(),
-          docs: [{ description: _.get(schema, "description", "") }],
+          docs: _.get(schema, "description")
+            ? [{ description: _.get(schema, "description") }]
+            : [],
         };
       },
     );

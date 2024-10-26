@@ -161,7 +161,9 @@ export class TypeGenerator {
               ),
             },
           ],
-          docs: [{ description: schema.description || "" }],
+          docs: [{ description: schema.description || "" }].filter(
+            (x) => x.description,
+          ),
         });
       })
       .value();
@@ -182,7 +184,7 @@ export class TypeGenerator {
             {
               description: schema.description,
             },
-          ],
+          ].filter((x) => x.description),
         });
       })
       .value();
@@ -215,7 +217,9 @@ export class TypeGenerator {
                 "]",
             },
           ],
-          docs: [{ description: schema.description || "" }],
+          docs: [{ description: schema.description || "" }].filter(
+            (x) => x.description,
+          ),
         });
       })
       .value();
@@ -279,7 +283,7 @@ export class TypeGenerator {
     return this.ast.generateModuleStatements({
       docs: [
         {
-          description: "\n",
+          //description: "",
           tags: [
             {
               tagName: "tag",
@@ -293,7 +297,7 @@ export class TypeGenerator {
               tagName: UUID_TAG_NAME,
               text: this.namespaceUUID,
             },
-          ],
+          ].filter((x) => x.text),
         },
       ],
       isExported: true,
@@ -357,29 +361,25 @@ export class TypeGenerator {
             null,
         };
       })
-      .filter((x) => {
-        if (isSuccessCode(x.code)) {
-          return !_.isNull(x.jsonSchema);
-        }
-        return true;
-      })
+      .filter((x) => !_.isNull(x.jsonSchema))
       .value() as Array<ResponseObject>;
 
     const errorType = this.ast.generateTypeAliasStatements({
-      name: this.openapi.upperFirstRequestName + "ErrorResponse",
+      name: this.openapi.upperFirstRequestName + "Error",
       type:
         _.chain(errorCode)
-          .map((code) => this.openapi.upperFirstRequestName + "Response" + code)
+          .filter((code) => responseObject.map((x) => x.code).includes(code))
+          .map((code) => this.openapi.upperFirstResponseName + code)
           .join("|")
           .value() || "unknown",
-      docs: [{ description: "" }],
+      //docs: [{ description: "" }],
       isExported: true,
     });
 
     const successDefaultType = this.ast.generateTypeAliasStatements({
-      name: this.openapi.upperFirstRequestName + "Response",
+      name: this.openapi.upperFirstResponseName,
       type: "unknown",
-      docs: [{ description: "" }],
+      docs: [], //[{ description: "" }],
       isExported: true,
     });
 
@@ -402,14 +402,13 @@ export class TypeGenerator {
     const schema = jsonSchema?.schema;
     const description = jsonSchema?.description;
     const isError = /^([3-5][0-9][0-9])$/.test(code);
-    const name =
-      this.openapi.upperFirstRequestName + "Response" + (isError ? code : "");
+    const name = this.openapi.upperFirstResponseName + (isError ? code : "");
 
     if (!schema) {
       return this.ast.generateTypeAliasStatements({
         name,
         type: "unknown",
-        docs: [{ description: "" }],
+        docs: [], //[{ description: "" }],
         isExported: true,
       });
     }
@@ -418,7 +417,7 @@ export class TypeGenerator {
       return this.ast.generateTypeAliasStatements({
         name,
         type: _.upperFirst(this.openapi.getRefAlias(schema.$ref)),
-        docs: [{ description: description || "" }],
+        docs: [{ description: description || "" }].filter((x) => x.description),
         isExported: true,
       });
     }
@@ -427,7 +426,7 @@ export class TypeGenerator {
       return this.ast.generateInterfaceStatements({
         isExported: true,
         name,
-        docs: [{ description: description || "" }],
+        docs: [{ description: description || "" }].filter((x) => x.description),
         properties: this.schema.getBaseTypeFromSchema(schema),
       });
     }
@@ -435,7 +434,7 @@ export class TypeGenerator {
     return this.ast.generateTypeAliasStatements({
       name,
       type: this.schema.formatterSchemaType(schema),
-      docs: [{ description: description || "" }],
+      docs: [{ description: description || "" }].filter((x) => x.description),
       isExported: true,
     });
   }
@@ -464,7 +463,7 @@ export class TypeGenerator {
         this.ast.generateTypeAliasStatements({
           name: this.openapi.upperFirstBodyDataName,
           type: _.upperFirst(this.openapi.getRefAlias(schema.$ref)),
-          docs: [{ description: "" }],
+          docs: [], //[{ description: "" }],
           isExported: true,
         }),
       ];

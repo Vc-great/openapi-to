@@ -305,7 +305,7 @@ export class RequestGenerator {
               tagName: UUID_TAG_NAME,
               text: this.classOperationId,
             },
-          ],
+          ].filter((x) => x.text),
         },
       ],
       methods: methodsStatements,
@@ -442,7 +442,7 @@ export class RequestGenerator {
             tagName: UUID_TAG_NAME,
             text: this.methodOperationId,
           },
-        ],
+        ].filter((x) => x.text),
       },
     ];
   }
@@ -523,9 +523,8 @@ export class RequestGenerator {
       ? this.requestDataType
       : undefined;
     const responseConfigType = requestData
-      ? `AxiosResponse<${requestData}>`
+      ? `AxiosResponse<${this.responseDataType}>`
       : "AxiosResponse";
-    const a = `<${this.responseDataType},${responseConfigType},${requestData ?? "unknown"}>`;
 
     return `<${this.responseDataType},${responseConfigType},${requestData ?? "unknown"}>`;
   }
