@@ -20,7 +20,7 @@
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
     "@types/fs-extra": "^11.0.4",
-    "axios": "^1.6.7",
+    "axios": "1.7.4",
     "fs-extra": "^11.2.0",
     "msw": "^2.2.2",
     "openapi-to": "workspace:*",
