@@ -1,5 +1,16 @@
 # @openapi-to/cli
 
+## 2.1.0
+
+### Minor Changes
+
+- optimize request type zod
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/core@2.1.0
+
 ## 2.0.0
 
 ### Major Changes

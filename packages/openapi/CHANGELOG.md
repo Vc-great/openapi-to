@@ -1,5 +1,23 @@
 # openapi-to
 
+## 2.1.0
+
+### Minor Changes
+
+- optimize request type zod
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/cli@2.1.0
+  - @openapi-to/core@2.1.0
+  - @openapi-to/openapi-faker@2.1.0
+  - @openapi-to/openapi-msw@2.1.0
+  - @openapi-to/openapi-nestjs@2.1.0
+  - @openapi-to/openapi-ts-request@2.1.0
+  - @openapi-to/openapi-ts-type@2.1.0
+  - @openapi-to/openapi-zod@2.1.0
+
 ## 2.0.0
 
 ### Major Changes
