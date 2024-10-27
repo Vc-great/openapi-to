@@ -143,7 +143,7 @@ export class RequestGenerator {
 
     return this.isCommonWithArrayResponseRequestType
       ? `Promise<[${errorResponseType},${this.responseDataType}]>`
-      : `Promise<${this.responseDataType}>`;
+      : ``;
   }
 
   get requestDataType(): string {
@@ -505,12 +505,26 @@ export class RequestGenerator {
       .filter(Boolean)
       .join(",\n")
       .value();
-    return this.isAxiosRequestType
-      ? `const res = await request${this.generatorAxiosType()}({
+
+    if (this.isCommonRequestType) {
+      return `const res = await request<${this.responseDataType}>({
                  ${requestFuncContent}
     })
-    return res.data`
-      : `const res = await request({
+    return res.data`;
+    }
+
+    if (this.isCommonWithArrayResponseRequestType) {
+      return `return request<${this.responseDataType}>({
+                 ${requestFuncContent}
+    })
+    .then(
+    res=>[undefined,res.data],
+    rej=>[rej,undefined]
+    )`;
+    }
+
+    //default  axios
+    return `const res = await request${this.generatorAxiosType()}({
                  ${requestFuncContent}
     })
     return res.data`;
@@ -523,7 +537,7 @@ export class RequestGenerator {
     const requestData = this.openapi.requestBody?.hasRequestBody
       ? this.requestDataType
       : undefined;
-    const responseConfigType = requestData
+    const responseConfigType = this.responseDataType
       ? `AxiosResponse<${this.responseDataType}>`
       : "AxiosResponse";
 
@@ -532,13 +546,13 @@ export class RequestGenerator {
 
   generatorMethodsStatements(): MethodDeclarationStructure {
     const statement = {
-      isAsync: true,
+      isAsync: this.isCommonWithArrayResponseRequestType ? false : true,
       name: this.oldNode.methodName ?? this.openapi.requestName,
       decorators: this.isCreateZodDecorator
         ? this.generatorMethodDecorators()
         : [],
       parameters: this.generatorMethodParameters(),
-      returnType: this.returnType,
+      returnType: "",
       docs: this.generatorMethodDocs(),
       statements: this.generatorMethodBody(),
     };

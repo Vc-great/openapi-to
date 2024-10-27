@@ -99,12 +99,18 @@ importers:
 
   e2e/common:
     dependencies:
+      axios:
+        specifier: ^1.6.7
+        version: 1.6.7
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
       openapi-to:
         specifier: workspace:*
         version: link:../../packages/openapi
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
 
   e2e/module:
     dependencies:
@@ -114,6 +120,9 @@ importers:
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
+      axios:
+        specifier: ^1.6.7
+        version: 1.6.7
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
@@ -206,8 +215,8 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0(eslint@8.56.0)
       eslint-plugin-turbo:
-        specifier: ^1.11.3
-        version: 1.11.3(eslint@8.56.0)
+        specifier: ^2.2.3
+        version: 2.2.3(eslint@8.56.0)
       eslint-plugin-unused-imports:
         specifier: ~3.0.0
         version: 3.0.0(@typescript-eslint/eslint-plugin@6.19.1(@typescript-eslint/parser@6.13.2(eslint@8.56.0)(typescript@5.6.2))(eslint@8.56.0)(typescript@5.6.2))(eslint@8.56.0)
@@ -2327,6 +2336,11 @@ packages:
 
   eslint-plugin-turbo@1.11.3:
     resolution: {integrity: sha512-R5ftTTWQzEYaKzF5g6m/MInCU8pIN+2TLL+S50AYBr1enwUovdZmnZ1HDwFMaxIjJ8x5ah+jvAzql5IJE9VWaA==}
+    peerDependencies:
+      eslint: '>6.6.0'
+
+  eslint-plugin-turbo@2.2.3:
+    resolution: {integrity: sha512-LHt35VwxthdGVO6hQRfvmFb6ee8/exAzAYWCy4o87Bnp7urltP8qg7xMd4dPSLAhtfnI2xSo1WgeVaR3MeItxw==}
     peerDependencies:
       eslint: '>6.6.0'
 
@@ -6898,6 +6912,11 @@ snapshots:
       eslint: 8.56.0
 
   eslint-plugin-turbo@1.11.3(eslint@8.56.0):
+    dependencies:
+      dotenv: 16.0.3
+      eslint: 8.56.0
+
+  eslint-plugin-turbo@2.2.3(eslint@8.56.0):
     dependencies:
       dotenv: 16.0.3
       eslint: 8.56.0

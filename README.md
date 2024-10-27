@@ -71,12 +71,12 @@ export default defineConfig({
 
 
 | Name                                          | Description                          | Type    | Default |
-| --------------------------------------------- | ------------------------------------ | ------- | ------- |
+| --------------------------------------------- | ------------------------------------ | ------- |---------|
 | createZodDecorator                            | create zod decorator                 | boolean | false   |
 | compare                                       | Experimental features                | boolean | false   |
 | zodDecoratorImportDeclaration.moduleSpecifier | zod Ddecorator Import from           | string  | -       |
 | requestImportDeclaration.moduleSpecifier      | request Import from                  | string  | -       |
-| requestType                                   | axios,common,commonWithArrayResponse | enum    | Axios   |
+| requestType                                   | axios,common,commonWithArrayResponse | enum    | axios   |
 
 ### example
 

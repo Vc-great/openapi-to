@@ -7,8 +7,7 @@ export const enum RequestTypeEnum {
   COMMON_WITH_ARRAY_RESPONSE = "commonWithArrayResponse",
 }
 
-export type RequestType =
-  (typeof RequestTypeEnum)[keyof typeof RequestTypeEnum];
+export type RequestType = "axios" | "common" | "commonWithArrayResponse";
 
 export type PluginConfig = {
   createZodDecorator?: boolean;

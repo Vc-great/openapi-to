@@ -2,6 +2,7 @@ export const defaultIgnores = [
   "dist/**",
   "coverage/**",
   "mock/**",
+  "e2e/**",
   "*.d.ts",
   "*.config.ts",
   "templates/**",
