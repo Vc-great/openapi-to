@@ -1,5 +1,16 @@
 # @openapi-to/openapi-faker
 
+## 2.2.0
+
+### Minor Changes
+
+- fix bug
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/core@2.2.0
+
 ## 2.1.0
 
 ### Minor Changes

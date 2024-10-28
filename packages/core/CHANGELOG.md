@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 2.2.0
+
+### Minor Changes
+
+- fix bug
+
 ## 2.1.0
 
 ### Minor Changes

@@ -1,5 +1,23 @@
 # openapi-to
 
+## 2.2.0
+
+### Minor Changes
+
+- fix bug
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/cli@2.2.0
+  - @openapi-to/core@2.2.0
+  - @openapi-to/openapi-faker@2.2.0
+  - @openapi-to/openapi-msw@2.2.0
+  - @openapi-to/openapi-nestjs@2.2.0
+  - @openapi-to/openapi-ts-request@2.2.0
+  - @openapi-to/openapi-ts-type@2.2.0
+  - @openapi-to/openapi-zod@2.2.0
+
 ## 2.1.0
 
 ### Minor Changes
