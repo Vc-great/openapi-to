@@ -1,5 +1,5 @@
 {
-  "name": "openapi-to",
+  "name": "@openapi-to/root",
   "private": true,
   "type": "module",
   "workspaces": {
@@ -80,15 +80,6 @@
   },
   "pnpm": {
     "patchedDependencies": {}
-  },
-  "dependencies": {
-    "@types/lodash": "^4.17.9",
-    "is-chinese": "^2.0.0",
-    "lodash": "^4.17.21",
-    "oas": "^24.9.0",
-    "pinyin-pro": "^3.25.0",
-    "ts-morph": "^23.0.0",
-    "utility-types": "^3.11.0"
   },
   "publishConfig": {
     "access": "public",

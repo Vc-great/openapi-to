@@ -36,7 +36,8 @@
   "devDependencies": {
     "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*"
+    "@openapi-to/tsup-config": "workspace:*",
+    "@types/lodash": "^4.17.9"
   },
   "packageManager": "pnpm@8.6.12",
   "keywords": [],
@@ -46,7 +47,10 @@
     "@nestjs/common": "^10.3.8",
     "@nestjs/swagger": "^7.3.1",
     "@openapi-to/core": "workspace:*",
-    "class-validator": "^0.14.1"
+    "class-validator": "^0.14.1",
+    "lodash": "^4.17.21",
+    "oas": "^24.9.0",
+    "ts-morph": "^23.0.0"
   },
   "publishConfig": {
     "access": "public",

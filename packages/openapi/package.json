@@ -23,13 +23,11 @@
   "exports": {
     ".": {
       "import": "./dist/es/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "default": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.cjs"
     },
     "./utils": {
       "import": "./dist/es/utils.js",
-      "require": "./dist/cjs/utils.cjs",
-      "default": "./dist/cjs/utils.cjs"
+      "require": "./dist/cjs/utils.cjs"
     }
   },
   "main": "./dist/cjs/index.cjs",

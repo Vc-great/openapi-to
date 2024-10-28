@@ -36,10 +36,14 @@
   "devDependencies": {
     "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*"
+    "@openapi-to/tsup-config": "workspace:*",
+    "@types/lodash": "^4.17.9"
   },
   "dependencies": {
-    "@openapi-to/core": "workspace:*"
+    "@openapi-to/core": "workspace:*",
+    "lodash": "^4.17.21",
+    "oas": "^24.9.0",
+    "ts-morph": "^23.0.0"
   },
   "packageManager": "pnpm@8.6.12",
   "keywords": [],

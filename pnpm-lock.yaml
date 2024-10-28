@@ -7,28 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@types/lodash':
-        specifier: ^4.17.9
-        version: 4.17.9
-      is-chinese:
-        specifier: ^2.0.0
-        version: 2.0.0
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      oas:
-        specifier: ^24.9.0
-        version: 24.9.0
-      pinyin-pro:
-        specifier: ^3.25.0
-        version: 3.25.0
-      ts-morph:
-        specifier: ^23.0.0
-        version: 23.0.0
-      utility-types:
-        specifier: ^3.11.0
-        version: 3.11.0
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.5.0
@@ -156,6 +134,9 @@ importers:
       execa:
         specifier: ^8.0.1
         version: 8.0.1
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       ora:
         specifier: ^7.0.1
         version: 7.0.1
@@ -175,6 +156,9 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
@@ -278,24 +262,39 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
+      is-chinese:
+        specifier: ^2.0.0
+        version: 2.0.0
       js-runtime:
         specifier: ^0.0.7
         version: 0.0.7
       json-schema:
         specifier: ^0.4.0
         version: 0.4.0
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       natural-orderby:
         specifier: ^3.0.2
         version: 3.0.2
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
       picocolors:
         specifier: ^1.0.0
         version: 1.0.0
+      pinyin-pro:
+        specifier: ^3.25.0
+        version: 3.25.0
       seedrandom:
         specifier: ^3.0.5
         version: 3.0.5
       semver:
         specifier: ^7.5.4
         version: 7.5.4
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -309,6 +308,9 @@ importers:
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
       '@types/seedrandom':
         specifier: ^3.0.8
         version: 3.0.8
@@ -361,6 +363,15 @@ importers:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -371,12 +382,24 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
 
   packages/openapi-msw:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -387,6 +410,9 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
 
   packages/openapi-nestjs:
     dependencies:
@@ -402,6 +428,15 @@ importers:
       class-validator:
         specifier: ^0.14.1
         version: 0.14.1
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -412,12 +447,24 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
 
   packages/openapi-ts-request:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -428,12 +475,27 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
+      utility-types:
+        specifier: ^3.11.0
+        version: 3.11.0
 
   packages/openapi-ts-type:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -444,12 +506,24 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
 
   packages/openapi-zod:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
     devDependencies:
       '@openapi-to/eslint-config':
         specifier: workspace:*
@@ -460,6 +534,9 @@ importers:
       '@openapi-to/tsup-config':
         specifier: workspace:*
         version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
 
 packages:
 
