@@ -1,14 +1,13 @@
 {
-  "name": "@openapi-to/openapi-faker",
+  "name": "@openapi-to/plugin-nestjs",
   "version": "2.2.0",
   "sideEffects": false,
   "type": "module",
-  "description": "Generator faker",
+  "description": "generator nestjs",
   "exports": {
     ".": {
       "import": "./dist/es/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "default": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.cjs"
     },
     "./package.json": "./package.json",
     "./*": "./*"
@@ -39,16 +38,18 @@
     "@openapi-to/tsup-config": "workspace:*",
     "@types/lodash": "^4.17.9"
   },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
+    "@nestjs/common": "^10.3.8",
+    "@nestjs/swagger": "^7.3.1",
     "@openapi-to/core": "workspace:*",
+    "class-validator": "^0.14.1",
     "lodash": "^4.17.21",
     "oas": "^24.9.0",
     "ts-morph": "^23.0.0"
   },
-  "packageManager": "pnpm@8.6.12",
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

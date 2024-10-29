@@ -19,7 +19,7 @@ export const definePlugin = createPlugin(
         openapi,
       );
       return {
-        name: "openapi-zod",
+        name: "plugin-zod",
         buildStart() {
           const typeGenerator = new ZodGenerator({
             oas,

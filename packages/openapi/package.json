@@ -56,12 +56,12 @@
   "dependencies": {
     "@openapi-to/cli": "workspace:*",
     "@openapi-to/core": "workspace:*",
-    "@openapi-to/openapi-ts-request": "workspace:*",
-    "@openapi-to/openapi-ts-type": "workspace:*",
-    "@openapi-to/openapi-zod": "workspace:*",
-    "@openapi-to/openapi-msw": "workspace:*",
-    "@openapi-to/openapi-faker": "workspace:*",
-    "@openapi-to/openapi-nestjs": "workspace:*",
+    "@openapi-to/plugin-ts-request": "workspace:*",
+    "@openapi-to/plugin-ts-type": "workspace:*",
+    "@openapi-to/plugin-zod": "workspace:*",
+    "@openapi-to/plugin-msw": "workspace:*",
+    "@openapi-to/plugin-faker": "workspace:*",
+    "@openapi-to/plugin-nestjs": "workspace:*",
     "@types/update-notifier": "^6.0.8",
     "update-notifier": "^7.0.0"
   },

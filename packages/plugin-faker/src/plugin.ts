@@ -2,7 +2,7 @@ import { AST, createPlugin, OpenAPI } from "@openapi-to/core";
 
 import Oas from "oas";
 
-import { RequestGenerator } from "./RequestGenerator.ts";
+import { FakerGenerator } from "./FakerGenerator.ts";
 
 import type { PluginConfig } from "./types.ts";
 
@@ -13,16 +13,16 @@ export const definePlugin = createPlugin<PluginConfig>(
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
       return {
-        name: "openapi-ts-request",
+        name: "plugin-faker",
         buildStart(context) {
-          const requestGenerator = new RequestGenerator({
+          const fakerGenerator = new FakerGenerator({
             oas,
             ast,
             openapi,
             pluginConfig,
             openapiToSingleConfig,
           });
-          requestGenerator.build(context);
+          fakerGenerator.build(context);
         },
         writeFile() {
           return ast.saveSync();

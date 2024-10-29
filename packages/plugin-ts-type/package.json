@@ -1,9 +1,9 @@
 {
-  "name": "@openapi-to/openapi-ts-request",
+  "name": "@openapi-to/plugin-ts-type",
   "version": "2.2.0",
   "sideEffects": false,
   "type": "module",
-  "description": "generator ts request",
+  "description": "Generator ts",
   "exports": {
     ".": {
       "import": "./dist/es/index.js",
@@ -36,18 +36,17 @@
     "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
     "@openapi-to/tsup-config": "workspace:*",
-    "@types/lodash": "^4.17.9",
-    "utility-types": "^3.11.0"
+    "@types/lodash": "^4.17.9"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "@openapi-to/core": "workspace:*",
     "lodash": "^4.17.21",
     "oas": "^24.9.0",
     "ts-morph": "^23.0.0"
   },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

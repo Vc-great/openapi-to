@@ -1,4 +1,4 @@
-# @openapi-to/openapi-nestjs
+# @openapi-to/plugin-nestjs
 
 ## 2.2.0
 

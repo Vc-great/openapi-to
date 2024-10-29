@@ -9,16 +9,16 @@
       "path": "../../core"
     },
     {
-      "path": "../../openapi-ts-request"
+      "path": "../../plugin-ts-request"
     },
     {
-      "path": "../../openapi-nestjs"
+      "path": "../../plugin-nestjs"
     },
     {
-      "path": "../../openapi-ts-type"
+      "path": "../../plugin-ts-type"
     },
     {
-      "path": "../../openapi-msw"
+      "path": "../../plugin-msw"
     }
   ]
 }

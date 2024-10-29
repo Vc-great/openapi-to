@@ -2,27 +2,30 @@ import { AST, createPlugin, OpenAPI } from "@openapi-to/core";
 
 import Oas from "oas";
 
-import { FakerGenerator } from "./FakerGenerator.ts";
+import { TypeGenerator } from "./TypeGenerator.ts";
+import { TypeOldNode } from "./TypeOldNode.ts";
 
 import type { PluginConfig } from "./types.ts";
 
-export const definePlugin = createPlugin<PluginConfig>(
-  (pluginConfig) =>
+export const definePlugin = createPlugin(
+  (pluginConfig?: PluginConfig) =>
     ({ openapiDocument, openapiToSingleConfig }) => {
       const ast = new AST();
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
+      const oldNode = new TypeOldNode(pluginConfig, openapiToSingleConfig);
       return {
-        name: "openapi-faker",
-        buildStart(context) {
-          const fakerGenerator = new FakerGenerator({
+        name: "plugin-ts-type",
+        buildStart() {
+          const typeGenerator = new TypeGenerator({
             oas,
             ast,
             openapi,
             pluginConfig,
             openapiToSingleConfig,
+            oldNode,
           });
-          fakerGenerator.build(context);
+          typeGenerator.build();
         },
         writeFile() {
           return ast.saveSync();

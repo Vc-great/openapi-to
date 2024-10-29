@@ -1,14 +1,13 @@
 {
-  "name": "@openapi-to/openapi-zod",
+  "name": "@openapi-to/plugin-faker",
   "version": "2.2.0",
   "sideEffects": false,
   "type": "module",
-  "description": "Generator ts",
+  "description": "Generator faker",
   "exports": {
     ".": {
       "import": "./dist/es/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "default": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.cjs"
     },
     "./package.json": "./package.json",
     "./*": "./*"
@@ -45,7 +44,6 @@
     "oas": "^24.9.0",
     "ts-morph": "^23.0.0"
   },
-  "packageManager": "pnpm@8.6.12",
   "keywords": [],
   "author": "",
   "license": "MIT",

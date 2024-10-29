@@ -1,7 +1,7 @@
 export { defineConfig } from "@openapi-to/core";
-export { definePlugin as createFaker } from "@openapi-to/openapi-faker";
-export { definePlugin as createMSW } from "@openapi-to/openapi-msw";
-export { definePlugin as createNestjs } from "@openapi-to/openapi-nestjs";
-export { definePlugin as createTSRequest } from "@openapi-to/openapi-ts-request";
-export { definePlugin as createTSType } from "@openapi-to/openapi-ts-type";
-export { definePlugin as createZod } from "@openapi-to/openapi-zod";
+export { definePlugin as pluginFaker } from "@openapi-to/plugin-faker";
+export { definePlugin as pluginMSW } from "@openapi-to/plugin-msw";
+export { definePlugin as pluginNestjs } from "@openapi-to/plugin-nestjs";
+export { definePlugin as pluginTSRequest } from "@openapi-to/plugin-ts-request";
+export { definePlugin as pluginTSType } from "@openapi-to/plugin-ts-type";
+export { definePlugin as pluginZod } from "@openapi-to/plugin-zod";

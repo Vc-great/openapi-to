@@ -329,24 +329,24 @@ importers:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
-      '@openapi-to/openapi-faker':
+      '@openapi-to/plugin-faker':
         specifier: workspace:*
-        version: link:../openapi-faker
-      '@openapi-to/openapi-msw':
+        version: link:../plugin-faker
+      '@openapi-to/plugin-msw':
         specifier: workspace:*
-        version: link:../openapi-msw
-      '@openapi-to/openapi-nestjs':
+        version: link:../plugin-msw
+      '@openapi-to/plugin-nestjs':
         specifier: workspace:*
-        version: link:../openapi-nestjs
-      '@openapi-to/openapi-ts-request':
+        version: link:../plugin-nestjs
+      '@openapi-to/plugin-ts-request':
         specifier: workspace:*
-        version: link:../openapi-ts-request
-      '@openapi-to/openapi-ts-type':
+        version: link:../plugin-ts-request
+      '@openapi-to/plugin-ts-type':
         specifier: workspace:*
-        version: link:../openapi-ts-type
-      '@openapi-to/openapi-zod':
+        version: link:../plugin-ts-type
+      '@openapi-to/plugin-zod':
         specifier: workspace:*
-        version: link:../openapi-zod
+        version: link:../plugin-zod
       '@types/update-notifier':
         specifier: ^6.0.8
         version: 6.0.8
@@ -358,7 +358,7 @@ importers:
         specifier: workspace:*
         version: link:../config/tsup-config
 
-  packages/openapi-faker:
+  packages/plugin-faker:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
@@ -386,7 +386,7 @@ importers:
         specifier: ^4.17.9
         version: 4.17.9
 
-  packages/openapi-msw:
+  packages/plugin-msw:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
@@ -414,7 +414,7 @@ importers:
         specifier: ^4.17.9
         version: 4.17.9
 
-  packages/openapi-nestjs:
+  packages/plugin-nestjs:
     dependencies:
       '@nestjs/common':
         specifier: ^10.3.8
@@ -451,7 +451,7 @@ importers:
         specifier: ^4.17.9
         version: 4.17.9
 
-  packages/openapi-ts-request:
+  packages/plugin-ts-request:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
@@ -482,7 +482,7 @@ importers:
         specifier: ^3.11.0
         version: 3.11.0
 
-  packages/openapi-ts-type:
+  packages/plugin-ts-type:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*
@@ -510,7 +510,7 @@ importers:
         specifier: ^4.17.9
         version: 4.17.9
 
-  packages/openapi-zod:
+  packages/plugin-zod:
     dependencies:
       '@openapi-to/core':
         specifier: workspace:*

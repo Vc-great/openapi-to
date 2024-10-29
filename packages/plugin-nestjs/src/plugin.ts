@@ -16,7 +16,7 @@ export const definePlugin = createPlugin<PluginConfig>(
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
       return {
-        name: "openapi-nestjs",
+        name: "plugin-nestjs",
         buildStart(context) {
           new ControllerGenerator({
             oas,

@@ -1,4 +1,4 @@
-# @openapi-to/openapi-zod
+# @openapi-to/plugin-ts-type
 
 ## 2.2.0
 

@@ -13,7 +13,7 @@ export const definePlugin = createPlugin<PluginConfig>(
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
       return {
-        name: "openapi-msw",
+        name: "plugin-msw",
         buildStart(context) {
           const mswGenerator = new MswGenerator({
             oas,

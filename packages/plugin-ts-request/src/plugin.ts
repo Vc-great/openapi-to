@@ -2,33 +2,27 @@ import { AST, createPlugin, OpenAPI } from "@openapi-to/core";
 
 import Oas from "oas";
 
-import { TypeGenerator } from "./TypeGenerator.ts";
-import {TypeOldNode} from "./TypeOldNode.ts";
+import { RequestGenerator } from "./RequestGenerator.ts";
 
 import type { PluginConfig } from "./types.ts";
 
-export const definePlugin = createPlugin(
-  (pluginConfig?: PluginConfig) =>
+export const definePlugin = createPlugin<PluginConfig>(
+  (pluginConfig) =>
     ({ openapiDocument, openapiToSingleConfig }) => {
       const ast = new AST();
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
-      const oldNode = new TypeOldNode(
-        pluginConfig,
-        openapiToSingleConfig,
-      );
       return {
-        name: "openapi-ts-type",
-        buildStart() {
-          const typeGenerator = new TypeGenerator({
+        name: "plugin-ts-request",
+        buildStart(context) {
+          const requestGenerator = new RequestGenerator({
             oas,
             ast,
             openapi,
             pluginConfig,
             openapiToSingleConfig,
-            oldNode
           });
-          typeGenerator.build();
+          requestGenerator.build(context);
         },
         writeFile() {
           return ast.saveSync();
