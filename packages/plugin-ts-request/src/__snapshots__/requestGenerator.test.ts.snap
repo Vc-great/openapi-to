@@ -3,7 +3,7 @@
 exports[`RequestGenerator > all false  getFullText 1`] = `
 "import type { Pet } from "./Pet";
 import type { AxiosResponse } from "axios";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag pet
@@ -189,7 +189,7 @@ export const petAPI = new PetAPI;
 
 import type { Store } from "./Store";
 import type { AxiosResponse } from "axios";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag store
@@ -254,7 +254,7 @@ export const storeAPI = new StoreAPI;
 
 import type { User } from "./User";
 import type { AxiosResponse } from "axios";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag user
@@ -389,7 +389,7 @@ class NewPetAPI {
      * @UUID test
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.testPostMutationMutationResponse)
+    @responseZodSchema(newPetZod.testPostMutationResponse)
     async newtestPost(@paramsZodSchema(newPetZod.testPostMutationRequest) data: newPet.TestPostMutationRequest) {
         const res = await request<newPet.TestPostMutationResponse, AxiosResponse<newPet.TestPostMutationResponse>, newPet.TestPostMutationRequest>({
             method: 'POST',
@@ -404,7 +404,7 @@ class NewPetAPI {
      * @UUID testput
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.testPutMutationMutationResponse)
+    @responseZodSchema(newPetZod.testPutMutationResponse)
     async newtestPut(@paramsZodSchema(newPetZod.testPutMutationRequest) data: newPet.TestPutMutationRequest) {
         const res = await request<newPet.TestPutMutationResponse, AxiosResponse<newPet.TestPutMutationResponse>, newPet.TestPutMutationRequest>({
             method: 'PUT',
@@ -419,7 +419,7 @@ class NewPetAPI {
      * @UUID testdelete
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.delByTestMutationMutationResponse)
+    @responseZodSchema(newPetZod.delByTestMutationResponse)
     async newdelByTest(@paramsZodSchema(newPetZod.delByTestMutationRequest) data: newPet.DelByTestMutationRequest) {
         const res = await request<newPet.DelByTestMutationResponse, AxiosResponse<newPet.DelByTestMutationResponse>, newPet.DelByTestMutationRequest>({
             method: 'DELETE',
@@ -434,7 +434,7 @@ class NewPetAPI {
      * @UUID test-idget
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.testIdGetQueryQueryResponse)
+    @responseZodSchema(newPetZod.testIdGetQueryResponse)
     async newtestIdGet(@paramsZodSchema(newPetZod.testIdGetQueryParams) params: newPet.TestIdGetQueryParams, @paramsZodSchema(newPetZod.testIdGetPathParams.shape.testId) testId: newPet.TestIdGetPathParams['testId']) {
         const res = await request<newPet.TestIdGetQueryResponse, AxiosResponse<newPet.TestIdGetQueryResponse>, unknown>({
             method: 'GET',
@@ -453,7 +453,7 @@ class NewPetAPI {
      * @UUID uploadFile
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.uploadImagePostMutationMutationResponse)
+    @responseZodSchema(newPetZod.uploadImagePostMutationResponse)
     async newuploadImagePost(@paramsZodSchema(newPetZod.uploadImagePostMutationRequest) data: newPet.UploadImagePostMutationRequest, @paramsZodSchema(newPetZod.uploadImagePostPathParams.shape.petId) petId: newPet.UploadImagePostPathParams['petId']) {
         const res = await request<newPet.UploadImagePostMutationResponse, AxiosResponse<newPet.UploadImagePostMutationResponse>, newPet.UploadImagePostMutationRequest>({
             method: 'POST',
@@ -471,7 +471,7 @@ class NewPetAPI {
      * @UUID addPet
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.createMutationMutationResponse)
+    @responseZodSchema(newPetZod.createMutationResponse)
     async newcreate(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
             method: 'POST',
@@ -486,7 +486,7 @@ class NewPetAPI {
      * @UUID updatePet
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.updateMutationMutationResponse)
+    @responseZodSchema(newPetZod.updateMutationResponse)
     async newupdate(@paramsZodSchema(newPetZod.updateMutationRequest) data: newPet.UpdateMutationRequest) {
         const res = await request<newPet.UpdateMutationResponse, AxiosResponse<newPet.UpdateMutationResponse>, newPet.UpdateMutationRequest>({
             method: 'PUT',
@@ -502,7 +502,7 @@ class NewPetAPI {
      * @UUID findPetsByStatus
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.findByStatusGetQueryQueryResponse)
+    @responseZodSchema(newPetZod.findByStatusGetQueryResponse)
     async newfindByStatusGet(@paramsZodSchema(newPetZod.findByStatusGetQueryParams) params: newPet.FindByStatusGetQueryParams) {
         const res = await request<newPet.FindByStatusGetQueryResponse, AxiosResponse<newPet.FindByStatusGetQueryResponse>, unknown>({
             method: 'GET',
@@ -521,7 +521,7 @@ class NewPetAPI {
      * @UUID findPetsByTags
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.findByTagsGetQueryQueryResponse)
+    @responseZodSchema(newPetZod.findByTagsGetQueryResponse)
     async newfindByTagsGet(@paramsZodSchema(newPetZod.findByTagsGetQueryParams) params: newPet.FindByTagsGetQueryParams) {
         const res = await request<newPet.FindByTagsGetQueryResponse, AxiosResponse<newPet.FindByTagsGetQueryResponse>, unknown>({
             method: 'GET',
@@ -540,7 +540,7 @@ class NewPetAPI {
      * @UUID getPetById
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.findByPetIdQueryQueryResponse)
+    @responseZodSchema(newPetZod.findByPetIdQueryResponse)
     async newfindByPetId(@paramsZodSchema(newPetZod.findByPetIdPathParams.shape.petId) petId: newPet.FindByPetIdPathParams['petId']) {
         const res = await request<newPet.FindByPetIdQueryResponse, AxiosResponse<newPet.FindByPetIdQueryResponse>, unknown>({
             method: 'GET',
@@ -554,7 +554,7 @@ class NewPetAPI {
      * @UUID updatePetWithForm
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.petIdPostMutationMutationResponse)
+    @responseZodSchema(newPetZod.petIdPostMutationResponse)
     async newpetIdPost(@paramsZodSchema(newPetZod.petIdPostMutationRequest) data: newPet.PetIdPostMutationRequest, @paramsZodSchema(newPetZod.petIdPostPathParams.shape.petId) petId: newPet.PetIdPostPathParams['petId']) {
         const res = await request<newPet.PetIdPostMutationResponse, AxiosResponse<newPet.PetIdPostMutationResponse>, newPet.PetIdPostMutationRequest>({
             method: 'POST',
@@ -572,7 +572,7 @@ class NewPetAPI {
      * @UUID deletePet
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.delByPetIdMutationMutationResponse)
+    @responseZodSchema(newPetZod.delByPetIdMutationResponse)
     async newdelByPetId(@paramsZodSchema(newPetZod.delByPetIdPathParams.shape.petId) petId: newPet.DelByPetIdPathParams['petId']) {
         const res = await request<newPet.DelByPetIdMutationResponse, AxiosResponse<newPet.DelByPetIdMutationResponse>, unknown>({
             method: 'DELETE',
@@ -601,7 +601,7 @@ class StoreAPI {
      * @UUID placeOrder
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.createMutationMutationResponse)
+    @responseZodSchema(newPetZod.createMutationResponse)
     async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
             method: 'POST',
@@ -617,7 +617,7 @@ class StoreAPI {
      * @UUID getOrderById
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.findByOrderIdQueryQueryResponse)
+    @responseZodSchema(newPetZod.findByOrderIdQueryResponse)
     async findByOrderId(@paramsZodSchema(newPetZod.findByOrderIdPathParams.shape.orderId) orderId: newPet.FindByOrderIdPathParams['orderId']) {
         const res = await request<newPet.FindByOrderIdQueryResponse, AxiosResponse<newPet.FindByOrderIdQueryResponse>, unknown>({
             method: 'GET',
@@ -632,7 +632,7 @@ class StoreAPI {
      * @UUID deleteOrder
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.delByOrderIdMutationMutationResponse)
+    @responseZodSchema(newPetZod.delByOrderIdMutationResponse)
     async delByOrderId(@paramsZodSchema(newPetZod.delByOrderIdPathParams.shape.orderId) orderId: newPet.DelByOrderIdPathParams['orderId']) {
         const res = await request<newPet.DelByOrderIdMutationResponse, AxiosResponse<newPet.DelByOrderIdMutationResponse>, unknown>({
             method: 'DELETE',
@@ -647,7 +647,7 @@ class StoreAPI {
      * @UUID getInventory
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.inventoryGetQueryQueryResponse)
+    @responseZodSchema(newPetZod.inventoryGetQueryResponse)
     async inventoryGet() {
         const res = await request<newPet.InventoryGetQueryResponse, AxiosResponse<newPet.InventoryGetQueryResponse>, unknown>({
             method: 'GET',
@@ -676,7 +676,7 @@ class UserAPI {
      * @UUID createUsersWithArrayInput
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.createWithArrayPostMutationMutationResponse)
+    @responseZodSchema(newPetZod.createWithArrayPostMutationResponse)
     async createWithArrayPost(@paramsZodSchema(newPetZod.createWithArrayPostMutationRequest) data: newPet.CreateWithArrayPostMutationRequest) {
         const res = await request<newPet.CreateWithArrayPostMutationResponse, AxiosResponse<newPet.CreateWithArrayPostMutationResponse>, newPet.CreateWithArrayPostMutationRequest>({
             method: 'POST',
@@ -691,7 +691,7 @@ class UserAPI {
      * @UUID createUsersWithListInput
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.createWithListPostMutationMutationResponse)
+    @responseZodSchema(newPetZod.createWithListPostMutationResponse)
     async createWithListPost(@paramsZodSchema(newPetZod.createWithListPostMutationRequest) data: newPet.CreateWithListPostMutationRequest) {
         const res = await request<newPet.CreateWithListPostMutationResponse, AxiosResponse<newPet.CreateWithListPostMutationResponse>, newPet.CreateWithListPostMutationRequest>({
             method: 'POST',
@@ -706,7 +706,7 @@ class UserAPI {
      * @UUID getUserByName
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.findByUsernameQueryQueryResponse)
+    @responseZodSchema(newPetZod.findByUsernameQueryResponse)
     async findByUsername(@paramsZodSchema(newPetZod.findByUsernamePathParams.shape.username) username: newPet.FindByUsernamePathParams['username']) {
         const res = await request<newPet.FindByUsernameQueryResponse, AxiosResponse<newPet.FindByUsernameQueryResponse>, unknown>({
             method: 'GET',
@@ -721,7 +721,7 @@ class UserAPI {
      * @UUID updateUser
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.usernamePutMutationMutationResponse)
+    @responseZodSchema(newPetZod.usernamePutMutationResponse)
     async usernamePut(@paramsZodSchema(newPetZod.usernamePutMutationRequest) data: newPet.UsernamePutMutationRequest, @paramsZodSchema(newPetZod.usernamePutPathParams.shape.username) username: newPet.UsernamePutPathParams['username']) {
         const res = await request<newPet.UsernamePutMutationResponse, AxiosResponse<newPet.UsernamePutMutationResponse>, newPet.UsernamePutMutationRequest>({
             method: 'PUT',
@@ -737,7 +737,7 @@ class UserAPI {
      * @UUID deleteUser
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.delByUsernameMutationMutationResponse)
+    @responseZodSchema(newPetZod.delByUsernameMutationResponse)
     async delByUsername(@paramsZodSchema(newPetZod.delByUsernamePathParams.shape.username) username: newPet.DelByUsernamePathParams['username']) {
         const res = await request<newPet.DelByUsernameMutationResponse, AxiosResponse<newPet.DelByUsernameMutationResponse>, unknown>({
             method: 'DELETE',
@@ -751,7 +751,7 @@ class UserAPI {
      * @UUID loginUser
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.loginGetQueryQueryResponse)
+    @responseZodSchema(newPetZod.loginGetQueryResponse)
     async loginGet(@paramsZodSchema(newPetZod.loginGetQueryParams) params: newPet.LoginGetQueryParams) {
         const res = await request<newPet.LoginGetQueryResponse, AxiosResponse<newPet.LoginGetQueryResponse>, unknown>({
             method: 'GET',
@@ -766,7 +766,7 @@ class UserAPI {
      * @UUID logoutUser
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.logoutGetQueryQueryResponse)
+    @responseZodSchema(newPetZod.logoutGetQueryResponse)
     async logoutGet() {
         const res = await request<newPet.LogoutGetQueryResponse, AxiosResponse<newPet.LogoutGetQueryResponse>, unknown>({
             method: 'GET',
@@ -781,7 +781,7 @@ class UserAPI {
      * @UUID createUser
      */
     @ZodValidation
-    @responseZodSchema(newPetZod.createMutationMutationResponse)
+    @responseZodSchema(newPetZod.createMutationResponse)
     async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
             method: 'POST',
@@ -798,7 +798,7 @@ export const userAPI = new UserAPI;
 
 exports[`RequestGenerator > requestType common getFullText 1`] = `
 "import type { Pet } from "./Pet";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag pet
@@ -983,7 +983,7 @@ class PetAPI {
 export const petAPI = new PetAPI;
 
 import type { Store } from "./Store";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag store
@@ -1047,7 +1047,7 @@ class StoreAPI {
 export const storeAPI = new StoreAPI;
 
 import type { User } from "./User";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag user
@@ -1166,7 +1166,7 @@ export const userAPI = new UserAPI;
 
 exports[`RequestGenerator > requestType commonWithArrayResponse getFullText 1`] = `
 "import type { Pet } from "./Pet";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag pet
@@ -1387,7 +1387,7 @@ class PetAPI {
 export const petAPI = new PetAPI;
 
 import type { Store } from "./Store";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag store
@@ -1463,7 +1463,7 @@ class StoreAPI {
 export const storeAPI = new StoreAPI;
 
 import type { User } from "./User";
-import { request } from "@/api/request";
+import { request } from "@/utils/request";
 
 /**
  * @tag user

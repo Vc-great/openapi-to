@@ -1,6 +1,8 @@
+import isChinese from "is-chinese";
 import _ from "lodash";
 import { isRef } from "oas/types";
 import { findSchemaDefinition } from "oas/utils";
+import { pinyin } from "pinyin-pro";
 
 import { Component } from "./Component.ts";
 import { Parameter } from "./Parameter.ts";
@@ -11,11 +13,9 @@ import { Schema } from "./Schema.ts";
 import type Oas from "oas";
 import type { Operation } from "oas/operation";
 import type { SchemaObject } from "oas/types";
-import { type OpenAPIV3 } from "openapi-types";
+import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { HttpMethod, PathGroup, PathGroupByTag } from "../types";
-import isChinese from "is-chinese";
-import { pinyin } from "pinyin-pro";
 
 const enum WriteModel {
   await = "await",
@@ -68,7 +68,7 @@ export class OpenAPI {
 
   //crud的requestName
   get requestName(): string {
-    return this.methodName;
+    return _.camelCase(this.methodName);
   }
 
   get operationId(): string {
@@ -76,6 +76,10 @@ export class OpenAPI {
   }
   get upperFirstRequestName(): string {
     return _.upperFirst(this.methodName);
+  }
+
+  get errorResponseTypeName(): string {
+    return this.upperFirstRequestName + "Error";
   }
 
   get queryRequestName(): string {
@@ -107,7 +111,7 @@ export class OpenAPI {
   }
 
   get responseName(): string {
-    return `${_.camelCase(this.methodName)}${this.responseTypeName}${this.responseTypeName}Response`;
+    return `${_.camelCase(this.methodName)}${this.responseTypeName}Response`;
   }
 
   get upperFirstResponseName(): string {

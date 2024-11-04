@@ -465,7 +465,7 @@ export class ZodGenerator {
         docs: [], // [{ description: "" }],
         declarations: [
           {
-            name: this.openapi.requestName + "Response",
+            name: this.openapi.responseName,
             initializer: this.z.head().unknown().toString(),
           },
         ],
@@ -489,7 +489,7 @@ export class ZodGenerator {
     const schema = jsonSchema?.schema;
     const description = jsonSchema?.description;
     const isError = /^([3-5][0-9][0-9])$/.test(code);
-    const name = this.openapi.requestName + "Response" + (isError ? code : "");
+    const name = this.openapi.responseName + (isError ? code : "");
 
     if (!schema) {
       return this.ast.generateVariableStatements({

@@ -11,6 +11,7 @@ const config = `import {
   createFaker,
   createMSW,
   createNestjs,
+  createSWR
    } from'openapi-to'
 
 export default defineConfig({
@@ -42,7 +43,8 @@ export default defineConfig({
       compare: true
     }),
     createMSW(),
-    createNestjs()
+    createNestjs(),
+      createSWR(),
   ]
 })`;
 

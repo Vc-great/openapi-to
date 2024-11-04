@@ -236,7 +236,7 @@ export class RequestGenerator {
       moduleSpecifier:
         this.oldNode.requestImport.moduleSpecifier ??
         this.pluginConfig?.requestImportDeclaration?.moduleSpecifier ??
-        "@/api/request",
+        "@/utils/request",
     };
 
     const typeModel: ImportStatementsOmitKind = {

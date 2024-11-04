@@ -9,7 +9,7 @@ servers:[
 ],
   plugins:[
     createTSRequest({
-      createZodDecorator: true,
+      createZodDecorator: false,
       requestType:'axios'
     }),
     createTSType()

@@ -110,6 +110,9 @@ importers:
       openapi-to:
         specifier: workspace:*
         version: link:../../packages/openapi
+      swr:
+        specifier: ^2.2.5
+        version: 2.2.5(react@18.3.1)
       zod:
         specifier: ^3.22.4
         version: 3.22.4
@@ -338,6 +341,9 @@ importers:
       '@openapi-to/plugin-nestjs':
         specifier: workspace:*
         version: link:../plugin-nestjs
+      '@openapi-to/plugin-swr':
+        specifier: workspace:*
+        version: link:../plugin-swr
       '@openapi-to/plugin-ts-request':
         specifier: workspace:*
         version: link:../plugin-ts-request
@@ -450,6 +456,37 @@ importers:
       '@types/lodash':
         specifier: ^4.17.9
         version: 4.17.9
+
+  packages/plugin-swr:
+    dependencies:
+      '@openapi-to/core':
+        specifier: workspace:*
+        version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
+    devDependencies:
+      '@openapi-to/eslint-config':
+        specifier: workspace:*
+        version: link:../config/eslint-config
+      '@openapi-to/ts-config':
+        specifier: workspace:*
+        version: link:../config/ts-config
+      '@openapi-to/tsup-config':
+        specifier: workspace:*
+        version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.9
+      utility-types:
+        specifier: ^3.11.0
+        version: 3.11.0
 
   packages/plugin-ts-request:
     dependencies:
@@ -1957,6 +1994,9 @@ packages:
   cli-width@4.1.0:
     resolution: {integrity: sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ==}
     engines: {node: '>= 12'}
+
+  client-only@0.0.1:
+    resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
 
   cliui@3.2.0:
     resolution: {integrity: sha512-0yayqDxWQbqk3ojkYqUKqaAQ6AfNKeKWRNA8kR0WXzAsdHpP4BIaOmMAG87JGuO6qcobyW4GjxHd9PmhEd+T9w==}
@@ -3929,6 +3969,10 @@ packages:
   react-is@18.2.0:
     resolution: {integrity: sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==}
 
+  react@18.3.1:
+    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
+    engines: {node: '>=0.10.0'}
+
   read-pkg-up@1.0.1:
     resolution: {integrity: sha512-WD9MTlNtI55IwYUS27iHh9tK3YoIVhxis8yKhLpTqWtml739uXc9NWTpxoHkfZf3+DkCCsXox94/VWZniuZm6A==}
     engines: {node: '>=0.10.0'}
@@ -4356,6 +4400,11 @@ packages:
     resolution: {integrity: sha512-upi/0ZGkYgEcLeGieoz8gT74oWHA0E7JivX7aN9mAf+Tc7BQoRBvnIGHoPDw+f9TXTW4s6kGYCZJtauP6OYp7g==}
     hasBin: true
 
+  swr@2.2.5:
+    resolution: {integrity: sha512-QtxqyclFeAsxEUeZIYmsaQ0UjimSq1RZ9Un7I68/0ClKK/U3LoyQunwkQfJZr2fc22DfIXLNDc2wFyTEikCUpg==}
+    peerDependencies:
+      react: ^16.11.0 || ^17.0.0 || ^18.0.0
+
   table-layout@1.0.2:
     resolution: {integrity: sha512-qd/R7n5rQTRFi+Zf2sk5XVVd9UQl6ZkduPFC3S7WEGJAmetDTjY3qPN50eSKzwuzEyQKy5TN2TiZdkIjos2L6A==}
     engines: {node: '>=8.0.0'}
@@ -4652,6 +4701,11 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  use-sync-external-store@1.2.2:
+    resolution: {integrity: sha512-PElTlVMwpblvbNqQ82d2n6RjStvdSoNe9FG28kNfz3WiXilJm4DdNkEzRhCZuIDwY8U08WVihhGR5iRqAwfDiw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -6428,6 +6482,8 @@ snapshots:
   cli-spinners@2.9.2: {}
 
   cli-width@4.1.0: {}
+
+  client-only@0.0.1: {}
 
   cliui@3.2.0:
     dependencies:
@@ -8504,6 +8560,10 @@ snapshots:
 
   react-is@18.2.0: {}
 
+  react@18.3.1:
+    dependencies:
+      loose-envify: 1.4.0
+
   read-pkg-up@1.0.1:
     dependencies:
       find-up: 1.1.2
@@ -8988,6 +9048,12 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  swr@2.2.5(react@18.3.1):
+    dependencies:
+      client-only: 0.0.1
+      react: 18.3.1
+      use-sync-external-store: 1.2.2(react@18.3.1)
+
   table-layout@1.0.2:
     dependencies:
       array-back: 4.0.2
@@ -9266,6 +9332,10 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  use-sync-external-store@1.2.2(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   util-deprecate@1.0.2: {}
 
