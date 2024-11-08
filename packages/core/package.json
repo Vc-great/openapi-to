@@ -74,6 +74,7 @@
     "@openapi-to/ts-config": "workspace:*",
     "@openapi-to/tsup-config": "workspace:*",
     "@types/fs-extra": "^11.0.4",
+    "@types/is-url": "^1.2.32",
     "@types/lodash": "^4.17.9",
     "@types/seedrandom": "^3.0.8",
     "@types/semver": "^7.5.6",

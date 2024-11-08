@@ -314,6 +314,9 @@ importers:
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
+      '@types/is-url':
+        specifier: ^1.2.32
+        version: 1.2.32
       '@types/lodash':
         specifier: ^4.17.9
         version: 4.17.13
@@ -2294,6 +2297,10 @@ packages:
     dependencies:
       '@types/jsonfile': 6.1.4
       '@types/node': 22.9.0
+
+  /@types/is-url@1.2.32:
+    resolution: {integrity: sha512-46VLdbWI8Sc+hPexQ6NLNR2YpoDyDZIpASHkJQ2Yr+Kf9Giw6LdCTkwOdsnHKPQeh7xTjTmSnxbE8qpxYuCiHA==}
+    dev: true
 
   /@types/json-schema@7.0.15:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
