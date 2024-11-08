@@ -2,6 +2,7 @@ import axios from "axios";
 import converter from "do-swagger2openapi";
 import fs from "fs-extra";
 import _ from "lodash";
+import isUrl from "is-url";
 
 import { PluginManager } from "./PluginManager.ts";
 import { URLPath } from "./utils";
@@ -40,7 +41,7 @@ async function readLocalFiles(filePath: string): Promise<OpenAPIAllDocument> {
 //加载数据 本地或者远程
 async function loadData(path: string) {
   //判断是本地还是远程url
-  const openapiDocument = new URLPath(path).isURL
+  const openapiDocument =isUrl(path)
     ? await requestRemoteData(path)
     : await readLocalFiles(path);
 

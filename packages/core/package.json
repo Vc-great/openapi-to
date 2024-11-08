@@ -57,6 +57,7 @@
     "find-up": "^7.0.0",
     "fs-extra": "^11.2.0",
     "is-chinese": "^2.0.0",
+    "is-url": "^1.2.4",
     "js-runtime": "^0.0.7",
     "json-schema": "^0.4.0",
     "lodash": "^4.17.21",
