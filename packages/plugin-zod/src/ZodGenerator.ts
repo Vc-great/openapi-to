@@ -302,7 +302,6 @@ export class ZodGenerator {
     return this.ast.generateModuleStatements({
       docs: [
         {
-          //   description: "\n",
           tags: [
             {
               tagName: "tag",
@@ -351,7 +350,6 @@ export class ZodGenerator {
       ],
       docs: [
         {
-          //   description: "\n",
           tags: [
             {
               tagName: "tag",
@@ -377,7 +375,17 @@ export class ZodGenerator {
     const queryStatements = this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: false,
-      docs: [{ description: "queryParams" }],
+      docs: [
+        {
+          tags: [
+            {
+              leadingTrivia: "\n",
+              tagName: "description",
+              text: "queryParams",
+            },
+          ],
+        },
+      ],
       declarations: [
         {
           name: this.openapi.requestName + "QueryParams",
@@ -394,7 +402,17 @@ export class ZodGenerator {
     const pathStatements = this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: true,
-      docs: [{ description: "pathParams" }],
+      docs: [
+        {
+          tags: [
+            {
+              leadingTrivia: "\n",
+              tagName: "description",
+              text: "pathParams",
+            },
+          ],
+        },
+      ],
       declarations: [
         {
           name: this.openapi.requestName + "PathParams",
@@ -509,7 +527,19 @@ export class ZodGenerator {
       return this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
         isExported: false,
-        docs: description ? [{ description: description }] : [],
+        docs: description
+          ? [
+              {
+                tags: [
+                  {
+                    leadingTrivia: "\n",
+                    tagName: "description",
+                    text: description,
+                  },
+                ],
+              },
+            ]
+          : [],
         declarations: [
           {
             name: name,

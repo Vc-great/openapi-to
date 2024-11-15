@@ -35,4 +35,64 @@ describe("ast", () => {
     const objectString = ast.generateObject$2(objectStatements);
     expect(objectString).toMatchSnapshot();
   });
+
+  test("generateObject$2 doc1", () => {
+    const objectStatements = [
+      {
+        key: "key",
+        value: "1",
+        docs: [
+          {
+            description: "\n这是一段文字描述",
+            tags: [
+              {
+                tagName: "tag",
+                text: "pet",
+              },
+              {
+                tagName: "pet",
+                text: "Everything about your Pets",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        key: "key2",
+        value: "string",
+        docs: [{ description: "描述2" }],
+      },
+    ];
+    const objectString = ast.generateObject$2(objectStatements);
+    expect(objectString).toMatchSnapshot();
+  });
+  test("generateObject$2 doc2", () => {
+    const objectStatements = [
+      {
+        key: "key",
+        value: "1",
+        docs: [
+          {
+            tags: [
+              {
+                tagName: "tag",
+                text: "pet",
+              },
+              {
+                tagName: "pet",
+                text: "Everything about your Pets",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        key: "key2",
+        value: "string",
+        docs: [{ description: "描述2" }],
+      },
+    ];
+    const objectString = ast.generateObject$2(objectStatements);
+    expect(objectString).toMatchSnapshot();
+  });
 });

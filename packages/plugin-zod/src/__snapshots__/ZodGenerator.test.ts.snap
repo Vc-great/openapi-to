@@ -3,82 +3,151 @@
 exports[`zodGenerator > compare zodGenerator getFullText 1`] = `
 "import { z } from "zod";
 import { testDto2, test32145, apiResponse, pet } from "./zodModels";
-/** OK */
+/**
+ * @description OK
+ */
 const testPostMutationResponse = z.lazy(() => testDto2);
 const testPostError = z.unknown();
-/** OK */
+/**
+ * @description OK
+ */
 const testPutMutationResponse = z.lazy(() => testDto2);
 const testPutError = z.unknown();
 const delByTestMutationRequest = z.number().array();
-/** OK */
+/**
+ * @description OK
+ */
 const delByTestMutationResponse = z.lazy(() => test32145);
 const delByTestError = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const testIdGetQueryParams = z.object({
+    /**
+    *@description:fields
+    */
     fields: z.string().array().optional(),
+    /**
+    *@description:页码 (0..N)，默认为0
+    */
     page: z.number(),
+    /**
+    *@description:每页显示的数目,默认为10
+    */
     size: z.number()
 });
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const testIdGetPathParams = z.object({
+    /**
+    *@description:test-id
+    */
     testId: z.number().optional(),
+    /**
+    *@description:test-id
+    */
     testId2: z.string().optional()
 });
-/** OK */
+/**
+ * @description OK
+ */
 const testIdGetQueryResponse = z.lazy(() => testDto2);
 const testIdGetError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const uploadImagePostPathParams = z.object({
+    /**
+    *@description:ID of pet to update
+    */
     petId: z.number()
 });
 const uploadImagePostMutationRequest = z.object({
-    /**Additional data to pass to server*/
+    /**
+    *@description:Additional data to pass to server
+    */
     additionalMetadata: z.string().optional(),
-    /**file to upload*/
+    /**
+    *@description:file to upload
+    */
     file: z.string().optional()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const uploadImagePostMutationResponse = z.lazy(() => apiResponse);
 const uploadImagePostError = z.unknown();
 const createError = z.unknown();
 const createMutationResponse = z.unknown();
 const updateError = z.unknown();
 const updateMutationResponse = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const findByStatusGetQueryParams = z.object({
+    /**
+    *@description:Status values that need to be considered for filter
+    */
     status: z.string().array()
 });
 /** successful operation */
 const findByStatusGetQueryResponse = z.lazy(() => pet.array());
 const findByStatusGetError = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const findByTagsGetQueryParams = z.object({
+    /**
+    *@description:Tags to filter by
+    */
     tags: z.string().array()
 });
 /** successful operation */
 const findByTagsGetQueryResponse = z.lazy(() => pet.array());
 const findByTagsGetError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const findByPetIdPathParams = z.object({
+    /**
+    *@description:ID of pet to return
+    */
     petId: z.number()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const findByPetIdQueryResponse = z.lazy(() => pet);
 const findByPetIdError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const petIdPostPathParams = z.object({
+    /**
+    *@description:ID of pet that needs to be updated
+    */
     petId: z.number()
 });
 const petIdPostMutationRequest = z.object({
-    /**Updated name of the pet*/
+    /**
+    *@description:Updated name of the pet
+    */
     name: z.string().optional(),
-    /**Updated status of the pet*/
+    /**
+    *@description:Updated status of the pet
+    */
     status: z.string().optional()
 });
 const petIdPostError = z.unknown();
 const petIdPostMutationResponse = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const delByPetIdPathParams = z.object({
+    /**
+    *@description:Pet id to delete
+    */
     petId: z.number()
 });
 const delByPetIdError = z.unknown();
@@ -89,54 +158,82 @@ const delByPetIdMutationResponse = z.unknown();
  * @UUID zod-pet
  */
 export const newPetZod = {
-    /**OK*/
+    /**
+    *@description:OK
+    */
     testPostMutationResponse,
     testPostError,
-    /**OK*/
+    /**
+    *@description:OK
+    */
     testPutMutationResponse,
     testPutError,
     delByTestMutationRequest,
-    /**OK*/
+    /**
+    *@description:OK
+    */
     delByTestMutationResponse,
     delByTestError,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     testIdGetQueryParams,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     testIdGetPathParams,
-    /**OK*/
+    /**
+    *@description:OK
+    */
     testIdGetQueryResponse,
     testIdGetError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     uploadImagePostPathParams,
     uploadImagePostMutationRequest,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     uploadImagePostMutationResponse,
     uploadImagePostError,
     createError,
     createMutationResponse,
     updateError,
     updateMutationResponse,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     findByStatusGetQueryParams,
     /**successful operation*/
     findByStatusGetQueryResponse,
     findByStatusGetError,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     findByTagsGetQueryParams,
     /**successful operation*/
     findByTagsGetQueryResponse,
     findByTagsGetError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     findByPetIdPathParams,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     findByPetIdQueryResponse,
     findByPetIdError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     petIdPostPathParams,
     petIdPostMutationRequest,
     petIdPostError,
     petIdPostMutationResponse,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     delByPetIdPathParams,
     delByPetIdError,
     delByPetIdMutationResponse
@@ -148,54 +245,82 @@ export const newPetZod = {
  * @UUID zod-pet
  */
 export namespace Pet {
-    /** OK */
+    /**
+     * @description OK
+     */
     export type TestPostMutationResponse = z.infer<typeof testPostMutationResponse>;
     export type TestPostError = z.infer<typeof testPostError>;
-    /** OK */
+    /**
+     * @description OK
+     */
     export type TestPutMutationResponse = z.infer<typeof testPutMutationResponse>;
     export type TestPutError = z.infer<typeof testPutError>;
     export type DelByTestMutationRequest = z.infer<typeof delByTestMutationRequest>;
-    /** OK */
+    /**
+     * @description OK
+     */
     export type DelByTestMutationResponse = z.infer<typeof delByTestMutationResponse>;
     export type DelByTestError = z.infer<typeof delByTestError>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type TestIdGetQueryParams = z.infer<typeof testIdGetQueryParams>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type TestIdGetPathParams = z.infer<typeof testIdGetPathParams>;
-    /** OK */
+    /**
+     * @description OK
+     */
     export type TestIdGetQueryResponse = z.infer<typeof testIdGetQueryResponse>;
     export type TestIdGetError = z.infer<typeof testIdGetError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
     export type UploadImagePostMutationRequest = z.infer<typeof uploadImagePostMutationRequest>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type UploadImagePostMutationResponse = z.infer<typeof uploadImagePostMutationResponse>;
     export type UploadImagePostError = z.infer<typeof uploadImagePostError>;
     export type CreateError = z.infer<typeof createError>;
     export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
     export type UpdateError = z.infer<typeof updateError>;
     export type UpdateMutationResponse = z.infer<typeof updateMutationResponse>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type FindByStatusGetQueryParams = z.infer<typeof findByStatusGetQueryParams>;
     /** successful operation */
     export type FindByStatusGetQueryResponse = z.infer<typeof findByStatusGetQueryResponse>;
     export type FindByStatusGetError = z.infer<typeof findByStatusGetError>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type FindByTagsGetQueryParams = z.infer<typeof findByTagsGetQueryParams>;
     /** successful operation */
     export type FindByTagsGetQueryResponse = z.infer<typeof findByTagsGetQueryResponse>;
     export type FindByTagsGetError = z.infer<typeof findByTagsGetError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type FindByPetIdPathParams = z.infer<typeof findByPetIdPathParams>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type FindByPetIdQueryResponse = z.infer<typeof findByPetIdQueryResponse>;
     export type FindByPetIdError = z.infer<typeof findByPetIdError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type PetIdPostPathParams = z.infer<typeof petIdPostPathParams>;
     export type PetIdPostMutationRequest = z.infer<typeof petIdPostMutationRequest>;
     export type PetIdPostError = z.infer<typeof petIdPostError>;
     export type PetIdPostMutationResponse = z.infer<typeof petIdPostMutationResponse>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type DelByPetIdPathParams = z.infer<typeof delByPetIdPathParams>;
     export type DelByPetIdError = z.infer<typeof delByPetIdError>;
     export type DelByPetIdMutationResponse = z.infer<typeof delByPetIdMutationResponse>;
@@ -204,18 +329,32 @@ export namespace Pet {
 import { z } from "zod";
 import { order } from "./zodModels";
 const createMutationRequest = z.lazy(() => order);
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const createMutationResponse = z.lazy(() => order);
 const createError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const findByOrderIdPathParams = z.object({
+    /**
+    *@description:ID of pet that needs to be fetched
+    */
     orderId: z.number()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const findByOrderIdQueryResponse = z.lazy(() => order);
 const findByOrderIdError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const delByOrderIdPathParams = z.object({
+    /**
+    *@description:ID of the order that needs to be deleted
+    */
     orderId: z.number()
 });
 const delByOrderIdError = z.unknown();
@@ -230,15 +369,23 @@ const inventoryGetError = z.unknown();
  */
 export const storeZod = {
     createMutationRequest,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     createMutationResponse,
     createError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     findByOrderIdPathParams,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     findByOrderIdQueryResponse,
     findByOrderIdError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     delByOrderIdPathParams,
     delByOrderIdError,
     delByOrderIdMutationResponse,
@@ -254,15 +401,23 @@ export const storeZod = {
  */
 export namespace Store {
     export type CreateMutationRequest = z.infer<typeof createMutationRequest>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
     export type CreateError = z.infer<typeof createError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type FindByOrderIdPathParams = z.infer<typeof findByOrderIdPathParams>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type FindByOrderIdQueryResponse = z.infer<typeof findByOrderIdQueryResponse>;
     export type FindByOrderIdError = z.infer<typeof findByOrderIdError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type DelByOrderIdPathParams = z.infer<typeof delByOrderIdPathParams>;
     export type DelByOrderIdError = z.infer<typeof delByOrderIdError>;
     export type DelByOrderIdMutationResponse = z.infer<typeof delByOrderIdMutationResponse>;
@@ -277,29 +432,54 @@ const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
 const createWithListPostMutationResponse = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const findByUsernamePathParams = z.object({
+    /**
+    *@description:The name that needs to be fetched. Use user1 for testing. 
+    */
     username: z.string()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const findByUsernameQueryResponse = z.lazy(() => user);
 const findByUsernameError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const usernamePutPathParams = z.object({
+    /**
+    *@description:name that need to be updated
+    */
     username: z.string()
 });
 const usernamePutMutationRequest = z.lazy(() => user);
 const usernamePutError = z.unknown();
 const usernamePutMutationResponse = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const delByUsernamePathParams = z.object({
+    /**
+    *@description:The name that needs to be deleted
+    */
     username: z.string()
 });
 const delByUsernameError = z.unknown();
 const delByUsernameMutationResponse = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const loginGetQueryParams = z.object({
+    /**
+    *@description:The user name for login
+    */
     username: z.string(),
+    /**
+    *@description:The password for login in clear text
+    */
     password: z.string()
 });
 /** successful operation */
@@ -320,21 +500,31 @@ export const userZod = {
     createWithArrayPostMutationResponse,
     createWithListPostError,
     createWithListPostMutationResponse,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     findByUsernamePathParams,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     findByUsernameQueryResponse,
     findByUsernameError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     usernamePutPathParams,
     usernamePutMutationRequest,
     usernamePutError,
     usernamePutMutationResponse,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     delByUsernamePathParams,
     delByUsernameError,
     delByUsernameMutationResponse,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     loginGetQueryParams,
     /**successful operation*/
     loginGetQueryResponse,
@@ -356,21 +546,31 @@ export namespace User {
     export type CreateWithArrayPostMutationResponse = z.infer<typeof createWithArrayPostMutationResponse>;
     export type CreateWithListPostError = z.infer<typeof createWithListPostError>;
     export type CreateWithListPostMutationResponse = z.infer<typeof createWithListPostMutationResponse>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type FindByUsernamePathParams = z.infer<typeof findByUsernamePathParams>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type FindByUsernameQueryResponse = z.infer<typeof findByUsernameQueryResponse>;
     export type FindByUsernameError = z.infer<typeof findByUsernameError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type UsernamePutPathParams = z.infer<typeof usernamePutPathParams>;
     export type UsernamePutMutationRequest = z.infer<typeof usernamePutMutationRequest>;
     export type UsernamePutError = z.infer<typeof usernamePutError>;
     export type UsernamePutMutationResponse = z.infer<typeof usernamePutMutationResponse>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type DelByUsernamePathParams = z.infer<typeof delByUsernamePathParams>;
     export type DelByUsernameError = z.infer<typeof delByUsernameError>;
     export type DelByUsernameMutationResponse = z.infer<typeof delByUsernameMutationResponse>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type LoginGetQueryParams = z.infer<typeof loginGetQueryParams>;
     /** successful operation */
     export type LoginGetQueryResponse = z.infer<typeof loginGetQueryResponse>;
@@ -386,7 +586,9 @@ import { testdata } from "./testdata";
 import { z } from "zod";
 /** @UUID zod-Test32145 */
 export const test32145 = z.object({
-    /**description*/
+    /**
+    *@description:description
+    */
     code: z.number().optional(),
     meta: z.lazy(() => testdata).optional()
 });
@@ -394,37 +596,63 @@ export const test32145 = z.object({
 import { z } from "zod";
 /** @UUID zod-Test3214 */
 export const test3214 = z.object({
-    /**默认值*/
+    /**
+    *@description:默认值
+    */
     columnDefault: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnLength: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnName: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnRemark: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnScale: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnType: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     delFlag: z.boolean().optional(),
     formId: z.number().optional(),
-    /**id*/
+    /**
+    *@description:id
+    */
     id: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     notNull: z.boolean().optional()
 });
 
 import { z } from "zod";
 /** @UUID zod-Testdata */
 export const testdata = z.object({
-    /**description*/
+    /**
+    *@description:description
+    */
     number: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     numberOfElements: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     totalElements: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     totalPages: z.number().optional()
 });
 
@@ -462,7 +690,9 @@ import { test321 } from "./test321";
 import { z } from "zod";
 /** @UUID zod-TestDto */
 export const newTestDto = z.object({
-    /**test321*/
+    /**
+    *@description:test321
+    */
     test321: z.lazy(() => test321.array()).optional()
 });
 
@@ -471,12 +701,18 @@ import { z } from "zod";
 /** @UUID zod-RefList */
 export const refList = z.object({
     content: z.lazy(() => apiResponse).optional(),
-    /**string*/
+    /**
+    *@description:string
+    */
     string: z.string().optional(),
     name: z.string().optional(),
-    /**title*/
+    /**
+    *@description:title
+    */
     title: z.string().optional(),
-    /**type*/
+    /**
+    *@description:type
+    */
     type: z.string().optional()
 });
 
@@ -505,7 +741,9 @@ export const pet = z.object({
     name: z.string(),
     photoUrls: z.string().array(),
     tags: z.lazy(() => tag.array()).optional(),
-    /**pet status in the store*/
+    /**
+    *@description:pet status in the store
+    */
     status: z.string().optional()
 });
 
@@ -523,7 +761,9 @@ export const order = z.object({
     petId: z.number().optional(),
     quantity: z.number().optional(),
     shipDate: z.string().optional(),
-    /**Order Status*/
+    /**
+    *@description:Order Status
+    */
     status: z.string().optional(),
     complete: z.boolean().optional()
 });
@@ -538,7 +778,9 @@ export const user = z.object({
     email: z.string().optional(),
     password: z.string().optional(),
     phone: z.string().optional(),
-    /**User Status*/
+    /**
+    *@description:User Status
+    */
     userStatus: z.number().optional()
 });
 
@@ -638,82 +880,151 @@ export * from "./user";
 exports[`zodGenerator > zodGenerator getFullText 1`] = `
 "import { z } from "zod";
 import { testDto2, test32145, apiResponse, pet } from "./zodModels";
-/** OK */
+/**
+ * @description OK
+ */
 const testPostMutationResponse = z.lazy(() => testDto2);
 const testPostError = z.unknown();
-/** OK */
+/**
+ * @description OK
+ */
 const testPutMutationResponse = z.lazy(() => testDto2);
 const testPutError = z.unknown();
 const delByTestMutationRequest = z.number().array();
-/** OK */
+/**
+ * @description OK
+ */
 const delByTestMutationResponse = z.lazy(() => test32145);
 const delByTestError = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const testIdGetQueryParams = z.object({
+    /**
+    *@description:fields
+    */
     fields: z.string().array().optional(),
+    /**
+    *@description:页码 (0..N)，默认为0
+    */
     page: z.number(),
+    /**
+    *@description:每页显示的数目,默认为10
+    */
     size: z.number()
 });
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const testIdGetPathParams = z.object({
+    /**
+    *@description:test-id
+    */
     testId: z.number().optional(),
+    /**
+    *@description:test-id
+    */
     testId2: z.string().optional()
 });
-/** OK */
+/**
+ * @description OK
+ */
 const testIdGetQueryResponse = z.lazy(() => testDto2);
 const testIdGetError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const uploadImagePostPathParams = z.object({
+    /**
+    *@description:ID of pet to update
+    */
     petId: z.number()
 });
 const uploadImagePostMutationRequest = z.object({
-    /**Additional data to pass to server*/
+    /**
+    *@description:Additional data to pass to server
+    */
     additionalMetadata: z.string().optional(),
-    /**file to upload*/
+    /**
+    *@description:file to upload
+    */
     file: z.string().optional()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const uploadImagePostMutationResponse = z.lazy(() => apiResponse);
 const uploadImagePostError = z.unknown();
 const createError = z.unknown();
 const createMutationResponse = z.unknown();
 const updateError = z.unknown();
 const updateMutationResponse = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const findByStatusGetQueryParams = z.object({
+    /**
+    *@description:Status values that need to be considered for filter
+    */
     status: z.string().array()
 });
 /** successful operation */
 const findByStatusGetQueryResponse = z.lazy(() => pet.array());
 const findByStatusGetError = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const findByTagsGetQueryParams = z.object({
+    /**
+    *@description:Tags to filter by
+    */
     tags: z.string().array()
 });
 /** successful operation */
 const findByTagsGetQueryResponse = z.lazy(() => pet.array());
 const findByTagsGetError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const findByPetIdPathParams = z.object({
+    /**
+    *@description:ID of pet to return
+    */
     petId: z.number()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const findByPetIdQueryResponse = z.lazy(() => pet);
 const findByPetIdError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const petIdPostPathParams = z.object({
+    /**
+    *@description:ID of pet that needs to be updated
+    */
     petId: z.number()
 });
 const petIdPostMutationRequest = z.object({
-    /**Updated name of the pet*/
+    /**
+    *@description:Updated name of the pet
+    */
     name: z.string().optional(),
-    /**Updated status of the pet*/
+    /**
+    *@description:Updated status of the pet
+    */
     status: z.string().optional()
 });
 const petIdPostError = z.unknown();
 const petIdPostMutationResponse = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const delByPetIdPathParams = z.object({
+    /**
+    *@description:Pet id to delete
+    */
     petId: z.number()
 });
 const delByPetIdError = z.unknown();
@@ -724,54 +1035,82 @@ const delByPetIdMutationResponse = z.unknown();
  * @UUID zod-pet
  */
 export const petZod = {
-    /**OK*/
+    /**
+    *@description:OK
+    */
     testPostMutationResponse,
     testPostError,
-    /**OK*/
+    /**
+    *@description:OK
+    */
     testPutMutationResponse,
     testPutError,
     delByTestMutationRequest,
-    /**OK*/
+    /**
+    *@description:OK
+    */
     delByTestMutationResponse,
     delByTestError,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     testIdGetQueryParams,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     testIdGetPathParams,
-    /**OK*/
+    /**
+    *@description:OK
+    */
     testIdGetQueryResponse,
     testIdGetError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     uploadImagePostPathParams,
     uploadImagePostMutationRequest,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     uploadImagePostMutationResponse,
     uploadImagePostError,
     createError,
     createMutationResponse,
     updateError,
     updateMutationResponse,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     findByStatusGetQueryParams,
     /**successful operation*/
     findByStatusGetQueryResponse,
     findByStatusGetError,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     findByTagsGetQueryParams,
     /**successful operation*/
     findByTagsGetQueryResponse,
     findByTagsGetError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     findByPetIdPathParams,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     findByPetIdQueryResponse,
     findByPetIdError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     petIdPostPathParams,
     petIdPostMutationRequest,
     petIdPostError,
     petIdPostMutationResponse,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     delByPetIdPathParams,
     delByPetIdError,
     delByPetIdMutationResponse
@@ -783,54 +1122,82 @@ export const petZod = {
  * @UUID zod-pet
  */
 export namespace Pet {
-    /** OK */
+    /**
+     * @description OK
+     */
     export type TestPostMutationResponse = z.infer<typeof testPostMutationResponse>;
     export type TestPostError = z.infer<typeof testPostError>;
-    /** OK */
+    /**
+     * @description OK
+     */
     export type TestPutMutationResponse = z.infer<typeof testPutMutationResponse>;
     export type TestPutError = z.infer<typeof testPutError>;
     export type DelByTestMutationRequest = z.infer<typeof delByTestMutationRequest>;
-    /** OK */
+    /**
+     * @description OK
+     */
     export type DelByTestMutationResponse = z.infer<typeof delByTestMutationResponse>;
     export type DelByTestError = z.infer<typeof delByTestError>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type TestIdGetQueryParams = z.infer<typeof testIdGetQueryParams>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type TestIdGetPathParams = z.infer<typeof testIdGetPathParams>;
-    /** OK */
+    /**
+     * @description OK
+     */
     export type TestIdGetQueryResponse = z.infer<typeof testIdGetQueryResponse>;
     export type TestIdGetError = z.infer<typeof testIdGetError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
     export type UploadImagePostMutationRequest = z.infer<typeof uploadImagePostMutationRequest>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type UploadImagePostMutationResponse = z.infer<typeof uploadImagePostMutationResponse>;
     export type UploadImagePostError = z.infer<typeof uploadImagePostError>;
     export type CreateError = z.infer<typeof createError>;
     export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
     export type UpdateError = z.infer<typeof updateError>;
     export type UpdateMutationResponse = z.infer<typeof updateMutationResponse>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type FindByStatusGetQueryParams = z.infer<typeof findByStatusGetQueryParams>;
     /** successful operation */
     export type FindByStatusGetQueryResponse = z.infer<typeof findByStatusGetQueryResponse>;
     export type FindByStatusGetError = z.infer<typeof findByStatusGetError>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type FindByTagsGetQueryParams = z.infer<typeof findByTagsGetQueryParams>;
     /** successful operation */
     export type FindByTagsGetQueryResponse = z.infer<typeof findByTagsGetQueryResponse>;
     export type FindByTagsGetError = z.infer<typeof findByTagsGetError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type FindByPetIdPathParams = z.infer<typeof findByPetIdPathParams>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type FindByPetIdQueryResponse = z.infer<typeof findByPetIdQueryResponse>;
     export type FindByPetIdError = z.infer<typeof findByPetIdError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type PetIdPostPathParams = z.infer<typeof petIdPostPathParams>;
     export type PetIdPostMutationRequest = z.infer<typeof petIdPostMutationRequest>;
     export type PetIdPostError = z.infer<typeof petIdPostError>;
     export type PetIdPostMutationResponse = z.infer<typeof petIdPostMutationResponse>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type DelByPetIdPathParams = z.infer<typeof delByPetIdPathParams>;
     export type DelByPetIdError = z.infer<typeof delByPetIdError>;
     export type DelByPetIdMutationResponse = z.infer<typeof delByPetIdMutationResponse>;
@@ -839,18 +1206,32 @@ export namespace Pet {
 import { z } from "zod";
 import { order } from "./zodModels";
 const createMutationRequest = z.lazy(() => order);
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const createMutationResponse = z.lazy(() => order);
 const createError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const findByOrderIdPathParams = z.object({
+    /**
+    *@description:ID of pet that needs to be fetched
+    */
     orderId: z.number()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const findByOrderIdQueryResponse = z.lazy(() => order);
 const findByOrderIdError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const delByOrderIdPathParams = z.object({
+    /**
+    *@description:ID of the order that needs to be deleted
+    */
     orderId: z.number()
 });
 const delByOrderIdError = z.unknown();
@@ -865,15 +1246,23 @@ const inventoryGetError = z.unknown();
  */
 export const storeZod = {
     createMutationRequest,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     createMutationResponse,
     createError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     findByOrderIdPathParams,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     findByOrderIdQueryResponse,
     findByOrderIdError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     delByOrderIdPathParams,
     delByOrderIdError,
     delByOrderIdMutationResponse,
@@ -889,15 +1278,23 @@ export const storeZod = {
  */
 export namespace Store {
     export type CreateMutationRequest = z.infer<typeof createMutationRequest>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
     export type CreateError = z.infer<typeof createError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type FindByOrderIdPathParams = z.infer<typeof findByOrderIdPathParams>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type FindByOrderIdQueryResponse = z.infer<typeof findByOrderIdQueryResponse>;
     export type FindByOrderIdError = z.infer<typeof findByOrderIdError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type DelByOrderIdPathParams = z.infer<typeof delByOrderIdPathParams>;
     export type DelByOrderIdError = z.infer<typeof delByOrderIdError>;
     export type DelByOrderIdMutationResponse = z.infer<typeof delByOrderIdMutationResponse>;
@@ -912,29 +1309,54 @@ const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
 const createWithListPostMutationResponse = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const findByUsernamePathParams = z.object({
+    /**
+    *@description:The name that needs to be fetched. Use user1 for testing. 
+    */
     username: z.string()
 });
-/** successful operation */
+/**
+ * @description successful operation
+ */
 const findByUsernameQueryResponse = z.lazy(() => user);
 const findByUsernameError = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const usernamePutPathParams = z.object({
+    /**
+    *@description:name that need to be updated
+    */
     username: z.string()
 });
 const usernamePutMutationRequest = z.lazy(() => user);
 const usernamePutError = z.unknown();
 const usernamePutMutationResponse = z.unknown();
-/** pathParams */
+/**
+ * @description pathParams
+ */
 export const delByUsernamePathParams = z.object({
+    /**
+    *@description:The name that needs to be deleted
+    */
     username: z.string()
 });
 const delByUsernameError = z.unknown();
 const delByUsernameMutationResponse = z.unknown();
-/** queryParams */
+/**
+ * @description queryParams
+ */
 const loginGetQueryParams = z.object({
+    /**
+    *@description:The user name for login
+    */
     username: z.string(),
+    /**
+    *@description:The password for login in clear text
+    */
     password: z.string()
 });
 /** successful operation */
@@ -955,21 +1377,31 @@ export const userZod = {
     createWithArrayPostMutationResponse,
     createWithListPostError,
     createWithListPostMutationResponse,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     findByUsernamePathParams,
-    /**successful operation*/
+    /**
+    *@description:successful operation
+    */
     findByUsernameQueryResponse,
     findByUsernameError,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     usernamePutPathParams,
     usernamePutMutationRequest,
     usernamePutError,
     usernamePutMutationResponse,
-    /**pathParams*/
+    /**
+    *@description:pathParams
+    */
     delByUsernamePathParams,
     delByUsernameError,
     delByUsernameMutationResponse,
-    /**queryParams*/
+    /**
+    *@description:queryParams
+    */
     loginGetQueryParams,
     /**successful operation*/
     loginGetQueryResponse,
@@ -991,21 +1423,31 @@ export namespace User {
     export type CreateWithArrayPostMutationResponse = z.infer<typeof createWithArrayPostMutationResponse>;
     export type CreateWithListPostError = z.infer<typeof createWithListPostError>;
     export type CreateWithListPostMutationResponse = z.infer<typeof createWithListPostMutationResponse>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type FindByUsernamePathParams = z.infer<typeof findByUsernamePathParams>;
-    /** successful operation */
+    /**
+     * @description successful operation
+     */
     export type FindByUsernameQueryResponse = z.infer<typeof findByUsernameQueryResponse>;
     export type FindByUsernameError = z.infer<typeof findByUsernameError>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type UsernamePutPathParams = z.infer<typeof usernamePutPathParams>;
     export type UsernamePutMutationRequest = z.infer<typeof usernamePutMutationRequest>;
     export type UsernamePutError = z.infer<typeof usernamePutError>;
     export type UsernamePutMutationResponse = z.infer<typeof usernamePutMutationResponse>;
-    /** pathParams */
+    /**
+     * @description pathParams
+     */
     export type DelByUsernamePathParams = z.infer<typeof delByUsernamePathParams>;
     export type DelByUsernameError = z.infer<typeof delByUsernameError>;
     export type DelByUsernameMutationResponse = z.infer<typeof delByUsernameMutationResponse>;
-    /** queryParams */
+    /**
+     * @description queryParams
+     */
     export type LoginGetQueryParams = z.infer<typeof loginGetQueryParams>;
     /** successful operation */
     export type LoginGetQueryResponse = z.infer<typeof loginGetQueryResponse>;
@@ -1021,7 +1463,9 @@ import { testdata } from "./testdata";
 import { z } from "zod";
 /** @UUID zod-Test32145 */
 export const test32145 = z.object({
-    /**description*/
+    /**
+    *@description:description
+    */
     code: z.number().optional(),
     meta: z.lazy(() => testdata).optional()
 });
@@ -1029,37 +1473,63 @@ export const test32145 = z.object({
 import { z } from "zod";
 /** @UUID zod-Test3214 */
 export const test3214 = z.object({
-    /**默认值*/
+    /**
+    *@description:默认值
+    */
     columnDefault: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnLength: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnName: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnRemark: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnScale: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     columnType: z.string().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     delFlag: z.boolean().optional(),
     formId: z.number().optional(),
-    /**id*/
+    /**
+    *@description:id
+    */
     id: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     notNull: z.boolean().optional()
 });
 
 import { z } from "zod";
 /** @UUID zod-Testdata */
 export const testdata = z.object({
-    /**description*/
+    /**
+    *@description:description
+    */
     number: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     numberOfElements: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     totalElements: z.number().optional(),
-    /**description*/
+    /**
+    *@description:description
+    */
     totalPages: z.number().optional()
 });
 
@@ -1097,7 +1567,9 @@ import { test321 } from "./test321";
 import { z } from "zod";
 /** @UUID zod-TestDto */
 export const testDto = z.object({
-    /**test321*/
+    /**
+    *@description:test321
+    */
     test321: z.lazy(() => test321.array()).optional()
 });
 
@@ -1106,12 +1578,18 @@ import { z } from "zod";
 /** @UUID zod-RefList */
 export const refList = z.object({
     content: z.lazy(() => apiResponse).optional(),
-    /**string*/
+    /**
+    *@description:string
+    */
     string: z.string().optional(),
     name: z.string().optional(),
-    /**title*/
+    /**
+    *@description:title
+    */
     title: z.string().optional(),
-    /**type*/
+    /**
+    *@description:type
+    */
     type: z.string().optional()
 });
 
@@ -1140,7 +1618,9 @@ export const pet = z.object({
     name: z.string(),
     photoUrls: z.string().array(),
     tags: z.lazy(() => tag.array()).optional(),
-    /**pet status in the store*/
+    /**
+    *@description:pet status in the store
+    */
     status: z.string().optional()
 });
 
@@ -1158,7 +1638,9 @@ export const order = z.object({
     petId: z.number().optional(),
     quantity: z.number().optional(),
     shipDate: z.string().optional(),
-    /**Order Status*/
+    /**
+    *@description:Order Status
+    */
     status: z.string().optional(),
     complete: z.boolean().optional()
 });
@@ -1173,7 +1655,9 @@ export const user = z.object({
     email: z.string().optional(),
     password: z.string().optional(),
     phone: z.string().optional(),
-    /**User Status*/
+    /**
+    *@description:User Status
+    */
     userStatus: z.number().optional()
 });
 

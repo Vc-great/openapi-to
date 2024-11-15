@@ -55,6 +55,18 @@ describe("openapi get pathGroupByTag", () => {
   });
 });
 
+describe("openapi get queryParams", () => {
+  // @ts-expect-error Not a canonical document
+  const oas = new Oas(petStore);
+  const openapi = new OpenAPI({}, oas);
+  test("get pathGroupByTag", () => {
+    openapi.setCurrentOperation("/pet/test/{id}", "get", "pet");
+    const queryParams = openapi.parameter?.getParametersSchema("query");
+
+    expect(queryParams).toMatchSnapshot();
+  });
+});
+
 describe("openapi requestbody", () => {
   // @ts-expect-error Not a canonical document
   const oas = new Oas(petStore);

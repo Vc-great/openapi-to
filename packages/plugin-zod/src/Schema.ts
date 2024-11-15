@@ -208,7 +208,16 @@ export class Schema {
             : this.formatterSchemaType(schema) +
               this.z.optional(isRequired).toString(),
           docs: _.get(schema, "description")
-            ? [{ description: _.get(schema, "description") }]
+            ? [
+                {
+                  tags: [
+                    {
+                      tagName: "description",
+                      text: _.get(schema, "description"),
+                    },
+                  ],
+                },
+              ]
             : [],
         };
       },

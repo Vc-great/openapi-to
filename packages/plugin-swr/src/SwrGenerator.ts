@@ -452,13 +452,14 @@ export class SwrGenerator {
             ${optionsParams}
              ${queryKey}
              
-             ${isGetMethod ? useSWR : useSWRMutation}`;
+          return   ${isGetMethod ? useSWR : useSWRMutation}`;
   }
 
   generateSWROption() {
     if (this.operation?.method === "get") {
       return {
         name: "options",
+        hasQuestionToken: true,
         type: `{
     swr?: Parameters<typeof useSWR<${this.responseDataType}, ${this.upperFirstQueryKeyName} | null, any>>[2]
     shouldFetch?: boolean
@@ -468,6 +469,7 @@ export class SwrGenerator {
 
     return {
       name: "options",
+      hasQuestionToken: true,
       type: `{
         swr?: SWRMutationConfiguration<${this.responseDataType},  ${this.errorResponseTypeName}, ${this.openapi.upperFirstRequestName}MutationKey | null${this.requestDataType ? "," + this.requestDataType : ",never"}>;
         shouldFetch?: boolean;

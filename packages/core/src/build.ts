@@ -5,7 +5,6 @@ import _ from "lodash";
 import isUrl from "is-url";
 
 import { PluginManager } from "./PluginManager.ts";
-import { URLPath } from "./utils";
 
 import type { AxiosResponse } from "axios";
 import type { OpenAPIV2, OpenAPIV3 } from "openapi-types";
@@ -41,7 +40,7 @@ async function readLocalFiles(filePath: string): Promise<OpenAPIAllDocument> {
 //加载数据 本地或者远程
 async function loadData(path: string) {
   //判断是本地还是远程url
-  const openapiDocument =isUrl(path)
+  const openapiDocument = isUrl(path)
     ? await requestRemoteData(path)
     : await readLocalFiles(path);
 
@@ -62,7 +61,9 @@ export async function swagger2ToOpenapi3(
 
   //log  "💺 将 Swagger 转化为 OpenAPI";
   const [err, options] = await converter
-    .convertObj(<OpenAPIV2.Document>openapiDocument, {})
+    .convertObj(<OpenAPIV2.Document>openapiDocument, {
+      warnOnly: true,
+    })
     .then(
       (options) => [undefined, options],
       (err) => [err, undefined],

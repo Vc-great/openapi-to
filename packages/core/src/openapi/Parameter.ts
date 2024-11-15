@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { isRef, type SchemaObject } from "oas/types";
+import { isRef } from "oas/types";
 import { findSchemaDefinition } from "oas/utils";
 
 import type { Operation } from "oas/operation";
@@ -7,6 +7,7 @@ import type {
   getParametersAsJSONSchemaOptions,
   SchemaWrapper,
 } from "oas/operation/get-parameters-as-json-schema";
+import type { SchemaObject } from "oas/types";
 import type { ParameterObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIParameterObject } from "./types.ts";
@@ -149,7 +150,7 @@ export class Parameter {
             [inKey === "path"
               ? _.camelCase(pathParameters.name)
               : pathParameters.name]: {
-              //description: pathParameters.description,
+              description: pathParameters.description,
               ...property,
             },
           },

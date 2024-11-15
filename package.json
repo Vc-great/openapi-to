@@ -42,7 +42,7 @@
     "//changeset:beta:enter": "changeset pre enter beta",
     "//changeset:beta:rc": "changeset pre enter rc",
     "//changeset:beta:exit": "changeset pre exit",
-    "cha ngeset": "changeset",
+    "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm i &&pnpm run clean && pnpm run build && changeset publish",
     "version:canary": "changeset v ersion --snapshot canary",

@@ -1,4 +1,5 @@
 import CodeBlockWriter from "code-block-writer";
+import _ from "lodash";
 import { Project, StructureKind, Writers } from "ts-morph";
 
 import type {
@@ -22,7 +23,6 @@ import type {
   WriterFunction,
 } from "ts-morph";
 import type { JSDoc, ObjectStructure } from "./type.ts";
-import _ from "lodash";
 
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 type InterfaceStatementsOmitKind = Omit<InterfaceDeclarationStructure, "kind">;
@@ -151,10 +151,15 @@ export class AST {
       writer.write("/**");
       docs.forEach((doc) => {
         const isLine = doc.description?.startsWith("\n");
-        if (isLine || doc.tags) {
+        const hasDescription = _.isString(doc.description);
+        const hasTags = !_.isEmpty(doc.tags);
+        if (isLine) {
+          writer.newLine();
+          writer.write("*").write(doc.description?.slice(1) || "");
+        } else if (hasDescription && hasTags) {
           writer.newLine();
           writer.write("*").write(doc.description || "");
-        } else {
+        } else if (hasDescription) {
           writer.write(doc.description || "");
         }
 

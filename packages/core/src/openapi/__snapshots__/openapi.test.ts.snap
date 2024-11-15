@@ -146,6 +146,22 @@ exports[`openapi get pathGroupByTag > get pathGroupByTag 1`] = `
 }
 `;
 
+exports[`openapi get queryParams > get pathGroupByTag 1`] = `
+{
+  "properties": {
+    "fields": {
+      "description": "fields",
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+  },
+  "required": [],
+  "type": "object",
+}
+`;
+
 exports[`openapi requestbody > tag requestBody 1`] = `
 [
   {

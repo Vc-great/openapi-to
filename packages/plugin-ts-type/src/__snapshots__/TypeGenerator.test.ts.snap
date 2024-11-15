@@ -22,14 +22,19 @@ export namespace Pet {
 
     /** queryParams */
     export interface TestIdGetQueryParams {
+        /** @description fields */
         fields?: Array<string>;
+        /** @description 页码 (0..N)，默认为0 */
         page: number;
+        /** @description 每页显示的数目,默认为10 */
         size: number;
     }
 
     /** pathParams */
     export interface TestIdGetPathParams {
+        /** @description test-id */
         testId?: number;
+        /** @description test-id */
         testId2?: string;
     }
 
@@ -39,6 +44,7 @@ export namespace Pet {
 
     /** pathParams */
     export interface UploadImagePostPathParams {
+        /** @description ID of pet to update */
         petId: number;
     }
 
@@ -59,6 +65,7 @@ export namespace Pet {
 
     /** queryParams */
     export interface FindByStatusGetQueryParams {
+        /** @description Status values that need to be considered for filter */
         status: Array<string>;
     }
 
@@ -68,6 +75,7 @@ export namespace Pet {
 
     /** queryParams */
     export interface FindByTagsGetQueryParams {
+        /** @description Tags to filter by */
         tags: Array<string>;
     }
 
@@ -77,6 +85,7 @@ export namespace Pet {
 
     /** pathParams */
     export interface FindByPetIdPathParams {
+        /** @description ID of pet to return */
         petId: number;
     }
 
@@ -86,6 +95,7 @@ export namespace Pet {
 
     /** pathParams */
     export interface PetIdPostPathParams {
+        /** @description ID of pet that needs to be updated */
         petId: number;
     }
 
@@ -101,6 +111,7 @@ export namespace Pet {
 
     /** pathParams */
     export interface DelByPetIdPathParams {
+        /** @description Pet id to delete */
         petId: number;
     }
 
@@ -123,6 +134,7 @@ export namespace Store {
 
     /** pathParams */
     export interface FindByOrderIdPathParams {
+        /** @description ID of pet that needs to be fetched */
         orderId: number;
     }
 
@@ -132,6 +144,7 @@ export namespace Store {
 
     /** pathParams */
     export interface DelByOrderIdPathParams {
+        /** @description ID of the order that needs to be deleted */
         orderId: number;
     }
 
@@ -161,6 +174,7 @@ export namespace User {
 
     /** pathParams */
     export interface FindByUsernamePathParams {
+        /** @description The name that needs to be fetched. Use user1 for testing. */
         username: string;
     }
 
@@ -170,6 +184,7 @@ export namespace User {
 
     /** pathParams */
     export interface UsernamePutPathParams {
+        /** @description name that need to be updated */
         username: string;
     }
 
@@ -179,6 +194,7 @@ export namespace User {
 
     /** pathParams */
     export interface DelByUsernamePathParams {
+        /** @description The name that needs to be deleted */
         username: string;
     }
 
@@ -187,7 +203,9 @@ export namespace User {
 
     /** queryParams */
     export interface LoginGetQueryParams {
+        /** @description The user name for login */
         username: string;
+        /** @description The password for login in clear text */
         password: string;
     }
 
@@ -472,14 +490,19 @@ export namespace NewPet {
 
     /** queryParams */
     export interface TestIdGetQueryParams {
+        /** @description fields */
         fields?: Array<string>;
+        /** @description 页码 (0..N)，默认为0 */
         page: number;
+        /** @description 每页显示的数目,默认为10 */
         size: number;
     }
 
     /** pathParams */
     export interface TestIdGetPathParams {
+        /** @description test-id */
         testId?: number;
+        /** @description test-id */
         testId2?: string;
     }
 
@@ -489,6 +512,7 @@ export namespace NewPet {
 
     /** pathParams */
     export interface UploadImagePostPathParams {
+        /** @description ID of pet to update */
         petId: number;
     }
 
@@ -509,6 +533,7 @@ export namespace NewPet {
 
     /** queryParams */
     export interface FindByStatusGetQueryParams {
+        /** @description Status values that need to be considered for filter */
         status: Array<string>;
     }
 
@@ -518,6 +543,7 @@ export namespace NewPet {
 
     /** queryParams */
     export interface FindByTagsGetQueryParams {
+        /** @description Tags to filter by */
         tags: Array<string>;
     }
 
@@ -527,6 +553,7 @@ export namespace NewPet {
 
     /** pathParams */
     export interface FindByPetIdPathParams {
+        /** @description ID of pet to return */
         petId: number;
     }
 
@@ -536,6 +563,7 @@ export namespace NewPet {
 
     /** pathParams */
     export interface PetIdPostPathParams {
+        /** @description ID of pet that needs to be updated */
         petId: number;
     }
 
@@ -551,6 +579,7 @@ export namespace NewPet {
 
     /** pathParams */
     export interface DelByPetIdPathParams {
+        /** @description Pet id to delete */
         petId: number;
     }
 
@@ -573,6 +602,7 @@ export namespace Store {
 
     /** pathParams */
     export interface FindByOrderIdPathParams {
+        /** @description ID of pet that needs to be fetched */
         orderId: number;
     }
 
@@ -582,6 +612,7 @@ export namespace Store {
 
     /** pathParams */
     export interface DelByOrderIdPathParams {
+        /** @description ID of the order that needs to be deleted */
         orderId: number;
     }
 
@@ -611,6 +642,7 @@ export namespace User {
 
     /** pathParams */
     export interface FindByUsernamePathParams {
+        /** @description The name that needs to be fetched. Use user1 for testing. */
         username: string;
     }
 
@@ -620,6 +652,7 @@ export namespace User {
 
     /** pathParams */
     export interface UsernamePutPathParams {
+        /** @description name that need to be updated */
         username: string;
     }
 
@@ -629,6 +662,7 @@ export namespace User {
 
     /** pathParams */
     export interface DelByUsernamePathParams {
+        /** @description The name that needs to be deleted */
         username: string;
     }
 
@@ -637,7 +671,9 @@ export namespace User {
 
     /** queryParams */
     export interface LoginGetQueryParams {
+        /** @description The user name for login */
         username: string;
+        /** @description The password for login in clear text */
         password: string;
     }
 

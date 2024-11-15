@@ -44,7 +44,7 @@ type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
 type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
 
 /** @summary summary */
-function useTestPost(options: {
+function useTestPost(options?: {
     swr?: SWRMutationConfiguration<Pet.TestPostMutationResponse, Pet.TestPostError, TestPostMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -52,13 +52,13 @@ function useTestPost(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = testPostMutationKey()
 
-    useSWRMutation<Pet.TestPostMutationResponse, Pet.TestPostError, TestPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.TestPostMutationResponse, Pet.TestPostError, TestPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.testPost();
     }, mutationOptions);
 }
 
 /** @summary summary */
-function useTestPut(options: {
+function useTestPut(options?: {
     swr?: SWRMutationConfiguration<Pet.TestPutMutationResponse, Pet.TestPutError, TestPutMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -66,13 +66,13 @@ function useTestPut(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = testPutMutationKey()
 
-    useSWRMutation<Pet.TestPutMutationResponse, Pet.TestPutError, TestPutMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.TestPutMutationResponse, Pet.TestPutError, TestPutMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.testPut();
     }, mutationOptions);
 }
 
 /** @summary summary */
-function useDelByTest(options: {
+function useDelByTest(options?: {
     swr?: SWRMutationConfiguration<Pet.DelByTestMutationResponse, Pet.DelByTestError, DelByTestMutationKey | null, Pet.DelByTestMutationRequest>;
     shouldFetch?: boolean;
 }) {
@@ -80,13 +80,13 @@ function useDelByTest(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = delByTestMutationKey()
 
-    useSWRMutation<Pet.DelByTestMutationResponse, Pet.DelByTestError, DelByTestMutationKey | null, Pet.DelByTestMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.DelByTestMutationResponse, Pet.DelByTestError, DelByTestMutationKey | null, Pet.DelByTestMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.delByTest(data);
     }, mutationOptions);
 }
 
 /** @summary summary */
-function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params: Pet.TestIdGetQueryParams, options: {
+function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params: Pet.TestIdGetQueryParams, options?: {
     swr?: Parameters<typeof useSWR<Pet.TestIdGetQueryResponse, TestIdGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -94,7 +94,7 @@ function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params: Pet.Tes
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = testIdGetQueryKey(testId, params)
 
-    useSWR<Pet.TestIdGetQueryResponse, Pet.TestIdGetError, TestIdGetQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<Pet.TestIdGetQueryResponse, Pet.TestIdGetError, TestIdGetQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return petAPI.testIdGet(testId, params);
@@ -106,7 +106,7 @@ function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params: Pet.Tes
  * @summary uploads an image
  * @description pet
  */
-function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], options: {
+function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], options?: {
     swr?: SWRMutationConfiguration<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>;
     shouldFetch?: boolean;
 }) {
@@ -114,13 +114,13 @@ function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], optio
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = uploadImagePostMutationKey(petId)
 
-    useSWRMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.uploadImagePost(petId, data);
     }, mutationOptions);
 }
 
 /** @summary Add a new pet to the store */
-function useCreate(options: {
+function useCreate(options?: {
     swr?: SWRMutationConfiguration<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -128,13 +128,13 @@ function useCreate(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = createMutationKey()
 
-    useSWRMutation<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.create();
     }, mutationOptions);
 }
 
 /** @summary Update an existing pet */
-function useUpdate(options: {
+function useUpdate(options?: {
     swr?: SWRMutationConfiguration<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -142,7 +142,7 @@ function useUpdate(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = updateMutationKey()
 
-    useSWRMutation<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.update();
     }, mutationOptions);
 }
@@ -151,7 +151,7 @@ function useUpdate(options: {
  * @summary Finds Pets by status
  * @description Multiple status values can be provided with comma separated strings
  */
-function useFindByStatusGet(params: Pet.FindByStatusGetQueryParams, options: {
+function useFindByStatusGet(params: Pet.FindByStatusGetQueryParams, options?: {
     swr?: Parameters<typeof useSWR<Pet.FindByStatusGetQueryResponse, FindByStatusGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -159,7 +159,7 @@ function useFindByStatusGet(params: Pet.FindByStatusGetQueryParams, options: {
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = findByStatusGetQueryKey(params)
 
-    useSWR<Pet.FindByStatusGetQueryResponse, Pet.FindByStatusGetError, FindByStatusGetQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<Pet.FindByStatusGetQueryResponse, Pet.FindByStatusGetError, FindByStatusGetQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return petAPI.findByStatusGet(params);
@@ -171,7 +171,7 @@ function useFindByStatusGet(params: Pet.FindByStatusGetQueryParams, options: {
  * @summary Finds Pets by tags
  * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
  */
-function useFindByTagsGet(params: Pet.FindByTagsGetQueryParams, options: {
+function useFindByTagsGet(params: Pet.FindByTagsGetQueryParams, options?: {
     swr?: Parameters<typeof useSWR<Pet.FindByTagsGetQueryResponse, FindByTagsGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -179,7 +179,7 @@ function useFindByTagsGet(params: Pet.FindByTagsGetQueryParams, options: {
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = findByTagsGetQueryKey(params)
 
-    useSWR<Pet.FindByTagsGetQueryResponse, Pet.FindByTagsGetError, FindByTagsGetQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<Pet.FindByTagsGetQueryResponse, Pet.FindByTagsGetError, FindByTagsGetQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return petAPI.findByTagsGet(params);
@@ -191,7 +191,7 @@ function useFindByTagsGet(params: Pet.FindByTagsGetQueryParams, options: {
  * @summary Find pet by ID
  * @description Returns a single pet
  */
-function useFindByPetId(petId: Pet.FindByPetIdPathParams['petId'], options: {
+function useFindByPetId(petId: Pet.FindByPetIdPathParams['petId'], options?: {
     swr?: Parameters<typeof useSWR<Pet.FindByPetIdQueryResponse, FindByPetIdQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -199,7 +199,7 @@ function useFindByPetId(petId: Pet.FindByPetIdPathParams['petId'], options: {
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = findByPetIdQueryKey(petId)
 
-    useSWR<Pet.FindByPetIdQueryResponse, Pet.FindByPetIdError, FindByPetIdQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<Pet.FindByPetIdQueryResponse, Pet.FindByPetIdError, FindByPetIdQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return petAPI.findByPetId(petId);
@@ -208,7 +208,7 @@ function useFindByPetId(petId: Pet.FindByPetIdPathParams['petId'], options: {
 }
 
 /** @summary Updates a pet in the store with form data */
-function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options: {
+function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options?: {
     swr?: SWRMutationConfiguration<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>;
     shouldFetch?: boolean;
 }) {
@@ -216,13 +216,13 @@ function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = petIdPostMutationKey(petId)
 
-    useSWRMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.petIdPost(petId, data);
     }, mutationOptions);
 }
 
 /** @summary Deletes a pet */
-function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options: {
+function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options?: {
     swr?: SWRMutationConfiguration<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -230,7 +230,7 @@ function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = delByPetIdMutationKey(petId)
 
-    useSWRMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return petAPI.delByPetId(petId);
     }, mutationOptions);
 }
@@ -273,7 +273,7 @@ type DelByOrderIdMutationKey = ReturnType<typeof delByOrderIdMutationKey>;
 type InventoryGetQueryKey = ReturnType<typeof inventoryGetQueryKey>;
 
 /** @summary Place an order for a pet */
-function useCreate(options: {
+function useCreate(options?: {
     swr?: SWRMutationConfiguration<Store.CreateMutationResponse, Store.CreateError, CreateMutationKey | null, Store.CreateMutationRequest>;
     shouldFetch?: boolean;
 }) {
@@ -281,7 +281,7 @@ function useCreate(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = createMutationKey()
 
-    useSWRMutation<Store.CreateMutationResponse, Store.CreateError, CreateMutationKey | null, Store.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Store.CreateMutationResponse, Store.CreateError, CreateMutationKey | null, Store.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return storeAPI.create(data);
     }, mutationOptions);
 }
@@ -290,7 +290,7 @@ function useCreate(options: {
  * @summary Find purchase order by ID
  * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
  */
-function useFindByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], options: {
+function useFindByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], options?: {
     swr?: Parameters<typeof useSWR<Store.FindByOrderIdQueryResponse, FindByOrderIdQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -298,7 +298,7 @@ function useFindByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], opt
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = findByOrderIdQueryKey(orderId)
 
-    useSWR<Store.FindByOrderIdQueryResponse, Store.FindByOrderIdError, FindByOrderIdQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<Store.FindByOrderIdQueryResponse, Store.FindByOrderIdError, FindByOrderIdQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return storeAPI.findByOrderId(orderId);
@@ -310,7 +310,7 @@ function useFindByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], opt
  * @summary Delete purchase order by ID
  * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
  */
-function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], options: {
+function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], options?: {
     swr?: SWRMutationConfiguration<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError, DelByOrderIdMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -318,7 +318,7 @@ function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], optio
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = delByOrderIdMutationKey(orderId)
 
-    useSWRMutation<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError, DelByOrderIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError, DelByOrderIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return storeAPI.delByOrderId(orderId);
     }, mutationOptions);
 }
@@ -327,7 +327,7 @@ function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], optio
  * @summary Returns pet inventories by status
  * @description Returns a map of status codes to quantities
  */
-function useInventoryGet(options: {
+function useInventoryGet(options?: {
     swr?: Parameters<typeof useSWR<Store.InventoryGetQueryResponse, InventoryGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -335,7 +335,7 @@ function useInventoryGet(options: {
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = inventoryGetQueryKey()
 
-    useSWR<Store.InventoryGetQueryResponse, Store.InventoryGetError, InventoryGetQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<Store.InventoryGetQueryResponse, Store.InventoryGetError, InventoryGetQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return storeAPI.inventoryGet();
@@ -385,7 +385,7 @@ type LogoutGetQueryKey = ReturnType<typeof logoutGetQueryKey>;
 type CreateMutationKey = ReturnType<typeof createMutationKey>;
 
 /** @summary Creates list of users with given input array */
-function useCreateWithArrayPost(options: {
+function useCreateWithArrayPost(options?: {
     swr?: SWRMutationConfiguration<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError, CreateWithArrayPostMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -393,13 +393,13 @@ function useCreateWithArrayPost(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = createWithArrayPostMutationKey()
 
-    useSWRMutation<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError, CreateWithArrayPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError, CreateWithArrayPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return userAPI.createWithArrayPost();
     }, mutationOptions);
 }
 
 /** @summary Creates list of users with given input array */
-function useCreateWithListPost(options: {
+function useCreateWithListPost(options?: {
     swr?: SWRMutationConfiguration<User.CreateWithListPostMutationResponse, User.CreateWithListPostError, CreateWithListPostMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -407,13 +407,13 @@ function useCreateWithListPost(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = createWithListPostMutationKey()
 
-    useSWRMutation<User.CreateWithListPostMutationResponse, User.CreateWithListPostError, CreateWithListPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<User.CreateWithListPostMutationResponse, User.CreateWithListPostError, CreateWithListPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return userAPI.createWithListPost();
     }, mutationOptions);
 }
 
 /** @summary Get user by user name */
-function useFindByUsername(username: User.FindByUsernamePathParams['username'], options: {
+function useFindByUsername(username: User.FindByUsernamePathParams['username'], options?: {
     swr?: Parameters<typeof useSWR<User.FindByUsernameQueryResponse, FindByUsernameQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -421,7 +421,7 @@ function useFindByUsername(username: User.FindByUsernamePathParams['username'], 
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = findByUsernameQueryKey(username)
 
-    useSWR<User.FindByUsernameQueryResponse, User.FindByUsernameError, FindByUsernameQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<User.FindByUsernameQueryResponse, User.FindByUsernameError, FindByUsernameQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return userAPI.findByUsername(username);
@@ -433,7 +433,7 @@ function useFindByUsername(username: User.FindByUsernamePathParams['username'], 
  * @summary Updated user
  * @description This can only be done by the logged in user.
  */
-function useUsernamePut(username: User.UsernamePutPathParams['username'], options: {
+function useUsernamePut(username: User.UsernamePutPathParams['username'], options?: {
     swr?: SWRMutationConfiguration<User.UsernamePutMutationResponse, User.UsernamePutError, UsernamePutMutationKey | null, User.UsernamePutMutationRequest>;
     shouldFetch?: boolean;
 }) {
@@ -441,7 +441,7 @@ function useUsernamePut(username: User.UsernamePutPathParams['username'], option
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = usernamePutMutationKey(username)
 
-    useSWRMutation<User.UsernamePutMutationResponse, User.UsernamePutError, UsernamePutMutationKey | null, User.UsernamePutMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<User.UsernamePutMutationResponse, User.UsernamePutError, UsernamePutMutationKey | null, User.UsernamePutMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return userAPI.usernamePut(username, data);
     }, mutationOptions);
 }
@@ -450,7 +450,7 @@ function useUsernamePut(username: User.UsernamePutPathParams['username'], option
  * @summary Delete user
  * @description This can only be done by the logged in user.
  */
-function useDelByUsername(username: User.DelByUsernamePathParams['username'], options: {
+function useDelByUsername(username: User.DelByUsernamePathParams['username'], options?: {
     swr?: SWRMutationConfiguration<User.DelByUsernameMutationResponse, User.DelByUsernameError, DelByUsernameMutationKey | null, never>;
     shouldFetch?: boolean;
 }) {
@@ -458,13 +458,13 @@ function useDelByUsername(username: User.DelByUsernamePathParams['username'], op
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = delByUsernameMutationKey(username)
 
-    useSWRMutation<User.DelByUsernameMutationResponse, User.DelByUsernameError, DelByUsernameMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<User.DelByUsernameMutationResponse, User.DelByUsernameError, DelByUsernameMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return userAPI.delByUsername(username);
     }, mutationOptions);
 }
 
 /** @summary Logs user into the system */
-function useLoginGet(params: User.LoginGetQueryParams, options: {
+function useLoginGet(params: User.LoginGetQueryParams, options?: {
     swr?: Parameters<typeof useSWR<User.LoginGetQueryResponse, LoginGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -472,7 +472,7 @@ function useLoginGet(params: User.LoginGetQueryParams, options: {
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = loginGetQueryKey(params)
 
-    useSWR<User.LoginGetQueryResponse, User.LoginGetError, LoginGetQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<User.LoginGetQueryResponse, User.LoginGetError, LoginGetQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return userAPI.loginGet(params);
@@ -481,7 +481,7 @@ function useLoginGet(params: User.LoginGetQueryParams, options: {
 }
 
 /** @summary Logs out current logged in user session */
-function useLogoutGet(options: {
+function useLogoutGet(options?: {
     swr?: Parameters<typeof useSWR<User.LogoutGetQueryResponse, LogoutGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {
@@ -489,7 +489,7 @@ function useLogoutGet(options: {
     const { swr: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = logoutGetQueryKey()
 
-    useSWR<User.LogoutGetQueryResponse, User.LogoutGetError, LogoutGetQueryKey | null>(shouldFetch ? queryKey : null, {
+    return useSWR<User.LogoutGetQueryResponse, User.LogoutGetError, LogoutGetQueryKey | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async () => {
             return userAPI.logoutGet();
@@ -501,7 +501,7 @@ function useLogoutGet(options: {
  * @summary Create user
  * @description This can only be done by the logged in user.
  */
-function useCreate(options: {
+function useCreate(options?: {
     swr?: SWRMutationConfiguration<User.CreateMutationResponse, User.CreateError, CreateMutationKey | null, User.CreateMutationRequest>;
     shouldFetch?: boolean;
 }) {
@@ -509,7 +509,7 @@ function useCreate(options: {
     const { swr: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = createMutationKey()
 
-    useSWRMutation<User.CreateMutationResponse, User.CreateError, CreateMutationKey | null, User.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+    return useSWRMutation<User.CreateMutationResponse, User.CreateError, CreateMutationKey | null, User.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
         return userAPI.create(data);
     }, mutationOptions);
 }
