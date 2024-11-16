@@ -91,9 +91,9 @@ export class Component {
           type: typeDeclaration?.getType()?.getText() ?? upperFirstRefName,
           docs: [
             {
-              description: "",
               tags: [
                 {
+                  leadingTrivia:'\n',
                   tagName: UUID_TAG_NAME,
                   text: UUID,
                 },
@@ -167,7 +167,7 @@ export class Component {
     const schemaStatements = this.ast.generateInterfaceStatements({
       isExported: true,
       name: interfaceDeclaration?.getName() ?? upperFirstTypeName,
-      properties: this.schema.getBaseTypeFromSchema(schema),
+      properties: this.schema.getBaseTypeFromSchema(schema)||[],
       docs: [
         {
           // description: "\n",
@@ -177,6 +177,7 @@ export class Component {
               text: schema.description || "",
             },
             {
+              leadingTrivia:schema.description?"": "\n",
               tagName: UUID_TAG_NAME,
               text: UUID,
             },

@@ -186,12 +186,14 @@ export class Schema {
               //  description: "\n",
               tags: _.chain([] as OptionalKind<JSDocTagStructure>[])
                 .push({
+                  leadingTrivia: this.openapi.isReference(schema)?"":'\n',
                   tagName: "description",
                   text: _.get(schema, "description", ""),
                 })
                 .concat(
                   this.openapi.isReference(schema)
                     ? {
+                      leadingTrivia: _.get(schema, "description", "")?"": "\n",
                         tagName: UUID_TAG_NAME,
                         text: UUID,
                       }
