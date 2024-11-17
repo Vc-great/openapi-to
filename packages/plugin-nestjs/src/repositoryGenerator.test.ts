@@ -18,8 +18,7 @@ const __dirname = dirname(__filename);
 describe("repositoryGenerator", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
     input: {
-      path: "",
-      name: "",
+      path: ""
     },
     output: {
       dir: path.resolve(__dirname, "../mock"),

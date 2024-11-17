@@ -7,8 +7,7 @@ import type { OpenapiToSingleConfig } from "@openapi-to/core";
 describe("ts request plugin", () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
     input: {
-      path: "",
-      name: "",
+      path: ""
     },
     output: {
       dir: "",

@@ -18,9 +18,9 @@ const __dirname = dirname(__filename);
 
 describe("domainGenerator", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
+    name: "",
     input: {
-      path: "",
-      name: "",
+      path: ""
     },
     output: {
       dir: path.resolve(__dirname, "../mock"),
