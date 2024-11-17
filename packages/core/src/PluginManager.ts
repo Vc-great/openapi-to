@@ -46,7 +46,7 @@ export class PluginManager {
    * 执行插件
    * @param plugin
    */
-  execute(plugin: PluginFactory): void {
+async  execute(plugin: PluginFactory): Promise<void> {
     const lifeCycle = plugin({
       openapiDocument: this.openapiDocument,
       openapiToSingleConfig: this.openapiToSingleConfig,
@@ -73,7 +73,7 @@ export class PluginManager {
     }
 
     //
-    lifeCycle.buildStart(this.context);
+   await lifeCycle.buildStart(this.context);
     //
     this.logger.emit("start", `💾 Writing`);
     const filePaths = lifeCycle.writeFile(this.context);
@@ -81,7 +81,7 @@ export class PluginManager {
       this.logger.emit("end", `💾 Writing completed`);
     }
     //
-    lifeCycle.buildEnd(this.context);
+   await lifeCycle.buildEnd(this.context);
     this.executed.push({
       ...pluginStatus,
       status: PluginStatus.Succeeded,
@@ -89,7 +89,8 @@ export class PluginManager {
     });
   }
 
-  run(): void {
-    this.plugins.forEach((plugin) => this.execute(plugin));
+  async run(): Promise<void> {
+    const map  = this.plugins.map((plugin) => this.execute(plugin));
+    await Promise.all(map)
   }
 }

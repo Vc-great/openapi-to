@@ -36,16 +36,16 @@ export type PluginFactory = ({
 }) => LifeCycle & PluginName;
 
 export type OpenapiToSingleConfig = {
+  /**
+   * Project name
+   */
+  name?: string;
   input: OpenapiToConfigSingleInput;
   output: OpenapiToConfigSingleOutput;
   plugins: Array<PluginFactory>;
 };
 
 export type OpenapiToConfigSingleInput = {
-  /**
-   * Project name, which is used to output the name of the folder
-   */
-  name: string;
   /**
    * api document path
    */
@@ -54,14 +54,18 @@ export type OpenapiToConfigSingleInput = {
 
 export type OpenapiToConfigSingleOutput = {
   /**
-   * dir
+   * which is used to output the name of the folder
    */
   dir: string;
 };
 
 export type OpenapiToConfigServer = {
+  /**
+   * Project name
+   */
+  name?: string;
   input: OpenapiToConfigSingleInput;
-  output?: OpenapiToConfigSingleOutput;
+  output: OpenapiToConfigSingleOutput;
 };
 
 /**

@@ -42,13 +42,23 @@ async function generateAction(CLIOptions: CLIOptions) {
 
   const openapiToConfig = getDefineConfig(result);
 
-  for (const server of openapiToConfig.servers) {
+/*  for (const server of openapiToConfig.servers) {
     const openapiToSingleConfig = formatOpenapiToConfig(
       server,
       openapiToConfig,
     );
     await generate(openapiToSingleConfig, CLIOptions);
-  }
+  }*/
+
+  const serverMap = openapiToConfig.servers.map((server,index)=>{
+    const openapiToSingleConfig = formatOpenapiToConfig(
+      server,
+      openapiToConfig,
+    );
+    return generate(openapiToSingleConfig, CLIOptions);
+  })
+
+  await Promise.all(serverMap)
 
   return;
 }

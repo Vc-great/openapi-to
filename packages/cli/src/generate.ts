@@ -5,7 +5,7 @@ import c from "picocolors";
 import process from "process";
 
 import { getSummary } from "./utils/getSummary.ts";
-import { spinner } from "./utils/spinner.ts";
+import { spinnerFunc} from "./utils/spinner.ts";
 
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type { CLIOptions } from "@openapi-to/core";
@@ -13,11 +13,13 @@ import type { CLIOptions } from "@openapi-to/core";
 export async function generate(
   openapiToSingleConfig: OpenapiToSingleConfig,
   CLIOptions: CLIOptions,
+
 ): Promise<void> {
   const inputPath = openapiToSingleConfig.input.path;
+  const spinner = spinnerFunc()
   const logger = createLogger({
     logLevel: CLIOptions.logLevel || LogLevel.silent,
-    name: openapiToSingleConfig.input.name,
+    name: openapiToSingleConfig.name ||'',
     spinner,
   });
 

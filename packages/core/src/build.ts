@@ -95,7 +95,7 @@ export async function build(
   );
 
   try {
-    pluginManager.run();
+    await pluginManager.run();
   } catch (e) {
     return {
       pluginManager,

@@ -18,8 +18,10 @@ export default defineConfig({
   servers:[
     {
     input: {
-      name:'swagger',  // output file folder name
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+    },
+        output:{
+       dir:'server'
     }
     }
   ],

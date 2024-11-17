@@ -19,8 +19,8 @@ export function formatOpenapiToConfig(
 ): OpenapiToSingleConfig {
   return {
     ...server,
-    output: server.output ?? {
-      dir: `${process.cwd()}/${folderName}/${server.input.name}`,
+    output: {
+      dir: `${process.cwd()}/${folderName}/${server.output.dir}`,
     },
     plugins: openapiToConfig.plugins,
   };
