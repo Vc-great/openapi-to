@@ -1,8 +1,9 @@
 import type { OpenAPIV2, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
-import type { LogLevel } from "./logger.ts";
+
 export * from "./ast/type.ts";
 export * from "./openapi/types.ts";
-
+import type { LogLevel } from "consola";
+export type { LogLevel } from "consola";
 export type PluginName = {
   name: string;
 };
@@ -16,13 +17,17 @@ export enum LifeCycleEnum {
   buildEnd = "buildEnd",
 }
 
+export type WriteFile = Array<{
+  filePath: string;
+  fileText: string;
+}>;
+
 export type LifeCycle = {
-  [LifeCycleEnum.buildStart]: (context: PluginContext) => void;
-  /**
-   * plugin lifeCycle return path
-   */
-  [LifeCycleEnum.writeFile]: (context: PluginContext) => string[];
-  [LifeCycleEnum.buildEnd]: (context: PluginContext) => void;
+  [LifeCycleEnum.buildStart]: (context: PluginContext) => Promise<void> | void;
+  [LifeCycleEnum.writeFile]: (
+    context: PluginContext,
+  ) => Promise<WriteFile> | WriteFile;
+  [LifeCycleEnum.buildEnd]: (context: PluginContext) => Promise<void> | void;
 };
 
 export type PluginConfigFactory<T> = (pluginConfig?: T) => PluginFactory;
@@ -40,6 +45,7 @@ export type OpenapiToSingleConfig = {
    * Project name
    */
   name?: string;
+  root: string;
   input: OpenapiToConfigSingleInput;
   output: OpenapiToConfigSingleOutput;
   plugins: Array<PluginFactory>;

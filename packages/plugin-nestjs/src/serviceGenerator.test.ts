@@ -18,6 +18,7 @@ const __dirname = dirname(__filename);
 describe("serviceGenerator", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
     name: "",
+    root: "",
     input: {
       path: "",
     },

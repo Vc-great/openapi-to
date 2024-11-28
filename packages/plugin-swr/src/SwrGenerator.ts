@@ -301,7 +301,7 @@ export class SwrGenerator {
       declarations: [
         {
           name: this.queryKeyName,
-          initializer: `(${funcParams.join()}) => [{url:${url.requestPath}}${keys ? "," + keys : ""}] as const`,
+          initializer: `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? "," + keys : ""}] as const`,
 
           //   docs: [{ description: "" }],
         },
@@ -320,7 +320,6 @@ export class SwrGenerator {
       type: `ReturnType<typeof ${this.queryKeyName}>`,
     };
   }
-  generatorSWRHook() {}
 
   /**
    * @example

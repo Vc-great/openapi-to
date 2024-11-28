@@ -11,7 +11,6 @@ import process from "process";
 import { version } from "../../openapi/package.json";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";
 import { getDefineConfig } from "./utils/getDefineConfig.ts";
-import { renderErrors } from "./utils/renderErrors.ts";
 import { spinner } from "./utils/spinner.ts";
 import { generate } from "./generate.ts";
 import { init } from "./init.ts";
@@ -22,7 +21,8 @@ const moduleName = "openapi";
 
 function programCatcher(e: unknown, CLIOptions: CLIOptions): void {
   const error = e as Error;
-  const message = renderErrors(error, { logLevel: CLIOptions.logLevel });
+  //todo
+  const message = error.message;
 
   if (error instanceof Warning) {
     spinner.warn(c.yellow(error.message));
@@ -42,7 +42,7 @@ async function generateAction(CLIOptions: CLIOptions) {
 
   const openapiToConfig = getDefineConfig(result);
 
-/*  for (const server of openapiToConfig.servers) {
+  /*  for (const server of openapiToConfig.servers) {
     const openapiToSingleConfig = formatOpenapiToConfig(
       server,
       openapiToConfig,
@@ -50,15 +50,22 @@ async function generateAction(CLIOptions: CLIOptions) {
     await generate(openapiToSingleConfig, CLIOptions);
   }*/
 
-  const serverMap = openapiToConfig.servers.map((server,index)=>{
+  const serverMap = openapiToConfig.servers.map((server, index) => {
     const openapiToSingleConfig = formatOpenapiToConfig(
-      server,
+      process.cwd(),
+      {
+        ...server,
+        name: server.name || `server${index}`,
+      },
       openapiToConfig,
     );
-    return generate(openapiToSingleConfig, CLIOptions);
-  })
 
-  await Promise.all(serverMap)
+    //todo 校验 openapiToSingleConfig
+
+    return generate(openapiToSingleConfig, CLIOptions);
+  });
+
+  await Promise.all(serverMap);
 
   return;
 }

@@ -6,9 +6,10 @@ import { definePlugin } from "./plugin.ts";
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 describe("ts request plugin", () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
+    name: "",
+    root: "",
     input: {
       path: "",
-      name: "",
     },
     output: {
       dir: "",

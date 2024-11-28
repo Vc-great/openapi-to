@@ -18,9 +18,10 @@ const __dirname = dirname(__filename);
 
 describe("swr", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
+    name: "",
+    root: "",
     input: {
       path: "",
-      name: "",
     },
     output: {
       dir: path.resolve(__dirname, "../mock"),
@@ -40,7 +41,6 @@ describe("swr", async () => {
     const pluginConfig: PluginConfig = {
       typeDeclarationForm: "type",
     };
-
     const requestGenerator = new SwrGenerator({
       oas,
       ast,
@@ -53,7 +53,6 @@ describe("swr", async () => {
       .map((sourceFile) => sourceFile.getFullText())
       .join("\n")
       .value();
-
     expect(text).toMatchSnapshot();
   });
 });

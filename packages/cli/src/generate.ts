@@ -1,11 +1,12 @@
-import { build, PluginStatus } from "@openapi-to/core";
-import { createLogger, LogLevel, randomCliColour } from "@openapi-to/core";
+import { build } from "@openapi-to/core";
+import { createLogger, LogMapper } from "@openapi-to/core";
 
+import { Presets, SingleBar } from "cli-progress";
 import c from "picocolors";
 import process from "process";
 
+import { getErrorCauses } from "./utils/getErrorCauses.ts";
 import { getSummary } from "./utils/getSummary.ts";
-import { spinnerFunc} from "./utils/spinner.ts";
 
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import type { CLIOptions } from "@openapi-to/core";
@@ -13,41 +14,54 @@ import type { CLIOptions } from "@openapi-to/core";
 export async function generate(
   openapiToSingleConfig: OpenapiToSingleConfig,
   CLIOptions: CLIOptions,
-
 ): Promise<void> {
   const inputPath = openapiToSingleConfig.input.path;
-  const spinner = spinnerFunc()
+
+  const logLevel = CLIOptions.logLevel || 3;
   const logger = createLogger({
-    logLevel: CLIOptions.logLevel || LogLevel.silent,
-    name: openapiToSingleConfig.name ||'',
-    spinner,
+    logLevel,
+    name: openapiToSingleConfig.name,
   });
 
-  if (logger.name) {
-    spinner.prefixText = randomCliColour(logger.name);
-  }
+  if (logger.logLevel !== LogMapper.debug) {
+    const progressCache = new Map<string, SingleBar>();
 
-  const startHrtime = process.hrtime();
+    logger.on("progress_start", ({ id, size, message = "" }) => {
+      logger.consola?.pauseLogs();
+      const payload = { id, message };
+      const progressBar = new SingleBar(
+        {
+          format: "{percentage}% {bar} {value}/{total} | {message}",
+          barsize: 30,
+          clearOnComplete: true,
+          emptyOnZero: true,
+        },
+        Presets.shades_grey,
+      );
 
-  if (CLIOptions.logLevel === LogLevel.debug) {
-    const { performance, PerformanceObserver } = await import(
-      "node:perf_hooks"
-    );
-
-    const performanceOpserver = new PerformanceObserver((items) => {
-      const message = `${items.getEntries()[0]?.duration.toFixed(0)}ms`;
-
-      spinner.suffixText = c.yellow(message);
-
-      performance.clearMarks();
+      if (!progressCache.has(id)) {
+        progressCache.set(id, progressBar);
+        progressBar.start(size, 1, payload);
+      }
     });
 
-    performanceOpserver.observe({ type: "measure" });
+    logger.on("progress_stop", ({ id }) => {
+      progressCache.get(id)?.stop();
+      logger.consola?.resumeLogs();
+    });
+
+    logger.on("progressed", ({ id, message = "" }) => {
+      const payload = { id, message };
+
+      progressCache.get(id)?.increment(1, payload);
+    });
   }
 
-  const logLevel = logger.logLevel;
-
-  spinner.start(`🚀 Building ${logLevel !== "silent" ? c.dim(inputPath) : ""}`);
+  logger.emit(
+    "start",
+    `Building ${logger.logLevel !== LogMapper.silent ? c.dim(inputPath) : ""}`,
+  );
+  const hrStart = process.hrtime();
 
   const { pluginManager, error } = await build(
     openapiToSingleConfig,
@@ -55,29 +69,64 @@ export async function generate(
     logger,
   );
 
-  const summary = getSummary({
-    pluginManager,
-    openapiToSingleConfig,
-    status: error ? PluginStatus.Failed : PluginStatus.Succeeded,
-    startHrtime,
-    logger,
-  });
+  if (logger.logLevel === LogMapper.debug) {
+    logger.consola?.start("Writing logs");
 
-  if (error) {
-    spinner.suffixText = "";
-    spinner.fail(
-      `🚀 Build failed ${logLevel !== "silent" ? c.dim(inputPath) : ""}`,
-    );
+    const logFiles = await logger.writeLogs();
 
-    console.log(summary.join(""));
-
-    throw error;
+    logger.consola?.success(`Written logs: \n${logFiles.join("\n")}`);
   }
 
-  spinner.suffixText = "";
-  spinner.succeed(
-    `🚀 Build completed ${logLevel !== "silent" ? c.dim(inputPath) : ""}`,
+  const summary = getSummary({
+    pluginManager,
+    config: openapiToSingleConfig,
+    status: error ? "failed" : "success",
+    hrStart,
+  });
+
+  if (error && logger.consola) {
+    logger.consola?.resumeLogs();
+    logger.consola.error(
+      `Build failed ${logger.logLevel !== LogMapper.silent ? c.dim(inputPath) : ""}`,
+    );
+
+    logger.consola.box({
+      title: `${openapiToSingleConfig.name || ""}`,
+      message: summary.join(""),
+      style: {
+        padding: 2,
+        borderColor: "red",
+        borderStyle: "rounded",
+      },
+    });
+
+    const errors = getErrorCauses([error]);
+    if (
+      logger.consola &&
+      errors.length &&
+      logger.logLevel === LogMapper.debug
+    ) {
+      errors.forEach((err) => {
+        logger.consola?.error(err);
+      });
+    }
+
+    logger.consola?.error(error);
+
+    process.exit(0);
+  }
+
+  logger.consola?.log(
+    `⚡Build completed ${logger.logLevel !== LogMapper.silent ? c.dim(inputPath) : ""}`,
   );
 
-  console.log(summary.join(""));
+  logger.consola?.box({
+    title: `${openapiToSingleConfig.name || ""}`,
+    message: summary.join(""),
+    style: {
+      padding: 2,
+      borderColor: "green",
+      borderStyle: "rounded",
+    },
+  });
 }

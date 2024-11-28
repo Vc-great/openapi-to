@@ -15,7 +15,7 @@
   "scripts": {
     "init": "openapi init",
     "editPlugins": "node editPlugins.cjs",
-    "generate": "openapi g -l debug"
+    "generate": "openapi g"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

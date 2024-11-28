@@ -1,9 +1,7 @@
-import _ from "lodash";
-
-import { LogLevel } from "./logger.ts";
-import { LifeCycleEnum, PluginStatus } from "./types.ts";
+import { PluginStatus } from "./types.ts";
 
 import type { Logger } from "./logger.ts";
+import type { WriteFile } from "./types.ts";
 import type {
   OpenAPIDocument,
   OpenapiToSingleConfig,
@@ -16,18 +14,20 @@ export function createPlugin<T>(
 ): PluginConfigFactory<T> {
   return pluginConfigFactory;
 }
+import _ from "lodash";
 
+import { write } from "./fs";
 export type PluginStatusValue = `${PluginStatus}`;
 type Executed = {
   name: string;
   status: PluginStatusValue;
-  filePaths: string[];
+  files: WriteFile;
 };
 
 export class PluginManager {
   private plugins: Array<PluginFactory>;
   readonly executed: Array<Executed> = [];
-
+  filesCreated: number = 0;
   constructor(
     private readonly openapiToSingleConfig: OpenapiToSingleConfig,
     private readonly openapiDocument: OpenAPIDocument,
@@ -46,7 +46,7 @@ export class PluginManager {
    * 执行插件
    * @param plugin
    */
-async  execute(plugin: PluginFactory): Promise<void> {
+  async execute(plugin: PluginFactory): Promise<void> {
     const lifeCycle = plugin({
       openapiDocument: this.openapiDocument,
       openapiToSingleConfig: this.openapiToSingleConfig,
@@ -57,40 +57,35 @@ async  execute(plugin: PluginFactory): Promise<void> {
       fileTotal: 0,
     };
 
-    //check lifeCycle
-    if (this.logger.logLevel === LogLevel.info) {
-      const extraHookName = _.chain(lifeCycle)
-        .keys()
-        .filter((lifeCycleName) => lifeCycleName !== "name")
-        .filter(
-          (lifeCycleName) =>
-            !Object.keys(LifeCycleEnum).includes(lifeCycleName),
-        )
-        .value();
-      if (extraHookName) {
-        this.logger.emit("warning", `No hook ${extraHookName.join("")} found`);
-      }
-    }
+    //
+    await lifeCycle.buildStart(this.context);
+
+    const files = await lifeCycle.writeFile(this.context);
 
     //
-   await lifeCycle.buildStart(this.context);
-    //
-    this.logger.emit("start", `💾 Writing`);
-    const filePaths = lifeCycle.writeFile(this.context);
-    if (this.logger.logLevel === LogLevel.info) {
-      this.logger.emit("end", `💾 Writing completed`);
-    }
-    //
-   await lifeCycle.buildEnd(this.context);
+    await lifeCycle.buildEnd(this.context);
     this.executed.push({
       ...pluginStatus,
       status: PluginStatus.Succeeded,
-      filePaths: filePaths,
+      files: files,
     });
   }
 
+  async writeFile() {
+    const promises = _.chain(this.executed)
+      .map((item) => item.files)
+      .flatten()
+      .map(async (file) =>
+        write(file.filePath, file.fileText, { sanity: false }),
+      )
+      .value();
+    return Promise.all(promises);
+  }
+
   async run(): Promise<void> {
-    const map  = this.plugins.map((plugin) => this.execute(plugin));
-    await Promise.all(map)
+    const map = this.plugins.map((plugin) => this.execute(plugin));
+    await Promise.all(map);
+    const files = await this.writeFile();
+    this.filesCreated = files.length;
   }
 }

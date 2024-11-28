@@ -32,7 +32,12 @@ export const definePlugin = createPlugin(
           typeGenerator.build();
         },
         writeFile() {
-          return ast.saveSync();
+          return ast.sourceFile.map((item) => {
+            return {
+              filePath: item.getFilePath(),
+              fileText: item.getFullText(),
+            };
+          });
         },
         buildEnd() {},
       };

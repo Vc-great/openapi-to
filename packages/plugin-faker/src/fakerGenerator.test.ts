@@ -16,9 +16,10 @@ const __dirname = dirname(__filename);
 
 describe("faker", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
+    name: "",
+    root: "",
     input: {
       path: "",
-      name: "",
     },
     output: {
       dir: path.resolve(__dirname, "../mock"),

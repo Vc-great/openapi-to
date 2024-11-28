@@ -1,5 +1,3 @@
-import process from "process";
-
 import { folderName } from "../folderName.ts";
 
 import type {
@@ -14,13 +12,15 @@ import type {
  * @param openapiToConfig
  */
 export function formatOpenapiToConfig(
+  root: string,
   server: OpenapiToConfigServer,
   openapiToConfig: OpenapiToConfig,
 ): OpenapiToSingleConfig {
   return {
+    root,
     ...server,
     output: {
-      dir: `${process.cwd()}/${folderName}/${server.output.dir}`,
+      dir: `${root}/${folderName}/${server.output.dir}`,
     },
     plugins: openapiToConfig.plugins,
   };

@@ -15,9 +15,10 @@ const __dirname = path.dirname(__filename);
 
 describe("MswGenerator", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
+    name: "",
+    root: "",
     input: {
       path: "",
-      name: "",
     },
     output: {
       dir: path.resolve(__dirname, "../gen"),

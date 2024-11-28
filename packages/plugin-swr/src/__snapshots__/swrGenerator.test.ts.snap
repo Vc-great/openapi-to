@@ -7,29 +7,29 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import type { SWRMutationConfiguration } from "swr/mutation";
 
-const testPostMutationKey = () => [{ url: \`/pet/test\` }] as const;
+const testPostMutationKey = () => [{ url: \`/pet/test\`, method: 'post' }] as const;
 
-const testPutMutationKey = () => [{ url: \`/pet/test\` }] as const;
+const testPutMutationKey = () => [{ url: \`/pet/test\`, method: 'put' }] as const;
 
-const delByTestMutationKey = () => [{ url: \`/pet/test\` }] as const;
+const delByTestMutationKey = () => [{ url: \`/pet/test\`, method: 'delete' }] as const;
 
-const testIdGetQueryKey = (testId: Pet.TestIdGetPathParams['testId'], params: Pet.TestIdGetQueryParams) => [{ url: \`/pet/test/\${testId}\` }, ...(params ? [params] : [])] as const;
+const testIdGetQueryKey = (testId: Pet.TestIdGetPathParams['testId'], params: Pet.TestIdGetQueryParams) => [{ url: \`/pet/test/\${testId}\`, method: 'get' }, ...(params ? [params] : [])] as const;
 
-const uploadImagePostMutationKey = (petId: Pet.UploadImagePostPathParams['petId']) => [{ url: \`/pet/\${petId}/uploadImage\` }] as const;
+const uploadImagePostMutationKey = (petId: Pet.UploadImagePostPathParams['petId']) => [{ url: \`/pet/\${petId}/uploadImage\`, method: 'post' }] as const;
 
-const createMutationKey = () => [{ url: \`/pet\` }] as const;
+const createMutationKey = () => [{ url: \`/pet\`, method: 'post' }] as const;
 
-const updateMutationKey = () => [{ url: \`/pet\` }] as const;
+const updateMutationKey = () => [{ url: \`/pet\`, method: 'put' }] as const;
 
-const findByStatusGetQueryKey = (params: Pet.FindByStatusGetQueryParams) => [{ url: \`/pet/findByStatus\` }, ...(params ? [params] : [])] as const;
+const findByStatusGetQueryKey = (params: Pet.FindByStatusGetQueryParams) => [{ url: \`/pet/findByStatus\`, method: 'get' }, ...(params ? [params] : [])] as const;
 
-const findByTagsGetQueryKey = (params: Pet.FindByTagsGetQueryParams) => [{ url: \`/pet/findByTags\` }, ...(params ? [params] : [])] as const;
+const findByTagsGetQueryKey = (params: Pet.FindByTagsGetQueryParams) => [{ url: \`/pet/findByTags\`, method: 'get' }, ...(params ? [params] : [])] as const;
 
-const findByPetIdQueryKey = (petId: Pet.FindByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\` }] as const;
+const findByPetIdQueryKey = (petId: Pet.FindByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'get' }] as const;
 
-const petIdPostMutationKey = (petId: Pet.PetIdPostPathParams['petId']) => [{ url: \`/pet/\${petId}\` }] as const;
+const petIdPostMutationKey = (petId: Pet.PetIdPostPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'post' }] as const;
 
-const delByPetIdMutationKey = (petId: Pet.DelByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\` }] as const;
+const delByPetIdMutationKey = (petId: Pet.DelByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'delete' }] as const;
 type TestPostMutationKey = ReturnType<typeof testPostMutationKey>;
 type TestPutMutationKey = ReturnType<typeof testPutMutationKey>;
 type DelByTestMutationKey = ReturnType<typeof delByTestMutationKey>;
@@ -260,13 +260,13 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import type { SWRMutationConfiguration } from "swr/mutation";
 
-const createMutationKey = () => [{ url: \`/store/order\` }] as const;
+const createMutationKey = () => [{ url: \`/store/order\`, method: 'post' }] as const;
 
-const findByOrderIdQueryKey = (orderId: Store.FindByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\` }] as const;
+const findByOrderIdQueryKey = (orderId: Store.FindByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\`, method: 'get' }] as const;
 
-const delByOrderIdMutationKey = (orderId: Store.DelByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\` }] as const;
+const delByOrderIdMutationKey = (orderId: Store.DelByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\`, method: 'delete' }] as const;
 
-const inventoryGetQueryKey = () => [{ url: \`/store/inventory\` }] as const;
+const inventoryGetQueryKey = () => [{ url: \`/store/inventory\`, method: 'get' }] as const;
 type CreateMutationKey = ReturnType<typeof createMutationKey>;
 type FindByOrderIdQueryKey = ReturnType<typeof findByOrderIdQueryKey>;
 type DelByOrderIdMutationKey = ReturnType<typeof delByOrderIdMutationKey>;
@@ -360,21 +360,21 @@ import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import type { SWRMutationConfiguration } from "swr/mutation";
 
-const createWithArrayPostMutationKey = () => [{ url: \`/user/createWithArray\` }] as const;
+const createWithArrayPostMutationKey = () => [{ url: \`/user/createWithArray\`, method: 'post' }] as const;
 
-const createWithListPostMutationKey = () => [{ url: \`/user/createWithList\` }] as const;
+const createWithListPostMutationKey = () => [{ url: \`/user/createWithList\`, method: 'post' }] as const;
 
-const findByUsernameQueryKey = (username: User.FindByUsernamePathParams['username']) => [{ url: \`/user/\${username}\` }] as const;
+const findByUsernameQueryKey = (username: User.FindByUsernamePathParams['username']) => [{ url: \`/user/\${username}\`, method: 'get' }] as const;
 
-const usernamePutMutationKey = (username: User.UsernamePutPathParams['username']) => [{ url: \`/user/\${username}\` }] as const;
+const usernamePutMutationKey = (username: User.UsernamePutPathParams['username']) => [{ url: \`/user/\${username}\`, method: 'put' }] as const;
 
-const delByUsernameMutationKey = (username: User.DelByUsernamePathParams['username']) => [{ url: \`/user/\${username}\` }] as const;
+const delByUsernameMutationKey = (username: User.DelByUsernamePathParams['username']) => [{ url: \`/user/\${username}\`, method: 'delete' }] as const;
 
-const loginGetQueryKey = (params: User.LoginGetQueryParams) => [{ url: \`/user/login\` }, ...(params ? [params] : [])] as const;
+const loginGetQueryKey = (params: User.LoginGetQueryParams) => [{ url: \`/user/login\`, method: 'get' }, ...(params ? [params] : [])] as const;
 
-const logoutGetQueryKey = () => [{ url: \`/user/logout\` }] as const;
+const logoutGetQueryKey = () => [{ url: \`/user/logout\`, method: 'get' }] as const;
 
-const createMutationKey = () => [{ url: \`/user\` }] as const;
+const createMutationKey = () => [{ url: \`/user\`, method: 'post' }] as const;
 type CreateWithArrayPostMutationKey = ReturnType<typeof createWithArrayPostMutationKey>;
 type CreateWithListPostMutationKey = ReturnType<typeof createWithListPostMutationKey>;
 type FindByUsernameQueryKey = ReturnType<typeof findByUsernameQueryKey>;

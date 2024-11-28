@@ -25,7 +25,12 @@ export const definePlugin = createPlugin<PluginConfig>(
           requestGenerator.build(context);
         },
         writeFile() {
-          return ast.saveSync();
+          return ast.sourceFile.map((item) => {
+            return {
+              filePath: item.getFilePath(),
+              fileText: item.getFullText(),
+            };
+          });
         },
         buildEnd() {},
       };

@@ -1,103 +1,70 @@
-import { LogLevel, PluginStatus,randomCliColour  } from "@openapi-to/core";
+import path from "node:path";
+
+import { randomCliColour } from "@openapi-to/core";
+import { PluginStatus } from "@openapi-to/core";
 
 import _ from "lodash";
-import c from "picocolors";
+import c from "tinyrainbow";
 
-import { diffHrtime } from "./diffHrtime.ts";
+import { parseHrtimeToSeconds } from "./parseHrtimeToSeconds.ts";
 
-import type { PluginStatusValue } from "@openapi-to/core";
 import type { OpenapiToSingleConfig, PluginManager } from "@openapi-to/core";
-import type { Logger } from "@openapi-to/core";
 
 type SummaryProps = {
   pluginManager: PluginManager;
-  status: PluginStatusValue;
-  startHrtime: [number, number];
-  openapiToSingleConfig: OpenapiToSingleConfig;
-  logger: Logger;
+  status: "success" | "failed";
+  hrStart: [number, number];
+  config: OpenapiToSingleConfig;
 };
 
 export function getSummary({
   pluginManager,
   status,
-  startHrtime,
-  openapiToSingleConfig,
-  logger,
+  hrStart,
+  config,
 }: SummaryProps): string[] {
-  const { logLevel } = logger;
-  const logs: string[] = [];
-  const elapsedSeconds = diffHrtime(process.hrtime(startHrtime));
+  const logs = new Set<string>();
+  const elapsedSeconds = parseHrtimeToSeconds(process.hrtime(hrStart));
 
-  const pluginsCount = openapiToSingleConfig.plugins?.length || 0;
-
-  const successfulPlugin = _.chain(pluginManager.executed)
+  const successfulPlugins = _.chain(pluginManager.executed)
     .filter(["status", PluginStatus.Succeeded])
+    .map((item) => item.name)
     .value();
 
   const failedPlugins = _.chain(pluginManager.executed)
     .filter(["status", PluginStatus.Failed])
+    .map((item) => item.name)
     .value();
 
-  const fileTotal = _.chain(pluginManager.executed)
-    .map("filePaths")
-    .map((filePaths) => filePaths.length)
-    .reduce((total, fileCount) => (total += fileCount), 0)
-    .value();
-
-  const file = _.chain(pluginManager.executed)
-    .map((item) => {
-      return _.map(item.filePaths, (filePath) => {
-        return {
-          path: filePath,
-          name: item.name,
-        };
-      });
-    })
-    .flatten()
-    .value();
+  const pluginsCount = config.plugins?.length || 0;
 
   const meta = {
-    name: openapiToSingleConfig.input.name,
     plugins:
-      status === PluginStatus.Succeeded
-        ? `${c.green(
-            `${successfulPlugin.length} successful`,
-          )}, ${pluginsCount} total`
-        : `${c.red(
-            `${failedPlugins?.length ?? 1} failed`,
-          )}, ${pluginsCount} total`,
+      status === "success"
+        ? `${c.green(`${successfulPlugins.length} successful`)}, ${pluginsCount} total`
+        : `${c.red(`${failedPlugins?.length ?? 1} failed`)}, ${pluginsCount} total`,
     pluginsFailed:
-      status === PluginStatus.Failed
-        ? failedPlugins?.map(({ name }) => randomCliColour(name))?.join(", ")
+      status === "failed"
+        ? failedPlugins?.map((name) => randomCliColour(name))?.join(", ")
         : undefined,
-    filesCreated: fileTotal,
-    time: c.yellow(`${elapsedSeconds}s`),
-    output: openapiToSingleConfig.output.dir,
+    filesCreated: pluginManager.filesCreated,
+    time: `${c.yellow(`${elapsedSeconds}s`)}`,
+    //todo
+    output: path.resolve(config.output.dir),
   } as const;
 
-  if (logLevel === LogLevel.debug) {
-    logger.emit("debug", ["\nGenerated files:\n"]);
-    logger.emit(
-      "debug",
-      file.map(
-        (item) => `${randomCliColour(JSON.stringify(item.name))} ${item.path}`,
-      ),
-    );
-  }
-
-  logs.push(
+  logs.add(
     [
-      [`\n`, true],
-      [`     ${c.bold("Name:")}      ${meta.name}`, !!meta.name],
-      [`  ${c.bold("Plugins:")}      ${meta.plugins}`, true],
+      [`${c.bold("Plugins:")}        ${meta.plugins}`, true],
       [
-        `   ${c.dim("Failed:")}      ${meta.pluginsFailed || "none"}`,
+        `${c.dim("Failed:")}          ${meta.pluginsFailed || "none"}`,
         !!meta.pluginsFailed,
       ],
-      [`${c.bold("Generated:")}      ${meta.filesCreated} files`, true],
-      [`     ${c.bold("Time:")}      ${meta.time}`, true],
-      [`   ${c.bold("Output:")}      ${meta.output}`, true],
-      [`\n`, true],
+      [
+        `${c.bold("Generated:")}      ${meta.filesCreated} files in ${meta.time}`,
+        true,
+      ],
+      [`${c.bold("Output:")}         ${meta.output}`, true],
     ]
       .map((item) => {
         if (item.at(1)) {
@@ -109,5 +76,5 @@ export function getSummary({
       .join("\n"),
   );
 
-  return logs;
+  return [...logs];
 }

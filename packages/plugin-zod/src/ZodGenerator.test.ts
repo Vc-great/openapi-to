@@ -17,9 +17,10 @@ const __dirname = dirname(__filename);
 
 describe("zodGenerator", async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
+    name: "",
+    root: "",
     input: {
       path: "",
-      name: "",
     },
     output: {
       dir: path.resolve(__dirname, "../mock"),
