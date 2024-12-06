@@ -4,7 +4,7 @@ import { randomCliColour } from "@openapi-to/core";
 import { PluginStatus } from "@openapi-to/core";
 
 import _ from "lodash";
-import c from "tinyrainbow";
+import c from "picocolors";
 
 import { parseHrtimeToSeconds } from "./parseHrtimeToSeconds.ts";
 

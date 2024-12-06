@@ -1,14 +1,13 @@
 import { resolve } from "node:path";
 
 import { createConsola } from "consola";
+import c, { createColors } from "picocolors";
 import seedrandom from "seedrandom";
-import c, { createColors } from "tinyrainbow";
 
 import { EventEmitter } from "./utils/EventEmitter.ts";
 import { write } from "./fs";
 
 import type { ConsolaInstance, LogLevel } from "consola";
-import type { Formatter } from "tinyrainbow";
 
 type DebugEvent = { date: Date; logs: string[]; fileName?: string };
 
@@ -189,17 +188,10 @@ export function randomCliColour(
 
   const colour = randomColour(text, colors);
   const isDark = colour.includes("dark");
-  const key = colour.replace("dark", "").toLowerCase() as keyof typeof colours;
-  const formatter: Formatter = colours[key] as Formatter;
 
   if (isDark) {
-    return c.bold(formatter(text));
+    return c.bold(text);
   }
 
-  if (typeof formatter !== "function") {
-    throw new Error(
-      "Formatter for picoColor is not of type function/Formatter",
-    );
-  }
-  return formatter(text);
+  return text;
 }
