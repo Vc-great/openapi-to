@@ -55,7 +55,7 @@ async function generateAction(CLIOptions: CLIOptions) {
       process.cwd(),
       {
         ...server,
-        name: server.name || `server${index}`,
+        name: server.name || `server${index + 1}`,
       },
       openapiToConfig,
     );

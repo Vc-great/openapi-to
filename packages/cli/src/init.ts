@@ -28,7 +28,7 @@ async function createConfig() {
   spinner.start(`📀 Writing \`${configName}\` ${c.dim(filePath)}`);
   const presetMeta =
     packageJson?.type === "module" ? modulePresetMeta : commonPresetMeta;
-  await write(presetMeta, filePath);
+  await write(filePath, presetMeta);
   spinner.succeed(`📀 Wrote \`${configName}\` ${c.dim(filePath)}`);
 }
 
