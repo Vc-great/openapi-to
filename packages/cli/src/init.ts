@@ -47,7 +47,7 @@ async function createGitignore() {
       .some((item) => item.includes(".OpenAPI") && !item.includes("#"));
     !hasOpenAPI && (await write(`${fileContent}\n${content}`, path));
   } else {
-    await write(content, path);
+    await write(path, content);
   }
   spinner.succeed(`📀 Wrote \`.OpenAPI to the .gitignore\` ${c.dim(path)}`);
 }
