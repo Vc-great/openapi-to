@@ -50,4 +50,4 @@ export default defineConfig({
   ]
 })`;
 
-fs.writeFileSync(filePath, config);
+fs.writeFileSync(filePath, config, { encoding: "utf8" });
