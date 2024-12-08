@@ -50,9 +50,11 @@ export default defineConfig({
   servers: [
     {
       input: {
-        name: "swagger", // output file folder name
         path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
       },
+      output:{
+       dir:'server' //.OpenAPI/server
+    }
     },
   ],
   plugins: [
@@ -1278,106 +1280,154 @@ export { swaggerConfig };
 
 <details> 
 <summary>controller</summary>
-import { Controller, HttpStatus, HttpCode, Post, Param, Body, ParseIntPipe, Put, Get, Query, Delete } from "@nestjs/common";
+
+```ts
+import {
+  Controller,
+  HttpStatus,
+  HttpCode,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Body,
+  Delete,
+  Put,
+  Query,
+} from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiParam } from "@nestjs/swagger";
 import { Permissions } from "@/common/decorators/auth.decorator";
 import { ApiTag } from "@/common/swagger";
 import { PetService } from "./pet.service";
+import { Pet } from "./domain/Pet.vo";
 import { ApiResponse } from "./domain/ApiResponse.vo";
-import { Pet } from "./domain/Pet.dto";
 import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
 import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
-
 @ApiTag({
-name: 'pet',
-description: 'Everything about your Pets',
+  name: "pet",
+  description: "Everything about your Pets",
 })
-@Controller('pet')
+@Controller("pet")
 export class PetController {
-constructor(private readonly petService: PetService) {
+  constructor(private readonly petService: PetService) {}
+
+  @ApiOperation({
+    summary: "Find pet by ID",
+    description: "Returns a single pet",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "successful operation",
+    Pet,
+  })
+  @ApiParam({
+    name: "petId",
+    description: "ID of pet to return",
+  })
+  @Get("/:petId")
+  @HttpCode(HttpStatus.OK)
+  async getPetById(@Param("petId", ParseIntPipe) petId: number): Promise<Pet> {
+    return await this.petService.getPetById(petId);
+  }
+
+  @ApiOperation({ summary: "Updates a pet in the store with form data" })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiParam({
+    name: "petId",
+    description: "ID of pet that needs to be updated",
+  })
+  @Post("/:petId")
+  @HttpCode(HttpStatus.OK)
+  async updatePetWithForm(
+    @Param("petId", ParseIntPipe) petId: number,
+    @Body() data: any,
+  ): Promise<void> {
+    return await this.petService.updatePetWithForm(petId, data);
+  }
+
+  @ApiOperation({ summary: "Deletes a pet" })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiParam({
+    name: "petId",
+    description: "Pet id to delete",
+  })
+  @Delete("/:petId")
+  @HttpCode(HttpStatus.OK)
+  async deletePet(@Param("petId", ParseIntPipe) petId: number): Promise<void> {
+    return await this.petService.deletePet(petId);
+  }
+
+  @ApiOperation({ summary: "uploads an image" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "successful operation",
+    ApiResponse,
+  })
+  @ApiParam({
+    name: "petId",
+    description: "ID of pet to update",
+  })
+  @Post("/:petId/uploadImage")
+  @HttpCode(HttpStatus.OK)
+  async uploadFile(
+    @Param("petId", ParseIntPipe) petId: number,
+    @Body() data: any,
+  ): Promise<ApiResponse> {
+    return await this.petService.uploadFile(petId, data);
+  }
+
+  @ApiOperation({ summary: "Add a new pet to the store" })
+  @ApiResponse({ status: HttpStatus.OK })
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async addPet(@Body() data: Pet): Promise<void> {
+    return await this.petService.addPet(data);
+  }
+
+  @ApiOperation({ summary: "Update an existing pet" })
+  @ApiResponse({ status: HttpStatus.OK })
+  @Put()
+  @HttpCode(HttpStatus.OK)
+  async updatePet(@Body() data: Pet): Promise<void> {
+    return await this.petService.updatePet(data);
+  }
+
+  @ApiOperation({
+    summary: "Finds Pets by status",
+    description:
+      "Multiple status values can be provided with comma separated strings",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "successful operation",
+    isArray: true,
+  })
+  @Get("/findByStatus")
+  @HttpCode(HttpStatus.OK)
+  async findPetsByStatus(
+    @Query() query: FindPetsByStatusQueryDto,
+  ): Promise<Pet[]> {
+    return await this.petService.findPetsByStatus(query);
+  }
+
+  @ApiOperation({
+    summary: "Finds Pets by tags",
+    description:
+      "Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "successful operation",
+    isArray: true,
+  })
+  @Get("/findByTags")
+  @HttpCode(HttpStatus.OK)
+  async findPetsByTags(@Query() query: FindPetsByTagsQueryDto): Promise<Pet[]> {
+    return await this.petService.findPetsByTags(query);
+  }
 }
 
-    @ApiOperation({ summary: 'uploads an image' })
-    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", ApiResponse })
-    @ApiParam({
-        name: "petId",
-        description: "ID of pet to update"
-    })
-    @Post('/:petId/uploadImage')
-    @HttpCode(HttpStatus.OK)
-    async uploadFile(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<ApiResponse> {
-        return await this.petService.uploadFile(petId, data)
-    }
-    
-    @ApiOperation({ summary: 'Add a new pet to the store' })
-    @ApiResponse({ status: HttpStatus.OK })
-    @Post()
-    @HttpCode(HttpStatus.OK)
-    async addPet(@Body() data: Pet): Promise<void> {
-        return await this.petService.addPet(data)
-    }
-    
-    @ApiOperation({ summary: 'Update an existing pet' })
-    @ApiResponse({ status: HttpStatus.OK })
-    @Put()
-    @HttpCode(HttpStatus.OK)
-    async updatePet(@Body() data: Pet): Promise<void> {
-        return await this.petService.updatePet(data)
-    }
-    
-    @ApiOperation({ summary: 'Finds Pets by status', description: 'Multiple status values can be provided with comma separated strings' })
-    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
-    @Get('/findByStatus')
-    @HttpCode(HttpStatus.OK)
-    async findPetsByStatus(@Query() query: FindPetsByStatusQueryDto): Promise<Pet[]> {
-        return await this.petService.findPetsByStatus(query)
-    }
-    
-    @ApiOperation({ summary: 'Finds Pets by tags', description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.' })
-    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", isArray: true })
-    @Get('/findByTags')
-    @HttpCode(HttpStatus.OK)
-    async findPetsByTags(@Query() query: FindPetsByTagsQueryDto): Promise<Pet[]> {
-        return await this.petService.findPetsByTags(query)
-    }
-    
-    @ApiOperation({ summary: 'Find pet by ID', description: 'Returns a single pet' })
-    @ApiResponse({ status: HttpStatus.OK, description: "successful operation", Pet })
-    @ApiParam({
-        name: "petId",
-        description: "ID of pet to return"
-    })
-    @Get('/:petId')
-    @HttpCode(HttpStatus.OK)
-    async getPetById(@Param("petId", ParseIntPipe) petId: number): Promise<Pet> {
-        return await this.petService.getPetById(petId)
-    }
-    
-    @ApiOperation({ summary: 'Updates a pet in the store with form data' })
-    @ApiResponse({ status: HttpStatus.OK })
-    @ApiParam({
-        name: "petId",
-        description: "ID of pet that needs to be updated"
-    })
-    @Post('/:petId')
-    @HttpCode(HttpStatus.OK)
-    async updatePetWithForm(@Param("petId", ParseIntPipe) petId: number, @Body() data: any): Promise<void> {
-        return await this.petService.updatePetWithForm(petId, data)
-    }
-    
-    @ApiOperation({ summary: 'Deletes a pet' })
-    @ApiResponse({ status: HttpStatus.OK })
-    @ApiParam({
-        name: "petId",
-        description: "Pet id to delete"
-    })
-    @Delete('/:petId')
-    @HttpCode(HttpStatus.OK)
-    async deletePet(@Param("petId", ParseIntPipe) petId: number): Promise<void> {
-        return await this.petService.deletePet(petId)
-    }
-}
-
+```
 </details>
 
 <details> 
