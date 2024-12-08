@@ -12,7 +12,7 @@ Generate SDKs,OpenAPI to:
 + [x] Faker.js
 + [x] MSW
 + [x] nestjs
-+ [ ] SWR
++ [x] SWR
 + [ ] vue-Query
 + [ ] react-Query
 
@@ -1382,241 +1382,373 @@ constructor(private readonly petService: PetService) {
 
 <details> 
 <summary>service</summary>
-import { Injectable } from "@nestjs/common";
+
+```ts
+ import { Injectable } from "@nestjs/common";
 import { PetRepository } from "./repository/pet.repository";
+import { Pet } from "./domain/Pet.vo";
 import { ApiResponse } from "./domain/ApiResponse.vo";
-import { Pet } from "./domain/Pet.dto";
 import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
 import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
 
 @Injectable
 export class PetService {
-constructor(private readonly petRepository: PetRepository) {
-}
+    constructor(private readonly petRepository: PetRepository) {
+    }
+
+    async getPetById(petId: number): Promise<Pet> {
+        return await this.petRepository.getPetById(petId)
+    }
+
+    async updatePetWithForm(petId: number, data: any): Promise<void> {
+        return await this.petRepository.updatePetWithForm(petId, data)
+    }
+
+    async deletePet(petId: number): Promise<void> {
+        return await this.petRepository.deletePet(petId)
+    }
 
     async uploadFile(petId: number, data: any): Promise<ApiResponse> {
         return await this.petRepository.uploadFile(petId, data)
     }
-    
+
     async addPet(data: Pet): Promise<void> {
         return await this.petRepository.addPet(data)
     }
-    
+
     async updatePet(data: Pet): Promise<void> {
         return await this.petRepository.updatePet(data)
     }
-    
+
     async findPetsByStatus(query: FindPetsByStatusQueryDto): Promise<Pet[]> {
         return await this.petRepository.findPetsByStatus(query)
     }
-    
+
     async findPetsByTags(query: FindPetsByTagsQueryDto): Promise<Pet[]> {
         return await this.petRepository.findPetsByTags(query)
     }
-    
-    async getPetById(petId: number): Promise<Pet> {
-        return await this.petRepository.getPetById(petId)
-    }
-    
-    async updatePetWithForm(petId: number, data: any): Promise<void> {
-        return await this.petRepository.updatePetWithForm(petId, data)
-    }
-    
-    async deletePet(petId: number): Promise<void> {
-        return await this.petRepository.deletePet(petId)
-    }
-}
+} 
+```
 
-</details>
+  </details>
+
+
 
 <details> 
 <summary>repository</summary>
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { petEntity } from "../entities/pet.entity.ts";
-import { PetMappers } from "./PetMappers";
-import { Repository } from "typeorm";
-import { plainToInstance } from "class-transformer";
+
+ ```ts
+  import { Injectable } from "@nestjs/common";
+import { PetRepository } from "./repository/pet.repository";
+import { Pet } from "./domain/Pet.vo";
 import { ApiResponse } from "./domain/ApiResponse.vo";
-import { Pet } from "./domain/Pet.dto";
 import { FindPetsByStatusQueryDto } from "./domain/findPetsByStatus-query.dto";
 import { FindPetsByTagsQueryDto } from "./domain/findPetsByTags-query.dto";
 
 @Injectable
-export class PetRepository {
-constructor(@InjectRepository(petEntity) private readonly petRepository: Repository<petEntity>) {
-}
+export class PetService {
+    constructor(private readonly petRepository: PetRepository) {
+    }
+
+    async getPetById(petId: number): Promise<Pet> {
+        return await this.petRepository.getPetById(petId)
+    }
+
+    async updatePetWithForm(petId: number, data: any): Promise<void> {
+        return await this.petRepository.updatePetWithForm(petId, data)
+    }
+
+    async deletePet(petId: number): Promise<void> {
+        return await this.petRepository.deletePet(petId)
+    }
 
     async uploadFile(petId: number, data: any): Promise<ApiResponse> {
-        const newEntity = PetMappers.toPersistence(data);
-    
-        const savedEntity = await this.petRepository.save(newEntity);
-    
-        return plainToInstance(ApiResponse, savedEntity, {
-            excludeExtraneousValues: true,
-        });
+        return await this.petRepository.uploadFile(petId, data)
     }
-    
+
     async addPet(data: Pet): Promise<void> {
-        const newEntity = PetMappers.toPersistence(data);
-    
-        const savedEntity = await this.petRepository.save(newEntity);
-    
-        return plainToInstance(undefined, savedEntity, {
-            excludeExtraneousValues: true,
-        });
+        return await this.petRepository.addPet(data)
     }
-    
+
     async updatePet(data: Pet): Promise<void> {
-        const detail = await this.petRepository.findOneBy({});
-        if (!detail) {
-            throw new NotFoundException(`id ${id} not found`);
-        }
-    
-        const savedEntity = await this.petRepository.save(
-            PetMappers.toPersistence(_.assign(detail, data)),
-        );
-        return plainToInstance(FindOneUserVo, savedEntity, {
-            excludeExtraneousValues: true,
-        });
+        return await this.petRepository.updatePet(data)
     }
-    
+
     async findPetsByStatus(query: FindPetsByStatusQueryDto): Promise<Pet[]> {
-    
-        const [data, total] = await this.petRepository.find({
-            where: { status: query.status },
-
-
-
-        });
-    
-        return plainToInstance(
-            undefined,
-            { data, total },
-            {
-                exposeDefaultValues: true,
-            },
-        );
+        return await this.petRepository.findPetsByStatus(query)
     }
-    
+
     async findPetsByTags(query: FindPetsByTagsQueryDto): Promise<Pet[]> {
-    
-        const [data, total] = await this.petRepository.find({
-            where: { tags: query.tags },
-
-
-
-        });
-    
-        return plainToInstance(
-            undefined,
-            { data, total },
-            {
-                exposeDefaultValues: true,
-            },
-        );
-    }
-    
-    async getPetById(petId: number): Promise<Pet> {
-        const newEntity = await this.petRepository.findOne({ where: { petId: query.petId });
-        return plainToInstance(FindOneUserVo, newEntity, {
-            exposeDefaultValues: true,
-        });
-    }
-    
-    async updatePetWithForm(petId: number, data: any): Promise<void> {
-        const newEntity = PetMappers.toPersistence(data);
-    
-        const savedEntity = await this.petRepository.save(newEntity);
-    
-        return plainToInstance(undefined, savedEntity, {
-            excludeExtraneousValues: true,
-        });
-    }
-    
-    async deletePet(petId: number): Promise<void> {
-        return this.petRepository.softRemove(_.assign(new petEntity(), { petId }));
+        return await this.petRepository.findPetsByTags(query)
     }
 }
+ ```
 
 </details>
 
 <details> 
 <summary>domain</summary>
-import { Type, IsNumber, IsOptional, IsString } from "class-validator";
+
+```ts
+ import { Type, IsNumber, IsOptional, IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Category } from "Category";
 import { Tag } from "Tag";
 
 
 /**
-*
-* @description Pet object that needs to be added to the store
-  */
-  export class Pet {
+ *
+ * @description Pet object that needs to be added to the store
+ */
+export class Pet {
 
-  @IsNumber()
-  @IsOptional()
-  @ApiProperty({
-  format: 'int64',
-  required: false,
-  name: 'id'
-  })
-  id?: number;
+    @IsNumber()
+    @IsOptional()
+    @ApiProperty({
+        format: 'int64',
+        required: false,
+        name: 'id'
+    })
+    id?: number;
 
-  @IsOptional()
-  @ApiProperty({
-  $ref: '#/components/schemas/Category',
-  required: false,
-  name: 'category'
-  })
-  category?: Category;
+    @IsOptional()
+    @ApiProperty({
+        $ref: '#/components/schemas/Category',
+        required: false,
+        name: 'category'
+    })
+    category?: Category;
 
-  @IsString()
-  @ApiProperty({
-  example: 'doggie',
-  required: true,
-  name: 'name'
-  })
-  name: string;
+    @IsString()
+    @ApiProperty({
+        example: 'doggie',
+        required: true,
+        name: 'name'
+    })
+    name: string;
 
-  @Type(() => String)
-  @IsString({ "each": true })
-  @ApiProperty({
-  xml: {
-  wrapped: true
-  },
-  isArray: true,
-  required: true,
-  name: 'photoUrls'
-  })
-  photoUrls: string[];
+    @Type(() => String)
+    @IsString({ "each": true })
+    @ApiProperty({
+        xml: {
+            wrapped: true
+        },
+        isArray: true,
+        required: true,
+        name: 'photoUrls'
+    })
+    photoUrls: string[];
 
-  @Type(() => Tag)
-  @IsOptional()
-  @ApiProperty({
-  xml: {
-  wrapped: true
-  },
-  isArray: true,
-  required: false,
-  name: 'tags'
-  })
-  tags?: Tag;
+    @Type(() => Tag)
+    @IsOptional()
+    @ApiProperty({
+        xml: {
+            wrapped: true
+        },
+        isArray: true,
+        required: false,
+        name: 'tags'
+    })
+    tags?: Tag;
 
-  @IsString()
-  @IsOptional()
-  @ApiProperty({
-  description: 'pet status in the store',
-  enum: [
-  'available',
-  'pending',
-  'sold'
-  ],
-  required: false,
-  name: 'status'
-  })
-  status?: string;
-  }
+    @IsString()
+    @IsOptional()
+    @ApiProperty({
+        description: 'pet status in the store',
+        enum: [
+            'available',
+            'pending',
+            'sold'
+        ],
+        required: false,
+        name: 'status'
+    })
+    status?: string;
+}
+```
+</details>
 
+
+
+## SWR
+
+<details> 
+  <summary>SWR</summary>
+
+```TS
+  import { petAPI } from "./petAPI";
+import type { Pet } from "./Pet";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+const findByPetIdQueryKey = (petId: Pet.FindByPetIdPathParams['petId']) => [{ url: `/pet/${petId}`, method: 'get' }] as const;
+
+const petIdPostMutationKey = (petId: Pet.PetIdPostPathParams['petId']) => [{ url: `/pet/${petId}`, method: 'post' }] as const;
+
+const delByPetIdMutationKey = (petId: Pet.DelByPetIdPathParams['petId']) => [{ url: `/pet/${petId}`, method: 'delete' }] as const;
+
+const uploadImagePostMutationKey = (petId: Pet.UploadImagePostPathParams['petId']) => [{ url: `/pet/${petId}/uploadImage`, method: 'post' }] as const;
+
+const createMutationKey = () => [{ url: `/pet`, method: 'post' }] as const;
+
+const updateMutationKey = () => [{ url: `/pet`, method: 'put' }] as const;
+
+const findByStatusGetQueryKey = (params: Pet.FindByStatusGetQueryParams) => [{ url: `/pet/findByStatus`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+const findByTagsGetQueryKey = (params: Pet.FindByTagsGetQueryParams) => [{ url: `/pet/findByTags`, method: 'get' }, ...(params ? [params] : [])] as const;
+type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+
+/**
+ * @summary Find pet by ID
+ * @description Returns a single pet
+ */
+function useFindByPetId(petId: Pet.FindByPetIdPathParams['petId'], options?: {
+    swr?: Parameters<typeof useSWR<Pet.FindByPetIdQueryResponse, FindByPetIdQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByPetIdQueryKey(petId)
+
+    return useSWR<Pet.FindByPetIdQueryResponse, Pet.FindByPetIdError, FindByPetIdQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petAPI.findByPetId(petId);
+        }
+    })
+}
+
+/** @summary Updates a pet in the store with form data */
+function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options?: {
+    swr?: SWRMutationConfiguration<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = petIdPostMutationKey(petId)
+
+    return useSWRMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petAPI.petIdPost(petId, data);
+    }, mutationOptions);
+}
+
+/** @summary Deletes a pet */
+function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options?: {
+    swr?: SWRMutationConfiguration<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = delByPetIdMutationKey(petId)
+
+    return useSWRMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petAPI.delByPetId(petId);
+    }, mutationOptions);
+}
+
+/** @summary uploads an image */
+function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], options?: {
+    swr?: SWRMutationConfiguration<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = uploadImagePostMutationKey(petId)
+
+    return useSWRMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petAPI.uploadImagePost(petId, data);
+    }, mutationOptions);
+}
+
+/** @summary Add a new pet to the store */
+function useCreate(options?: {
+    swr?: SWRMutationConfiguration<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, Pet.CreateMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = createMutationKey()
+
+    return useSWRMutation<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, Pet.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petAPI.create(data);
+    }, mutationOptions);
+}
+
+/** @summary Update an existing pet */
+function useUpdate(options?: {
+    swr?: SWRMutationConfiguration<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, Pet.UpdateMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = updateMutationKey()
+
+    return useSWRMutation<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, Pet.UpdateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petAPI.update(data);
+    }, mutationOptions);
+}
+
+/**
+ * @summary Finds Pets by status
+ * @description Multiple status values can be provided with comma separated strings
+ */
+function useFindByStatusGet(params: Pet.FindByStatusGetQueryParams, options?: {
+    swr?: Parameters<typeof useSWR<Pet.FindByStatusGetQueryResponse, FindByStatusGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByStatusGetQueryKey(params)
+
+    return useSWR<Pet.FindByStatusGetQueryResponse, Pet.FindByStatusGetError, FindByStatusGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petAPI.findByStatusGet(params);
+        }
+    })
+}
+
+/**
+ * @summary Finds Pets by tags
+ * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+ */
+function useFindByTagsGet(params: Pet.FindByTagsGetQueryParams, options?: {
+    swr?: Parameters<typeof useSWR<Pet.FindByTagsGetQueryResponse, FindByTagsGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByTagsGetQueryKey(params)
+
+    return useSWR<Pet.FindByTagsGetQueryResponse, Pet.FindByTagsGetError, FindByTagsGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petAPI.findByTagsGet(params);
+        }
+    })
+}
+
+export const petSWR = {
+    findByPetIdQueryKey, petIdPostMutationKey, delByPetIdMutationKey, uploadImagePostMutationKey, createMutationKey, updateMutationKey, findByStatusGetQueryKey, findByTagsGetQueryKey, useFindByPetId, usePetIdPost, useDelByPetId, useUploadImagePost, useCreate, useUpdate, useFindByStatusGet, useFindByTagsGet
+};
+
+export namespace PetSWR {
+    export type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+    export type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+    export type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+    export type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+    export type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+    export type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+    export type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+}
+```
 </details>
