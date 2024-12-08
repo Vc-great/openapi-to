@@ -1,5 +1,16 @@
 # @openapi-to/plugin-faker
 
+## 2.3.0
+
+### Minor Changes
+
+- generate swr
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/core@2.3.0
+
 ## 2.2.0
 
 ### Minor Changes

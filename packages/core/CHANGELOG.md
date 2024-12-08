@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 2.3.0
+
+### Minor Changes
+
+- generate swr
+
 ## 2.2.0
 
 ### Minor Changes

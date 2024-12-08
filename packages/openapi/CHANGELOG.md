@@ -1,5 +1,24 @@
 # openapi-to
 
+## 2.3.0
+
+### Minor Changes
+
+- generate swr
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/cli@2.3.0
+  - @openapi-to/core@2.3.0
+  - @openapi-to/plugin-faker@2.3.0
+  - @openapi-to/plugin-msw@2.3.0
+  - @openapi-to/plugin-nestjs@2.3.0
+  - @openapi-to/plugin-swr@2.3.0
+  - @openapi-to/plugin-ts-request@2.3.0
+  - @openapi-to/plugin-ts-type@2.3.0
+  - @openapi-to/plugin-zod@2.3.0
+
 ## 2.2.0
 
 ### Minor Changes
