@@ -3,7 +3,7 @@
 The current version is not compatible with V1.[V1 document](https://github.com/Vc-great/openapi-to/tree/v1)
 
 
-## openapi-to
+# At Glance
 Generate SDKs,OpenAPI to:
 
 + [x] ts request
@@ -16,26 +16,37 @@ Generate SDKs,OpenAPI to:
 + [ ] vue-Query
 + [ ] react-Query
 
-
 OpenAPI Specifications are supported:
 - swagger 2.0
 - openapi 3.0
 
-
+# Quick Start
 ## Install
-```
+```shell [npm]
 npm i openapi-to -g
 ```
 
 
-## Usage
+## Usage 1
 ```js
   openapi init  // Generate openapi.config.js file
   openapi g     // Generate code from the openapi.config.js file
 ```
 
-## openapi.config
-```ts
+## Usage 2
+::: code-group
+```json [package.json]
+{
+  "scripts": {
+    "init": "openapi init",
+    "openapi generate": "openapi g"
+  }
+}
+```
+:::
+## Example
+::: code-group
+```typescript twoslash [single]
 import {
   defineConfig,
   createTSRequest,
@@ -58,17 +69,57 @@ export default defineConfig({
     },
   ],
   plugins: [
-    createTSRequest({
-      createZodDecorator: true,
-    }),
+    createTSRequest(),
     createTSType(),
     createZod(),
     createFaker(),
     createMSW(),
     createNestjs(),
-  ],
+  ]
 });
 ```
+```typescript twoslash [multiple]
+import {
+  defineConfig,
+  createTSRequest,
+  createTSType,
+  createZod,
+  createFaker,
+  createMSW,
+  createNestjs,
+} from "openapi-to";
+
+export default defineConfig({
+  servers: [
+    {
+      input: {
+        path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+      },
+      output:{
+       dir:'server' //.OpenAPI/server
+    }
+    },
+    {
+      input: {
+        path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+      },
+      output:{
+        dir:'server2' //.OpenAPI/server2
+      }
+    }
+  ],
+  plugins: [
+    createTSRequest(),
+    createTSType(),
+    createZod(),
+    createFaker(),
+    createMSW(),
+    createNestjs(),
+  ]
+});
+````
+:::
+# plugins
 ## createTSRequest
 
 
