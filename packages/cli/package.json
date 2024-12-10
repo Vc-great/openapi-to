@@ -28,9 +28,6 @@
       "default": "./dist/cjs/index.cjs"
     }
   },
-  "bin": {
-    "openapi": "bin/openapi.js"
-  },
   "files": [
     "dist",
     "bin",

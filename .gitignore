@@ -50,3 +50,5 @@ test.json
 .next
 docs/.vitepress/cache/**
 docs/.vitepress/dist/**
+
+.nx

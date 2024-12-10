@@ -70,7 +70,6 @@
     "node": ">=18",
     "pnpm": ">=8.3.0"
   },
-  "preferGlobal": true,
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
