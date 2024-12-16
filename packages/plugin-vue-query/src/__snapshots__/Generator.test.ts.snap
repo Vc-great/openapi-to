@@ -1,0 +1,607 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`vue-query > vue-query getFullText 1`] = `
+"import { petAPI } from "./petAPI";
+import type { Pet } from "./Pet";
+import { MaybeRef } from "vue";
+import { queryOptions, useQuery } from "@tanstack/vue-query";
+import { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import { useMutation } from "@tanstack/vue-query";
+
+export const testPostMutationKey = () => [{ url: \`/pet/test\`, method: 'post' }] as const;
+
+export const testPutMutationKey = () => [{ url: \`/pet/test\`, method: 'put' }] as const;
+
+export const delByTestMutationKey = () => [{ url: \`/pet/test\`, method: 'delete' }] as const;
+
+export const testIdGetQueryKey = (testId: Pet.TestIdGetPathParams['testId'], params?: MaybeRef<Pet.TestIdGetQueryParams>) => [{ url: \`/pet/test/\${testId}\`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+export const uploadImagePostMutationKey = (petId: Pet.UploadImagePostPathParams['petId']) => [{ url: \`/pet/\${petId}/uploadImage\`, method: 'post' }] as const;
+
+export const createMutationKey = () => [{ url: \`/pet\`, method: 'post' }] as const;
+
+export const updateMutationKey = () => [{ url: \`/pet\`, method: 'put' }] as const;
+
+export const findByStatusGetQueryKey = (params?: MaybeRef<Pet.FindByStatusGetQueryParams>) => [{ url: \`/pet/findByStatus\`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+export const findByTagsGetQueryKey = (params?: MaybeRef<Pet.FindByTagsGetQueryParams>) => [{ url: \`/pet/findByTags\`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+export const findByPetIdQueryKey = (petId: Pet.FindByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'get' }] as const;
+
+export const petIdPostMutationKey = (petId: Pet.PetIdPostPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'post' }] as const;
+
+export const delByPetIdMutationKey = (petId: Pet.DelByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'delete' }] as const;
+type TestPostMutationKey = ReturnType<typeof testPostMutationKey>;
+type TestPutMutationKey = ReturnType<typeof testPutMutationKey>;
+type DelByTestMutationKey = ReturnType<typeof delByTestMutationKey>;
+type TestIdGetQueryKey = ReturnType<typeof testIdGetQueryKey>;
+type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+
+/** @summary summary */
+function useTestPost(options?: {
+    mutation?: MutationObserverOptions<Pet.TestPostMutationResponse, Pet.TestPostError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? testPostMutationKey()
+
+    return useMutation<Pet.TestPostMutationResponse, Pet.TestPostError>({
+        mutationFn: async () => {
+            return petAPI.testPost();
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary summary */
+function useTestPut(options?: {
+    mutation?: MutationObserverOptions<Pet.TestPutMutationResponse, Pet.TestPutError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? testPutMutationKey()
+
+    return useMutation<Pet.TestPutMutationResponse, Pet.TestPutError>({
+        mutationFn: async () => {
+            return petAPI.testPut();
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary summary */
+function useDelByTest(options?: {
+    mutation?: MutationObserverOptions<Pet.DelByTestMutationResponse, Pet.DelByTestError, { data: MaybeRef<Pet.DelByTestMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? delByTestMutationKey()
+
+    return useMutation<Pet.DelByTestMutationResponse, Pet.DelByTestError, { data: Pet.DelByTestMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return petAPI.delByTest(data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary summary */
+function useTestIdGet<TData = Pet.TestIdGetQueryResponse, TQueryData = Pet.TestIdGetQueryResponse, TQueryKey extends QueryKey = TestIdGetQueryKey>(testId: Pet.TestIdGetPathParams['testId'], params?: MaybeRef<Pet.TestIdGetQueryParams>, options?: {
+    query?: Partial<QueryObserverOptions<Pet.TestIdGetQueryResponse, Pet.TestIdGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? testIdGetQueryKey(testId, params)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petAPI.testIdGet(testId, params);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.TestIdGetError>
+
+}
+
+/**
+ * @summary uploads an image
+ * @description pet
+ */
+function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], options?: {
+    mutation?: MutationObserverOptions<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, { data: MaybeRef<Pet.UploadImagePostMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? uploadImagePostMutationKey(petId)
+
+    return useMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, { data: Pet.UploadImagePostMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return petAPI.uploadImagePost(petId, data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary Add a new pet to the store */
+function useCreate(options?: {
+    mutation?: MutationObserverOptions<Pet.CreateMutationResponse, Pet.CreateError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? createMutationKey()
+
+    return useMutation<Pet.CreateMutationResponse, Pet.CreateError>({
+        mutationFn: async () => {
+            return petAPI.create();
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary Update an existing pet */
+function useUpdate(options?: {
+    mutation?: MutationObserverOptions<Pet.UpdateMutationResponse, Pet.UpdateError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? updateMutationKey()
+
+    return useMutation<Pet.UpdateMutationResponse, Pet.UpdateError>({
+        mutationFn: async () => {
+            return petAPI.update();
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Finds Pets by status
+ * @description Multiple status values can be provided with comma separated strings
+ */
+function useFindByStatusGet<TData = Pet.FindByStatusGetQueryResponse, TQueryData = Pet.FindByStatusGetQueryResponse, TQueryKey extends QueryKey = FindByStatusGetQueryKey>(params?: MaybeRef<Pet.FindByStatusGetQueryParams>, options?: {
+    query?: Partial<QueryObserverOptions<Pet.FindByStatusGetQueryResponse, Pet.FindByStatusGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByStatusGetQueryKey(params)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petAPI.findByStatusGet(params);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.FindByStatusGetError>
+
+}
+
+/**
+ * @summary Finds Pets by tags
+ * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+ */
+function useFindByTagsGet<TData = Pet.FindByTagsGetQueryResponse, TQueryData = Pet.FindByTagsGetQueryResponse, TQueryKey extends QueryKey = FindByTagsGetQueryKey>(params?: MaybeRef<Pet.FindByTagsGetQueryParams>, options?: {
+    query?: Partial<QueryObserverOptions<Pet.FindByTagsGetQueryResponse, Pet.FindByTagsGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByTagsGetQueryKey(params)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petAPI.findByTagsGet(params);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.FindByTagsGetError>
+
+}
+
+/**
+ * @summary Find pet by ID
+ * @description Returns a single pet
+ */
+function useFindByPetId<TData = Pet.FindByPetIdQueryResponse, TQueryData = Pet.FindByPetIdQueryResponse, TQueryKey extends QueryKey = FindByPetIdQueryKey>(petId: Pet.FindByPetIdPathParams['petId'], options?: {
+    query?: Partial<QueryObserverOptions<Pet.FindByPetIdQueryResponse, Pet.FindByPetIdError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByPetIdQueryKey(petId)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petAPI.findByPetId(petId);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.FindByPetIdError>
+
+}
+
+/** @summary Updates a pet in the store with form data */
+function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options?: {
+    mutation?: MutationObserverOptions<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, { data: MaybeRef<Pet.PetIdPostMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? petIdPostMutationKey(petId)
+
+    return useMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, { data: Pet.PetIdPostMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return petAPI.petIdPost(petId, data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary Deletes a pet */
+function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options?: {
+    mutation?: MutationObserverOptions<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? delByPetIdMutationKey(petId)
+
+    return useMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError>({
+        mutationFn: async () => {
+            return petAPI.delByPetId(petId);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+export const petQuery = {
+    testPostMutationKey, testPutMutationKey, delByTestMutationKey, testIdGetQueryKey, uploadImagePostMutationKey, createMutationKey, updateMutationKey, findByStatusGetQueryKey, findByTagsGetQueryKey, findByPetIdQueryKey, petIdPostMutationKey, delByPetIdMutationKey, useTestPost, useTestPut, useDelByTest, useTestIdGet, useUploadImagePost, useCreate, useUpdate, useFindByStatusGet, useFindByTagsGet, useFindByPetId, usePetIdPost, useDelByPetId
+};
+
+export namespace PetQuery {
+    export type TestPostMutationKey = ReturnType<typeof testPostMutationKey>;
+    export type TestPutMutationKey = ReturnType<typeof testPutMutationKey>;
+    export type DelByTestMutationKey = ReturnType<typeof delByTestMutationKey>;
+    export type TestIdGetQueryKey = ReturnType<typeof testIdGetQueryKey>;
+    export type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+    export type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+    export type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+    export type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+    export type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+    export type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+    export type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+}
+
+import { storeAPI } from "./storeAPI";
+import type { Store } from "./Store";
+import { MaybeRef } from "vue";
+import { queryOptions, useQuery } from "@tanstack/vue-query";
+import { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import { useMutation } from "@tanstack/vue-query";
+
+export const createMutationKey = () => [{ url: \`/store/order\`, method: 'post' }] as const;
+
+export const findByOrderIdQueryKey = (orderId: Store.FindByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\`, method: 'get' }] as const;
+
+export const delByOrderIdMutationKey = (orderId: Store.DelByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\`, method: 'delete' }] as const;
+
+export const inventoryGetQueryKey = () => [{ url: \`/store/inventory\`, method: 'get' }] as const;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+type FindByOrderIdQueryKey = ReturnType<typeof findByOrderIdQueryKey>;
+type DelByOrderIdMutationKey = ReturnType<typeof delByOrderIdMutationKey>;
+type InventoryGetQueryKey = ReturnType<typeof inventoryGetQueryKey>;
+
+/** @summary Place an order for a pet */
+function useCreate(options?: {
+    mutation?: MutationObserverOptions<Store.CreateMutationResponse, Store.CreateError, { data: MaybeRef<Store.CreateMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? createMutationKey()
+
+    return useMutation<Store.CreateMutationResponse, Store.CreateError, { data: Store.CreateMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return storeAPI.create(data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Find purchase order by ID
+ * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
+ */
+function useFindByOrderId<TData = Store.FindByOrderIdQueryResponse, TQueryData = Store.FindByOrderIdQueryResponse, TQueryKey extends QueryKey = FindByOrderIdQueryKey>(orderId: Store.FindByOrderIdPathParams['orderId'], options?: {
+    query?: Partial<QueryObserverOptions<Store.FindByOrderIdQueryResponse, Store.FindByOrderIdError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByOrderIdQueryKey(orderId)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return storeAPI.findByOrderId(orderId);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Store.FindByOrderIdError>
+
+}
+
+/**
+ * @summary Delete purchase order by ID
+ * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
+ */
+function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], options?: {
+    mutation?: MutationObserverOptions<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? delByOrderIdMutationKey(orderId)
+
+    return useMutation<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError>({
+        mutationFn: async () => {
+            return storeAPI.delByOrderId(orderId);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Returns pet inventories by status
+ * @description Returns a map of status codes to quantities
+ */
+function useInventoryGet<TData = Store.InventoryGetQueryResponse, TQueryData = Store.InventoryGetQueryResponse, TQueryKey extends QueryKey = InventoryGetQueryKey>(options?: {
+    query?: Partial<QueryObserverOptions<Store.InventoryGetQueryResponse, Store.InventoryGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? inventoryGetQueryKey()
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return storeAPI.inventoryGet();
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Store.InventoryGetError>
+
+}
+
+export const storeQuery = {
+    createMutationKey, findByOrderIdQueryKey, delByOrderIdMutationKey, inventoryGetQueryKey, useCreate, useFindByOrderId, useDelByOrderId, useInventoryGet
+};
+
+export namespace StoreQuery {
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+    export type FindByOrderIdQueryKey = ReturnType<typeof findByOrderIdQueryKey>;
+    export type DelByOrderIdMutationKey = ReturnType<typeof delByOrderIdMutationKey>;
+    export type InventoryGetQueryKey = ReturnType<typeof inventoryGetQueryKey>;
+}
+
+import { userAPI } from "./userAPI";
+import type { User } from "./User";
+import { MaybeRef } from "vue";
+import { queryOptions, useQuery } from "@tanstack/vue-query";
+import { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import { useMutation } from "@tanstack/vue-query";
+
+export const createWithArrayPostMutationKey = () => [{ url: \`/user/createWithArray\`, method: 'post' }] as const;
+
+export const createWithListPostMutationKey = () => [{ url: \`/user/createWithList\`, method: 'post' }] as const;
+
+export const findByUsernameQueryKey = (username: User.FindByUsernamePathParams['username']) => [{ url: \`/user/\${username}\`, method: 'get' }] as const;
+
+export const usernamePutMutationKey = (username: User.UsernamePutPathParams['username']) => [{ url: \`/user/\${username}\`, method: 'put' }] as const;
+
+export const delByUsernameMutationKey = (username: User.DelByUsernamePathParams['username']) => [{ url: \`/user/\${username}\`, method: 'delete' }] as const;
+
+export const loginGetQueryKey = (params?: MaybeRef<User.LoginGetQueryParams>) => [{ url: \`/user/login\`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+export const logoutGetQueryKey = () => [{ url: \`/user/logout\`, method: 'get' }] as const;
+
+export const createMutationKey = () => [{ url: \`/user\`, method: 'post' }] as const;
+type CreateWithArrayPostMutationKey = ReturnType<typeof createWithArrayPostMutationKey>;
+type CreateWithListPostMutationKey = ReturnType<typeof createWithListPostMutationKey>;
+type FindByUsernameQueryKey = ReturnType<typeof findByUsernameQueryKey>;
+type UsernamePutMutationKey = ReturnType<typeof usernamePutMutationKey>;
+type DelByUsernameMutationKey = ReturnType<typeof delByUsernameMutationKey>;
+type LoginGetQueryKey = ReturnType<typeof loginGetQueryKey>;
+type LogoutGetQueryKey = ReturnType<typeof logoutGetQueryKey>;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+
+/** @summary Creates list of users with given input array */
+function useCreateWithArrayPost(options?: {
+    mutation?: MutationObserverOptions<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? createWithArrayPostMutationKey()
+
+    return useMutation<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError>({
+        mutationFn: async () => {
+            return userAPI.createWithArrayPost();
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary Creates list of users with given input array */
+function useCreateWithListPost(options?: {
+    mutation?: MutationObserverOptions<User.CreateWithListPostMutationResponse, User.CreateWithListPostError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? createWithListPostMutationKey()
+
+    return useMutation<User.CreateWithListPostMutationResponse, User.CreateWithListPostError>({
+        mutationFn: async () => {
+            return userAPI.createWithListPost();
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary Get user by user name */
+function useFindByUsername<TData = User.FindByUsernameQueryResponse, TQueryData = User.FindByUsernameQueryResponse, TQueryKey extends QueryKey = FindByUsernameQueryKey>(username: User.FindByUsernamePathParams['username'], options?: {
+    query?: Partial<QueryObserverOptions<User.FindByUsernameQueryResponse, User.FindByUsernameError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByUsernameQueryKey(username)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return userAPI.findByUsername(username);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, User.FindByUsernameError>
+
+}
+
+/**
+ * @summary Updated user
+ * @description This can only be done by the logged in user.
+ */
+function useUsernamePut(username: User.UsernamePutPathParams['username'], options?: {
+    mutation?: MutationObserverOptions<User.UsernamePutMutationResponse, User.UsernamePutError, { data: MaybeRef<User.UsernamePutMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? usernamePutMutationKey(username)
+
+    return useMutation<User.UsernamePutMutationResponse, User.UsernamePutError, { data: User.UsernamePutMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return userAPI.usernamePut(username, data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Delete user
+ * @description This can only be done by the logged in user.
+ */
+function useDelByUsername(username: User.DelByUsernamePathParams['username'], options?: {
+    mutation?: MutationObserverOptions<User.DelByUsernameMutationResponse, User.DelByUsernameError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? delByUsernameMutationKey(username)
+
+    return useMutation<User.DelByUsernameMutationResponse, User.DelByUsernameError>({
+        mutationFn: async () => {
+            return userAPI.delByUsername(username);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary Logs user into the system */
+function useLoginGet<TData = User.LoginGetQueryResponse, TQueryData = User.LoginGetQueryResponse, TQueryKey extends QueryKey = LoginGetQueryKey>(params?: MaybeRef<User.LoginGetQueryParams>, options?: {
+    query?: Partial<QueryObserverOptions<User.LoginGetQueryResponse, User.LoginGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? loginGetQueryKey(params)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return userAPI.loginGet(params);
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, User.LoginGetError>
+
+}
+
+/** @summary Logs out current logged in user session */
+function useLogoutGet<TData = User.LogoutGetQueryResponse, TQueryData = User.LogoutGetQueryResponse, TQueryKey extends QueryKey = LogoutGetQueryKey>(options?: {
+    query?: Partial<QueryObserverOptions<User.LogoutGetQueryResponse, User.LogoutGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? logoutGetQueryKey()
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return userAPI.logoutGet();
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, User.LogoutGetError>
+
+}
+
+/**
+ * @summary Create user
+ * @description This can only be done by the logged in user.
+ */
+function useCreate(options?: {
+    mutation?: MutationObserverOptions<User.CreateMutationResponse, User.CreateError, { data: MaybeRef<User.CreateMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? createMutationKey()
+
+    return useMutation<User.CreateMutationResponse, User.CreateError, { data: User.CreateMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return userAPI.create(data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+export const userQuery = {
+    createWithArrayPostMutationKey, createWithListPostMutationKey, findByUsernameQueryKey, usernamePutMutationKey, delByUsernameMutationKey, loginGetQueryKey, logoutGetQueryKey, createMutationKey, useCreateWithArrayPost, useCreateWithListPost, useFindByUsername, useUsernamePut, useDelByUsername, useLoginGet, useLogoutGet, useCreate
+};
+
+export namespace UserQuery {
+    export type CreateWithArrayPostMutationKey = ReturnType<typeof createWithArrayPostMutationKey>;
+    export type CreateWithListPostMutationKey = ReturnType<typeof createWithListPostMutationKey>;
+    export type FindByUsernameQueryKey = ReturnType<typeof findByUsernameQueryKey>;
+    export type UsernamePutMutationKey = ReturnType<typeof usernamePutMutationKey>;
+    export type DelByUsernameMutationKey = ReturnType<typeof delByUsernameMutationKey>;
+    export type LoginGetQueryKey = ReturnType<typeof loginGetQueryKey>;
+    export type LogoutGetQueryKey = ReturnType<typeof logoutGetQueryKey>;
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+}
+"
+`;

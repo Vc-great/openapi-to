@@ -61,6 +61,7 @@
     "@openapi-to/plugin-zod": "workspace:*",
     "@openapi-to/plugin-msw": "workspace:*",
     "@openapi-to/plugin-swr": "workspace:*",
+    "@openapi-to/plugin-vue-query": "workspace:*",
     "@openapi-to/plugin-faker": "workspace:*",
     "@openapi-to/plugin-nestjs": "workspace:*",
     "@types/update-notifier": "^6.0.8",

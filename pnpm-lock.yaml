@@ -371,6 +371,9 @@ importers:
       '@openapi-to/plugin-ts-type':
         specifier: workspace:*
         version: link:../plugin-ts-type
+      '@openapi-to/plugin-vue-query':
+        specifier: workspace:*
+        version: link:../plugin-vue-query
       '@openapi-to/plugin-zod':
         specifier: workspace:*
         version: link:../plugin-zod
@@ -567,6 +570,37 @@ importers:
       '@types/lodash':
         specifier: ^4.17.9
         version: 4.17.13
+
+  packages/plugin-vue-query:
+    dependencies:
+      '@openapi-to/core':
+        specifier: workspace:*
+        version: link:../core
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
+    devDependencies:
+      '@openapi-to/eslint-config':
+        specifier: workspace:*
+        version: link:../config/eslint-config
+      '@openapi-to/ts-config':
+        specifier: workspace:*
+        version: link:../config/ts-config
+      '@openapi-to/tsup-config':
+        specifier: workspace:*
+        version: link:../config/tsup-config
+      '@types/lodash':
+        specifier: ^4.17.9
+        version: 4.17.13
+      utility-types:
+        specifier: ^3.11.0
+        version: 3.11.0
 
   packages/plugin-zod:
     dependencies:
@@ -7511,7 +7545,7 @@ snapshots:
     dependencies:
       foreground-child: 3.1.1
       jackspeak: 2.3.6
-      minimatch: 9.0.3
+      minimatch: 9.0.5
       minipass: 7.0.4
       path-scurry: 1.10.1
 
