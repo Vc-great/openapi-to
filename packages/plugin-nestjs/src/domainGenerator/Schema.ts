@@ -46,7 +46,7 @@ export class Schema extends NestjsGenerator {
       ? (this.openapi.findSchemaDefinition(ref) as SchemaObject)
       : (schemaObject?.items as SchemaObject);
 
-    return _.get(_schemaObject, "type", "");
+    return _.get(_schemaObject, "type", "any");
   }
 
   getPropertyStructureFromSchemaObject(

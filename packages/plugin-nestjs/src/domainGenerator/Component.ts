@@ -55,7 +55,7 @@ export class Component extends NestjsGenerator {
 
     const validatorDecorator =
       this.validatorDecorator.generatorDecorator(schema, item.required) ?? [];
-    const type = (this.schema.getSchemaType(schema) as string) || "any";
+    const type = schema ? (this.schema.getSchemaType(schema) as string) : "any";
     const statements: Omit<ClassDeclarationStructure, "kind"> = {
       leadingTrivia: "\n",
       isExported: true,
@@ -71,7 +71,7 @@ export class Component extends NestjsGenerator {
           name: item.name,
           type: `${type} ${isArrayOfSchema ? "[]" : ""}`,
           hasQuestionToken: !item.required,
-          initializer: JSON.stringify(schema.default),
+          initializer: schema?.default ? JSON.stringify(schema.default) : "",
           decorators: [
             ...validatorDecorator,
             ...this.swaggerGenerator.generatorDecoratorFromParameterObject(
