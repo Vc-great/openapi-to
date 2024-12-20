@@ -294,6 +294,14 @@ export class SwrGenerator {
 
     const url = new URLPath(<string>this.operation?.path);
 
+    const parameterName = _.map(
+      this.openapi.parameter?.parameters,
+      (x) => x.name,
+    );
+    const hasPage = this.pluginConfig?.infiniteKey?.every((key) =>
+      parameterName.includes(key),
+    );
+
     return {
       leadingTrivia: "\n",
       kind: StructureKind.VariableStatement,
@@ -301,7 +309,19 @@ export class SwrGenerator {
       declarations: [
         {
           name: this.queryKeyName,
-          initializer: `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? "," + keys : ""}] as const`,
+          initializer: hasPage
+            ? `(${funcParams.join()}, shouldFetch: boolean) =>
+    (pageIndex: number, previousPageData: ${this.responseDataType}) => {
+        if (!shouldFetch) {
+            return null
+        }
+        if (previousPageData && !previousPageData.length) return null
+
+        return {
+            ...params
+        } as const
+    }`
+            : `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? "," + keys : ""}] as const`,
 
           //   docs: [{ description: "" }],
         },
