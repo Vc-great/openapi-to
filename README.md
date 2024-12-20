@@ -337,239 +337,151 @@ export const petAPI = new PetAPI;
 <summary>ts type</summary>
 
 ```ts
-import type { TestDto, TestDto2, Test32145, ApiResponse, Pet } from "./typeModels";
+import type { Pet, ApiResponse } from "./typeModels";
 
 /**
- *
  * @tag pet
  * @description Everything about your Pets
  * @UUID type-pet
  */
 export namespace Pet {
-    /** */
-    export type TestPostBodyParams = TestDto;
-    /** OK */
-    export type TestPostResponse = TestDto2;
-    /** */
-    export type TestPostResponse401 = unknown;
-    /** */
-    export type TestPostResponse403 = unknown;
-    /** */
-    export type TestPostResponse404 = unknown;
-    /** */
-    export type TestPostErrorResponse = TestPostResponse401 | TestPostResponse403 | TestPostResponse404;
-    /** */
-    export type TestPutBodyParams = TestDto;
-    /** OK */
-    export type TestPutResponse = TestDto2;
-    /** */
-    export type TestPutResponse401 = unknown;
-    /** */
-    export type TestPutResponse403 = unknown;
-    /** */
-    export type TestPutResponse404 = unknown;
-    /** */
-    export type TestPutErrorResponse = TestPutResponse401 | TestPutResponse403 | TestPutResponse404;
-    /** */
-    export type DelByTestBodyParams = Array<number>;
-    /** OK */
-    export type DelByTestResponse = Test32145;
-    /** */
-    export type DelByTestResponse401 = unknown;
-    /** */
-    export type DelByTestResponse403 = unknown;
-    /** */
-    export type DelByTestErrorResponse = DelByTestResponse401 | DelByTestResponse403;
+  export type UpdateMutationRequest = Pet;
+  /**
+   * @description Successful operation
+   */
+  export type UpdateMutationResponse = Pet;
+  export type UpdateError = unknown;
+  export type CreateMutationRequest = Pet;
+  /**
+   * @description Successful operation
+   */
+  export type CreateMutationResponse = Pet;
+  export type CreateError = unknown;
 
-    /** queryParams */
-    export interface TestIdGetQueryParams {
-        /**
-         *
-         * @description
-         */
-        fields?: Array<string>;
-        /**
-         *
-         * @description
-         */
-        page: number;
-        /**
-         *
-         * @description
-         */
-        size: number;
-    }
+  /**
+   * @description queryParams
+   */
+  export interface FindByStatusGetQueryParams {
+    /**
+     * @description Status values that need to be considered for filter
+     */
+    pageNum?: unknown;
+    /**
+     * @description Status values that need to be considered for filter
+     */
+    pageSize?: unknown;
+    /**
+     * @description Status values that need to be considered for filter
+     */
+    status?: string;
+  }
 
-    /** pathParams */
-    export interface TestIdGetPathParams {
-        /**
-         *
-         * @description
-         */
-        testId?: number;
-        /**
-         *
-         * @description
-         */
-        testId2?: string;
-    }
+  /**
+   * @description successful operation
+   */
+  export type FindByStatusGetQueryResponse = Pet[];
+  export type FindByStatusGetError = unknown;
 
-    /** OK */
-    export type TestIdGetResponse = TestDto2;
-    /** */
-    export type TestIdGetResponse401 = unknown;
-    /** */
-    export type TestIdGetResponse403 = unknown;
-    /** */
-    export type TestIdGetResponse404 = unknown;
-    /** */
-    export type TestIdGetErrorResponse = TestIdGetResponse401 | TestIdGetResponse403 | TestIdGetResponse404;
+  /**
+   * @description queryParams
+   */
+  export interface FindByTagsGetQueryParams {
+    /**
+     * @description Tags to filter by
+     */
+    tags?: Array<string>;
+  }
 
-    /** pathParams */
-    export interface UploadImagePostPathParams {
-        /**
-         *
-         * @description
-         */
-        petId: number;
-    }
+  /**
+   * @description successful operation
+   */
+  export type FindByTagsGetQueryResponse = Pet[];
+  export type FindByTagsGetError = unknown;
 
-    /** bodyParams */
-    export interface UploadImagePostBodyParams {
-        /**
-         *
-         * @description Additional data to pass to server
-         */
-        additionalMetadata?: string;
-        /**
-         *
-         * @description file to upload
-         */
-        file?: string;
-    }
+  /**
+   * @description pathParams
+   */
+  export interface FindByPetIdPathParams {
+    /**
+     * @description ID of pet to return
+     */
+    petId: number;
+  }
 
-    /** successful operation */
-    export type UploadImagePostResponse = ApiResponse;
-    /** */
-    export type UploadImagePostErrorResponse = unknown;
-    /** */
-    export type CreateBodyParams = Pet;
-    /** */
-    export type CreateResponse405 = unknown;
-    /** */
-    export type CreateErrorResponse = CreateResponse405;
-    /** */
-    export type CreateResponse = unknown;
-    /** */
-    export type UpdateBodyParams = Pet;
-    /** */
-    export type UpdateResponse400 = unknown;
-    /** */
-    export type UpdateResponse404 = unknown;
-    /** */
-    export type UpdateResponse405 = unknown;
-    /** */
-    export type UpdateErrorResponse = UpdateResponse400 | UpdateResponse404 | UpdateResponse405;
-    /** */
-    export type UpdateResponse = unknown;
+  /**
+   * @description successful operation
+   */
+  export type FindByPetIdQueryResponse = Pet;
+  export type FindByPetIdError = unknown;
 
-    /** queryParams */
-    export interface FindByStatusGetQueryParams {
-        /**
-         *
-         * @description
-         */
-        status: Array<string>;
-    }
+  /**
+   * @description queryParams
+   */
+  export interface PetIdPostQueryParams {
+    /**
+     * @description Name of pet that needs to be updated
+     */
+    name?: string;
+    /**
+     * @description Status of pet that needs to be updated
+     */
+    status?: string;
+  }
 
-    /** successful operation */
-    export type FindByStatusGetResponse = Pet[];
-    /** */
-    export type FindByStatusGetResponse400 = unknown;
-    /** */
-    export type FindByStatusGetErrorResponse = FindByStatusGetResponse400;
+  /**
+   * @description pathParams
+   */
+  export interface PetIdPostPathParams {
+    /**
+     * @description ID of pet that needs to be updated
+     */
+    petId: number;
+  }
 
-    /** queryParams */
-    export interface FindByTagsGetQueryParams {
-        /**
-         *
-         * @description
-         */
-        tags: Array<string>;
-    }
+  export type PetIdPostError = unknown;
+  export type PetIdPostMutationResponse = unknown;
 
-    /** successful operation */
-    export type FindByTagsGetResponse = Pet[];
-    /** */
-    export type FindByTagsGetResponse400 = unknown;
-    /** */
-    export type FindByTagsGetErrorResponse = FindByTagsGetResponse400;
+  /**
+   * @description pathParams
+   */
+  export interface DelByPetIdPathParams {
+    /**
+     * @description Pet id to delete
+     */
+    petId: number;
+  }
 
-    /** pathParams */
-    export interface FindByPetIdPathParams {
-        /**
-         *
-         * @description
-         */
-        petId: number;
-    }
+  export type DelByPetIdError = unknown;
+  export type DelByPetIdMutationResponse = unknown;
 
-    /** successful operation */
-    export type FindByPetIdResponse = Pet;
-    /** */
-    export type FindByPetIdResponse400 = unknown;
-    /** */
-    export type FindByPetIdResponse404 = unknown;
-    /** */
-    export type FindByPetIdErrorResponse = FindByPetIdResponse400 | FindByPetIdResponse404;
+  /**
+   * @description queryParams
+   */
+  export interface UploadImagePostQueryParams {
+    /**
+     * @description Additional Metadata
+     */
+    additionalMetadata?: string;
+  }
 
-    /** pathParams */
-    export interface PetIdPostPathParams {
-        /**
-         *
-         * @description
-         */
-        petId: number;
-    }
+  /**
+   * @description pathParams
+   */
+  export interface UploadImagePostPathParams {
+    /**
+     * @description ID of pet to update
+     */
+    petId: number;
+  }
 
-    /** bodyParams */
-    export interface PetIdPostBodyParams {
-        /**
-         *
-         * @description Updated name of the pet
-         */
-        name?: string;
-        /**
-         *
-         * @description Updated status of the pet
-         */
-        status?: string;
-    }
+  export interface UploadImagePostMutationRequest {
+  }
 
-    /** */
-    export type PetIdPostResponse405 = unknown;
-    /** */
-    export type PetIdPostErrorResponse = PetIdPostResponse405;
-    /** */
-    export type PetIdPostResponse = unknown;
-
-    /** pathParams */
-    export interface DelByPetIdPathParams {
-        /**
-         *
-         * @description
-         */
-        petId: number;
-    }
-
-    /** */
-    export type DelByPetIdResponse400 = unknown;
-    /** */
-    export type DelByPetIdResponse404 = unknown;
-    /** */
-    export type DelByPetIdErrorResponse = DelByPetIdResponse400 | DelByPetIdResponse404;
-    /** */
-    export type DelByPetIdResponse = unknown;
+  /**
+   * @description successful operation
+   */
+  export type UploadImagePostMutationResponse = ApiResponse;
+  export type UploadImagePostError = unknown;
 }
 
 ```
@@ -580,429 +492,268 @@ export namespace Pet {
 
 ```ts
 import { z } from "zod";
-import { testDto, testDto2, test32145, apiResponse, pet } from "./zodModels";
-/** bodyParams */
-const testPostBodyParams = z.lazy(() => testDto);
-/** OK */
-const testPostResponse = z.lazy(() => testDto2);
-/** */
-const testPostResponse401 = z.unknown();
-/** */
-const testPostResponse403 = z.unknown();
-/** */
-const testPostResponse404 = z.unknown();
-/** */
-const testPostErrorResponse = z.union([testPostResponse401, testPostResponse403, testPostResponse404]);
-/** bodyParams */
-const testPutBodyParams = z.lazy(() => testDto);
-/** OK */
-const testPutResponse = z.lazy(() => testDto2);
-/** */
-const testPutResponse401 = z.unknown();
-/** */
-const testPutResponse403 = z.unknown();
-/** */
-const testPutResponse404 = z.unknown();
-/** */
-const testPutErrorResponse = z.union([testPutResponse401, testPutResponse403, testPutResponse404]);
-/** bodyParams */
-const delByTestBodyParams = z.number().array();
-/** OK */
-const delByTestResponse = z.lazy(() => test32145);
-/** */
-const delByTestResponse401 = z.unknown();
-/** */
-const delByTestResponse403 = z.unknown();
-/** */
-const delByTestErrorResponse = z.union([delByTestResponse401, delByTestResponse403]);
-/** queryParams */
-const testIdGetQueryParams = z.object({
-    /***/
-    fields: z.string().array().optional(),
-    /***/
-    page: z.number(),
-    /***/
-    size: z.number()
-});
-/** pathParams */
-export const testIdGetPathParams = z.object({
-    /***/
-    testId: z.number().optional(),
-    /***/
-    testId2: z.string().optional()
-});
-/** OK */
-const testIdGetResponse = z.lazy(() => testDto2);
-/** */
-const testIdGetResponse401 = z.unknown();
-/** */
-const testIdGetResponse403 = z.unknown();
-/** */
-const testIdGetResponse404 = z.unknown();
-/** */
-const testIdGetErrorResponse = z.union([testIdGetResponse401, testIdGetResponse403, testIdGetResponse404]);
-/** pathParams */
-export const uploadImagePostPathParams = z.object({
-    /***/
-    petId: z.number()
-});
-/** bodyParams */
-const uploadImagePostBodyParams = z.object({
-    /**Additional data to pass to server*/
-    additionalMetadata: z.string().optional(),
-    /**file to upload*/
-    file: z.string().optional()
-});
-/** successful operation */
-const uploadImagePostResponse = z.lazy(() => apiResponse);
-/** */
-const uploadImagePostErrorResponse = z.unknown();
-/** bodyParams */
-const createBodyParams = z.lazy(() => pet);
-/** */
-const createResponse405 = z.unknown();
-/** */
-const createErrorResponse = createResponse405;
-/** */
-const createResponse = z.unknown();
-/** bodyParams */
-const updateBodyParams = z.lazy(() => pet);
-/** */
-const updateResponse400 = z.unknown();
-/** */
-const updateResponse404 = z.unknown();
-/** */
-const updateResponse405 = z.unknown();
-/** */
-const updateErrorResponse = z.union([updateResponse400, updateResponse404, updateResponse405]);
-/** */
-const updateResponse = z.unknown();
-/** queryParams */
-const findByStatusGetQueryParams = z.object({
-    /***/
-    status: z.string().array()
-});
-/** successful operation */
-const findByStatusGetResponse = z.lazy(() => pet.array());
-/** */
-const findByStatusGetResponse400 = z.unknown();
-/** */
-const findByStatusGetErrorResponse = findByStatusGetResponse400;
-/** queryParams */
-const findByTagsGetQueryParams = z.object({
-    /***/
-    tags: z.string().array()
-});
-/** successful operation */
-const findByTagsGetResponse = z.lazy(() => pet.array());
-/** */
-const findByTagsGetResponse400 = z.unknown();
-/** */
-const findByTagsGetErrorResponse = findByTagsGetResponse400;
-/** pathParams */
-export const findByPetIdPathParams = z.object({
-    /***/
-    petId: z.number()
-});
-/** successful operation */
-const findByPetIdResponse = z.lazy(() => pet);
-/** */
-const findByPetIdResponse400 = z.unknown();
-/** */
-const findByPetIdResponse404 = z.unknown();
-/** */
-const findByPetIdErrorResponse = z.union([findByPetIdResponse400, findByPetIdResponse404]);
-/** pathParams */
-export const petIdPostPathParams = z.object({
-    /***/
-    petId: z.number()
-});
-/** bodyParams */
-const petIdPostBodyParams = z.object({
-    /**Updated name of the pet*/
-    name: z.string().optional(),
-    /**Updated status of the pet*/
-    status: z.string().optional()
-});
-/** */
-const petIdPostResponse405 = z.unknown();
-/** */
-const petIdPostErrorResponse = petIdPostResponse405;
-/** */
-const petIdPostResponse = z.unknown();
-/** pathParams */
-export const delByPetIdPathParams = z.object({
-    /***/
-    petId: z.number()
-});
-/** */
-const delByPetIdResponse400 = z.unknown();
-/** */
-const delByPetIdResponse404 = z.unknown();
-/** */
-const delByPetIdErrorResponse = z.union([delByPetIdResponse400, delByPetIdResponse404]);
-/** */
-const delByPetIdResponse = z.unknown();
+import { pet, apiResponse } from "./zodModels";
+const updateMutationRequest = z.lazy(() => pet);
 /**
- *
+ * @description Successful operation
+ */
+const updateMutationResponse = z.lazy(() => pet);
+const updateError = z.unknown();
+const createMutationRequest = z.lazy(() => pet);
+/**
+ * @description Successful operation
+ */
+const createMutationResponse = z.lazy(() => pet);
+const createError = z.unknown();
+/**
+ * @description queryParams
+ */
+const findByStatusGetQueryParams = z.object({
+  /**
+   *@description:Status values that need to be considered for filter
+   */
+  pageNum: z.unknown().optional(),
+  /**
+   *@description:Status values that need to be considered for filter
+   */
+  pageSize: z.unknown().optional(),
+  /**
+   *@description:Status values that need to be considered for filter
+   */
+  status: z.string().optional()
+});
+/** successful operation */
+const findByStatusGetQueryResponse = z.lazy(() => pet.array());
+const findByStatusGetError = z.unknown();
+/**
+ * @description queryParams
+ */
+const findByTagsGetQueryParams = z.object({
+  /**
+   *@description:Tags to filter by
+   */
+  tags: z.string().array().optional()
+});
+/** successful operation */
+const findByTagsGetQueryResponse = z.lazy(() => pet.array());
+const findByTagsGetError = z.unknown();
+/**
+ * @description pathParams
+ */
+export const findByPetIdPathParams = z.object({
+  /**
+   *@description:ID of pet to return
+   */
+  petId: z.number()
+});
+/**
+ * @description successful operation
+ */
+const findByPetIdQueryResponse = z.lazy(() => pet);
+const findByPetIdError = z.unknown();
+/**
+ * @description queryParams
+ */
+const petIdPostQueryParams = z.object({
+  /**
+   *@description:Name of pet that needs to be updated
+   */
+  name: z.string().optional(),
+  /**
+   *@description:Status of pet that needs to be updated
+   */
+  status: z.string().optional()
+});
+/**
+ * @description pathParams
+ */
+export const petIdPostPathParams = z.object({
+  /**
+   *@description:ID of pet that needs to be updated
+   */
+  petId: z.number()
+});
+const petIdPostError = z.unknown();
+const petIdPostMutationResponse = z.unknown();
+/**
+ * @description pathParams
+ */
+export const delByPetIdPathParams = z.object({
+  /**
+   *@description:Pet id to delete
+   */
+  petId: z.number()
+});
+const delByPetIdError = z.unknown();
+const delByPetIdMutationResponse = z.unknown();
+/**
+ * @description queryParams
+ */
+const uploadImagePostQueryParams = z.object({
+  /**
+   *@description:Additional Metadata
+   */
+  additionalMetadata: z.string().optional()
+});
+/**
+ * @description pathParams
+ */
+export const uploadImagePostPathParams = z.object({
+  /**
+   *@description:ID of pet to update
+   */
+  petId: z.number()
+});
+const uploadImagePostMutationRequest;
+/**
+ * @description successful operation
+ */
+const uploadImagePostMutationResponse = z.lazy(() => apiResponse);
+const uploadImagePostError = z.unknown();
+/**
  * @tag pet
  * @description Everything about your Pets
  * @UUID zod-pet
  */
 export const petZod = {
-    /**bodyParams*/
-    testPostBodyParams,
-    /**OK*/
-    testPostResponse,
-    /***/
-    testPostResponse401,
-    /***/
-    testPostResponse403,
-    /***/
-    testPostResponse404,
-    /***/
-    testPostErrorResponse,
-    /**bodyParams*/
-    testPutBodyParams,
-    /**OK*/
-    testPutResponse,
-    /***/
-    testPutResponse401,
-    /***/
-    testPutResponse403,
-    /***/
-    testPutResponse404,
-    /***/
-    testPutErrorResponse,
-    /**bodyParams*/
-    delByTestBodyParams,
-    /**OK*/
-    delByTestResponse,
-    /***/
-    delByTestResponse401,
-    /***/
-    delByTestResponse403,
-    /***/
-    delByTestErrorResponse,
-    /**queryParams*/
-    testIdGetQueryParams,
-    /**pathParams*/
-    testIdGetPathParams,
-    /**OK*/
-    testIdGetResponse,
-    /***/
-    testIdGetResponse401,
-    /***/
-    testIdGetResponse403,
-    /***/
-    testIdGetResponse404,
-    /***/
-    testIdGetErrorResponse,
-    /**pathParams*/
-    uploadImagePostPathParams,
-    /**bodyParams*/
-    uploadImagePostBodyParams,
-    /**successful operation*/
-    uploadImagePostResponse,
-    /***/
-    uploadImagePostErrorResponse,
-    /**bodyParams*/
-    createBodyParams,
-    /***/
-    createResponse405,
-    /***/
-    createErrorResponse,
-    /***/
-    createResponse,
-    /**bodyParams*/
-    updateBodyParams,
-    /***/
-    updateResponse400,
-    /***/
-    updateResponse404,
-    /***/
-    updateResponse405,
-    /***/
-    updateErrorResponse,
-    /***/
-    updateResponse,
-    /**queryParams*/
-    findByStatusGetQueryParams,
-    /**successful operation*/
-    findByStatusGetResponse,
-    /***/
-    findByStatusGetResponse400,
-    /***/
-    findByStatusGetErrorResponse,
-    /**queryParams*/
-    findByTagsGetQueryParams,
-    /**successful operation*/
-    findByTagsGetResponse,
-    /***/
-    findByTagsGetResponse400,
-    /***/
-    findByTagsGetErrorResponse,
-    /**pathParams*/
-    findByPetIdPathParams,
-    /**successful operation*/
-    findByPetIdResponse,
-    /***/
-    findByPetIdResponse400,
-    /***/
-    findByPetIdResponse404,
-    /***/
-    findByPetIdErrorResponse,
-    /**pathParams*/
-    petIdPostPathParams,
-    /**bodyParams*/
-    petIdPostBodyParams,
-    /***/
-    petIdPostResponse405,
-    /***/
-    petIdPostErrorResponse,
-    /***/
-    petIdPostResponse,
-    /**pathParams*/
-    delByPetIdPathParams,
-    /***/
-    delByPetIdResponse400,
-    /***/
-    delByPetIdResponse404,
-    /***/
-    delByPetIdErrorResponse,
-    /***/
-    delByPetIdResponse
+  updateMutationRequest,
+  /**
+   *@description:Successful operation
+   */
+  updateMutationResponse,
+  updateError,
+  createMutationRequest,
+  /**
+   *@description:Successful operation
+   */
+  createMutationResponse,
+  createError,
+  /**
+   *@description:queryParams
+   */
+  findByStatusGetQueryParams,
+  /**successful operation*/
+  findByStatusGetQueryResponse,
+  findByStatusGetError,
+  /**
+   *@description:queryParams
+   */
+  findByTagsGetQueryParams,
+  /**successful operation*/
+  findByTagsGetQueryResponse,
+  findByTagsGetError,
+  /**
+   *@description:pathParams
+   */
+  findByPetIdPathParams,
+  /**
+   *@description:successful operation
+   */
+  findByPetIdQueryResponse,
+  findByPetIdError,
+  /**
+   *@description:queryParams
+   */
+  petIdPostQueryParams,
+  /**
+   *@description:pathParams
+   */
+  petIdPostPathParams,
+  petIdPostError,
+  petIdPostMutationResponse,
+  /**
+   *@description:pathParams
+   */
+  delByPetIdPathParams,
+  delByPetIdError,
+  delByPetIdMutationResponse,
+  /**
+   *@description:queryParams
+   */
+  uploadImagePostQueryParams,
+  /**
+   *@description:pathParams
+   */
+  uploadImagePostPathParams,
+  uploadImagePostMutationRequest,
+  /**
+   *@description:successful operation
+   */
+  uploadImagePostMutationResponse,
+  uploadImagePostError
 };
 
 /**
- *
  * @tag pet
  * @description Everything about your Pets
  * @UUID zod-pet
  */
 export namespace Pet {
-    /** bodyParams */
-    export type TestPostBodyParams = z.infer<typeof testPostBodyParams>;
-    /** OK */
-    export type TestPostResponse = z.infer<typeof testPostResponse>;
-    /** */
-    export type TestPostResponse401 = z.infer<typeof testPostResponse401>;
-    /** */
-    export type TestPostResponse403 = z.infer<typeof testPostResponse403>;
-    /** */
-    export type TestPostResponse404 = z.infer<typeof testPostResponse404>;
-    /** */
-    export type TestPostErrorResponse = z.infer<typeof testPostErrorResponse>;
-    /** bodyParams */
-    export type TestPutBodyParams = z.infer<typeof testPutBodyParams>;
-    /** OK */
-    export type TestPutResponse = z.infer<typeof testPutResponse>;
-    /** */
-    export type TestPutResponse401 = z.infer<typeof testPutResponse401>;
-    /** */
-    export type TestPutResponse403 = z.infer<typeof testPutResponse403>;
-    /** */
-    export type TestPutResponse404 = z.infer<typeof testPutResponse404>;
-    /** */
-    export type TestPutErrorResponse = z.infer<typeof testPutErrorResponse>;
-    /** bodyParams */
-    export type DelByTestBodyParams = z.infer<typeof delByTestBodyParams>;
-    /** OK */
-    export type DelByTestResponse = z.infer<typeof delByTestResponse>;
-    /** */
-    export type DelByTestResponse401 = z.infer<typeof delByTestResponse401>;
-    /** */
-    export type DelByTestResponse403 = z.infer<typeof delByTestResponse403>;
-    /** */
-    export type DelByTestErrorResponse = z.infer<typeof delByTestErrorResponse>;
-    /** queryParams */
-    export type TestIdGetQueryParams = z.infer<typeof testIdGetQueryParams>;
-    /** pathParams */
-    export type TestIdGetPathParams = z.infer<typeof testIdGetPathParams>;
-    /** OK */
-    export type TestIdGetResponse = z.infer<typeof testIdGetResponse>;
-    /** */
-    export type TestIdGetResponse401 = z.infer<typeof testIdGetResponse401>;
-    /** */
-    export type TestIdGetResponse403 = z.infer<typeof testIdGetResponse403>;
-    /** */
-    export type TestIdGetResponse404 = z.infer<typeof testIdGetResponse404>;
-    /** */
-    export type TestIdGetErrorResponse = z.infer<typeof testIdGetErrorResponse>;
-    /** pathParams */
-    export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
-    /** bodyParams */
-    export type UploadImagePostBodyParams = z.infer<typeof uploadImagePostBodyParams>;
-    /** successful operation */
-    export type UploadImagePostResponse = z.infer<typeof uploadImagePostResponse>;
-    /** */
-    export type UploadImagePostErrorResponse = z.infer<typeof uploadImagePostErrorResponse>;
-    /** bodyParams */
-    export type CreateBodyParams = z.infer<typeof createBodyParams>;
-    /** */
-    export type CreateResponse405 = z.infer<typeof createResponse405>;
-    /** */
-    export type CreateErrorResponse = z.infer<typeof createErrorResponse>;
-    /** */
-    export type CreateResponse = z.infer<typeof createResponse>;
-    /** bodyParams */
-    export type UpdateBodyParams = z.infer<typeof updateBodyParams>;
-    /** */
-    export type UpdateResponse400 = z.infer<typeof updateResponse400>;
-    /** */
-    export type UpdateResponse404 = z.infer<typeof updateResponse404>;
-    /** */
-    export type UpdateResponse405 = z.infer<typeof updateResponse405>;
-    /** */
-    export type UpdateErrorResponse = z.infer<typeof updateErrorResponse>;
-    /** */
-    export type UpdateResponse = z.infer<typeof updateResponse>;
-    /** queryParams */
-    export type FindByStatusGetQueryParams = z.infer<typeof findByStatusGetQueryParams>;
-    /** successful operation */
-    export type FindByStatusGetResponse = z.infer<typeof findByStatusGetResponse>;
-    /** */
-    export type FindByStatusGetResponse400 = z.infer<typeof findByStatusGetResponse400>;
-    /** */
-    export type FindByStatusGetErrorResponse = z.infer<typeof findByStatusGetErrorResponse>;
-    /** queryParams */
-    export type FindByTagsGetQueryParams = z.infer<typeof findByTagsGetQueryParams>;
-    /** successful operation */
-    export type FindByTagsGetResponse = z.infer<typeof findByTagsGetResponse>;
-    /** */
-    export type FindByTagsGetResponse400 = z.infer<typeof findByTagsGetResponse400>;
-    /** */
-    export type FindByTagsGetErrorResponse = z.infer<typeof findByTagsGetErrorResponse>;
-    /** pathParams */
-    export type FindByPetIdPathParams = z.infer<typeof findByPetIdPathParams>;
-    /** successful operation */
-    export type FindByPetIdResponse = z.infer<typeof findByPetIdResponse>;
-    /** */
-    export type FindByPetIdResponse400 = z.infer<typeof findByPetIdResponse400>;
-    /** */
-    export type FindByPetIdResponse404 = z.infer<typeof findByPetIdResponse404>;
-    /** */
-    export type FindByPetIdErrorResponse = z.infer<typeof findByPetIdErrorResponse>;
-    /** pathParams */
-    export type PetIdPostPathParams = z.infer<typeof petIdPostPathParams>;
-    /** bodyParams */
-    export type PetIdPostBodyParams = z.infer<typeof petIdPostBodyParams>;
-    /** */
-    export type PetIdPostResponse405 = z.infer<typeof petIdPostResponse405>;
-    /** */
-    export type PetIdPostErrorResponse = z.infer<typeof petIdPostErrorResponse>;
-    /** */
-    export type PetIdPostResponse = z.infer<typeof petIdPostResponse>;
-    /** pathParams */
-    export type DelByPetIdPathParams = z.infer<typeof delByPetIdPathParams>;
-    /** */
-    export type DelByPetIdResponse400 = z.infer<typeof delByPetIdResponse400>;
-    /** */
-    export type DelByPetIdResponse404 = z.infer<typeof delByPetIdResponse404>;
-    /** */
-    export type DelByPetIdErrorResponse = z.infer<typeof delByPetIdErrorResponse>;
-    /** */
-    export type DelByPetIdResponse = z.infer<typeof delByPetIdResponse>;
+  export type UpdateMutationRequest = z.infer<typeof updateMutationRequest>;
+  /**
+   * @description Successful operation
+   */
+  export type UpdateMutationResponse = z.infer<typeof updateMutationResponse>;
+  export type UpdateError = z.infer<typeof updateError>;
+  export type CreateMutationRequest = z.infer<typeof createMutationRequest>;
+  /**
+   * @description Successful operation
+   */
+  export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
+  export type CreateError = z.infer<typeof createError>;
+  /**
+   * @description queryParams
+   */
+  export type FindByStatusGetQueryParams = z.infer<typeof findByStatusGetQueryParams>;
+  /** successful operation */
+  export type FindByStatusGetQueryResponse = z.infer<typeof findByStatusGetQueryResponse>;
+  export type FindByStatusGetError = z.infer<typeof findByStatusGetError>;
+  /**
+   * @description queryParams
+   */
+  export type FindByTagsGetQueryParams = z.infer<typeof findByTagsGetQueryParams>;
+  /** successful operation */
+  export type FindByTagsGetQueryResponse = z.infer<typeof findByTagsGetQueryResponse>;
+  export type FindByTagsGetError = z.infer<typeof findByTagsGetError>;
+  /**
+   * @description pathParams
+   */
+  export type FindByPetIdPathParams = z.infer<typeof findByPetIdPathParams>;
+  /**
+   * @description successful operation
+   */
+  export type FindByPetIdQueryResponse = z.infer<typeof findByPetIdQueryResponse>;
+  export type FindByPetIdError = z.infer<typeof findByPetIdError>;
+  /**
+   * @description queryParams
+   */
+  export type PetIdPostQueryParams = z.infer<typeof petIdPostQueryParams>;
+  /**
+   * @description pathParams
+   */
+  export type PetIdPostPathParams = z.infer<typeof petIdPostPathParams>;
+  export type PetIdPostError = z.infer<typeof petIdPostError>;
+  export type PetIdPostMutationResponse = z.infer<typeof petIdPostMutationResponse>;
+  /**
+   * @description pathParams
+   */
+  export type DelByPetIdPathParams = z.infer<typeof delByPetIdPathParams>;
+  export type DelByPetIdError = z.infer<typeof delByPetIdError>;
+  export type DelByPetIdMutationResponse = z.infer<typeof delByPetIdMutationResponse>;
+  /**
+   * @description queryParams
+   */
+  export type UploadImagePostQueryParams = z.infer<typeof uploadImagePostQueryParams>;
+  /**
+   * @description pathParams
+   */
+  export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
+  export type UploadImagePostMutationRequest = z.infer<typeof uploadImagePostMutationRequest>;
+  /**
+   * @description successful operation
+   */
+  export type UploadImagePostMutationResponse = z.infer<typeof uploadImagePostMutationResponse>;
+  export type UploadImagePostError = z.infer<typeof uploadImagePostError>;
 }
 
 ```
@@ -1672,6 +1423,38 @@ export class Pet {
 
 
 ## SWR
+
+
+| Name        | Description                                                  | Type  | Default |
+| ----------- | ------------------------------------------------------------ | ----- | ------- |
+| infiniteKey | each option in the query parmas generates an infinite queryKey | Array |         |
+
+**example**
+
+add config
+
+```TS
+createSWR({
+		infiniteKey: ["pageNum", "pageSize"]
+})
+```
+
+generate queryKey
+
+```ts
+const findByStatusGetQueryKey = (params: Pet.FindByStatusGetQueryParams, shouldFetch: boolean) =>
+    (pageIndex: number, previousPageData: Pet.FindByStatusGetQueryResponse) => {
+        if (!shouldFetch) {
+            return null
+        }
+        if (previousPageData && !previousPageData.length) return null
+
+        return {
+            ...params
+        } as const
+};
+```
+
 
 <details> 
   <summary>SWR</summary>
