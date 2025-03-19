@@ -1,4 +1,4 @@
-import { AST, createPlugin, OpenAPI } from "@openapi-to/core";
+import { AST, createPlugin, OpenAPI, pluginEnum } from "@openapi-to/core";
 
 import Oas from "oas";
 
@@ -16,7 +16,7 @@ export const definePlugin = createPlugin<PluginConfig>(
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
       return {
-        name: "plugin-nestjs",
+        name: pluginEnum.NestJs,
         buildStart(context) {
           new ControllerGenerator({
             oas,

@@ -7,7 +7,6 @@ import { cac } from "cac";
 import c from "picocolors";
 import process from "process";
 
-// @ts-ignore
 import { version } from "../../openapi/package.json";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";
 import { getDefineConfig } from "./utils/getDefineConfig.ts";
@@ -50,6 +49,13 @@ async function generateAction(CLIOptions: CLIOptions) {
     await generate(openapiToSingleConfig, CLIOptions);
   }*/
 
+  const pluginNames = openapiToConfig.plugins.map((plugin) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    const obj = plugin({});
+    return obj.name;
+  });
+
   const serverMap = openapiToConfig.servers.map((server, index) => {
     const openapiToSingleConfig = formatOpenapiToConfig(
       process.cwd(),
@@ -58,6 +64,7 @@ async function generateAction(CLIOptions: CLIOptions) {
         name: server.name || `server${index + 1}`,
       },
       openapiToConfig,
+      pluginNames,
     );
 
     //todo 校验 openapiToSingleConfig

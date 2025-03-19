@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { pluginEnum } from "@openapi-to/core";
 import { URLPath, UUID_TAG_NAME } from "@openapi-to/core/utils";
 
 import _ from "lodash";
@@ -126,6 +127,10 @@ export class RequestGenerator {
 
   get responseDataType(): string {
     return this.namespaceTypeName + "." + this.openapi.upperFirstResponseName;
+  }
+
+  get hasZodPlugin() {
+    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
   }
 
   /**
@@ -269,10 +274,11 @@ export class RequestGenerator {
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
+      .concat(this.isCreateZodDecorator ? [zodModel, zodDecorator] : [])
       .concat(
-        this.isCreateZodDecorator ? [zodModel, zodTypeModel, zodDecorator] : [],
+        this.hasZodPlugin || this.isCreateZodDecorator ? [zodTypeModel] : [],
       )
-      .concat(this.isCreateZodDecorator ? [] : [typeModel])
+      .concat(!this.hasZodPlugin ? [typeModel] : [])
       .concat(this.isAxiosRequestType ? [axiosType] : [])
       .push(request)
       .filter(Boolean)

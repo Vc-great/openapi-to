@@ -1,4 +1,4 @@
-import { AST, createPlugin, OpenAPI } from "@openapi-to/core";
+import { AST, createPlugin, OpenAPI, pluginEnum } from "@openapi-to/core";
 
 import Oas from "oas";
 
@@ -15,7 +15,7 @@ export const definePlugin = createPlugin(
       const openapi = new OpenAPI({}, oas);
       const oldNode = new TypeOldNode(pluginConfig, openapiToSingleConfig);
       return {
-        name: "plugin-ts-type",
+        name: pluginEnum.TsType,
         buildStart() {
           const typeGenerator = new TypeGenerator({
             oas,

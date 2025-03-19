@@ -15,6 +15,7 @@ export function formatOpenapiToConfig(
   root: string,
   server: OpenapiToConfigServer,
   openapiToConfig: OpenapiToConfig,
+  pluginNames: Array<string>,
 ): OpenapiToSingleConfig {
   return {
     root,
@@ -23,5 +24,6 @@ export function formatOpenapiToConfig(
       dir: `${root}/${folderName}/${server.output.dir}`,
     },
     plugins: openapiToConfig.plugins,
+    pluginNames,
   };
 }

@@ -373,8 +373,9 @@ export const userAPI = new UserAPI;
 
 exports[`RequestGenerator > all true getFullText 1`] = `
 "import { newPetZod } from "./newPetZod";
-import type { newPet } from "./newPetZod";
 import { paramsZodSchema, responseZodSchema, ZodValidation } from "./newZod";
+import type { newPet } from "./newPetZod";
+import type { newPet } from "./newPetZod";
 import type { AxiosResponse } from "axios";
 import { request } from "./newRequest";
 
@@ -585,8 +586,9 @@ class NewPetAPI {
 export const newPetAPI = new NewPetAPI;
 
 import { newPetZod } from "./newPetZod";
-import type { newPet } from "./newPetZod";
 import { paramsZodSchema, responseZodSchema, ZodValidation } from "./test/zod";
+import type { newPet } from "./newPetZod";
+import type { newPet } from "./newPet";
 import type { AxiosResponse } from "axios";
 import { request } from "./test/request";
 
@@ -660,8 +662,9 @@ class StoreAPI {
 export const storeAPI = new StoreAPI;
 
 import { newPetZod } from "./newPetZod";
-import type { newPet } from "./newPetZod";
 import { paramsZodSchema, responseZodSchema, ZodValidation } from "./test/zod";
+import type { newPet } from "./newPetZod";
+import type { newPet } from "./newPet";
 import type { AxiosResponse } from "axios";
 import { request } from "./test/request";
 

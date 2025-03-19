@@ -1,4 +1,4 @@
-import { AST, createPlugin, OpenAPI } from "@openapi-to/core";
+import { AST, createPlugin, OpenAPI, pluginEnum } from "@openapi-to/core";
 
 import Oas from "oas";
 
@@ -19,7 +19,7 @@ export const definePlugin = createPlugin(
         openapi,
       );
       return {
-        name: "plugin-zod",
+        name: pluginEnum.Zod,
         buildStart() {
           const typeGenerator = new ZodGenerator({
             oas,

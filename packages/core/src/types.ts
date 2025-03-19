@@ -49,6 +49,7 @@ export type OpenapiToSingleConfig = {
   input: OpenapiToConfigSingleInput;
   output: OpenapiToConfigSingleOutput;
   plugins: Array<PluginFactory>;
+  pluginNames: Array<string>;
 };
 
 export type OpenapiToConfigSingleInput = {
