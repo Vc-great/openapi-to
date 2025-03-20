@@ -42,12 +42,20 @@ export class OpenAPI {
     string,
     RefCacheValue | null
   >();
+  public methodNameMap: Map<string, string> = new Map<string, string>();
+
   constructor(
     public config: object,
     public oas: Oas,
+    public isFromPlugins: boolean = true,
   ) {
     this.config = config;
     this.oas = oas;
+    this.isFromPlugins = isFromPlugins;
+
+    if (isFromPlugins) {
+      this.setMethodNameForPath();
+    }
   }
 
   get currentTagName() {
@@ -63,7 +71,11 @@ export class OpenAPI {
     return "";
   }
   get methodName(): string {
-    return this.generateMethodName();
+    if (!this.operation?.path) {
+      return "";
+    }
+    const key = this.operation.path + "_" + this.operation.method;
+    return this.methodNameMap.get(key) || "";
   }
 
   //crud的requestName
@@ -154,6 +166,29 @@ export class OpenAPI {
       .flatten()
       .groupBy("tag")
       .value();
+  }
+
+  setMethodNameForPath(): void {
+    const openapi = new OpenAPI({}, this.oas, false);
+    _.forEach(this.pathGroupByTag, (pathGroup, tag) => {
+      const nameCount = new Map<string, number>();
+      const nameSet = new Set<string>();
+      _.forEach(pathGroup, ({ path, method, tag }) => {
+        openapi.setCurrentOperation(path, method, tag);
+        const currentName = openapi.generateMethodName();
+        const key = openapi.operation?.path + "_" + openapi.operation?.method;
+        if (nameSet.has(currentName)) {
+          const num = nameCount.get(currentName) || 0;
+          const name = currentName + (num + 1);
+
+          this.methodNameMap.set(key, name);
+          nameSet.add(currentName);
+        } else {
+          nameSet.add(currentName);
+          this.methodNameMap.set(key, currentName);
+        }
+      });
+    });
   }
 
   setCurrentOperation(

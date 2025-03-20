@@ -11,10 +11,10 @@ export const definePlugin = createPlugin<PluginConfig>(
     ({ openapiDocument, openapiToSingleConfig }) => {
       const ast = new AST();
       const oas = new Oas({ ...openapiDocument });
-      const openapi = new OpenAPI({}, oas);
       return {
         name: pluginEnum.Request,
         buildStart(context) {
+          const openapi = new OpenAPI({}, oas);
           const requestGenerator = new RequestGenerator({
             oas,
             ast,

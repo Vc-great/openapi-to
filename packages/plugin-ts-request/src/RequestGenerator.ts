@@ -133,7 +133,7 @@ export class RequestGenerator {
     return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
   }
 
-  isQueryOptional(): boolean {
+  get isQueryOptional(): boolean {
     const queryParameters = this.openapi.parameter?.parametersOfQuery || [];
     return queryParameters.every((x) => !x.required);
   }
@@ -165,6 +165,7 @@ export class RequestGenerator {
       this.oldNode.setCurrentSourceFile(
         this.classOperationIdPrefix + _.camelCase(tag),
       );
+
       const methodsStatements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);

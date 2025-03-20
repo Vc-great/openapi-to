@@ -114,7 +114,7 @@ class PetAPI {
      * @description Multiple status values can be provided with comma separated strings
      * @UUID findPetsByStatus
      */
-    async findByStatusGet(params?: Pet.FindByStatusGetQueryParams) {
+    async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         const res = await request<Pet.FindByStatusGetQueryResponse, AxiosResponse<Pet.FindByStatusGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
@@ -131,7 +131,7 @@ class PetAPI {
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
      * @UUID findPetsByTags
      */
-    async findByTagsGet(params?: Pet.FindByTagsGetQueryParams) {
+    async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         const res = await request<Pet.FindByTagsGetQueryResponse, AxiosResponse<Pet.FindByTagsGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByTags\`,
@@ -331,7 +331,7 @@ class UserAPI {
      * @summary Logs user into the system
      * @UUID loginUser
      */
-    async loginGet(params?: User.LoginGetQueryParams) {
+    async loginGet(params: User.LoginGetQueryParams) {
         const res = await request<User.LoginGetQueryResponse, AxiosResponse<User.LoginGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/user/login\`,
@@ -504,7 +504,7 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByStatusGetQueryResponse)
-    async newfindByStatusGet(@paramsZodSchema(newPetZod.findByStatusGetQueryParams) params?: newPet.FindByStatusGetQueryParams) {
+    async newfindByStatusGet(@paramsZodSchema(newPetZod.findByStatusGetQueryParams) params: newPet.FindByStatusGetQueryParams) {
         const res = await request<newPet.FindByStatusGetQueryResponse, AxiosResponse<newPet.FindByStatusGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
@@ -523,7 +523,7 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByTagsGetQueryResponse)
-    async newfindByTagsGet(@paramsZodSchema(newPetZod.findByTagsGetQueryParams) params?: newPet.FindByTagsGetQueryParams) {
+    async newfindByTagsGet(@paramsZodSchema(newPetZod.findByTagsGetQueryParams) params: newPet.FindByTagsGetQueryParams) {
         const res = await request<newPet.FindByTagsGetQueryResponse, AxiosResponse<newPet.FindByTagsGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByTags\`,
@@ -755,7 +755,7 @@ class UserAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.loginGetQueryResponse)
-    async loginGet(@paramsZodSchema(newPetZod.loginGetQueryParams) params?: newPet.LoginGetQueryParams) {
+    async loginGet(@paramsZodSchema(newPetZod.loginGetQueryParams) params: newPet.LoginGetQueryParams) {
         const res = await request<newPet.LoginGetQueryResponse, AxiosResponse<newPet.LoginGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/user/login\`,
@@ -912,7 +912,7 @@ class PetAPI {
      * @description Multiple status values can be provided with comma separated strings
      * @UUID findPetsByStatus
      */
-    async findByStatusGet(params?: Pet.FindByStatusGetQueryParams) {
+    async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         const res = await request<Pet.FindByStatusGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
@@ -929,7 +929,7 @@ class PetAPI {
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
      * @UUID findPetsByTags
      */
-    async findByTagsGet(params?: Pet.FindByTagsGetQueryParams) {
+    async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         const res = await request<Pet.FindByTagsGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByTags\`,
@@ -1127,7 +1127,7 @@ class UserAPI {
      * @summary Logs user into the system
      * @UUID loginUser
      */
-    async loginGet(params?: User.LoginGetQueryParams) {
+    async loginGet(params: User.LoginGetQueryParams) {
         const res = await request<User.LoginGetQueryResponse>({
             method: 'GET',
             url: \`/user/login\`,
@@ -1301,7 +1301,7 @@ class PetAPI {
      * @description Multiple status values can be provided with comma separated strings
      * @UUID findPetsByStatus
      */
-    findByStatusGet(params?: Pet.FindByStatusGetQueryParams) {
+    findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         return request<Pet.FindByStatusGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
@@ -1321,7 +1321,7 @@ class PetAPI {
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
      * @UUID findPetsByTags
      */
-    findByTagsGet(params?: Pet.FindByTagsGetQueryParams) {
+    findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         return request<Pet.FindByTagsGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByTags\`,
@@ -1558,7 +1558,7 @@ class UserAPI {
      * @summary Logs user into the system
      * @UUID loginUser
      */
-    loginGet(params?: User.LoginGetQueryParams) {
+    loginGet(params: User.LoginGetQueryParams) {
         return request<User.LoginGetQueryResponse>({
             method: 'GET',
             url: \`/user/login\`,

@@ -12,15 +12,16 @@ export const definePlugin = createPlugin(
     ({ openapiDocument, openapiToSingleConfig }) => {
       const ast = new AST();
       const oas = new Oas({ ...openapiDocument });
-      const openapi = new OpenAPI({}, oas);
-      const oldNode = new ZodOldNode(
-        pluginConfig,
-        openapiToSingleConfig,
-        openapi,
-      );
+
       return {
         name: pluginEnum.Zod,
         buildStart() {
+          const openapi = new OpenAPI({}, oas);
+          const oldNode = new ZodOldNode(
+            pluginConfig,
+            openapiToSingleConfig,
+            openapi,
+          );
           const typeGenerator = new ZodGenerator({
             oas,
             ast,
