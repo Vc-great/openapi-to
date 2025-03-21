@@ -14,6 +14,7 @@ describe("generate", () => {
     output: {
       dir: "",
     },
+    pluginNames: [],
     plugins: [
       function plugin1() {
         return {
@@ -59,6 +60,7 @@ describe("generate", () => {
     output: {
       dir: "",
     },
+    pluginNames: [],
     plugins: [
       function plugin1() {
         return {

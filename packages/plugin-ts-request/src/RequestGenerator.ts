@@ -81,7 +81,7 @@ export class RequestGenerator {
   get className(): string {
     return (
       this.oldNode.classDeclaration?.getName() ??
-      _.upperFirst(this.openapi.currentTagName) + "API"
+      _.upperFirst(this.openapi.currentTagNameOfPinYin) + "API"
     );
   }
 
@@ -92,14 +92,14 @@ export class RequestGenerator {
   get namespaceTypeName(): string {
     return (
       this.oldNode.typeNamespace.namedImport ||
-      _.upperFirst(this.openapi.currentTagName)
+      _.upperFirst(this.openapi.currentTagNameOfPinYin)
     );
   }
 
   get namespaceZodName(): string {
     return (
       this.oldNode.zodNamespace.namedImport ||
-      this.openapi.currentTagName + "Zod"
+      this.openapi.currentTagNameOfPinYin + "Zod"
     );
   }
 
@@ -313,10 +313,14 @@ export class RequestGenerator {
                 this.openapi.currentTagMetadata &&
                 this.openapi.currentTagMetadata.description,
             },
-            {
-              tagName: UUID_TAG_NAME,
-              text: this.classOperationId,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    tagName: UUID_TAG_NAME,
+                    text: this.classOperationId,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],
@@ -444,6 +448,7 @@ export class RequestGenerator {
         description: "",
         tags: [
           {
+            leadingTrivia: "\n",
             tagName: "summary",
             text: this.operation?.getSummary(),
           },
@@ -451,10 +456,14 @@ export class RequestGenerator {
             tagName: "description",
             text: this.operation?.getDescription(),
           },
-          {
-            tagName: UUID_TAG_NAME,
-            text: this.methodOperationId,
-          },
+          ...(this.pluginConfig?.compare
+            ? [
+                {
+                  tagName: UUID_TAG_NAME,
+                  text: this.methodOperationId,
+                },
+              ]
+            : []),
         ].filter((x) => x.text),
       },
     ];

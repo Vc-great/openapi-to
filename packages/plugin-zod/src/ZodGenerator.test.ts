@@ -26,6 +26,7 @@ describe("zodGenerator", async () => {
       dir: path.resolve(__dirname, "../mock"),
     },
     plugins: [],
+    pluginNames: [],
   };
 
   test("zodGenerator getFullText", () => {

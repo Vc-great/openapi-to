@@ -75,15 +75,13 @@ export class ZodGenerator {
   get z(): Zod {
     return new Zod();
   }
-  get currentTagName() {
-    return _.camelCase(this.openapi.currentTagMetadata?.name);
-  }
+
   get nameSpaceName(): string {
-    return _.upperFirst(this.currentTagName);
+    return _.upperFirst(this.openapi.currentTagNameOfPinYin);
   }
 
   get zodNameSpaceName(): string {
-    return this.currentTagName + NAMESPACE;
+    return this.openapi.currentTagNameOfPinYin + NAMESPACE;
   }
 
   build(): void {
@@ -311,10 +309,14 @@ export class ZodGenerator {
               tagName: "description",
               text: this.openapi.currentTagMetadata?.description,
             },
-            {
-              tagName: UUID_TAG_NAME,
-              text: this.namespaceUUID,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    tagName: UUID_TAG_NAME,
+                    text: this.namespaceUUID,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],
@@ -336,8 +338,6 @@ export class ZodGenerator {
         };
       })
       .value() as Array<ObjectStructure>;
-    const aaa = this.oldNode.currentZodNamespace;
-    const aa = this.oldNode.zodNameSpaceName;
 
     return this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
@@ -359,10 +359,14 @@ export class ZodGenerator {
               tagName: "description",
               text: this.openapi.currentTagMetadata?.description,
             },
-            {
-              tagName: UUID_TAG_NAME,
-              text: this.namespaceUUID,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    tagName: UUID_TAG_NAME,
+                    text: this.namespaceUUID,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],
@@ -556,7 +560,19 @@ export class ZodGenerator {
       return this.ast.generateVariableStatements({
         declarationKind: VariableDeclarationKind.Const,
         isExported: false,
-        docs: description ? [{ description: description }] : [],
+        docs: description
+          ? [
+              {
+                tags: [
+                  {
+                    leadingTrivia: "\n",
+                    tagName: "description",
+                    text: description,
+                  },
+                ],
+              },
+            ]
+          : [],
         declarations: [
           {
             name: name,
@@ -569,7 +585,19 @@ export class ZodGenerator {
     return this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: false,
-      docs: description ? [{ description: description }] : [],
+      docs: description
+        ? [
+            {
+              tags: [
+                {
+                  leadingTrivia: "\n",
+                  tagName: "description",
+                  text: description,
+                },
+              ],
+            },
+          ]
+        : [],
       declarations: [
         {
           name: name,

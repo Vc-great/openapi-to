@@ -6,7 +6,6 @@ exports[`typerGenerator > TypeGenerator getFullText 1`] = `
 /**
  * @tag pet
  * @description Everything about your Pets
- * @UUID type-pet
  */
 export namespace Pet {
     /**
@@ -186,7 +185,6 @@ import type { Order } from "./typeModels";
 /**
  * @tag store
  * @description Access to Petstore orders
- * @UUID type-store
  */
 export namespace Store {
     export type CreateMutationRequest = Order;
@@ -240,7 +238,6 @@ import type { User } from "./typeModels";
 /**
  * @tag user
  * @description Operations about user
- * @UUID type-user
  */
 export namespace User {
     export type CreateWithArrayPostError = unknown;
@@ -319,9 +316,7 @@ export namespace User {
 
 import type { Testdata } from "./Testdata";
 
-/**
- * @UUID type-Test32145
- */
+/** */
 export interface Test32145 {
     /**
      * @description description
@@ -333,9 +328,7 @@ export interface Test32145 {
     meta?: Testdata;
 }
 
-/**
- * @UUID type-Test3214
- */
+/** */
 export interface Test3214 {
     /**
      * @description 默认值
@@ -376,9 +369,7 @@ export interface Test3214 {
     notNull?: boolean;
 }
 
-/**
- * @UUID type-Testdata
- */
+/** */
 export interface Testdata {
     /**
      * @description description
@@ -398,9 +389,7 @@ export interface Testdata {
     totalPages?: number;
 }
 
-/**
- * @UUID type-Sort
- */
+/** */
 export interface Sort {
     empty?: boolean;
     sorted?: boolean;
@@ -409,9 +398,7 @@ export interface Sort {
 
 import type { Test3214 } from "./Test3214";
 
-/**
- * @UUID type-TestDto3
- */
+/** */
 export interface TestDto3 {
     test3214?: Test3214[];
 }
@@ -419,9 +406,7 @@ export interface TestDto3 {
 import type { TestDto3 } from "./TestDto3";
 import type { Testdata } from "./Testdata";
 
-/**
- * @UUID type-TestDto2
- */
+/** */
 export interface TestDto2 {
     /**
      * @UUID type-TestDto3
@@ -433,18 +418,14 @@ export interface TestDto2 {
     meta?: Testdata;
 }
 
-/**
- * @UUID type-Test321
- */
+/** */
 export interface Test321 {
     id?: number;
 }
 
 import type { Test321 } from "./Test321";
 
-/**
- * @UUID type-TestDto
- */
+/** */
 export interface TestDto {
     /**
      * @description test321
@@ -454,9 +435,7 @@ export interface TestDto {
 
 import type { ApiResponse } from "./ApiResponse";
 
-/**
- * @UUID type-RefList
- */
+/** */
 export interface RefList {
     /**
      * @UUID type-ApiResponse
@@ -477,18 +456,14 @@ export interface RefList {
     type?: string;
 }
 
-/**
- * @UUID type-ApiResponse
- */
+/** */
 export interface ApiResponse {
     code?: number;
     type?: string;
     message?: string;
 }
 
-/**
- * @UUID type-Category
- */
+/** */
 export interface Category {
     id?: number;
     name?: string;
@@ -497,9 +472,7 @@ export interface Category {
 import type { Category } from "./Category";
 import type { Tag } from "./Tag";
 
-/**
- * @UUID type-Pet
- */
+/** */
 export interface Pet {
     id?: number;
     /**
@@ -515,17 +488,13 @@ export interface Pet {
     status?: string;
 }
 
-/**
- * @UUID type-Tag
- */
+/** */
 export interface Tag {
     id?: number;
     name?: string;
 }
 
-/**
- * @UUID type-Order
- */
+/** */
 export interface Order {
     id?: number;
     petId?: number;
@@ -538,9 +507,7 @@ export interface Order {
     complete?: boolean;
 }
 
-/**
- * @UUID type-User
- */
+/** */
 export interface User {
     id?: number;
     username?: string;

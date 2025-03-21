@@ -26,6 +26,7 @@ describe("typerGenerator", async () => {
       dir: path.resolve(__dirname, "../mock"),
     },
     plugins: [],
+    pluginNames: [],
   };
 
   test("TypeGenerator getFullText", () => {

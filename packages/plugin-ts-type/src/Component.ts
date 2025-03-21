@@ -92,11 +92,15 @@ export class Component {
           docs: [
             {
               tags: [
-                {
-                  leadingTrivia:'\n',
-                  tagName: UUID_TAG_NAME,
-                  text: UUID,
-                },
+                ...(this.pluginConfig?.compare
+                  ? [
+                      {
+                        leadingTrivia: "\n",
+                        tagName: UUID_TAG_NAME,
+                        text: UUID,
+                      },
+                    ]
+                  : []),
               ],
             },
           ],
@@ -167,7 +171,7 @@ export class Component {
     const schemaStatements = this.ast.generateInterfaceStatements({
       isExported: true,
       name: interfaceDeclaration?.getName() ?? upperFirstTypeName,
-      properties: this.schema.getBaseTypeFromSchema(schema)||[],
+      properties: this.schema.getBaseTypeFromSchema(schema) || [],
       docs: [
         {
           // description: "\n",
@@ -176,11 +180,15 @@ export class Component {
               tagName: "description",
               text: schema.description || "",
             },
-            {
-              leadingTrivia:schema.description?"": "\n",
-              tagName: UUID_TAG_NAME,
-              text: UUID,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    leadingTrivia: schema.description ? "" : "\n",
+                    tagName: UUID_TAG_NAME,
+                    text: UUID,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],

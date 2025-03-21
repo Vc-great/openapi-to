@@ -182,10 +182,14 @@ export class Component {
               tagName: "description",
               text: schema.description || "",
             },
-            {
-              tagName: UUID_TAG_NAME,
-              text: UUID,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    tagName: UUID_TAG_NAME,
+                    text: UUID,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],

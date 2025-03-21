@@ -26,6 +26,7 @@ describe("serviceGenerator", async () => {
       dir: path.resolve(__dirname, "../mock"),
     },
     plugins: [],
+    pluginNames: [],
   };
 
   const context = {

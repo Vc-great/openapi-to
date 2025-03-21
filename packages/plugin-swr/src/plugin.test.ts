@@ -15,6 +15,7 @@ describe("ts request plugin", () => {
       dir: "",
     },
     plugins: [],
+    pluginNames: [],
   };
 
   test("plugin", () => {

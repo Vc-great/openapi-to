@@ -24,6 +24,7 @@ describe("MswGenerator", async () => {
       dir: path.resolve(__dirname, "../gen"),
     },
     plugins: [],
+    pluginNames: [],
   };
 
   const context = {

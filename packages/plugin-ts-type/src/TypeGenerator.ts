@@ -161,17 +161,19 @@ export class TypeGenerator {
               ),
             },
           ],
-          docs:  schema.description?[
-            {
-              tags: [
+          docs: schema.description
+            ? [
                 {
-                  leadingTrivia: "\n",
-                  tagName: "description",
-                  text: schema.description,
+                  tags: [
+                    {
+                      leadingTrivia: "\n",
+                      tagName: "description",
+                      text: schema.description,
+                    },
+                  ],
                 },
-              ],
-            }
-          ]:[],
+              ]
+            : [],
         });
       })
       .value();
@@ -188,17 +190,19 @@ export class TypeGenerator {
               value: item,
             };
           }),
-          docs:  schema.description?[
-            {
-              tags: [
+          docs: schema.description
+            ? [
                 {
-                  leadingTrivia: "\n",
-                  tagName: "description",
-                  text: schema.description,
+                  tags: [
+                    {
+                      leadingTrivia: "\n",
+                      tagName: "description",
+                      text: schema.description,
+                    },
+                  ],
                 },
-              ],
-            }
-          ]:[],
+              ]
+            : [],
         });
       })
       .value();
@@ -306,10 +310,14 @@ export class TypeGenerator {
               tagName: "description",
               text: this.openapi.currentTagMetadata?.description,
             },
-            {
-              tagName: UUID_TAG_NAME,
-              text: this.namespaceUUID,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    tagName: UUID_TAG_NAME,
+                    text: this.namespaceUUID,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],
@@ -336,9 +344,10 @@ export class TypeGenerator {
           ],
         },
       ],
-      properties: this.schema.getBaseTypeFromSchema(
-        this.openapi.parameter?.getParametersSchema("query") || null,
-      )|| [],
+      properties:
+        this.schema.getBaseTypeFromSchema(
+          this.openapi.parameter?.getParametersSchema("query") || null,
+        ) || [],
     });
 
     const pathStatements = this.ast.generateInterfaceStatements({
@@ -355,9 +364,10 @@ export class TypeGenerator {
           ],
         },
       ],
-      properties: this.schema.getBaseTypeFromSchema(
-        this.openapi.parameter?.getParametersSchema("path") || null,
-      ) || [],
+      properties:
+        this.schema.getBaseTypeFromSchema(
+          this.openapi.parameter?.getParametersSchema("path") || null,
+        ) || [],
     });
     //[mediaType, bodySchema, description]
 
@@ -450,17 +460,19 @@ export class TypeGenerator {
       return this.ast.generateTypeAliasStatements({
         name,
         type: _.upperFirst(this.openapi.getRefAlias(schema.$ref)),
-        docs: description ? [
-          {
-            tags: [
+        docs: description
+          ? [
               {
-                leadingTrivia: "\n",
-                tagName: "description",
-                text: description,
+                tags: [
+                  {
+                    leadingTrivia: "\n",
+                    tagName: "description",
+                    text: description,
+                  },
+                ],
               },
-            ],
-          },
-        ]: [],
+            ]
+          : [],
         isExported: true,
       });
     }
@@ -469,17 +481,19 @@ export class TypeGenerator {
       return this.ast.generateInterfaceStatements({
         isExported: true,
         name,
-        docs: description ? [
-          {
-            tags: [
+        docs: description
+          ? [
               {
-                leadingTrivia: "\n",
-                tagName: "description",
-                text: description,
+                tags: [
+                  {
+                    leadingTrivia: "\n",
+                    tagName: "description",
+                    text: description,
+                  },
+                ],
               },
-            ],
-          },
-        ]: [],
+            ]
+          : [],
         properties: this.schema.getBaseTypeFromSchema(schema) || [],
       });
     }
@@ -487,17 +501,19 @@ export class TypeGenerator {
     return this.ast.generateTypeAliasStatements({
       name,
       type: this.schema.formatterSchemaType(schema),
-      docs: description ? [
-        {
-          tags: [
+      docs: description
+        ? [
             {
-              leadingTrivia: "\n",
-              tagName: "description",
-              text: description,
+              tags: [
+                {
+                  leadingTrivia: "\n",
+                  tagName: "description",
+                  text: description,
+                },
+              ],
             },
-          ],
-        },
-      ]: [],
+          ]
+        : [],
       isExported: true,
     });
   }
@@ -536,18 +552,20 @@ export class TypeGenerator {
       return [
         this.ast.generateTypeAliasStatements({
           name: this.openapi.upperFirstBodyDataName,
-          type: this.schema.formatterSchemaType(schema) ,
-          docs: schema.description ? [
-            {
-              tags: [
+          type: this.schema.formatterSchemaType(schema),
+          docs: schema.description
+            ? [
                 {
-                  leadingTrivia: "\n",
-                  tagName: "description",
-                  text: schema.description,
+                  tags: [
+                    {
+                      leadingTrivia: "\n",
+                      tagName: "description",
+                      text: schema.description,
+                    },
+                  ],
                 },
-              ],
-            },
-          ]: [],
+              ]
+            : [],
           isExported: true,
         }),
       ];
@@ -557,17 +575,19 @@ export class TypeGenerator {
       this.ast.generateInterfaceStatements({
         isExported: true,
         name: this.openapi.upperFirstBodyDataName,
-        docs: schema.description ? [
-          {
-            tags: [
+        docs: schema.description
+          ? [
               {
-                leadingTrivia: "\n",
-                tagName: "description",
-                text: schema.description,
+                tags: [
+                  {
+                    leadingTrivia: "\n",
+                    tagName: "description",
+                    text: schema.description,
+                  },
+                ],
               },
-            ],
-          },
-        ] : [],
+            ]
+          : [],
         properties: this.schema.getBaseTypeFromSchema(schema) || [],
       }),
     ];

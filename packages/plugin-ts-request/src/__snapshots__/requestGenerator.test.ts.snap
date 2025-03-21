@@ -8,12 +8,10 @@ import { request } from "@/utils/request";
 /**
  * @tag pet
  * @description Everything about your Pets
- * @UUID API-pet
  */
 class PetAPI {
     /**
      * @summary summary
-     * @UUID test
      */
     async testPost(data: Pet.TestPostMutationRequest) {
         const res = await request<Pet.TestPostMutationResponse, AxiosResponse<Pet.TestPostMutationResponse>, Pet.TestPostMutationRequest>({
@@ -26,7 +24,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID testput
      */
     async testPut(data: Pet.TestPutMutationRequest) {
         const res = await request<Pet.TestPutMutationResponse, AxiosResponse<Pet.TestPutMutationResponse>, Pet.TestPutMutationRequest>({
@@ -39,7 +36,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID testdelete
      */
     async delByTest(data: Pet.DelByTestMutationRequest) {
         const res = await request<Pet.DelByTestMutationResponse, AxiosResponse<Pet.DelByTestMutationResponse>, Pet.DelByTestMutationRequest>({
@@ -52,7 +48,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID test-idget
      */
     async testIdGet(params?: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
         const res = await request<Pet.TestIdGetQueryResponse, AxiosResponse<Pet.TestIdGetQueryResponse>, unknown>({
@@ -69,7 +64,6 @@ class PetAPI {
     /**
      * @summary uploads an image
      * @description pet
-     * @UUID uploadFile
      */
     async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
         const res = await request<Pet.UploadImagePostMutationResponse, AxiosResponse<Pet.UploadImagePostMutationResponse>, Pet.UploadImagePostMutationRequest>({
@@ -85,7 +79,6 @@ class PetAPI {
 
     /**
      * @summary Add a new pet to the store
-     * @UUID addPet
      */
     async create(data: Pet.CreateMutationRequest) {
         const res = await request<Pet.CreateMutationResponse, AxiosResponse<Pet.CreateMutationResponse>, Pet.CreateMutationRequest>({
@@ -98,7 +91,6 @@ class PetAPI {
 
     /**
      * @summary Update an existing pet
-     * @UUID updatePet
      */
     async update(data: Pet.UpdateMutationRequest) {
         const res = await request<Pet.UpdateMutationResponse, AxiosResponse<Pet.UpdateMutationResponse>, Pet.UpdateMutationRequest>({
@@ -112,7 +104,6 @@ class PetAPI {
     /**
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @UUID findPetsByStatus
      */
     async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         const res = await request<Pet.FindByStatusGetQueryResponse, AxiosResponse<Pet.FindByStatusGetQueryResponse>, unknown>({
@@ -129,7 +120,6 @@ class PetAPI {
     /**
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @UUID findPetsByTags
      */
     async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         const res = await request<Pet.FindByTagsGetQueryResponse, AxiosResponse<Pet.FindByTagsGetQueryResponse>, unknown>({
@@ -146,7 +136,6 @@ class PetAPI {
     /**
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @UUID getPetById
      */
     async findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
         const res = await request<Pet.FindByPetIdQueryResponse, AxiosResponse<Pet.FindByPetIdQueryResponse>, unknown>({
@@ -158,7 +147,6 @@ class PetAPI {
 
     /**
      * @summary Updates a pet in the store with form data
-     * @UUID updatePetWithForm
      */
     async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
         const res = await request<Pet.PetIdPostMutationResponse, AxiosResponse<Pet.PetIdPostMutationResponse>, Pet.PetIdPostMutationRequest>({
@@ -174,7 +162,6 @@ class PetAPI {
 
     /**
      * @summary Deletes a pet
-     * @UUID deletePet
      */
     async delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
         const res = await request<Pet.DelByPetIdMutationResponse, AxiosResponse<Pet.DelByPetIdMutationResponse>, unknown>({
@@ -194,12 +181,10 @@ import { request } from "@/utils/request";
 /**
  * @tag store
  * @description Access to Petstore orders
- * @UUID API-store
  */
 class StoreAPI {
     /**
      * @summary Place an order for a pet
-     * @UUID placeOrder
      */
     async create(data: Store.CreateMutationRequest) {
         const res = await request<Store.CreateMutationResponse, AxiosResponse<Store.CreateMutationResponse>, Store.CreateMutationRequest>({
@@ -213,7 +198,6 @@ class StoreAPI {
     /**
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @UUID getOrderById
      */
     async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
         const res = await request<Store.FindByOrderIdQueryResponse, AxiosResponse<Store.FindByOrderIdQueryResponse>, unknown>({
@@ -226,7 +210,6 @@ class StoreAPI {
     /**
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @UUID deleteOrder
      */
     async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
         const res = await request<Store.DelByOrderIdMutationResponse, AxiosResponse<Store.DelByOrderIdMutationResponse>, unknown>({
@@ -239,7 +222,6 @@ class StoreAPI {
     /**
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @UUID getInventory
      */
     async inventoryGet() {
         const res = await request<Store.InventoryGetQueryResponse, AxiosResponse<Store.InventoryGetQueryResponse>, unknown>({
@@ -259,12 +241,10 @@ import { request } from "@/utils/request";
 /**
  * @tag user
  * @description Operations about user
- * @UUID API-user
  */
 class UserAPI {
     /**
      * @summary Creates list of users with given input array
-     * @UUID createUsersWithArrayInput
      */
     async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
         const res = await request<User.CreateWithArrayPostMutationResponse, AxiosResponse<User.CreateWithArrayPostMutationResponse>, User.CreateWithArrayPostMutationRequest>({
@@ -277,7 +257,6 @@ class UserAPI {
 
     /**
      * @summary Creates list of users with given input array
-     * @UUID createUsersWithListInput
      */
     async createWithListPost(data: User.CreateWithListPostMutationRequest) {
         const res = await request<User.CreateWithListPostMutationResponse, AxiosResponse<User.CreateWithListPostMutationResponse>, User.CreateWithListPostMutationRequest>({
@@ -290,7 +269,6 @@ class UserAPI {
 
     /**
      * @summary Get user by user name
-     * @UUID getUserByName
      */
     async findByUsername(username: User.FindByUsernamePathParams['username']) {
         const res = await request<User.FindByUsernameQueryResponse, AxiosResponse<User.FindByUsernameQueryResponse>, unknown>({
@@ -303,7 +281,6 @@ class UserAPI {
     /**
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @UUID updateUser
      */
     async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
         const res = await request<User.UsernamePutMutationResponse, AxiosResponse<User.UsernamePutMutationResponse>, User.UsernamePutMutationRequest>({
@@ -317,7 +294,6 @@ class UserAPI {
     /**
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @UUID deleteUser
      */
     async delByUsername(username: User.DelByUsernamePathParams['username']) {
         const res = await request<User.DelByUsernameMutationResponse, AxiosResponse<User.DelByUsernameMutationResponse>, unknown>({
@@ -329,7 +305,6 @@ class UserAPI {
 
     /**
      * @summary Logs user into the system
-     * @UUID loginUser
      */
     async loginGet(params: User.LoginGetQueryParams) {
         const res = await request<User.LoginGetQueryResponse, AxiosResponse<User.LoginGetQueryResponse>, unknown>({
@@ -342,7 +317,6 @@ class UserAPI {
 
     /**
      * @summary Logs out current logged in user session
-     * @UUID logoutUser
      */
     async logoutGet() {
         const res = await request<User.LogoutGetQueryResponse, AxiosResponse<User.LogoutGetQueryResponse>, unknown>({
@@ -355,7 +329,6 @@ class UserAPI {
     /**
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @UUID createUser
      */
     async create(data: User.CreateMutationRequest) {
         const res = await request<User.CreateMutationResponse, AxiosResponse<User.CreateMutationResponse>, User.CreateMutationRequest>({
@@ -806,12 +779,10 @@ import { request } from "@/utils/request";
 /**
  * @tag pet
  * @description Everything about your Pets
- * @UUID API-pet
  */
 class PetAPI {
     /**
      * @summary summary
-     * @UUID test
      */
     async testPost(data: Pet.TestPostMutationRequest) {
         const res = await request<Pet.TestPostMutationResponse>({
@@ -824,7 +795,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID testput
      */
     async testPut(data: Pet.TestPutMutationRequest) {
         const res = await request<Pet.TestPutMutationResponse>({
@@ -837,7 +807,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID testdelete
      */
     async delByTest(data: Pet.DelByTestMutationRequest) {
         const res = await request<Pet.DelByTestMutationResponse>({
@@ -850,7 +819,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID test-idget
      */
     async testIdGet(params?: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
         const res = await request<Pet.TestIdGetQueryResponse>({
@@ -867,7 +835,6 @@ class PetAPI {
     /**
      * @summary uploads an image
      * @description pet
-     * @UUID uploadFile
      */
     async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
         const res = await request<Pet.UploadImagePostMutationResponse>({
@@ -883,7 +850,6 @@ class PetAPI {
 
     /**
      * @summary Add a new pet to the store
-     * @UUID addPet
      */
     async create(data: Pet.CreateMutationRequest) {
         const res = await request<Pet.CreateMutationResponse>({
@@ -896,7 +862,6 @@ class PetAPI {
 
     /**
      * @summary Update an existing pet
-     * @UUID updatePet
      */
     async update(data: Pet.UpdateMutationRequest) {
         const res = await request<Pet.UpdateMutationResponse>({
@@ -910,7 +875,6 @@ class PetAPI {
     /**
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @UUID findPetsByStatus
      */
     async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         const res = await request<Pet.FindByStatusGetQueryResponse>({
@@ -927,7 +891,6 @@ class PetAPI {
     /**
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @UUID findPetsByTags
      */
     async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         const res = await request<Pet.FindByTagsGetQueryResponse>({
@@ -944,7 +907,6 @@ class PetAPI {
     /**
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @UUID getPetById
      */
     async findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
         const res = await request<Pet.FindByPetIdQueryResponse>({
@@ -956,7 +918,6 @@ class PetAPI {
 
     /**
      * @summary Updates a pet in the store with form data
-     * @UUID updatePetWithForm
      */
     async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
         const res = await request<Pet.PetIdPostMutationResponse>({
@@ -972,7 +933,6 @@ class PetAPI {
 
     /**
      * @summary Deletes a pet
-     * @UUID deletePet
      */
     async delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
         const res = await request<Pet.DelByPetIdMutationResponse>({
@@ -991,12 +951,10 @@ import { request } from "@/utils/request";
 /**
  * @tag store
  * @description Access to Petstore orders
- * @UUID API-store
  */
 class StoreAPI {
     /**
      * @summary Place an order for a pet
-     * @UUID placeOrder
      */
     async create(data: Store.CreateMutationRequest) {
         const res = await request<Store.CreateMutationResponse>({
@@ -1010,7 +968,6 @@ class StoreAPI {
     /**
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @UUID getOrderById
      */
     async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
         const res = await request<Store.FindByOrderIdQueryResponse>({
@@ -1023,7 +980,6 @@ class StoreAPI {
     /**
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @UUID deleteOrder
      */
     async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
         const res = await request<Store.DelByOrderIdMutationResponse>({
@@ -1036,7 +992,6 @@ class StoreAPI {
     /**
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @UUID getInventory
      */
     async inventoryGet() {
         const res = await request<Store.InventoryGetQueryResponse>({
@@ -1055,12 +1010,10 @@ import { request } from "@/utils/request";
 /**
  * @tag user
  * @description Operations about user
- * @UUID API-user
  */
 class UserAPI {
     /**
      * @summary Creates list of users with given input array
-     * @UUID createUsersWithArrayInput
      */
     async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
         const res = await request<User.CreateWithArrayPostMutationResponse>({
@@ -1073,7 +1026,6 @@ class UserAPI {
 
     /**
      * @summary Creates list of users with given input array
-     * @UUID createUsersWithListInput
      */
     async createWithListPost(data: User.CreateWithListPostMutationRequest) {
         const res = await request<User.CreateWithListPostMutationResponse>({
@@ -1086,7 +1038,6 @@ class UserAPI {
 
     /**
      * @summary Get user by user name
-     * @UUID getUserByName
      */
     async findByUsername(username: User.FindByUsernamePathParams['username']) {
         const res = await request<User.FindByUsernameQueryResponse>({
@@ -1099,7 +1050,6 @@ class UserAPI {
     /**
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @UUID updateUser
      */
     async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
         const res = await request<User.UsernamePutMutationResponse>({
@@ -1113,7 +1063,6 @@ class UserAPI {
     /**
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @UUID deleteUser
      */
     async delByUsername(username: User.DelByUsernamePathParams['username']) {
         const res = await request<User.DelByUsernameMutationResponse>({
@@ -1125,7 +1074,6 @@ class UserAPI {
 
     /**
      * @summary Logs user into the system
-     * @UUID loginUser
      */
     async loginGet(params: User.LoginGetQueryParams) {
         const res = await request<User.LoginGetQueryResponse>({
@@ -1138,7 +1086,6 @@ class UserAPI {
 
     /**
      * @summary Logs out current logged in user session
-     * @UUID logoutUser
      */
     async logoutGet() {
         const res = await request<User.LogoutGetQueryResponse>({
@@ -1151,7 +1098,6 @@ class UserAPI {
     /**
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @UUID createUser
      */
     async create(data: User.CreateMutationRequest) {
         const res = await request<User.CreateMutationResponse>({
@@ -1174,12 +1120,10 @@ import { request } from "@/utils/request";
 /**
  * @tag pet
  * @description Everything about your Pets
- * @UUID API-pet
  */
 class PetAPI {
     /**
      * @summary summary
-     * @UUID test
      */
     testPost(data: Pet.TestPostMutationRequest) {
         return request<Pet.TestPostMutationResponse>({
@@ -1195,7 +1139,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID testput
      */
     testPut(data: Pet.TestPutMutationRequest) {
         return request<Pet.TestPutMutationResponse>({
@@ -1211,7 +1154,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID testdelete
      */
     delByTest(data: Pet.DelByTestMutationRequest) {
         return request<Pet.DelByTestMutationResponse>({
@@ -1227,7 +1169,6 @@ class PetAPI {
 
     /**
      * @summary summary
-     * @UUID test-idget
      */
     testIdGet(params?: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
         return request<Pet.TestIdGetQueryResponse>({
@@ -1247,7 +1188,6 @@ class PetAPI {
     /**
      * @summary uploads an image
      * @description pet
-     * @UUID uploadFile
      */
     uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
         return request<Pet.UploadImagePostMutationResponse>({
@@ -1266,7 +1206,6 @@ class PetAPI {
 
     /**
      * @summary Add a new pet to the store
-     * @UUID addPet
      */
     create(data: Pet.CreateMutationRequest) {
         return request<Pet.CreateMutationResponse>({
@@ -1282,7 +1221,6 @@ class PetAPI {
 
     /**
      * @summary Update an existing pet
-     * @UUID updatePet
      */
     update(data: Pet.UpdateMutationRequest) {
         return request<Pet.UpdateMutationResponse>({
@@ -1299,7 +1237,6 @@ class PetAPI {
     /**
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @UUID findPetsByStatus
      */
     findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
         return request<Pet.FindByStatusGetQueryResponse>({
@@ -1319,7 +1256,6 @@ class PetAPI {
     /**
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @UUID findPetsByTags
      */
     findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
         return request<Pet.FindByTagsGetQueryResponse>({
@@ -1339,7 +1275,6 @@ class PetAPI {
     /**
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @UUID getPetById
      */
     findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
         return request<Pet.FindByPetIdQueryResponse>({
@@ -1354,7 +1289,6 @@ class PetAPI {
 
     /**
      * @summary Updates a pet in the store with form data
-     * @UUID updatePetWithForm
      */
     petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
         return request<Pet.PetIdPostMutationResponse>({
@@ -1373,7 +1307,6 @@ class PetAPI {
 
     /**
      * @summary Deletes a pet
-     * @UUID deletePet
      */
     delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
         return request<Pet.DelByPetIdMutationResponse>({
@@ -1395,12 +1328,10 @@ import { request } from "@/utils/request";
 /**
  * @tag store
  * @description Access to Petstore orders
- * @UUID API-store
  */
 class StoreAPI {
     /**
      * @summary Place an order for a pet
-     * @UUID placeOrder
      */
     create(data: Store.CreateMutationRequest) {
         return request<Store.CreateMutationResponse>({
@@ -1417,7 +1348,6 @@ class StoreAPI {
     /**
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @UUID getOrderById
      */
     findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
         return request<Store.FindByOrderIdQueryResponse>({
@@ -1433,7 +1363,6 @@ class StoreAPI {
     /**
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @UUID deleteOrder
      */
     delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
         return request<Store.DelByOrderIdMutationResponse>({
@@ -1449,7 +1378,6 @@ class StoreAPI {
     /**
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @UUID getInventory
      */
     inventoryGet() {
         return request<Store.InventoryGetQueryResponse>({
@@ -1471,12 +1399,10 @@ import { request } from "@/utils/request";
 /**
  * @tag user
  * @description Operations about user
- * @UUID API-user
  */
 class UserAPI {
     /**
      * @summary Creates list of users with given input array
-     * @UUID createUsersWithArrayInput
      */
     createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
         return request<User.CreateWithArrayPostMutationResponse>({
@@ -1492,7 +1418,6 @@ class UserAPI {
 
     /**
      * @summary Creates list of users with given input array
-     * @UUID createUsersWithListInput
      */
     createWithListPost(data: User.CreateWithListPostMutationRequest) {
         return request<User.CreateWithListPostMutationResponse>({
@@ -1508,7 +1433,6 @@ class UserAPI {
 
     /**
      * @summary Get user by user name
-     * @UUID getUserByName
      */
     findByUsername(username: User.FindByUsernamePathParams['username']) {
         return request<User.FindByUsernameQueryResponse>({
@@ -1524,7 +1448,6 @@ class UserAPI {
     /**
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @UUID updateUser
      */
     usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
         return request<User.UsernamePutMutationResponse>({
@@ -1541,7 +1464,6 @@ class UserAPI {
     /**
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @UUID deleteUser
      */
     delByUsername(username: User.DelByUsernamePathParams['username']) {
         return request<User.DelByUsernameMutationResponse>({
@@ -1556,7 +1478,6 @@ class UserAPI {
 
     /**
      * @summary Logs user into the system
-     * @UUID loginUser
      */
     loginGet(params: User.LoginGetQueryParams) {
         return request<User.LoginGetQueryResponse>({
@@ -1572,7 +1493,6 @@ class UserAPI {
 
     /**
      * @summary Logs out current logged in user session
-     * @UUID logoutUser
      */
     logoutGet() {
         return request<User.LogoutGetQueryResponse>({
@@ -1588,7 +1508,6 @@ class UserAPI {
     /**
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @UUID createUser
      */
     create(data: User.CreateMutationRequest) {
         return request<User.CreateMutationResponse>({

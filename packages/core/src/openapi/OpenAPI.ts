@@ -59,7 +59,15 @@ export class OpenAPI {
   }
 
   get currentTagName() {
-    return _.camelCase(this.currentTagMetadata && this.currentTagMetadata.name);
+    return this.currentTagMetadata?.name || "";
+  }
+  get currentTagNameOfPinYin() {
+    const tagName = this.currentTagMetadata?.name || "";
+    const name = this.containsChinese(tagName)
+      ? pinyin(tagName, { toneType: "none", type: "array" }).join("_")
+      : _.camelCase(tagName);
+
+    return name;
   }
 
   get upperFirstCurrentTagName(): string {
@@ -166,6 +174,11 @@ export class OpenAPI {
       .flatten()
       .groupBy("tag")
       .value();
+  }
+
+  containsChinese(str: string) {
+    // 匹配中文字符 Unicode 范围：\u4e00 至 \u9fff
+    return /[\u4e00-\u9fff]/.test(str);
   }
 
   setMethodNameForPath(): void {
