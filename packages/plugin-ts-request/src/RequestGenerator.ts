@@ -133,11 +133,6 @@ export class RequestGenerator {
     return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
   }
 
-  get isQueryOptional(): boolean {
-    const queryParameters = this.openapi.parameter?.parametersOfQuery || [];
-    return queryParameters.every((x) => !x.required);
-  }
-
   /**
    * Promise<[ApiType.FindByIdResponse]>
    */
@@ -359,7 +354,7 @@ export class RequestGenerator {
   generatorMethodParameters(): OptionalKind<ParameterDeclarationStructure>[] {
     const queryParameters = {
       name: "params",
-      hasQuestionToken: this.isQueryOptional,
+      hasQuestionToken: this.openapi.parameter?.isQueryOptional,
       type:
         this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName,
       decorators: this.isCreateZodDecorator

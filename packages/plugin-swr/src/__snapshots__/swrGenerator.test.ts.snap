@@ -86,7 +86,7 @@ function useDelByTest(options?: {
 }
 
 /** @summary summary */
-function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params: Pet.TestIdGetQueryParams, options?: {
+function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams, options?: {
     swr?: Parameters<typeof useSWR<Pet.TestIdGetQueryResponse, TestIdGetQueryKey | null, any>>[2]
     shouldFetch?: boolean
 }) {

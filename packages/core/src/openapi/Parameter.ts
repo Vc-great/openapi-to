@@ -26,6 +26,12 @@ export class Parameter {
     return _.some(this.parameters, ["in", "path"]);
   }
 
+  //
+  get isQueryOptional(): boolean {
+    const queryParameters = this.parametersOfQuery || [];
+    return queryParameters.every((x) => !x.required);
+  }
+
   get hasQueryParameters(): boolean {
     return _.some(this.parameters || [], ["in", "query"]);
   }

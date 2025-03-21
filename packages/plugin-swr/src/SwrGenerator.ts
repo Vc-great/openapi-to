@@ -352,6 +352,7 @@ export class SwrGenerator {
   generatorMethodParameters(): OptionalKind<ParameterDeclarationStructure>[] {
     const queryParameters = {
       name: "params",
+      hasQuestionToken: this.openapi.parameter?.isQueryOptional,
       type:
         this.namespaceTypeName + "." + this.openapi.upperFirstQueryRequestName,
       decorators: [],
