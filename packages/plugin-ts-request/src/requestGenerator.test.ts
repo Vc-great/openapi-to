@@ -40,7 +40,7 @@ describe("RequestGenerator", async () => {
     // @ts-expect-error Not a canonical document
     const oas = new Oas(petStore);
     const openapi = new OpenAPI({}, oas);
-    const pluginConfig = {
+    const pluginConfig: PluginConfig = {
       createZodDecorator: true,
       compare: true,
       zodDecoratorImportDeclaration: {
@@ -48,6 +48,10 @@ describe("RequestGenerator", async () => {
       },
       requestImportDeclaration: {
         moduleSpecifier: "./test/request",
+      },
+      requestConfigTypeImportDeclaration: {
+        namedImports: ["CustomRequestConfig"],
+        moduleSpecifier: "custom-request",
       },
     };
 

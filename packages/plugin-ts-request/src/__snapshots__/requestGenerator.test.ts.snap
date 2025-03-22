@@ -4,6 +4,7 @@ exports[`RequestGenerator > all false  getFullText 1`] = `
 "import type { Pet } from "./pet.type";
 import type { AxiosResponse } from "axios";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag pet
@@ -13,11 +14,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async testPost(data: Pet.TestPostMutationRequest) {
+    async testPost(data: Pet.TestPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.TestPostMutationRequest>>) {
         const res = await request<Pet.TestPostMutationResponse, AxiosResponse<Pet.TestPostMutationResponse>, Pet.TestPostMutationRequest>({
             method: 'POST',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -25,11 +27,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async testPut(data: Pet.TestPutMutationRequest) {
+    async testPut(data: Pet.TestPutMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.TestPutMutationRequest>>) {
         const res = await request<Pet.TestPutMutationResponse, AxiosResponse<Pet.TestPutMutationResponse>, Pet.TestPutMutationRequest>({
             method: 'PUT',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -37,11 +40,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async delByTest(data: Pet.DelByTestMutationRequest) {
+    async delByTest(data: Pet.DelByTestMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.DelByTestMutationRequest>>) {
         const res = await request<Pet.DelByTestMutationResponse, AxiosResponse<Pet.DelByTestMutationResponse>, Pet.DelByTestMutationRequest>({
             method: 'DELETE',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -49,11 +53,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) {
+    async testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.TestIdGetQueryResponse, AxiosResponse<Pet.TestIdGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.TestIdGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -65,14 +70,15 @@ class PetService {
      * @summary uploads an image
      * @description pet
      */
-    async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest) {
+    async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UploadImagePostMutationRequest>>) {
         const res = await request<Pet.UploadImagePostMutationResponse, AxiosResponse<Pet.UploadImagePostMutationResponse>, Pet.UploadImagePostMutationRequest>({
             method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
             url: \`/pet/\${petId}/uploadImage\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -80,11 +86,12 @@ class PetService {
     /**
      * @summary Add a new pet to the store
      */
-    async create(data: Pet.CreateMutationRequest) {
+    async create(data: Pet.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.CreateMutationRequest>>) {
         const res = await request<Pet.CreateMutationResponse, AxiosResponse<Pet.CreateMutationResponse>, Pet.CreateMutationRequest>({
             method: 'POST',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -92,11 +99,12 @@ class PetService {
     /**
      * @summary Update an existing pet
      */
-    async update(data: Pet.UpdateMutationRequest) {
+    async update(data: Pet.UpdateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UpdateMutationRequest>>) {
         const res = await request<Pet.UpdateMutationResponse, AxiosResponse<Pet.UpdateMutationResponse>, Pet.UpdateMutationRequest>({
             method: 'PUT',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -105,11 +113,12 @@ class PetService {
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
      */
-    async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
+    async findByStatusGet(params: Pet.FindByStatusGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.FindByStatusGetQueryResponse, AxiosResponse<Pet.FindByStatusGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -121,11 +130,12 @@ class PetService {
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
      */
-    async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
+    async findByTagsGet(params: Pet.FindByTagsGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.FindByTagsGetQueryResponse, AxiosResponse<Pet.FindByTagsGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByTags\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -137,10 +147,11 @@ class PetService {
      * @summary Find pet by ID
      * @description Returns a single pet
      */
-    async findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
+    async findByPetId(petId: Pet.FindByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.FindByPetIdQueryResponse, AxiosResponse<Pet.FindByPetIdQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -148,14 +159,15 @@ class PetService {
     /**
      * @summary Updates a pet in the store with form data
      */
-    async petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest) {
+    async petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.PetIdPostMutationRequest>>) {
         const res = await request<Pet.PetIdPostMutationResponse, AxiosResponse<Pet.PetIdPostMutationResponse>, Pet.PetIdPostMutationRequest>({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: \`/pet/\${petId}\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -163,10 +175,11 @@ class PetService {
     /**
      * @summary Deletes a pet
      */
-    async delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
+    async delByPetId(petId: Pet.DelByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.DelByPetIdMutationResponse, AxiosResponse<Pet.DelByPetIdMutationResponse>, unknown>({
             method: 'DELETE',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -177,6 +190,7 @@ export const petService = new PetService;
 import type { Store } from "./store.type";
 import type { AxiosResponse } from "axios";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag store
@@ -186,11 +200,12 @@ class StoreService {
     /**
      * @summary Place an order for a pet
      */
-    async create(data: Store.CreateMutationRequest) {
+    async create(data: Store.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Store.CreateMutationRequest>>) {
         const res = await request<Store.CreateMutationResponse, AxiosResponse<Store.CreateMutationResponse>, Store.CreateMutationRequest>({
             method: 'POST',
             url: \`/store/order\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -199,10 +214,11 @@ class StoreService {
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
      */
-    async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
+    async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Store.FindByOrderIdQueryResponse, AxiosResponse<Store.FindByOrderIdQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -211,10 +227,11 @@ class StoreService {
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
      */
-    async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
+    async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Store.DelByOrderIdMutationResponse, AxiosResponse<Store.DelByOrderIdMutationResponse>, unknown>({
             method: 'DELETE',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -223,10 +240,11 @@ class StoreService {
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
      */
-    async inventoryGet() {
+    async inventoryGet(requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Store.InventoryGetQueryResponse, AxiosResponse<Store.InventoryGetQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/store/inventory\`
+            url: \`/store/inventory\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -237,6 +255,7 @@ export const storeService = new StoreService;
 import type { User } from "./user.type";
 import type { AxiosResponse } from "axios";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag user
@@ -246,11 +265,12 @@ class UserService {
     /**
      * @summary Creates list of users with given input array
      */
-    async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
+    async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateWithArrayPostMutationRequest>>) {
         const res = await request<User.CreateWithArrayPostMutationResponse, AxiosResponse<User.CreateWithArrayPostMutationResponse>, User.CreateWithArrayPostMutationRequest>({
             method: 'POST',
             url: \`/user/createWithArray\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -258,11 +278,12 @@ class UserService {
     /**
      * @summary Creates list of users with given input array
      */
-    async createWithListPost(data: User.CreateWithListPostMutationRequest) {
+    async createWithListPost(data: User.CreateWithListPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateWithListPostMutationRequest>>) {
         const res = await request<User.CreateWithListPostMutationResponse, AxiosResponse<User.CreateWithListPostMutationResponse>, User.CreateWithListPostMutationRequest>({
             method: 'POST',
             url: \`/user/createWithList\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -270,10 +291,11 @@ class UserService {
     /**
      * @summary Get user by user name
      */
-    async findByUsername(username: User.FindByUsernamePathParams['username']) {
+    async findByUsername(username: User.FindByUsernamePathParams['username'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.FindByUsernameQueryResponse, AxiosResponse<User.FindByUsernameQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -282,11 +304,12 @@ class UserService {
      * @summary Updated user
      * @description This can only be done by the logged in user.
      */
-    async usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest) {
+    async usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.UsernamePutMutationRequest>>) {
         const res = await request<User.UsernamePutMutationResponse, AxiosResponse<User.UsernamePutMutationResponse>, User.UsernamePutMutationRequest>({
             method: 'PUT',
             url: \`/user/\${username}\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -295,10 +318,11 @@ class UserService {
      * @summary Delete user
      * @description This can only be done by the logged in user.
      */
-    async delByUsername(username: User.DelByUsernamePathParams['username']) {
+    async delByUsername(username: User.DelByUsernamePathParams['username'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.DelByUsernameMutationResponse, AxiosResponse<User.DelByUsernameMutationResponse>, unknown>({
             method: 'DELETE',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -306,11 +330,12 @@ class UserService {
     /**
      * @summary Logs user into the system
      */
-    async loginGet(params: User.LoginGetQueryParams) {
+    async loginGet(params: User.LoginGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.LoginGetQueryResponse, AxiosResponse<User.LoginGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/user/login\`,
-            params
+            params,
+            ...requestConfig
         })
         return res.data
     }
@@ -318,10 +343,11 @@ class UserService {
     /**
      * @summary Logs out current logged in user session
      */
-    async logoutGet() {
+    async logoutGet(requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.LogoutGetQueryResponse, AxiosResponse<User.LogoutGetQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/user/logout\`
+            url: \`/user/logout\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -330,11 +356,12 @@ class UserService {
      * @summary Create user
      * @description This can only be done by the logged in user.
      */
-    async create(data: User.CreateMutationRequest) {
+    async create(data: User.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateMutationRequest>>) {
         const res = await request<User.CreateMutationResponse, AxiosResponse<User.CreateMutationResponse>, User.CreateMutationRequest>({
             method: 'POST',
             url: \`/user\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -351,6 +378,7 @@ import type { newPet } from "./newPetZod";
 import type { newPet } from "./newPetZod";
 import type { AxiosResponse } from "axios";
 import { request } from "./newRequest";
+import type { CustomRequestConfig } from "custom-request";
 
 /**
  * @tag pet
@@ -364,11 +392,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.testPostMutationResponse)
-    async newtestPost(@paramsZodSchema(newPetZod.testPostMutationRequest) data: newPet.TestPostMutationRequest) {
+    async newtestPost(@paramsZodSchema(newPetZod.testPostMutationRequest) data: newPet.TestPostMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.TestPostMutationResponse, AxiosResponse<newPet.TestPostMutationResponse>, newPet.TestPostMutationRequest>({
             method: 'POST',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -379,11 +408,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.testPutMutationResponse)
-    async newtestPut(@paramsZodSchema(newPetZod.testPutMutationRequest) data: newPet.TestPutMutationRequest) {
+    async newtestPut(@paramsZodSchema(newPetZod.testPutMutationRequest) data: newPet.TestPutMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.TestPutMutationResponse, AxiosResponse<newPet.TestPutMutationResponse>, newPet.TestPutMutationRequest>({
             method: 'PUT',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -394,11 +424,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.delByTestMutationResponse)
-    async newdelByTest(@paramsZodSchema(newPetZod.delByTestMutationRequest) data: newPet.DelByTestMutationRequest) {
+    async newdelByTest(@paramsZodSchema(newPetZod.delByTestMutationRequest) data: newPet.DelByTestMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.DelByTestMutationResponse, AxiosResponse<newPet.DelByTestMutationResponse>, newPet.DelByTestMutationRequest>({
             method: 'DELETE',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -409,11 +440,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.testIdGetQueryResponse)
-    async newtestIdGet(@paramsZodSchema(newPetZod.testIdGetPathParams.shape.testId) testId: newPet.TestIdGetPathParams['testId'], @paramsZodSchema(newPetZod.testIdGetQueryParams) params?: newPet.TestIdGetQueryParams) {
+    async newtestIdGet(@paramsZodSchema(newPetZod.testIdGetPathParams.shape.testId) testId: newPet.TestIdGetPathParams['testId'], @paramsZodSchema(newPetZod.testIdGetQueryParams) params?: newPet.TestIdGetQueryParams, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.TestIdGetQueryResponse, AxiosResponse<newPet.TestIdGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: newPet.TestIdGetQueryParams) {
                 return qs.stringify(params);
             }
@@ -428,14 +460,15 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.uploadImagePostMutationResponse)
-    async newuploadImagePost(@paramsZodSchema(newPetZod.uploadImagePostPathParams.shape.petId) petId: newPet.UploadImagePostPathParams['petId'], @paramsZodSchema(newPetZod.uploadImagePostMutationRequest) data: newPet.UploadImagePostMutationRequest) {
+    async newuploadImagePost(@paramsZodSchema(newPetZod.uploadImagePostPathParams.shape.petId) petId: newPet.UploadImagePostPathParams['petId'], @paramsZodSchema(newPetZod.uploadImagePostMutationRequest) data: newPet.UploadImagePostMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.UploadImagePostMutationResponse, AxiosResponse<newPet.UploadImagePostMutationResponse>, newPet.UploadImagePostMutationRequest>({
             method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
             url: \`/pet/\${petId}/uploadImage\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -446,11 +479,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.createMutationResponse)
-    async newcreate(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
+    async newcreate(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
             method: 'POST',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -461,11 +495,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.updateMutationResponse)
-    async newupdate(@paramsZodSchema(newPetZod.updateMutationRequest) data: newPet.UpdateMutationRequest) {
+    async newupdate(@paramsZodSchema(newPetZod.updateMutationRequest) data: newPet.UpdateMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.UpdateMutationResponse, AxiosResponse<newPet.UpdateMutationResponse>, newPet.UpdateMutationRequest>({
             method: 'PUT',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -477,11 +512,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByStatusGetQueryResponse)
-    async newfindByStatusGet(@paramsZodSchema(newPetZod.findByStatusGetQueryParams) params: newPet.FindByStatusGetQueryParams) {
+    async newfindByStatusGet(@paramsZodSchema(newPetZod.findByStatusGetQueryParams) params: newPet.FindByStatusGetQueryParams, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.FindByStatusGetQueryResponse, AxiosResponse<newPet.FindByStatusGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: newPet.FindByStatusGetQueryParams) {
                 return qs.stringify(params);
             }
@@ -496,11 +532,12 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByTagsGetQueryResponse)
-    async newfindByTagsGet(@paramsZodSchema(newPetZod.findByTagsGetQueryParams) params: newPet.FindByTagsGetQueryParams) {
+    async newfindByTagsGet(@paramsZodSchema(newPetZod.findByTagsGetQueryParams) params: newPet.FindByTagsGetQueryParams, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.FindByTagsGetQueryResponse, AxiosResponse<newPet.FindByTagsGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/findByTags\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: newPet.FindByTagsGetQueryParams) {
                 return qs.stringify(params);
             }
@@ -515,10 +552,11 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByPetIdQueryResponse)
-    async newfindByPetId(@paramsZodSchema(newPetZod.findByPetIdPathParams.shape.petId) petId: newPet.FindByPetIdPathParams['petId']) {
+    async newfindByPetId(@paramsZodSchema(newPetZod.findByPetIdPathParams.shape.petId) petId: newPet.FindByPetIdPathParams['petId'], requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.FindByPetIdQueryResponse, AxiosResponse<newPet.FindByPetIdQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -529,14 +567,15 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.petIdPostMutationResponse)
-    async newpetIdPost(@paramsZodSchema(newPetZod.petIdPostPathParams.shape.petId) petId: newPet.PetIdPostPathParams['petId'], @paramsZodSchema(newPetZod.petIdPostMutationRequest) data: newPet.PetIdPostMutationRequest) {
+    async newpetIdPost(@paramsZodSchema(newPetZod.petIdPostPathParams.shape.petId) petId: newPet.PetIdPostPathParams['petId'], @paramsZodSchema(newPetZod.petIdPostMutationRequest) data: newPet.PetIdPostMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.PetIdPostMutationResponse, AxiosResponse<newPet.PetIdPostMutationResponse>, newPet.PetIdPostMutationRequest>({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: \`/pet/\${petId}\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -547,10 +586,11 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.delByPetIdMutationResponse)
-    async newdelByPetId(@paramsZodSchema(newPetZod.delByPetIdPathParams.shape.petId) petId: newPet.DelByPetIdPathParams['petId']) {
+    async newdelByPetId(@paramsZodSchema(newPetZod.delByPetIdPathParams.shape.petId) petId: newPet.DelByPetIdPathParams['petId'], requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.DelByPetIdMutationResponse, AxiosResponse<newPet.DelByPetIdMutationResponse>, unknown>({
             method: 'DELETE',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -564,6 +604,7 @@ import type { newPet } from "./newPetZod";
 import type { newPet } from "./newPet";
 import type { AxiosResponse } from "axios";
 import { request } from "./test/request";
+import type { CustomRequestConfig } from "custom-request";
 
 /**
  * @tag store
@@ -577,11 +618,12 @@ class StoreService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.createMutationResponse)
-    async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
+    async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
             method: 'POST',
             url: \`/store/order\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -593,10 +635,11 @@ class StoreService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByOrderIdQueryResponse)
-    async findByOrderId(@paramsZodSchema(newPetZod.findByOrderIdPathParams.shape.orderId) orderId: newPet.FindByOrderIdPathParams['orderId']) {
+    async findByOrderId(@paramsZodSchema(newPetZod.findByOrderIdPathParams.shape.orderId) orderId: newPet.FindByOrderIdPathParams['orderId'], requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.FindByOrderIdQueryResponse, AxiosResponse<newPet.FindByOrderIdQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -608,10 +651,11 @@ class StoreService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.delByOrderIdMutationResponse)
-    async delByOrderId(@paramsZodSchema(newPetZod.delByOrderIdPathParams.shape.orderId) orderId: newPet.DelByOrderIdPathParams['orderId']) {
+    async delByOrderId(@paramsZodSchema(newPetZod.delByOrderIdPathParams.shape.orderId) orderId: newPet.DelByOrderIdPathParams['orderId'], requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.DelByOrderIdMutationResponse, AxiosResponse<newPet.DelByOrderIdMutationResponse>, unknown>({
             method: 'DELETE',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -623,10 +667,11 @@ class StoreService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.inventoryGetQueryResponse)
-    async inventoryGet() {
+    async inventoryGet(requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.InventoryGetQueryResponse, AxiosResponse<newPet.InventoryGetQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/store/inventory\`
+            url: \`/store/inventory\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -640,6 +685,7 @@ import type { newPet } from "./newPetZod";
 import type { newPet } from "./newPet";
 import type { AxiosResponse } from "axios";
 import { request } from "./test/request";
+import type { CustomRequestConfig } from "custom-request";
 
 /**
  * @tag user
@@ -653,11 +699,12 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.createWithArrayPostMutationResponse)
-    async createWithArrayPost(@paramsZodSchema(newPetZod.createWithArrayPostMutationRequest) data: newPet.CreateWithArrayPostMutationRequest) {
+    async createWithArrayPost(@paramsZodSchema(newPetZod.createWithArrayPostMutationRequest) data: newPet.CreateWithArrayPostMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.CreateWithArrayPostMutationResponse, AxiosResponse<newPet.CreateWithArrayPostMutationResponse>, newPet.CreateWithArrayPostMutationRequest>({
             method: 'POST',
             url: \`/user/createWithArray\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -668,11 +715,12 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.createWithListPostMutationResponse)
-    async createWithListPost(@paramsZodSchema(newPetZod.createWithListPostMutationRequest) data: newPet.CreateWithListPostMutationRequest) {
+    async createWithListPost(@paramsZodSchema(newPetZod.createWithListPostMutationRequest) data: newPet.CreateWithListPostMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.CreateWithListPostMutationResponse, AxiosResponse<newPet.CreateWithListPostMutationResponse>, newPet.CreateWithListPostMutationRequest>({
             method: 'POST',
             url: \`/user/createWithList\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -683,10 +731,11 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.findByUsernameQueryResponse)
-    async findByUsername(@paramsZodSchema(newPetZod.findByUsernamePathParams.shape.username) username: newPet.FindByUsernamePathParams['username']) {
+    async findByUsername(@paramsZodSchema(newPetZod.findByUsernamePathParams.shape.username) username: newPet.FindByUsernamePathParams['username'], requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.FindByUsernameQueryResponse, AxiosResponse<newPet.FindByUsernameQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -698,11 +747,12 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.usernamePutMutationResponse)
-    async usernamePut(@paramsZodSchema(newPetZod.usernamePutPathParams.shape.username) username: newPet.UsernamePutPathParams['username'], @paramsZodSchema(newPetZod.usernamePutMutationRequest) data: newPet.UsernamePutMutationRequest) {
+    async usernamePut(@paramsZodSchema(newPetZod.usernamePutPathParams.shape.username) username: newPet.UsernamePutPathParams['username'], @paramsZodSchema(newPetZod.usernamePutMutationRequest) data: newPet.UsernamePutMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.UsernamePutMutationResponse, AxiosResponse<newPet.UsernamePutMutationResponse>, newPet.UsernamePutMutationRequest>({
             method: 'PUT',
             url: \`/user/\${username}\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -714,10 +764,11 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.delByUsernameMutationResponse)
-    async delByUsername(@paramsZodSchema(newPetZod.delByUsernamePathParams.shape.username) username: newPet.DelByUsernamePathParams['username']) {
+    async delByUsername(@paramsZodSchema(newPetZod.delByUsernamePathParams.shape.username) username: newPet.DelByUsernamePathParams['username'], requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.DelByUsernameMutationResponse, AxiosResponse<newPet.DelByUsernameMutationResponse>, unknown>({
             method: 'DELETE',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -728,11 +779,12 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.loginGetQueryResponse)
-    async loginGet(@paramsZodSchema(newPetZod.loginGetQueryParams) params: newPet.LoginGetQueryParams) {
+    async loginGet(@paramsZodSchema(newPetZod.loginGetQueryParams) params: newPet.LoginGetQueryParams, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.LoginGetQueryResponse, AxiosResponse<newPet.LoginGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/user/login\`,
-            params
+            params,
+            ...requestConfig
         })
         return res.data
     }
@@ -743,10 +795,11 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.logoutGetQueryResponse)
-    async logoutGet() {
+    async logoutGet(requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.LogoutGetQueryResponse, AxiosResponse<newPet.LogoutGetQueryResponse>, unknown>({
             method: 'GET',
-            url: \`/user/logout\`
+            url: \`/user/logout\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -758,11 +811,12 @@ class UserService {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.createMutationResponse)
-    async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest) {
+    async create(@paramsZodSchema(newPetZod.createMutationRequest) data: newPet.CreateMutationRequest, requestConfig?: Partial<CustomRequestConfig>) {
         const res = await request<newPet.CreateMutationResponse, AxiosResponse<newPet.CreateMutationResponse>, newPet.CreateMutationRequest>({
             method: 'POST',
             url: \`/user\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -775,6 +829,7 @@ export const userService = new UserService;
 exports[`RequestGenerator > requestType common getFullText 1`] = `
 "import type { Pet } from "./pet.type";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag pet
@@ -784,11 +839,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async testPost(data: Pet.TestPostMutationRequest) {
+    async testPost(data: Pet.TestPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.TestPostMutationRequest>>) {
         const res = await request<Pet.TestPostMutationResponse>({
             method: 'POST',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -796,11 +852,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async testPut(data: Pet.TestPutMutationRequest) {
+    async testPut(data: Pet.TestPutMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.TestPutMutationRequest>>) {
         const res = await request<Pet.TestPutMutationResponse>({
             method: 'PUT',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -808,11 +865,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async delByTest(data: Pet.DelByTestMutationRequest) {
+    async delByTest(data: Pet.DelByTestMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.DelByTestMutationRequest>>) {
         const res = await request<Pet.DelByTestMutationResponse>({
             method: 'DELETE',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -820,11 +878,12 @@ class PetService {
     /**
      * @summary summary
      */
-    async testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) {
+    async testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.TestIdGetQueryResponse>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.TestIdGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -836,14 +895,15 @@ class PetService {
      * @summary uploads an image
      * @description pet
      */
-    async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest) {
+    async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UploadImagePostMutationRequest>>) {
         const res = await request<Pet.UploadImagePostMutationResponse>({
             method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
             url: \`/pet/\${petId}/uploadImage\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -851,11 +911,12 @@ class PetService {
     /**
      * @summary Add a new pet to the store
      */
-    async create(data: Pet.CreateMutationRequest) {
+    async create(data: Pet.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.CreateMutationRequest>>) {
         const res = await request<Pet.CreateMutationResponse>({
             method: 'POST',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -863,11 +924,12 @@ class PetService {
     /**
      * @summary Update an existing pet
      */
-    async update(data: Pet.UpdateMutationRequest) {
+    async update(data: Pet.UpdateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UpdateMutationRequest>>) {
         const res = await request<Pet.UpdateMutationResponse>({
             method: 'PUT',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -876,11 +938,12 @@ class PetService {
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
      */
-    async findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
+    async findByStatusGet(params: Pet.FindByStatusGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.FindByStatusGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -892,11 +955,12 @@ class PetService {
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
      */
-    async findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
+    async findByTagsGet(params: Pet.FindByTagsGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.FindByTagsGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByTags\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -908,10 +972,11 @@ class PetService {
      * @summary Find pet by ID
      * @description Returns a single pet
      */
-    async findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
+    async findByPetId(petId: Pet.FindByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.FindByPetIdQueryResponse>({
             method: 'GET',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -919,14 +984,15 @@ class PetService {
     /**
      * @summary Updates a pet in the store with form data
      */
-    async petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest) {
+    async petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.PetIdPostMutationRequest>>) {
         const res = await request<Pet.PetIdPostMutationResponse>({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: \`/pet/\${petId}\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -934,10 +1000,11 @@ class PetService {
     /**
      * @summary Deletes a pet
      */
-    async delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
+    async delByPetId(petId: Pet.DelByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Pet.DelByPetIdMutationResponse>({
             method: 'DELETE',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -947,6 +1014,7 @@ export const petService = new PetService;
 
 import type { Store } from "./store.type";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag store
@@ -956,11 +1024,12 @@ class StoreService {
     /**
      * @summary Place an order for a pet
      */
-    async create(data: Store.CreateMutationRequest) {
+    async create(data: Store.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Store.CreateMutationRequest>>) {
         const res = await request<Store.CreateMutationResponse>({
             method: 'POST',
             url: \`/store/order\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -969,10 +1038,11 @@ class StoreService {
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
      */
-    async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
+    async findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Store.FindByOrderIdQueryResponse>({
             method: 'GET',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -981,10 +1051,11 @@ class StoreService {
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
      */
-    async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
+    async delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Store.DelByOrderIdMutationResponse>({
             method: 'DELETE',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -993,10 +1064,11 @@ class StoreService {
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
      */
-    async inventoryGet() {
+    async inventoryGet(requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<Store.InventoryGetQueryResponse>({
             method: 'GET',
-            url: \`/store/inventory\`
+            url: \`/store/inventory\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -1006,6 +1078,7 @@ export const storeService = new StoreService;
 
 import type { User } from "./user.type";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag user
@@ -1015,11 +1088,12 @@ class UserService {
     /**
      * @summary Creates list of users with given input array
      */
-    async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
+    async createWithArrayPost(data: User.CreateWithArrayPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateWithArrayPostMutationRequest>>) {
         const res = await request<User.CreateWithArrayPostMutationResponse>({
             method: 'POST',
             url: \`/user/createWithArray\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -1027,11 +1101,12 @@ class UserService {
     /**
      * @summary Creates list of users with given input array
      */
-    async createWithListPost(data: User.CreateWithListPostMutationRequest) {
+    async createWithListPost(data: User.CreateWithListPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateWithListPostMutationRequest>>) {
         const res = await request<User.CreateWithListPostMutationResponse>({
             method: 'POST',
             url: \`/user/createWithList\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -1039,10 +1114,11 @@ class UserService {
     /**
      * @summary Get user by user name
      */
-    async findByUsername(username: User.FindByUsernamePathParams['username']) {
+    async findByUsername(username: User.FindByUsernamePathParams['username'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.FindByUsernameQueryResponse>({
             method: 'GET',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -1051,11 +1127,12 @@ class UserService {
      * @summary Updated user
      * @description This can only be done by the logged in user.
      */
-    async usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest) {
+    async usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.UsernamePutMutationRequest>>) {
         const res = await request<User.UsernamePutMutationResponse>({
             method: 'PUT',
             url: \`/user/\${username}\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -1064,10 +1141,11 @@ class UserService {
      * @summary Delete user
      * @description This can only be done by the logged in user.
      */
-    async delByUsername(username: User.DelByUsernamePathParams['username']) {
+    async delByUsername(username: User.DelByUsernamePathParams['username'], requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.DelByUsernameMutationResponse>({
             method: 'DELETE',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -1075,11 +1153,12 @@ class UserService {
     /**
      * @summary Logs user into the system
      */
-    async loginGet(params: User.LoginGetQueryParams) {
+    async loginGet(params: User.LoginGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.LoginGetQueryResponse>({
             method: 'GET',
             url: \`/user/login\`,
-            params
+            params,
+            ...requestConfig
         })
         return res.data
     }
@@ -1087,10 +1166,11 @@ class UserService {
     /**
      * @summary Logs out current logged in user session
      */
-    async logoutGet() {
+    async logoutGet(requestConfig?: Partial<AxiosRequestConfig>) {
         const res = await request<User.LogoutGetQueryResponse>({
             method: 'GET',
-            url: \`/user/logout\`
+            url: \`/user/logout\`,
+            ...requestConfig
         })
         return res.data
     }
@@ -1099,11 +1179,12 @@ class UserService {
      * @summary Create user
      * @description This can only be done by the logged in user.
      */
-    async create(data: User.CreateMutationRequest) {
+    async create(data: User.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateMutationRequest>>) {
         const res = await request<User.CreateMutationResponse>({
             method: 'POST',
             url: \`/user\`,
-            data
+            data,
+            ...requestConfig
         })
         return res.data
     }
@@ -1116,6 +1197,7 @@ export const userService = new UserService;
 exports[`RequestGenerator > requestType commonWithArrayResponse getFullText 1`] = `
 "import type { Pet } from "./pet.type";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag pet
@@ -1125,11 +1207,12 @@ class PetService {
     /**
      * @summary summary
      */
-    testPost(data: Pet.TestPostMutationRequest) {
+    testPost(data: Pet.TestPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.TestPostMutationRequest>>) {
         return request<Pet.TestPostMutationResponse>({
             method: 'POST',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1140,11 +1223,12 @@ class PetService {
     /**
      * @summary summary
      */
-    testPut(data: Pet.TestPutMutationRequest) {
+    testPut(data: Pet.TestPutMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.TestPutMutationRequest>>) {
         return request<Pet.TestPutMutationResponse>({
             method: 'PUT',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1155,11 +1239,12 @@ class PetService {
     /**
      * @summary summary
      */
-    delByTest(data: Pet.DelByTestMutationRequest) {
+    delByTest(data: Pet.DelByTestMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.DelByTestMutationRequest>>) {
         return request<Pet.DelByTestMutationResponse>({
             method: 'DELETE',
             url: \`/pet/test\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1170,11 +1255,12 @@ class PetService {
     /**
      * @summary summary
      */
-    testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) {
+    testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Pet.TestIdGetQueryResponse>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.TestIdGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -1189,14 +1275,15 @@ class PetService {
      * @summary uploads an image
      * @description pet
      */
-    uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest) {
+    uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UploadImagePostMutationRequest>>) {
         return request<Pet.UploadImagePostMutationResponse>({
             method: 'POST',
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
             url: \`/pet/\${petId}/uploadImage\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1207,11 +1294,12 @@ class PetService {
     /**
      * @summary Add a new pet to the store
      */
-    create(data: Pet.CreateMutationRequest) {
+    create(data: Pet.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.CreateMutationRequest>>) {
         return request<Pet.CreateMutationResponse>({
             method: 'POST',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1222,11 +1310,12 @@ class PetService {
     /**
      * @summary Update an existing pet
      */
-    update(data: Pet.UpdateMutationRequest) {
+    update(data: Pet.UpdateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UpdateMutationRequest>>) {
         return request<Pet.UpdateMutationResponse>({
             method: 'PUT',
             url: \`/pet\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1238,11 +1327,12 @@ class PetService {
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
      */
-    findByStatusGet(params: Pet.FindByStatusGetQueryParams) {
+    findByStatusGet(params: Pet.FindByStatusGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Pet.FindByStatusGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByStatus\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.FindByStatusGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -1257,11 +1347,12 @@ class PetService {
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
      */
-    findByTagsGet(params: Pet.FindByTagsGetQueryParams) {
+    findByTagsGet(params: Pet.FindByTagsGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Pet.FindByTagsGetQueryResponse>({
             method: 'GET',
             url: \`/pet/findByTags\`,
             params,
+            ...requestConfig,
             paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
                 return qs.stringify(params)
             }
@@ -1276,10 +1367,11 @@ class PetService {
      * @summary Find pet by ID
      * @description Returns a single pet
      */
-    findByPetId(petId: Pet.FindByPetIdPathParams['petId']) {
+    findByPetId(petId: Pet.FindByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Pet.FindByPetIdQueryResponse>({
             method: 'GET',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1290,14 +1382,15 @@ class PetService {
     /**
      * @summary Updates a pet in the store with form data
      */
-    petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest) {
+    petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.PetIdPostMutationRequest>>) {
         return request<Pet.PetIdPostMutationResponse>({
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: \`/pet/\${petId}\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1308,10 +1401,11 @@ class PetService {
     /**
      * @summary Deletes a pet
      */
-    delByPetId(petId: Pet.DelByPetIdPathParams['petId']) {
+    delByPetId(petId: Pet.DelByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Pet.DelByPetIdMutationResponse>({
             method: 'DELETE',
-            url: \`/pet/\${petId}\`
+            url: \`/pet/\${petId}\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1324,6 +1418,7 @@ export const petService = new PetService;
 
 import type { Store } from "./store.type";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag store
@@ -1333,11 +1428,12 @@ class StoreService {
     /**
      * @summary Place an order for a pet
      */
-    create(data: Store.CreateMutationRequest) {
+    create(data: Store.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Store.CreateMutationRequest>>) {
         return request<Store.CreateMutationResponse>({
             method: 'POST',
             url: \`/store/order\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1349,10 +1445,11 @@ class StoreService {
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
      */
-    findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId']) {
+    findByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Store.FindByOrderIdQueryResponse>({
             method: 'GET',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1364,10 +1461,11 @@ class StoreService {
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
      */
-    delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId']) {
+    delByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Store.DelByOrderIdMutationResponse>({
             method: 'DELETE',
-            url: \`/store/order/\${orderId}\`
+            url: \`/store/order/\${orderId}\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1379,10 +1477,11 @@ class StoreService {
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
      */
-    inventoryGet() {
+    inventoryGet(requestConfig?: Partial<AxiosRequestConfig>) {
         return request<Store.InventoryGetQueryResponse>({
             method: 'GET',
-            url: \`/store/inventory\`
+            url: \`/store/inventory\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1395,6 +1494,7 @@ export const storeService = new StoreService;
 
 import type { User } from "./user.type";
 import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
  * @tag user
@@ -1404,11 +1504,12 @@ class UserService {
     /**
      * @summary Creates list of users with given input array
      */
-    createWithArrayPost(data: User.CreateWithArrayPostMutationRequest) {
+    createWithArrayPost(data: User.CreateWithArrayPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateWithArrayPostMutationRequest>>) {
         return request<User.CreateWithArrayPostMutationResponse>({
             method: 'POST',
             url: \`/user/createWithArray\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1419,11 +1520,12 @@ class UserService {
     /**
      * @summary Creates list of users with given input array
      */
-    createWithListPost(data: User.CreateWithListPostMutationRequest) {
+    createWithListPost(data: User.CreateWithListPostMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateWithListPostMutationRequest>>) {
         return request<User.CreateWithListPostMutationResponse>({
             method: 'POST',
             url: \`/user/createWithList\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1434,10 +1536,11 @@ class UserService {
     /**
      * @summary Get user by user name
      */
-    findByUsername(username: User.FindByUsernamePathParams['username']) {
+    findByUsername(username: User.FindByUsernamePathParams['username'], requestConfig?: Partial<AxiosRequestConfig>) {
         return request<User.FindByUsernameQueryResponse>({
             method: 'GET',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1449,11 +1552,12 @@ class UserService {
      * @summary Updated user
      * @description This can only be done by the logged in user.
      */
-    usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest) {
+    usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.UsernamePutMutationRequest>>) {
         return request<User.UsernamePutMutationResponse>({
             method: 'PUT',
             url: \`/user/\${username}\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1465,10 +1569,11 @@ class UserService {
      * @summary Delete user
      * @description This can only be done by the logged in user.
      */
-    delByUsername(username: User.DelByUsernamePathParams['username']) {
+    delByUsername(username: User.DelByUsernamePathParams['username'], requestConfig?: Partial<AxiosRequestConfig>) {
         return request<User.DelByUsernameMutationResponse>({
             method: 'DELETE',
-            url: \`/user/\${username}\`
+            url: \`/user/\${username}\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1479,11 +1584,12 @@ class UserService {
     /**
      * @summary Logs user into the system
      */
-    loginGet(params: User.LoginGetQueryParams) {
+    loginGet(params: User.LoginGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
         return request<User.LoginGetQueryResponse>({
             method: 'GET',
             url: \`/user/login\`,
-            params
+            params,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1494,10 +1600,11 @@ class UserService {
     /**
      * @summary Logs out current logged in user session
      */
-    logoutGet() {
+    logoutGet(requestConfig?: Partial<AxiosRequestConfig>) {
         return request<User.LogoutGetQueryResponse>({
             method: 'GET',
-            url: \`/user/logout\`
+            url: \`/user/logout\`,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],
@@ -1509,11 +1616,12 @@ class UserService {
      * @summary Create user
      * @description This can only be done by the logged in user.
      */
-    create(data: User.CreateMutationRequest) {
+    create(data: User.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<User.CreateMutationRequest>>) {
         return request<User.CreateMutationResponse>({
             method: 'POST',
             url: \`/user\`,
-            data
+            data,
+            ...requestConfig
         })
             .then(
                 res => [undefined, res.data],

@@ -184,6 +184,10 @@ export class RequestGenerator {
     );
   }
 
+  get requestConfigImportDeclaration() {
+    return this.pluginConfig?.requestConfigTypeImportDeclaration;
+  }
+
   build(context: PluginContext): void {
     _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
       this.oldNode.setCurrentSourceFile(
@@ -274,6 +278,15 @@ export class RequestGenerator {
         "@/utils/request",
     };
 
+    const requestConfig: ImportStatementsOmitKind = {
+      isTypeOnly: true,
+      namedImports: _.isEmpty(this.requestConfigImportDeclaration?.namedImports)
+        ? ["AxiosRequestConfig"]
+        : this.requestConfigImportDeclaration?.namedImports,
+      moduleSpecifier:
+        this.requestConfigImportDeclaration?.moduleSpecifier ?? "axios",
+    };
+
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.upperFirstNamespaceTypeName],
@@ -309,6 +322,7 @@ export class RequestGenerator {
       .concat(!this.hasZodPlugin ? [typeModel] : [])
       .concat(this.isAxiosRequestType ? [axiosType] : [])
       .push(request)
+      .push(requestConfig)
       .filter(Boolean)
       .value();
 
@@ -438,6 +452,18 @@ export class RequestGenerator {
         };
       })
       .value();
+    //<AddPetMutationRequest>
+    const axiosRequestConfigType = `Partial<AxiosRequestConfig${this.openapi.requestBody?.hasRequestBody ? `<${this.requestDataType}>` : ""}>`;
+    const requestConfigNamedImports = _.head(
+      this.requestConfigImportDeclaration?.namedImports,
+    );
+    const requestConfig = {
+      name: "requestConfig",
+      hasQuestionToken: true,
+      type: requestConfigNamedImports
+        ? `Partial<${requestConfigNamedImports}>`
+        : axiosRequestConfigType,
+    };
 
     return _.chain([] as any[])
       .concat(
@@ -453,7 +479,7 @@ export class RequestGenerator {
           ? queryParameters
           : undefined,
       )
-
+      .push(requestConfig)
       .filter(Boolean)
       .value();
   }
@@ -542,6 +568,7 @@ export class RequestGenerator {
       .push(this.openapi.parameter?.hasQueryParameters ? "params" : "")
       .push(this.openapi.requestBody?.hasRequestBody ? `data` : "")
       .push(this.openapi.response?.isDownLoad ? "responseType:'blob'" : "")
+      .push("...requestConfig")
       .push(
         this.openapi.parameter?.hasQueryParametersArray
           ? this.generatorParamsSerializer()

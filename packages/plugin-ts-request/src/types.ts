@@ -18,6 +18,10 @@ export type PluginConfig = {
   requestImportDeclaration?: {
     moduleSpecifier: string;
   };
+  requestConfigTypeImportDeclaration?: {
+    namedImports: Array<string>;
+    moduleSpecifier: string;
+  };
   requestType?: RequestType;
 };
 
