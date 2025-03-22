@@ -39,9 +39,7 @@ describe("swr", async () => {
     // @ts-expect-error Not a canonical document
     const oas = new Oas(petStore);
     const openapi = new OpenAPI({}, oas);
-    const pluginConfig: PluginConfig = {
-      typeDeclarationForm: "type",
-    };
+    const pluginConfig: PluginConfig = {};
     const requestGenerator = new SwrGenerator({
       oas,
       ast,

@@ -195,9 +195,11 @@ export class OpenAPI {
           const name = currentName + (num + 1);
 
           this.methodNameMap.set(key, name);
+          nameCount.set(currentName, num + 1);
           nameSet.add(currentName);
         } else {
           nameSet.add(currentName);
+          nameCount.set(currentName, 0);
           this.methodNameMap.set(key, currentName);
         }
       });

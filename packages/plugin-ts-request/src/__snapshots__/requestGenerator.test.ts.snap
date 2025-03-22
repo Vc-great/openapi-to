@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`RequestGenerator > all false  getFullText 1`] = `
-"import type { Pet } from "./Pet";
+"import type { Pet } from "./pet.type";
 import type { AxiosResponse } from "axios";
 import { request } from "@/utils/request";
 
@@ -9,7 +9,7 @@ import { request } from "@/utils/request";
  * @tag pet
  * @description Everything about your Pets
  */
-class PetAPI {
+class PetService {
     /**
      * @summary summary
      */
@@ -49,7 +49,7 @@ class PetAPI {
     /**
      * @summary summary
      */
-    async testIdGet(params?: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
+    async testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) {
         const res = await request<Pet.TestIdGetQueryResponse, AxiosResponse<Pet.TestIdGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
@@ -65,7 +65,7 @@ class PetAPI {
      * @summary uploads an image
      * @description pet
      */
-    async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
+    async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest) {
         const res = await request<Pet.UploadImagePostMutationResponse, AxiosResponse<Pet.UploadImagePostMutationResponse>, Pet.UploadImagePostMutationRequest>({
             method: 'POST',
             headers: {
@@ -148,7 +148,7 @@ class PetAPI {
     /**
      * @summary Updates a pet in the store with form data
      */
-    async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
+    async petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest) {
         const res = await request<Pet.PetIdPostMutationResponse, AxiosResponse<Pet.PetIdPostMutationResponse>, Pet.PetIdPostMutationRequest>({
             method: 'POST',
             headers: {
@@ -172,9 +172,9 @@ class PetAPI {
     }
 }
 
-export const petAPI = new PetAPI;
+export const petService = new PetService;
 
-import type { Store } from "./Store";
+import type { Store } from "./store.type";
 import type { AxiosResponse } from "axios";
 import { request } from "@/utils/request";
 
@@ -182,7 +182,7 @@ import { request } from "@/utils/request";
  * @tag store
  * @description Access to Petstore orders
  */
-class StoreAPI {
+class StoreService {
     /**
      * @summary Place an order for a pet
      */
@@ -232,9 +232,9 @@ class StoreAPI {
     }
 }
 
-export const storeAPI = new StoreAPI;
+export const storeService = new StoreService;
 
-import type { User } from "./User";
+import type { User } from "./user.type";
 import type { AxiosResponse } from "axios";
 import { request } from "@/utils/request";
 
@@ -242,7 +242,7 @@ import { request } from "@/utils/request";
  * @tag user
  * @description Operations about user
  */
-class UserAPI {
+class UserService {
     /**
      * @summary Creates list of users with given input array
      */
@@ -282,7 +282,7 @@ class UserAPI {
      * @summary Updated user
      * @description This can only be done by the logged in user.
      */
-    async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
+    async usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest) {
         const res = await request<User.UsernamePutMutationResponse, AxiosResponse<User.UsernamePutMutationResponse>, User.UsernamePutMutationRequest>({
             method: 'PUT',
             url: \`/user/\${username}\`,
@@ -340,7 +340,7 @@ class UserAPI {
     }
 }
 
-export const userAPI = new UserAPI;
+export const userService = new UserService;
 "
 `;
 
@@ -409,7 +409,7 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.testIdGetQueryResponse)
-    async newtestIdGet(@paramsZodSchema(newPetZod.testIdGetQueryParams) params?: newPet.TestIdGetQueryParams, @paramsZodSchema(newPetZod.testIdGetPathParams.shape.testId) testId: newPet.TestIdGetPathParams['testId']) {
+    async newtestIdGet(@paramsZodSchema(newPetZod.testIdGetPathParams.shape.testId) testId: newPet.TestIdGetPathParams['testId'], @paramsZodSchema(newPetZod.testIdGetQueryParams) params?: newPet.TestIdGetQueryParams) {
         const res = await request<newPet.TestIdGetQueryResponse, AxiosResponse<newPet.TestIdGetQueryResponse>, unknown>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
@@ -428,7 +428,7 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.uploadImagePostMutationResponse)
-    async newuploadImagePost(@paramsZodSchema(newPetZod.uploadImagePostMutationRequest) data: newPet.UploadImagePostMutationRequest, @paramsZodSchema(newPetZod.uploadImagePostPathParams.shape.petId) petId: newPet.UploadImagePostPathParams['petId']) {
+    async newuploadImagePost(@paramsZodSchema(newPetZod.uploadImagePostPathParams.shape.petId) petId: newPet.UploadImagePostPathParams['petId'], @paramsZodSchema(newPetZod.uploadImagePostMutationRequest) data: newPet.UploadImagePostMutationRequest) {
         const res = await request<newPet.UploadImagePostMutationResponse, AxiosResponse<newPet.UploadImagePostMutationResponse>, newPet.UploadImagePostMutationRequest>({
             method: 'POST',
             headers: {
@@ -529,7 +529,7 @@ class NewPetAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.petIdPostMutationResponse)
-    async newpetIdPost(@paramsZodSchema(newPetZod.petIdPostMutationRequest) data: newPet.PetIdPostMutationRequest, @paramsZodSchema(newPetZod.petIdPostPathParams.shape.petId) petId: newPet.PetIdPostPathParams['petId']) {
+    async newpetIdPost(@paramsZodSchema(newPetZod.petIdPostPathParams.shape.petId) petId: newPet.PetIdPostPathParams['petId'], @paramsZodSchema(newPetZod.petIdPostMutationRequest) data: newPet.PetIdPostMutationRequest) {
         const res = await request<newPet.PetIdPostMutationResponse, AxiosResponse<newPet.PetIdPostMutationResponse>, newPet.PetIdPostMutationRequest>({
             method: 'POST',
             headers: {
@@ -570,7 +570,7 @@ import { request } from "./test/request";
  * @description Access to Petstore orders
  * @UUID API-store
  */
-class StoreAPI {
+class StoreService {
     /**
      * @summary Place an order for a pet
      * @UUID placeOrder
@@ -632,7 +632,7 @@ class StoreAPI {
     }
 }
 
-export const storeAPI = new StoreAPI;
+export const storeService = new StoreService;
 
 import { newPetZod } from "./newPetZod";
 import { paramsZodSchema, responseZodSchema, ZodValidation } from "./test/zod";
@@ -646,7 +646,7 @@ import { request } from "./test/request";
  * @description Operations about user
  * @UUID API-user
  */
-class UserAPI {
+class UserService {
     /**
      * @summary Creates list of users with given input array
      * @UUID createUsersWithArrayInput
@@ -698,7 +698,7 @@ class UserAPI {
      */
     @ZodValidation
     @responseZodSchema(newPetZod.usernamePutMutationResponse)
-    async usernamePut(@paramsZodSchema(newPetZod.usernamePutMutationRequest) data: newPet.UsernamePutMutationRequest, @paramsZodSchema(newPetZod.usernamePutPathParams.shape.username) username: newPet.UsernamePutPathParams['username']) {
+    async usernamePut(@paramsZodSchema(newPetZod.usernamePutPathParams.shape.username) username: newPet.UsernamePutPathParams['username'], @paramsZodSchema(newPetZod.usernamePutMutationRequest) data: newPet.UsernamePutMutationRequest) {
         const res = await request<newPet.UsernamePutMutationResponse, AxiosResponse<newPet.UsernamePutMutationResponse>, newPet.UsernamePutMutationRequest>({
             method: 'PUT',
             url: \`/user/\${username}\`,
@@ -768,19 +768,19 @@ class UserAPI {
     }
 }
 
-export const userAPI = new UserAPI;
+export const userService = new UserService;
 "
 `;
 
 exports[`RequestGenerator > requestType common getFullText 1`] = `
-"import type { Pet } from "./Pet";
+"import type { Pet } from "./pet.type";
 import { request } from "@/utils/request";
 
 /**
  * @tag pet
  * @description Everything about your Pets
  */
-class PetAPI {
+class PetService {
     /**
      * @summary summary
      */
@@ -820,7 +820,7 @@ class PetAPI {
     /**
      * @summary summary
      */
-    async testIdGet(params?: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
+    async testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) {
         const res = await request<Pet.TestIdGetQueryResponse>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
@@ -836,7 +836,7 @@ class PetAPI {
      * @summary uploads an image
      * @description pet
      */
-    async uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
+    async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest) {
         const res = await request<Pet.UploadImagePostMutationResponse>({
             method: 'POST',
             headers: {
@@ -919,7 +919,7 @@ class PetAPI {
     /**
      * @summary Updates a pet in the store with form data
      */
-    async petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
+    async petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest) {
         const res = await request<Pet.PetIdPostMutationResponse>({
             method: 'POST',
             headers: {
@@ -943,16 +943,16 @@ class PetAPI {
     }
 }
 
-export const petAPI = new PetAPI;
+export const petService = new PetService;
 
-import type { Store } from "./Store";
+import type { Store } from "./store.type";
 import { request } from "@/utils/request";
 
 /**
  * @tag store
  * @description Access to Petstore orders
  */
-class StoreAPI {
+class StoreService {
     /**
      * @summary Place an order for a pet
      */
@@ -1002,16 +1002,16 @@ class StoreAPI {
     }
 }
 
-export const storeAPI = new StoreAPI;
+export const storeService = new StoreService;
 
-import type { User } from "./User";
+import type { User } from "./user.type";
 import { request } from "@/utils/request";
 
 /**
  * @tag user
  * @description Operations about user
  */
-class UserAPI {
+class UserService {
     /**
      * @summary Creates list of users with given input array
      */
@@ -1051,7 +1051,7 @@ class UserAPI {
      * @summary Updated user
      * @description This can only be done by the logged in user.
      */
-    async usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
+    async usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest) {
         const res = await request<User.UsernamePutMutationResponse>({
             method: 'PUT',
             url: \`/user/\${username}\`,
@@ -1109,19 +1109,19 @@ class UserAPI {
     }
 }
 
-export const userAPI = new UserAPI;
+export const userService = new UserService;
 "
 `;
 
 exports[`RequestGenerator > requestType commonWithArrayResponse getFullText 1`] = `
-"import type { Pet } from "./Pet";
+"import type { Pet } from "./pet.type";
 import { request } from "@/utils/request";
 
 /**
  * @tag pet
  * @description Everything about your Pets
  */
-class PetAPI {
+class PetService {
     /**
      * @summary summary
      */
@@ -1170,7 +1170,7 @@ class PetAPI {
     /**
      * @summary summary
      */
-    testIdGet(params?: Pet.TestIdGetQueryParams, testId: Pet.TestIdGetPathParams['testId']) {
+    testIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) {
         return request<Pet.TestIdGetQueryResponse>({
             method: 'GET',
             url: \`/pet/test/\${testId}\`,
@@ -1189,7 +1189,7 @@ class PetAPI {
      * @summary uploads an image
      * @description pet
      */
-    uploadImagePost(data: Pet.UploadImagePostMutationRequest, petId: Pet.UploadImagePostPathParams['petId']) {
+    uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest) {
         return request<Pet.UploadImagePostMutationResponse>({
             method: 'POST',
             headers: {
@@ -1290,7 +1290,7 @@ class PetAPI {
     /**
      * @summary Updates a pet in the store with form data
      */
-    petIdPost(data: Pet.PetIdPostMutationRequest, petId: Pet.PetIdPostPathParams['petId']) {
+    petIdPost(petId: Pet.PetIdPostPathParams['petId'], data: Pet.PetIdPostMutationRequest) {
         return request<Pet.PetIdPostMutationResponse>({
             method: 'POST',
             headers: {
@@ -1320,16 +1320,16 @@ class PetAPI {
     }
 }
 
-export const petAPI = new PetAPI;
+export const petService = new PetService;
 
-import type { Store } from "./Store";
+import type { Store } from "./store.type";
 import { request } from "@/utils/request";
 
 /**
  * @tag store
  * @description Access to Petstore orders
  */
-class StoreAPI {
+class StoreService {
     /**
      * @summary Place an order for a pet
      */
@@ -1391,16 +1391,16 @@ class StoreAPI {
     }
 }
 
-export const storeAPI = new StoreAPI;
+export const storeService = new StoreService;
 
-import type { User } from "./User";
+import type { User } from "./user.type";
 import { request } from "@/utils/request";
 
 /**
  * @tag user
  * @description Operations about user
  */
-class UserAPI {
+class UserService {
     /**
      * @summary Creates list of users with given input array
      */
@@ -1449,7 +1449,7 @@ class UserAPI {
      * @summary Updated user
      * @description This can only be done by the logged in user.
      */
-    usernamePut(data: User.UsernamePutMutationRequest, username: User.UsernamePutPathParams['username']) {
+    usernamePut(username: User.UsernamePutPathParams['username'], data: User.UsernamePutMutationRequest) {
         return request<User.UsernamePutMutationResponse>({
             method: 'PUT',
             url: \`/user/\${username}\`,
@@ -1522,6 +1522,6 @@ class UserAPI {
     }
 }
 
-export const userAPI = new UserAPI;
+export const userService = new UserService;
 "
 `;

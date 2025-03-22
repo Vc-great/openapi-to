@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`typerGenerator > TypeGenerator getFullText 1`] = `
-"import type { TestDto2, Test32145, ApiResponse, Pet } from "./typeModels";
+"import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
 
 /**
  * @tag pet
@@ -180,7 +180,7 @@ export namespace Pet {
     export type DelByPetIdMutationResponse = unknown;
 }
 
-import type { Order } from "./typeModels";
+import type { Order } from "./models";
 
 /**
  * @tag store
@@ -233,7 +233,7 @@ export namespace Store {
     export type InventoryGetError = unknown;
 }
 
-import type { User } from "./typeModels";
+import type { User } from "./models";
 
 /**
  * @tag user
@@ -628,7 +628,7 @@ export * from "./User";
 `;
 
 exports[`typerGenerator > compare TypeGenerator getFullText 1`] = `
-"import type { TestDto2, Test32145, ApiResponse, Pet } from "./typeModels";
+"import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
 
 /**
  * @tag pet
@@ -808,7 +808,7 @@ export namespace NewPet {
     export type DelByPetIdMutationResponse = unknown;
 }
 
-import type { Order } from "./typeModels";
+import type { Order } from "./models";
 
 /**
  * @tag store
@@ -862,7 +862,7 @@ export namespace Store {
     export type InventoryGetError = unknown;
 }
 
-import type { User } from "./typeModels";
+import type { User } from "./models";
 
 /**
  * @tag user

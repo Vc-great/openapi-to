@@ -68,14 +68,14 @@ export class TypeGenerator {
   }
 
   get namespaceUUID(): string {
-    return UUIDPrefix + this.openapi.currentTagName;
+    return UUIDPrefix + this.openapi.currentTagNameOfPinYin;
   }
   get nameSpaceName(): string {
-    return _.upperFirst(this.openapi.currentTagName);
+    return _.upperFirst(this.openapi.currentTagNameOfPinYin);
   }
 
-  get upperFirstNameSpaceName(): string {
-    return _.upperFirst(this.openapi.currentTagName);
+  get lowerFirstNameSpaceName(): string {
+    return _.lowerFirst(this.openapi.currentTagNameOfPinYin) + ".type";
   }
 
   build(): void {
@@ -98,7 +98,7 @@ export class TypeGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.upperFirstNameSpaceName + ".ts",
+        this.oldNode.baseName || this.lowerFirstNameSpaceName + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];

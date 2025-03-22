@@ -2,7 +2,7 @@
 
 exports[`zodGenerator > compare zodGenerator getFullText 1`] = `
 "import { z } from "zod";
-import { testDto2, test32145, apiResponse, pet } from "./zodModels";
+import { testDto2, test32145, apiResponse, pet } from "./zod-schema";
 /**
  * @description OK
  */
@@ -339,7 +339,7 @@ export namespace Pet {
 }
 
 import { z } from "zod";
-import { order } from "./zodModels";
+import { order } from "./zod-schema";
 const createMutationRequest = z.lazy(() => order);
 /**
  * @description successful operation
@@ -445,7 +445,7 @@ export namespace Store {
 }
 
 import { z } from "zod";
-import { user } from "./zodModels";
+import { user } from "./zod-schema";
 const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
@@ -903,7 +903,7 @@ export * from "./user";
 
 exports[`zodGenerator > zodGenerator getFullText 1`] = `
 "import { z } from "zod";
-import { testDto2, test32145, apiResponse, pet } from "./zodModels";
+import { testDto2, test32145, apiResponse, pet } from "./zod-schema";
 /**
  * @description OK
  */
@@ -1061,7 +1061,7 @@ const delByPetIdMutationResponse = z.unknown();
  * @tag pet
  * @description Everything about your Pets
  */
-export const petZod = {
+export const petSchema = {
     /**
     *@description:OK
     */
@@ -1238,7 +1238,7 @@ export namespace Pet {
 }
 
 import { z } from "zod";
-import { order } from "./zodModels";
+import { order } from "./zod-schema";
 const createMutationRequest = z.lazy(() => order);
 /**
  * @description successful operation
@@ -1279,7 +1279,7 @@ const inventoryGetError = z.unknown();
  * @tag store
  * @description Access to Petstore orders
  */
-export const storeZod = {
+export const storeSchema = {
     createMutationRequest,
     /**
     *@description:successful operation
@@ -1342,7 +1342,7 @@ export namespace Store {
 }
 
 import { z } from "zod";
-import { user } from "./zodModels";
+import { user } from "./zod-schema";
 const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
@@ -1411,7 +1411,7 @@ const createMutationResponse = z.unknown();
  * @tag user
  * @description Operations about user
  */
-export const userZod = {
+export const userSchema = {
     createWithArrayPostError,
     createWithArrayPostMutationResponse,
     createWithListPostError,

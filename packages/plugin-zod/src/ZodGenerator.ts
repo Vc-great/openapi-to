@@ -6,7 +6,6 @@ import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
-import { NAMESPACE } from "./utils/namespace.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Component } from "./Component.ts";
 import { useEnumCache } from "./EnumCache.ts";
@@ -76,12 +75,16 @@ export class ZodGenerator {
     return new Zod();
   }
 
-  get nameSpaceName(): string {
+  get typeNameSpaceName(): string {
     return _.upperFirst(this.openapi.currentTagNameOfPinYin);
   }
 
   get zodNameSpaceName(): string {
-    return this.openapi.currentTagNameOfPinYin + NAMESPACE;
+    return this.openapi.currentTagNameOfPinYin + "Schema";
+  }
+
+  get zodFileName(): string {
+    return this.openapi.currentTagNameOfPinYin + ".schema";
   }
 
   build(): void {
@@ -103,7 +106,7 @@ export class ZodGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.zodNameSpaceName + ".ts",
+        this.oldNode.baseName || this.zodFileName + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -321,7 +324,7 @@ export class ZodGenerator {
         },
       ],
       isExported: true,
-      name: this.nameSpaceName,
+      name: this.typeNameSpaceName,
       statements: typeStatements,
     });
   }

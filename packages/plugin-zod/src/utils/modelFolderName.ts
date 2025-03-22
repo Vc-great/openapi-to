@@ -1,1 +1,1 @@
-export const modelFolderName = "zodModels";
+export const modelFolderName = "zod-schema";
