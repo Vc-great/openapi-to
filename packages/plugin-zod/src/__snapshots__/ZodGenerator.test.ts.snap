@@ -2,22 +2,22 @@
 
 exports[`zodGenerator > compare zodGenerator getFullText 1`] = `
 "import { z } from "zod";
-import { testDto2, test32145, apiResponse, pet } from "./zod-schema";
+import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schema";
 /**
  * @description OK
  */
-const testPostMutationResponse = z.lazy(() => testDto2);
+const testPostMutationResponse = z.lazy(() => testDto2Schema);
 const testPostError = z.unknown();
 /**
  * @description OK
  */
-const testPutMutationResponse = z.lazy(() => testDto2);
+const testPutMutationResponse = z.lazy(() => testDto2Schema);
 const testPutError = z.unknown();
 const delByTestMutationRequest = z.number().array();
 /**
  * @description OK
  */
-const delByTestMutationResponse = z.lazy(() => test32145);
+const delByTestMutationResponse = z.lazy(() => test32145Schema);
 const delByTestError = z.unknown();
 /**
  * @description queryParams
@@ -52,7 +52,7 @@ export const testIdGetPathParams = z.object({
 /**
  * @description OK
  */
-const testIdGetQueryResponse = z.lazy(() => testDto2);
+const testIdGetQueryResponse = z.lazy(() => testDto2Schema);
 const testIdGetError = z.unknown();
 /**
  * @description pathParams
@@ -76,7 +76,7 @@ const uploadImagePostMutationRequest = z.object({
 /**
  * @description successful operation
  */
-const uploadImagePostMutationResponse = z.lazy(() => apiResponse);
+const uploadImagePostMutationResponse = z.lazy(() => apiResponseSchema);
 const uploadImagePostError = z.unknown();
 const createError = z.unknown();
 const createMutationResponse = z.unknown();
@@ -94,7 +94,7 @@ const findByStatusGetQueryParams = z.object({
 /**
  * @description successful operation
  */
-const findByStatusGetQueryResponse = z.lazy(() => pet.array());
+const findByStatusGetQueryResponse = z.lazy(() => petSchema.array());
 const findByStatusGetError = z.unknown();
 /**
  * @description queryParams
@@ -108,7 +108,7 @@ const findByTagsGetQueryParams = z.object({
 /**
  * @description successful operation
  */
-const findByTagsGetQueryResponse = z.lazy(() => pet.array());
+const findByTagsGetQueryResponse = z.lazy(() => petSchema.array());
 const findByTagsGetError = z.unknown();
 /**
  * @description pathParams
@@ -122,7 +122,7 @@ export const findByPetIdPathParams = z.object({
 /**
  * @description successful operation
  */
-const findByPetIdQueryResponse = z.lazy(() => pet);
+const findByPetIdQueryResponse = z.lazy(() => petSchema);
 const findByPetIdError = z.unknown();
 /**
  * @description pathParams
@@ -339,12 +339,12 @@ export namespace Pet {
 }
 
 import { z } from "zod";
-import { order } from "./zod-schema";
-const createMutationRequest = z.lazy(() => order);
+import { orderSchema } from "./zod-schema";
+const createMutationRequest = z.lazy(() => orderSchema);
 /**
  * @description successful operation
  */
-const createMutationResponse = z.lazy(() => order);
+const createMutationResponse = z.lazy(() => orderSchema);
 const createError = z.unknown();
 /**
  * @description pathParams
@@ -358,7 +358,7 @@ export const findByOrderIdPathParams = z.object({
 /**
  * @description successful operation
  */
-const findByOrderIdQueryResponse = z.lazy(() => order);
+const findByOrderIdQueryResponse = z.lazy(() => orderSchema);
 const findByOrderIdError = z.unknown();
 /**
  * @description pathParams
@@ -445,7 +445,7 @@ export namespace Store {
 }
 
 import { z } from "zod";
-import { user } from "./zod-schema";
+import { userSchema } from "./zod-schema";
 const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
@@ -462,7 +462,7 @@ export const findByUsernamePathParams = z.object({
 /**
  * @description successful operation
  */
-const findByUsernameQueryResponse = z.lazy(() => user);
+const findByUsernameQueryResponse = z.lazy(() => userSchema);
 const findByUsernameError = z.unknown();
 /**
  * @description pathParams
@@ -473,7 +473,7 @@ export const usernamePutPathParams = z.object({
     */
     username: z.string()
 });
-const usernamePutMutationRequest = z.lazy(() => user);
+const usernamePutMutationRequest = z.lazy(() => userSchema);
 const usernamePutError = z.unknown();
 const usernamePutMutationResponse = z.unknown();
 /**
@@ -507,7 +507,7 @@ const loginGetQueryResponse;
 const loginGetError = z.unknown();
 const logoutGetError = z.unknown();
 const logoutGetQueryResponse = z.unknown();
-const createMutationRequest = z.lazy(() => user);
+const createMutationRequest = z.lazy(() => userSchema);
 const createError = z.unknown();
 const createMutationResponse = z.unknown();
 /**
@@ -608,8 +608,8 @@ export namespace User {
 
 import { testdata } from "./testdata";
 import { z } from "zod";
-/** @UUID zod-Test32145 */
-export const test32145 = z.object({
+/** @UUID zod-Test32145Schema */
+export const test32145Schema = z.object({
     /**
     *@description:description
     */
@@ -618,8 +618,8 @@ export const test32145 = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-Test3214 */
-export const test3214 = z.object({
+/** @UUID zod-Test3214Schema */
+export const test3214Schema = z.object({
     /**
     *@description:默认值
     */
@@ -660,8 +660,8 @@ export const test3214 = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-Testdata */
-export const testdata = z.object({
+/** @UUID zod-TestdataSchema */
+export const testdataSchema = z.object({
     /**
     *@description:description
     */
@@ -681,8 +681,8 @@ export const testdata = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-Sort */
-export const sort = z.object({
+/** @UUID zod-SortSchema */
+export const sortSchema = z.object({
     empty: z.boolean().optional(),
     sorted: z.boolean().optional(),
     unsorted: z.boolean().optional()
@@ -690,40 +690,40 @@ export const sort = z.object({
 
 import { test3214 } from "./test3214";
 import { z } from "zod";
-/** @UUID zod-TestDto3 */
-export const testDto3 = z.object({
-    test3214: z.lazy(() => test3214.array()).optional()
+/** @UUID zod-TestDto3Schema */
+export const testDto3Schema = z.object({
+    test3214: z.lazy(() => test3214Schema.array()).optional()
 });
 
 import { testDto3 } from "./testDto3";
 import { testdata } from "./testdata";
 import { z } from "zod";
-/** @UUID zod-TestDto2 */
-export const testDto2 = z.object({
+/** @UUID zod-TestDto2Schema */
+export const testDto2Schema = z.object({
     content: z.lazy(() => testDto3).optional(),
     meta: z.lazy(() => testdata).optional()
 });
 
 import { z } from "zod";
-/** @UUID zod-Test321 */
-export const newTest321 = z.object({
+/** @UUID zod-Test321Schema */
+export const test321Schema = z.object({
     id: z.number().optional()
 });
 
 import { test321 } from "./test321";
 import { z } from "zod";
-/** @UUID zod-TestDto */
-export const newTestDto = z.object({
+/** @UUID zod-TestDtoSchema */
+export const testDtoSchema = z.object({
     /**
     *@description:test321
     */
-    test321: z.lazy(() => test321.array()).optional()
+    test321: z.lazy(() => test321Schema.array()).optional()
 });
 
 import { apiResponse } from "./apiResponse";
 import { z } from "zod";
-/** @UUID zod-RefList */
-export const refList = z.object({
+/** @UUID zod-RefListSchema */
+export const refListSchema = z.object({
     content: z.lazy(() => apiResponse).optional(),
     /**
     *@description:string
@@ -741,16 +741,16 @@ export const refList = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-ApiResponse */
-export const apiResponse = z.object({
+/** @UUID zod-ApiResponseSchema */
+export const apiResponseSchema = z.object({
     code: z.number().optional(),
     type: z.string().optional(),
     message: z.string().optional()
 });
 
 import { z } from "zod";
-/** @UUID zod-Category */
-export const category = z.object({
+/** @UUID zod-CategorySchema */
+export const categorySchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
@@ -758,13 +758,13 @@ export const category = z.object({
 import { category } from "./category";
 import { tag } from "./tag";
 import { z } from "zod";
-/** @UUID zod-Pet */
-export const pet = z.object({
+/** @UUID zod-PetSchema */
+export const petSchema = z.object({
     id: z.number().optional(),
     category: z.lazy(() => category).optional(),
     name: z.string(),
     photoUrls: z.string().array(),
-    tags: z.lazy(() => tag.array()).optional(),
+    tags: z.lazy(() => tagSchema.array()).optional(),
     /**
     *@description:pet status in the store
     */
@@ -772,15 +772,15 @@ export const pet = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-Tag */
-export const tag = z.object({
+/** @UUID zod-TagSchema */
+export const tagSchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
 
 import { z } from "zod";
-/** @UUID zod-Order */
-export const order = z.object({
+/** @UUID zod-OrderSchema */
+export const orderSchema = z.object({
     id: z.number().optional(),
     petId: z.number().optional(),
     quantity: z.number().optional(),
@@ -793,8 +793,8 @@ export const order = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-User */
-export const user = z.object({
+/** @UUID zod-UserSchema */
+export const userSchema = z.object({
     id: z.number().optional(),
     username: z.string().optional(),
     firstName: z.string().optional(),
@@ -883,42 +883,42 @@ export const status1Option = [{
 }];
 
 export * from "./enum";
-export * from "./test32145";
-export * from "./test3214";
-export * from "./testdata";
-export * from "./sort";
-export * from "./testDto3";
-export * from "./testDto2";
-export * from "./newTest321";
-export * from "./newTestDto";
-export * from "./refList";
-export * from "./apiResponse";
-export * from "./category";
-export * from "./pet";
-export * from "./tag";
-export * from "./order";
-export * from "./user";
+export * from "./test32145Schema";
+export * from "./test3214Schema";
+export * from "./testdataSchema";
+export * from "./sortSchema";
+export * from "./testDto3Schema";
+export * from "./testDto2Schema";
+export * from "./test321Schema";
+export * from "./testDtoSchema";
+export * from "./refListSchema";
+export * from "./apiResponseSchema";
+export * from "./categorySchema";
+export * from "./petSchema";
+export * from "./tagSchema";
+export * from "./orderSchema";
+export * from "./userSchema";
 "
 `;
 
 exports[`zodGenerator > zodGenerator getFullText 1`] = `
 "import { z } from "zod";
-import { testDto2, test32145, apiResponse, pet } from "./zod-schema";
+import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schema";
 /**
  * @description OK
  */
-const testPostMutationResponse = z.lazy(() => testDto2);
+const testPostMutationResponse = z.lazy(() => testDto2Schema);
 const testPostError = z.unknown();
 /**
  * @description OK
  */
-const testPutMutationResponse = z.lazy(() => testDto2);
+const testPutMutationResponse = z.lazy(() => testDto2Schema);
 const testPutError = z.unknown();
 const delByTestMutationRequest = z.number().array();
 /**
  * @description OK
  */
-const delByTestMutationResponse = z.lazy(() => test32145);
+const delByTestMutationResponse = z.lazy(() => test32145Schema);
 const delByTestError = z.unknown();
 /**
  * @description queryParams
@@ -953,7 +953,7 @@ export const testIdGetPathParams = z.object({
 /**
  * @description OK
  */
-const testIdGetQueryResponse = z.lazy(() => testDto2);
+const testIdGetQueryResponse = z.lazy(() => testDto2Schema);
 const testIdGetError = z.unknown();
 /**
  * @description pathParams
@@ -977,7 +977,7 @@ const uploadImagePostMutationRequest = z.object({
 /**
  * @description successful operation
  */
-const uploadImagePostMutationResponse = z.lazy(() => apiResponse);
+const uploadImagePostMutationResponse = z.lazy(() => apiResponseSchema);
 const uploadImagePostError = z.unknown();
 const createError = z.unknown();
 const createMutationResponse = z.unknown();
@@ -995,7 +995,7 @@ const findByStatusGetQueryParams = z.object({
 /**
  * @description successful operation
  */
-const findByStatusGetQueryResponse = z.lazy(() => pet.array());
+const findByStatusGetQueryResponse = z.lazy(() => petSchema.array());
 const findByStatusGetError = z.unknown();
 /**
  * @description queryParams
@@ -1009,7 +1009,7 @@ const findByTagsGetQueryParams = z.object({
 /**
  * @description successful operation
  */
-const findByTagsGetQueryResponse = z.lazy(() => pet.array());
+const findByTagsGetQueryResponse = z.lazy(() => petSchema.array());
 const findByTagsGetError = z.unknown();
 /**
  * @description pathParams
@@ -1023,7 +1023,7 @@ export const findByPetIdPathParams = z.object({
 /**
  * @description successful operation
  */
-const findByPetIdQueryResponse = z.lazy(() => pet);
+const findByPetIdQueryResponse = z.lazy(() => petSchema);
 const findByPetIdError = z.unknown();
 /**
  * @description pathParams
@@ -1238,12 +1238,12 @@ export namespace Pet {
 }
 
 import { z } from "zod";
-import { order } from "./zod-schema";
-const createMutationRequest = z.lazy(() => order);
+import { orderSchema } from "./zod-schema";
+const createMutationRequest = z.lazy(() => orderSchema);
 /**
  * @description successful operation
  */
-const createMutationResponse = z.lazy(() => order);
+const createMutationResponse = z.lazy(() => orderSchema);
 const createError = z.unknown();
 /**
  * @description pathParams
@@ -1257,7 +1257,7 @@ export const findByOrderIdPathParams = z.object({
 /**
  * @description successful operation
  */
-const findByOrderIdQueryResponse = z.lazy(() => order);
+const findByOrderIdQueryResponse = z.lazy(() => orderSchema);
 const findByOrderIdError = z.unknown();
 /**
  * @description pathParams
@@ -1342,7 +1342,7 @@ export namespace Store {
 }
 
 import { z } from "zod";
-import { user } from "./zod-schema";
+import { userSchema } from "./zod-schema";
 const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
@@ -1359,7 +1359,7 @@ export const findByUsernamePathParams = z.object({
 /**
  * @description successful operation
  */
-const findByUsernameQueryResponse = z.lazy(() => user);
+const findByUsernameQueryResponse = z.lazy(() => userSchema);
 const findByUsernameError = z.unknown();
 /**
  * @description pathParams
@@ -1370,7 +1370,7 @@ export const usernamePutPathParams = z.object({
     */
     username: z.string()
 });
-const usernamePutMutationRequest = z.lazy(() => user);
+const usernamePutMutationRequest = z.lazy(() => userSchema);
 const usernamePutError = z.unknown();
 const usernamePutMutationResponse = z.unknown();
 /**
@@ -1404,7 +1404,7 @@ const loginGetQueryResponse;
 const loginGetError = z.unknown();
 const logoutGetError = z.unknown();
 const logoutGetQueryResponse = z.unknown();
-const createMutationRequest = z.lazy(() => user);
+const createMutationRequest = z.lazy(() => userSchema);
 const createError = z.unknown();
 const createMutationResponse = z.unknown();
 /**
@@ -1504,17 +1504,17 @@ export namespace User {
 import { testdata } from "./testdata";
 import { z } from "zod";
 /** */
-export const test32145 = z.object({
+export const test32145Schema = z.object({
     /**
     *@description:description
     */
     code: z.number().optional(),
-    meta: z.lazy(() => testdata).optional()
+    meta: z.lazy(() => testdataSchema).optional()
 });
 
 import { z } from "zod";
 /** */
-export const test3214 = z.object({
+export const test3214Schema = z.object({
     /**
     *@description:默认值
     */
@@ -1556,7 +1556,7 @@ export const test3214 = z.object({
 
 import { z } from "zod";
 /** */
-export const testdata = z.object({
+export const testdataSchema = z.object({
     /**
     *@description:description
     */
@@ -1577,7 +1577,7 @@ export const testdata = z.object({
 
 import { z } from "zod";
 /** */
-export const sort = z.object({
+export const sortSchema = z.object({
     empty: z.boolean().optional(),
     sorted: z.boolean().optional(),
     unsorted: z.boolean().optional()
@@ -1586,40 +1586,40 @@ export const sort = z.object({
 import { test3214 } from "./test3214";
 import { z } from "zod";
 /** */
-export const testDto3 = z.object({
-    test3214: z.lazy(() => test3214.array()).optional()
+export const testDto3Schema = z.object({
+    test3214: z.lazy(() => test3214Schema.array()).optional()
 });
 
 import { testDto3 } from "./testDto3";
 import { testdata } from "./testdata";
 import { z } from "zod";
 /** */
-export const testDto2 = z.object({
-    content: z.lazy(() => testDto3).optional(),
-    meta: z.lazy(() => testdata).optional()
+export const testDto2Schema = z.object({
+    content: z.lazy(() => testDto3Schema).optional(),
+    meta: z.lazy(() => testdataSchema).optional()
 });
 
 import { z } from "zod";
 /** */
-export const test321 = z.object({
+export const test321Schema = z.object({
     id: z.number().optional()
 });
 
 import { test321 } from "./test321";
 import { z } from "zod";
 /** */
-export const testDto = z.object({
+export const testDtoSchema = z.object({
     /**
     *@description:test321
     */
-    test321: z.lazy(() => test321.array()).optional()
+    test321: z.lazy(() => test321Schema.array()).optional()
 });
 
 import { apiResponse } from "./apiResponse";
 import { z } from "zod";
 /** */
-export const refList = z.object({
-    content: z.lazy(() => apiResponse).optional(),
+export const refListSchema = z.object({
+    content: z.lazy(() => apiResponseSchema).optional(),
     /**
     *@description:string
     */
@@ -1637,7 +1637,7 @@ export const refList = z.object({
 
 import { z } from "zod";
 /** */
-export const apiResponse = z.object({
+export const apiResponseSchema = z.object({
     code: z.number().optional(),
     type: z.string().optional(),
     message: z.string().optional()
@@ -1645,7 +1645,7 @@ export const apiResponse = z.object({
 
 import { z } from "zod";
 /** */
-export const category = z.object({
+export const categorySchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
@@ -1654,12 +1654,12 @@ import { category } from "./category";
 import { tag } from "./tag";
 import { z } from "zod";
 /** */
-export const pet = z.object({
+export const petSchema = z.object({
     id: z.number().optional(),
-    category: z.lazy(() => category).optional(),
+    category: z.lazy(() => categorySchema).optional(),
     name: z.string(),
     photoUrls: z.string().array(),
-    tags: z.lazy(() => tag.array()).optional(),
+    tags: z.lazy(() => tagSchema.array()).optional(),
     /**
     *@description:pet status in the store
     */
@@ -1668,14 +1668,14 @@ export const pet = z.object({
 
 import { z } from "zod";
 /** */
-export const tag = z.object({
+export const tagSchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
 
 import { z } from "zod";
 /** */
-export const order = z.object({
+export const orderSchema = z.object({
     id: z.number().optional(),
     petId: z.number().optional(),
     quantity: z.number().optional(),
@@ -1689,7 +1689,7 @@ export const order = z.object({
 
 import { z } from "zod";
 /** */
-export const user = z.object({
+export const userSchema = z.object({
     id: z.number().optional(),
     username: z.string().optional(),
     firstName: z.string().optional(),
@@ -1778,20 +1778,20 @@ export const status1Option = [{
 }];
 
 export * from "./enum";
-export * from "./test32145";
-export * from "./test3214";
-export * from "./testdata";
-export * from "./sort";
-export * from "./testDto3";
-export * from "./testDto2";
-export * from "./test321";
-export * from "./testDto";
-export * from "./refList";
-export * from "./apiResponse";
-export * from "./category";
-export * from "./pet";
-export * from "./tag";
-export * from "./order";
-export * from "./user";
+export * from "./test32145Schema";
+export * from "./test3214Schema";
+export * from "./testdataSchema";
+export * from "./sortSchema";
+export * from "./testDto3Schema";
+export * from "./testDto2Schema";
+export * from "./test321Schema";
+export * from "./testDtoSchema";
+export * from "./refListSchema";
+export * from "./apiResponseSchema";
+export * from "./categorySchema";
+export * from "./petSchema";
+export * from "./tagSchema";
+export * from "./orderSchema";
+export * from "./userSchema";
 "
 `;

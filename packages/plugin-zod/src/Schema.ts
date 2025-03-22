@@ -1,6 +1,7 @@
 import _ from "lodash";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { zodSuffix } from "./utils/suffix.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { useEnumCache } from "./EnumCache.ts";
 import { Zod } from "./zod.ts";
@@ -201,7 +202,8 @@ export class Schema {
                 .head()
                 .lazy(
                   variableDeclaration?.getName() ??
-                    this.openapi.getRefAlias(schema.$ref),
+                    this.openapi.getRefAlias(schema.$ref) +
+                      _.upperFirst(zodSuffix),
                 )
                 .optional(isRequired)
                 .toString()
@@ -276,7 +278,10 @@ export class Schema {
         .head()
         .lazy(
           new Zod()
-            .array(this.openapi.getRefAlias(schema.items.$ref))
+            .array(
+              this.openapi.getRefAlias(schema.items.$ref) +
+                _.upperFirst(zodSuffix),
+            )
             .toString(),
         )
         .toString();

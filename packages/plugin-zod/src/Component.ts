@@ -6,6 +6,7 @@ import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { zodSuffix } from "./utils/suffix.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Schema } from "./Schema.ts";
 import { Zod } from "./zod.ts";
@@ -57,12 +58,13 @@ export class Component {
     //todo requestBodies
     //this.generateComponentObjectType(this.openapi.component.requestBodyObject);
     _.forEach(this.openapi.component.schemas, (schema, key) => {
+      const name = key + _.upperFirst(zodSuffix);
       if (this.openapi.isReference(schema)) {
-        this.generateComponentRefType(schema, key);
+        this.generateComponentRefType(schema, name);
         return;
       }
 
-      this.generateComponentSchemaType(schema, key);
+      this.generateComponentSchemaType(schema, name);
     });
   }
 

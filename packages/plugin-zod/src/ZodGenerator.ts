@@ -6,6 +6,7 @@ import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
+import { zodSuffix } from "./utils/suffix.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Component } from "./Component.ts";
 import { useEnumCache } from "./EnumCache.ts";
@@ -255,7 +256,10 @@ export class ZodGenerator {
     importModel: Array<string>,
   ): Array<ImportDeclarationStructure> {
     const model = _.chain(importModel)
-      .map(($ref: string) => this.openapi.getRefAlias($ref))
+      .map(
+        ($ref: string) =>
+          this.openapi.getRefAlias($ref) + _.upperFirst(zodSuffix),
+      )
       .value();
 
     const typeModel: ImportStatementsOmitKind = {
@@ -552,7 +556,9 @@ export class ZodGenerator {
             name: name,
             initializer: this.z
               .head()
-              .lazy(this.openapi.getRefAlias(schema.$ref))
+              .lazy(
+                this.openapi.getRefAlias(schema.$ref) + _.upperFirst(zodSuffix),
+              )
               .toString(),
           },
         ],
@@ -640,7 +646,10 @@ export class ZodGenerator {
               name: this.openapi.bodyDataName,
               initializer: this.z
                 .head()
-                .lazy(this.openapi.getRefAlias(schema.$ref))
+                .lazy(
+                  this.openapi.getRefAlias(schema.$ref) +
+                    _.upperFirst(zodSuffix),
+                )
                 .toString(),
             },
           ],
