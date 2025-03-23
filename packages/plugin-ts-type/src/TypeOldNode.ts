@@ -79,7 +79,7 @@ export class TypeOldNode {
   }
 
   setSourceFile(): void {
-    if (!this.pluginConfig?.compare) {
+    if (!this.pluginConfig?.compare || !this.openapiToSingleConfig.output.dir) {
       return;
     }
 

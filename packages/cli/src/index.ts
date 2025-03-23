@@ -52,7 +52,15 @@ async function generateAction(CLIOptions: CLIOptions) {
   const pluginNames = openapiToConfig.plugins.map((plugin) => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
-    const obj = plugin({});
+    const obj = plugin({
+      openapiToSingleConfig: {
+        root: "",
+        input: { path: "" },
+        output: { dir: "" },
+        plugins: [],
+        pluginNames: [],
+      },
+    });
     return obj.name;
   });
 
