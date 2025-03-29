@@ -1,7 +1,7 @@
 import _ from "lodash";
 
-import { modelFolderName } from "./utils/modelFolderName.ts";
 import { Faker } from "./Faker.ts";
+import { refAddSuffix } from "./utils.ts";
 
 import type { ObjectStructure, PluginContext } from "@openapi-to/core";
 import type { SchemaObject } from "oas/types";
@@ -13,7 +13,7 @@ export class Schema {
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private readonly modelFolderName: string = modelFolderName;
+
   private context: PluginContext | null = null;
 
   constructor({
@@ -86,7 +86,7 @@ export class Schema {
 
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
-      return this.getZodFromProperties(schema);
+      return this.getObjectProperties(schema);
     }
 
     /**
@@ -161,7 +161,7 @@ export class Schema {
    * ```
    *
    */
-  getZodFromProperties(baseSchema?: SchemaObject): string {
+  getObjectProperties(baseSchema?: SchemaObject): string {
     if (!baseSchema) {
       return "";
     }
@@ -184,7 +184,7 @@ export class Schema {
         return {
           key: name,
           value: this.openapi.isReference(schema)
-            ? `${this.openapi.getRefAlias(schema.$ref)}()`
+            ? `${refAddSuffix(this.openapi.getRefAlias(schema.$ref))}()`
             : this.formatterSchemaType(schema),
           docs: _.get(schema, "description")
             ? [{ description: _.get(schema, "description") }]
@@ -243,7 +243,7 @@ export class Schema {
 
     if (type === "array" && this.openapi.isReference(schema.items)) {
       return this.faker.helpers.multiple(
-        this.openapi.getRefAlias(schema.items.$ref) + "()",
+        refAddSuffix(this.openapi.getRefAlias(schema.items.$ref)) + "()",
       );
     }
 
@@ -258,7 +258,7 @@ export class Schema {
 
     //todo 嵌套object
     if (type === "object" && schema.properties) {
-      return this.getZodFromProperties(schema || []);
+      return this.getObjectProperties(schema || []);
     }
 
     return "undefined";

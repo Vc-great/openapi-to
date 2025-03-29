@@ -3,6 +3,26 @@
 exports[`zodGenerator > compare zodGenerator getFullText 1`] = `
 "import { z } from "zod";
 import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schema";
+export const petFindByStatusGetQueryParamsStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+export const PetFindByStatusGetQueryParamsStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+export const PetFindByStatusGetQueryParamsStatusEnumOption = [{
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Available,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Available
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Pending,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Pending
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Sold,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Sold
+}];
 /**
  * @description OK
  */
@@ -89,7 +109,7 @@ const findByStatusGetQueryParams = z.object({
     /**
     *@description:Status values that need to be considered for filter
     */
-    status: z.string().array()
+    status: z.nativeEnum(PetFindByStatusGetQueryParamsStatusEnum)
 });
 /**
  * @description successful operation
@@ -606,9 +626,9 @@ export namespace User {
     export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
 }
 
-import { testdata } from "./testdata";
+import { testdataSchema } from "./testdata.schema";
 import { z } from "zod";
-/** @UUID zod-Test32145Schema */
+/** @UUID zod-test32145 */
 export const test32145Schema = z.object({
     /**
     *@description:description
@@ -617,8 +637,35 @@ export const test32145Schema = z.object({
     meta: z.lazy(() => testdata).optional()
 });
 
+/**
+ * @description description
+ */
+export const test3214ColumnTypeEnumLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/**
+ * @description description
+ */
+export const Test3214ColumnTypeEnum = {
+    Char: 'CHAR',
+    Char2: 'CHAR2',
+    Char3: 'CHAR3'
+} as const;
+/** description */
+export const Test3214ColumnTypeEnumOption = [{
+    label: test3214ColumnTypeEnumLabel.Char,
+    value: Test3214ColumnTypeEnum.Char
+}, {
+    label: test3214ColumnTypeEnumLabel.Char2,
+    value: Test3214ColumnTypeEnum.Char2
+}, {
+    label: test3214ColumnTypeEnumLabel.Char3,
+    value: Test3214ColumnTypeEnum.Char3
+}];
 import { z } from "zod";
-/** @UUID zod-Test3214Schema */
+/** @UUID zod-test3214 */
 export const test3214Schema = z.object({
     /**
     *@description:默认值
@@ -643,7 +690,7 @@ export const test3214Schema = z.object({
     /**
     *@description:description
     */
-    columnType: z.string().optional(),
+    columnType: Test3214ColumnTypeEnum.optional(),
     /**
     *@description:description
     */
@@ -660,7 +707,7 @@ export const test3214Schema = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-TestdataSchema */
+/** @UUID zod-testdata */
 export const testdataSchema = z.object({
     /**
     *@description:description
@@ -681,38 +728,38 @@ export const testdataSchema = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-SortSchema */
+/** @UUID zod-sort */
 export const sortSchema = z.object({
     empty: z.boolean().optional(),
     sorted: z.boolean().optional(),
     unsorted: z.boolean().optional()
 });
 
-import { test3214 } from "./test3214";
+import { test3214Schema } from "./test3214.schema";
 import { z } from "zod";
-/** @UUID zod-TestDto3Schema */
+/** @UUID zod-testDto3 */
 export const testDto3Schema = z.object({
     test3214: z.lazy(() => test3214Schema.array()).optional()
 });
 
-import { testDto3 } from "./testDto3";
-import { testdata } from "./testdata";
+import { testDto3Schema } from "./testDto3.schema";
+import { testdataSchema } from "./testdata.schema";
 import { z } from "zod";
-/** @UUID zod-TestDto2Schema */
+/** @UUID zod-testDto2 */
 export const testDto2Schema = z.object({
     content: z.lazy(() => testDto3).optional(),
     meta: z.lazy(() => testdata).optional()
 });
 
 import { z } from "zod";
-/** @UUID zod-Test321Schema */
+/** @UUID zod-test321 */
 export const test321Schema = z.object({
     id: z.number().optional()
 });
 
-import { test321 } from "./test321";
+import { test321Schema } from "./test321.schema";
 import { z } from "zod";
-/** @UUID zod-TestDtoSchema */
+/** @UUID zod-testDto */
 export const testDtoSchema = z.object({
     /**
     *@description:test321
@@ -720,9 +767,9 @@ export const testDtoSchema = z.object({
     test321: z.lazy(() => test321Schema.array()).optional()
 });
 
-import { apiResponse } from "./apiResponse";
+import { apiResponseSchema } from "./apiResponse.schema";
 import { z } from "zod";
-/** @UUID zod-RefListSchema */
+/** @UUID zod-refList */
 export const refListSchema = z.object({
     content: z.lazy(() => apiResponse).optional(),
     /**
@@ -741,7 +788,7 @@ export const refListSchema = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-ApiResponseSchema */
+/** @UUID zod-apiResponse */
 export const apiResponseSchema = z.object({
     code: z.number().optional(),
     type: z.string().optional(),
@@ -749,17 +796,44 @@ export const apiResponseSchema = z.object({
 });
 
 import { z } from "zod";
-/** @UUID zod-CategorySchema */
+/** @UUID zod-category */
 export const categorySchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
 
-import { category } from "./category";
-import { tag } from "./tag";
+import { categorySchema } from "./category.schema";
+import { tagSchema } from "./tag.schema";
+/**
+ * @description pet status in the store
+ */
+export const petStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/**
+ * @description pet status in the store
+ */
+export const PetStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+/** pet status in the store */
+export const PetStatusEnumOption = [{
+    label: petStatusEnumLabel.Available,
+    value: PetStatusEnum.Available
+}, {
+    label: petStatusEnumLabel.Pending,
+    value: PetStatusEnum.Pending
+}, {
+    label: petStatusEnumLabel.Sold,
+    value: PetStatusEnum.Sold
+}];
 import { z } from "zod";
-/** @UUID zod-PetSchema */
-export const petSchema = z.object({
+/** @UUID zod-pet */
+export const newPetZod = z.object({
     id: z.number().optional(),
     category: z.lazy(() => category).optional(),
     name: z.string(),
@@ -768,18 +842,45 @@ export const petSchema = z.object({
     /**
     *@description:pet status in the store
     */
-    status: z.string().optional()
+    status: PetStatusEnum.optional()
 });
 
 import { z } from "zod";
-/** @UUID zod-TagSchema */
+/** @UUID zod-tag */
 export const tagSchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
 
+/**
+ * @description Order Status
+ */
+export const orderStatusEnumLabel = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+/**
+ * @description Order Status
+ */
+export const OrderStatusEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered'
+} as const;
+/** Order Status */
+export const OrderStatusEnumOption = [{
+    label: orderStatusEnumLabel.Placed,
+    value: OrderStatusEnum.Placed
+}, {
+    label: orderStatusEnumLabel.Approved,
+    value: OrderStatusEnum.Approved
+}, {
+    label: orderStatusEnumLabel.Delivered,
+    value: OrderStatusEnum.Delivered
+}];
 import { z } from "zod";
-/** @UUID zod-OrderSchema */
+/** @UUID zod-order */
 export const orderSchema = z.object({
     id: z.number().optional(),
     petId: z.number().optional(),
@@ -788,13 +889,13 @@ export const orderSchema = z.object({
     /**
     *@description:Order Status
     */
-    status: z.string().optional(),
+    status: OrderStatusEnum.optional(),
     complete: z.boolean().optional()
 });
 
 import { z } from "zod";
-/** @UUID zod-UserSchema */
-export const userSchema = z.object({
+/** @UUID zod-user */
+export const userZod = z.object({
     id: z.number().optional(),
     username: z.string().optional(),
     firstName: z.string().optional(),
@@ -808,102 +909,56 @@ export const userSchema = z.object({
     userStatus: z.number().optional()
 });
 
-/** description */
-export const ColumnTypeLabel = {
-    Char: '',
-    Char2: '',
-    Char3: ''
-};
-/** pet status in the store */
-export const StatusLabel = {
-    Available: '',
-    Pending: '',
-    Sold: ''
-};
-/** Order Status */
-export const Status1Label = {
-    Placed: '',
-    Approved: '',
-    Delivered: ''
-};
-
-/** description */
-const enum ColumnType {
-    Char = "CHAR",
-    Char2 = "CHAR2",
-    Char3 = "CHAR3"
-}
-
-/** pet status in the store */
-const enum Status {
-    Available = "available",
-    Pending = "pending",
-    Sold = "sold"
-}
-
-/** Order Status */
-const enum Status1 {
-    Placed = "placed",
-    Approved = "approved",
-    Delivered = "delivered"
-}
-
-/** description */
-export const columnTypeOption = [{
-    label: ColumnTypeLabel.Char,
-    value: ColumnType.Char
-}, {
-    label: ColumnTypeLabel.Char2,
-    value: ColumnType.Char2
-}, {
-    label: ColumnTypeLabel.Char3,
-    value: ColumnType.Char3
-}];
-/** pet status in the store */
-export const statusOption = [{
-    label: StatusLabel.Available,
-    value: Status.Available
-}, {
-    label: StatusLabel.Pending,
-    value: Status.Pending
-}, {
-    label: StatusLabel.Sold,
-    value: Status.Sold
-}];
-/** Order Status */
-export const status1Option = [{
-    label: Status1Label.Placed,
-    value: Status1.Placed
-}, {
-    label: Status1Label.Approved,
-    value: Status1.Approved
-}, {
-    label: Status1Label.Delivered,
-    value: Status1.Delivered
-}];
-
-export * from "./enum";
-export * from "./test32145Schema";
-export * from "./test3214Schema";
-export * from "./testdataSchema";
-export * from "./sortSchema";
-export * from "./testDto3Schema";
-export * from "./testDto2Schema";
-export * from "./test321Schema";
-export * from "./testDtoSchema";
-export * from "./refListSchema";
-export * from "./apiResponseSchema";
-export * from "./categorySchema";
-export * from "./petSchema";
-export * from "./tagSchema";
-export * from "./orderSchema";
-export * from "./userSchema";
+export * from "./test32145.schema";
+export * from "./test3214ColumnTypeEnumLabel.schema";
+export * from "./test3214ColumnTypeEnum.schema";
+export * from "./test3214ColumnTypeEnumOption.schema";
+export * from "./test3214.schema";
+export * from "./testdata.schema";
+export * from "./sort.schema";
+export * from "./testDto3.schema";
+export * from "./testDto2.schema";
+export * from "./test321.schema";
+export * from "./testDto.schema";
+export * from "./refList.schema";
+export * from "./apiResponse.schema";
+export * from "./category.schema";
+export * from "./petStatusEnumLabel.schema";
+export * from "./petStatusEnum.schema";
+export * from "./petStatusEnumOption.schema";
+export * from "./newPetZod.schema";
+export * from "./tag.schema";
+export * from "./orderStatusEnumLabel.schema";
+export * from "./orderStatusEnum.schema";
+export * from "./orderStatusEnumOption.schema";
+export * from "./order.schema";
+export * from "./userZod.schema";
 "
 `;
 
 exports[`zodGenerator > zodGenerator getFullText 1`] = `
 "import { z } from "zod";
 import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schema";
+export const petFindByStatusGetQueryParamsStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+export const PetFindByStatusGetQueryParamsStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+export const PetFindByStatusGetQueryParamsStatusEnumOption = [{
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Available,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Available
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Pending,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Pending
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Sold,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Sold
+}];
 /**
  * @description OK
  */
@@ -990,7 +1045,7 @@ const findByStatusGetQueryParams = z.object({
     /**
     *@description:Status values that need to be considered for filter
     */
-    status: z.string().array()
+    status: z.nativeEnum(PetFindByStatusGetQueryParamsStatusEnum)
 });
 /**
  * @description successful operation
@@ -1501,9 +1556,8 @@ export namespace User {
     export type CreateMutationResponse = z.infer<typeof createMutationResponse>;
 }
 
-import { testdata } from "./testdata";
+import { testdataSchema } from "./testdata.schema";
 import { z } from "zod";
-/** */
 export const test32145Schema = z.object({
     /**
     *@description:description
@@ -1512,8 +1566,34 @@ export const test32145Schema = z.object({
     meta: z.lazy(() => testdataSchema).optional()
 });
 
+/**
+ * @description description
+ */
+export const test3214ColumnTypeEnumLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/**
+ * @description description
+ */
+export const Test3214ColumnTypeEnum = {
+    Char: 'CHAR',
+    Char2: 'CHAR2',
+    Char3: 'CHAR3'
+} as const;
+/** description */
+export const Test3214ColumnTypeEnumOption = [{
+    label: test3214ColumnTypeEnumLabel.Char,
+    value: Test3214ColumnTypeEnum.Char
+}, {
+    label: test3214ColumnTypeEnumLabel.Char2,
+    value: Test3214ColumnTypeEnum.Char2
+}, {
+    label: test3214ColumnTypeEnumLabel.Char3,
+    value: Test3214ColumnTypeEnum.Char3
+}];
 import { z } from "zod";
-/** */
 export const test3214Schema = z.object({
     /**
     *@description:默认值
@@ -1538,7 +1618,7 @@ export const test3214Schema = z.object({
     /**
     *@description:description
     */
-    columnType: z.string().optional(),
+    columnType: Test3214ColumnTypeEnum.optional(),
     /**
     *@description:description
     */
@@ -1555,7 +1635,6 @@ export const test3214Schema = z.object({
 });
 
 import { z } from "zod";
-/** */
 export const testdataSchema = z.object({
     /**
     *@description:description
@@ -1576,38 +1655,33 @@ export const testdataSchema = z.object({
 });
 
 import { z } from "zod";
-/** */
 export const sortSchema = z.object({
     empty: z.boolean().optional(),
     sorted: z.boolean().optional(),
     unsorted: z.boolean().optional()
 });
 
-import { test3214 } from "./test3214";
+import { test3214Schema } from "./test3214.schema";
 import { z } from "zod";
-/** */
 export const testDto3Schema = z.object({
     test3214: z.lazy(() => test3214Schema.array()).optional()
 });
 
-import { testDto3 } from "./testDto3";
-import { testdata } from "./testdata";
+import { testDto3Schema } from "./testDto3.schema";
+import { testdataSchema } from "./testdata.schema";
 import { z } from "zod";
-/** */
 export const testDto2Schema = z.object({
     content: z.lazy(() => testDto3Schema).optional(),
     meta: z.lazy(() => testdataSchema).optional()
 });
 
 import { z } from "zod";
-/** */
 export const test321Schema = z.object({
     id: z.number().optional()
 });
 
-import { test321 } from "./test321";
+import { test321Schema } from "./test321.schema";
 import { z } from "zod";
-/** */
 export const testDtoSchema = z.object({
     /**
     *@description:test321
@@ -1615,9 +1689,8 @@ export const testDtoSchema = z.object({
     test321: z.lazy(() => test321Schema.array()).optional()
 });
 
-import { apiResponse } from "./apiResponse";
+import { apiResponseSchema } from "./apiResponse.schema";
 import { z } from "zod";
-/** */
 export const refListSchema = z.object({
     content: z.lazy(() => apiResponseSchema).optional(),
     /**
@@ -1636,7 +1709,6 @@ export const refListSchema = z.object({
 });
 
 import { z } from "zod";
-/** */
 export const apiResponseSchema = z.object({
     code: z.number().optional(),
     type: z.string().optional(),
@@ -1644,16 +1716,41 @@ export const apiResponseSchema = z.object({
 });
 
 import { z } from "zod";
-/** */
 export const categorySchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
 
-import { category } from "./category";
-import { tag } from "./tag";
+import { categorySchema } from "./category.schema";
+import { tagSchema } from "./tag.schema";
+/**
+ * @description pet status in the store
+ */
+export const petStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/**
+ * @description pet status in the store
+ */
+export const PetStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+/** pet status in the store */
+export const PetStatusEnumOption = [{
+    label: petStatusEnumLabel.Available,
+    value: PetStatusEnum.Available
+}, {
+    label: petStatusEnumLabel.Pending,
+    value: PetStatusEnum.Pending
+}, {
+    label: petStatusEnumLabel.Sold,
+    value: PetStatusEnum.Sold
+}];
 import { z } from "zod";
-/** */
 export const petSchema = z.object({
     id: z.number().optional(),
     category: z.lazy(() => categorySchema).optional(),
@@ -1663,18 +1760,43 @@ export const petSchema = z.object({
     /**
     *@description:pet status in the store
     */
-    status: z.string().optional()
+    status: PetStatusEnum.optional()
 });
 
 import { z } from "zod";
-/** */
 export const tagSchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
 
+/**
+ * @description Order Status
+ */
+export const orderStatusEnumLabel = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+/**
+ * @description Order Status
+ */
+export const OrderStatusEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered'
+} as const;
+/** Order Status */
+export const OrderStatusEnumOption = [{
+    label: orderStatusEnumLabel.Placed,
+    value: OrderStatusEnum.Placed
+}, {
+    label: orderStatusEnumLabel.Approved,
+    value: OrderStatusEnum.Approved
+}, {
+    label: orderStatusEnumLabel.Delivered,
+    value: OrderStatusEnum.Delivered
+}];
 import { z } from "zod";
-/** */
 export const orderSchema = z.object({
     id: z.number().optional(),
     petId: z.number().optional(),
@@ -1683,12 +1805,11 @@ export const orderSchema = z.object({
     /**
     *@description:Order Status
     */
-    status: z.string().optional(),
+    status: OrderStatusEnum.optional(),
     complete: z.boolean().optional()
 });
 
 import { z } from "zod";
-/** */
 export const userSchema = z.object({
     id: z.number().optional(),
     username: z.string().optional(),
@@ -1703,95 +1824,29 @@ export const userSchema = z.object({
     userStatus: z.number().optional()
 });
 
-/** description */
-export const ColumnTypeLabel = {
-    Char: '',
-    Char2: '',
-    Char3: ''
-};
-/** pet status in the store */
-export const StatusLabel = {
-    Available: '',
-    Pending: '',
-    Sold: ''
-};
-/** Order Status */
-export const Status1Label = {
-    Placed: '',
-    Approved: '',
-    Delivered: ''
-};
-
-/** description */
-const enum ColumnType {
-    Char = "CHAR",
-    Char2 = "CHAR2",
-    Char3 = "CHAR3"
-}
-
-/** pet status in the store */
-const enum Status {
-    Available = "available",
-    Pending = "pending",
-    Sold = "sold"
-}
-
-/** Order Status */
-const enum Status1 {
-    Placed = "placed",
-    Approved = "approved",
-    Delivered = "delivered"
-}
-
-/** description */
-export const columnTypeOption = [{
-    label: ColumnTypeLabel.Char,
-    value: ColumnType.Char
-}, {
-    label: ColumnTypeLabel.Char2,
-    value: ColumnType.Char2
-}, {
-    label: ColumnTypeLabel.Char3,
-    value: ColumnType.Char3
-}];
-/** pet status in the store */
-export const statusOption = [{
-    label: StatusLabel.Available,
-    value: Status.Available
-}, {
-    label: StatusLabel.Pending,
-    value: Status.Pending
-}, {
-    label: StatusLabel.Sold,
-    value: Status.Sold
-}];
-/** Order Status */
-export const status1Option = [{
-    label: Status1Label.Placed,
-    value: Status1.Placed
-}, {
-    label: Status1Label.Approved,
-    value: Status1.Approved
-}, {
-    label: Status1Label.Delivered,
-    value: Status1.Delivered
-}];
-
-export * from "./enum";
-export * from "./test32145Schema";
-export * from "./test3214Schema";
-export * from "./testdataSchema";
-export * from "./sortSchema";
-export * from "./testDto3Schema";
-export * from "./testDto2Schema";
-export * from "./test321Schema";
-export * from "./testDtoSchema";
-export * from "./refListSchema";
-export * from "./apiResponseSchema";
-export * from "./categorySchema";
-export * from "./petSchema";
-export * from "./tagSchema";
-export * from "./orderSchema";
-export * from "./userSchema";
+export * from "./test32145.schema";
+export * from "./test3214ColumnTypeEnumLabel.schema";
+export * from "./test3214ColumnTypeEnum.schema";
+export * from "./test3214ColumnTypeEnumOption.schema";
+export * from "./test3214.schema";
+export * from "./testdata.schema";
+export * from "./sort.schema";
+export * from "./testDto3.schema";
+export * from "./testDto2.schema";
+export * from "./test321.schema";
+export * from "./testDto.schema";
+export * from "./refList.schema";
+export * from "./apiResponse.schema";
+export * from "./category.schema";
+export * from "./petStatusEnumLabel.schema";
+export * from "./petStatusEnum.schema";
+export * from "./petStatusEnumOption.schema";
+export * from "./pet.schema";
+export * from "./tag.schema";
+export * from "./orderStatusEnumLabel.schema";
+export * from "./orderStatusEnum.schema";
+export * from "./orderStatusEnumOption.schema";
+export * from "./order.schema";
+export * from "./user.schema";
 "
 `;

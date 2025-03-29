@@ -3,14 +3,12 @@ import _ from "lodash";
 import { modelFolderName } from "./utils/modelFolderName.ts";
 import { zodSuffix } from "./utils/suffix.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
-import { useEnumCache } from "./EnumCache.ts";
+import { EnumGenerator } from "./EnumGenerator.ts";
 import { Zod } from "./zod.ts";
 
 import type { ObjectStructure, PluginContext } from "@openapi-to/core";
 import type { SchemaObject } from "oas/types";
-import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
-
 export class Schema {
   private oas: Config["oas"];
   private oldNode: Config["oldNode"];
@@ -20,8 +18,9 @@ export class Schema {
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
   private readonly modelFolderName: string = modelFolderName;
   private context: PluginContext | null = null;
-  private enumCache: EnumCache = useEnumCache();
 
+  public fromName: string | undefined;
+  private enumGenerator: EnumGenerator;
   constructor(config: Config) {
     this.oas = config.oas;
     this.ast = config.ast;
@@ -29,6 +28,8 @@ export class Schema {
     this.openapiToSingleConfig = config.openapiToSingleConfig;
     this.openapi = config.openapi;
     this.oldNode = config.oldNode;
+
+    this.enumGenerator = EnumGenerator.getInstance(config);
   }
 
   get z(): Zod {
@@ -44,7 +45,11 @@ export class Schema {
    * z.object({})
    * ```
    */
-  getZodFromSchema(schema: SchemaObject | undefined): string {
+  getZodFromSchema(
+    schema: SchemaObject | undefined,
+    fromName?: string,
+  ): string {
+    this.fromName = fromName;
     const version = this.oas.getVersion();
 
     if (!schema) {
@@ -183,8 +188,10 @@ export class Schema {
           .value();
 
         //
-        if (schema.enum && this.enumCache.enumUnique(schema.enum)) {
-          this.enumCache.set(schema, this.enumCache.getName(name));
+        if (schema.enum && this.enumGenerator.enumUnique(schema.enum)) {
+          const enumName =
+            _.upperFirst(this.fromName) + _.upperFirst(name) + "Enum";
+          this.enumGenerator.set(schema, enumName);
         }
 
         const UUID =
@@ -207,7 +214,7 @@ export class Schema {
                 )
                 .optional(isRequired)
                 .toString()
-            : this.formatterSchemaType(schema) +
+            : this.formatterSchemaType(schema, name) +
               this.z.optional(isRequired).toString(),
           docs: _.get(schema, "description")
             ? [
@@ -233,7 +240,19 @@ export class Schema {
     return this.ast.generateObject$2(objectStructure);
   }
 
-  formatterSchemaType(schema: SchemaObject | undefined): string {
+  formatterSchemaType(
+    schema: SchemaObject | undefined,
+    propertyName: string,
+  ): string {
+    if (!_.isEmpty(schema?.enum)) {
+      const enumName =
+        _.upperFirst(this.fromName) + _.upperFirst(propertyName) + "Enum";
+
+      if (schema?.enum && this.enumGenerator.enumUnique(schema.enum)) {
+        this.enumGenerator.set(schema, enumName);
+      }
+      return enumName;
+    }
     const numberEnum = [
       "int32",
       "int64",
@@ -290,9 +309,26 @@ export class Schema {
     if (
       type === "array" &&
       !this.openapi.isReference(schema.items) &&
+      !_.isBoolean(schema.items) &&
+      schema.items &&
+      "enum" in schema.items
+    ) {
+      const arrayType = this.formatterSchemaType(
+        schema.items as SchemaObject,
+        propertyName,
+      );
+      return this.z.head().nativeEnum(arrayType).toString();
+    }
+
+    if (
+      type === "array" &&
+      !this.openapi.isReference(schema.items) &&
       !_.isBoolean(schema.items)
     ) {
-      const arrayType = this.formatterSchemaType(schema.items as SchemaObject);
+      const arrayType = this.formatterSchemaType(
+        schema.items as SchemaObject,
+        propertyName,
+      );
       return this.z.array(arrayType).toString();
     }
 

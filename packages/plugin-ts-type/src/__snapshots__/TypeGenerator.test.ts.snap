@@ -2,6 +2,26 @@
 
 exports[`typerGenerator > TypeGenerator getFullText 1`] = `
 "import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
+export const petFindByStatusGetQueryParamsStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+export const PetFindByStatusGetQueryParamsStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+export const PetFindByStatusGetQueryParamsStatusEnumOption = [{
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Available,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Available
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Pending,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Pending
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Sold,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Sold
+}];
 
 /**
  * @tag pet
@@ -101,7 +121,7 @@ export namespace Pet {
         /**
          * @description Status values that need to be considered for filter
          */
-        status: Array<string>;
+        status: Array<PetFindByStatusGetQueryParamsStatusEnum>;
     }
 
     /**
@@ -316,19 +336,42 @@ export namespace User {
 
 import type { Testdata } from "./Testdata";
 
-/** */
 export interface Test32145 {
     /**
      * @description description
      */
     code?: number;
-    /**
-     * @UUID type-Testdata
-     */
     meta?: Testdata;
 }
 
-/** */
+/**
+ * @description description
+ */
+export const test3214ColumnTypeEnumLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/**
+ * @description description
+ */
+export const Test3214ColumnTypeEnum = {
+    Char: 'CHAR',
+    Char2: 'CHAR2',
+    Char3: 'CHAR3'
+} as const;
+/** description */
+export const Test3214ColumnTypeEnumOption = [{
+    label: test3214ColumnTypeEnumLabel.Char,
+    value: Test3214ColumnTypeEnum.Char
+}, {
+    label: test3214ColumnTypeEnumLabel.Char2,
+    value: Test3214ColumnTypeEnum.Char2
+}, {
+    label: test3214ColumnTypeEnumLabel.Char3,
+    value: Test3214ColumnTypeEnum.Char3
+}];
+
 export interface Test3214 {
     /**
      * @description 默认值
@@ -353,7 +396,7 @@ export interface Test3214 {
     /**
      * @description description
      */
-    columnType?: string;
+    columnType?: Test3214ColumnTypeEnum;
     /**
      * @description description
      */
@@ -369,7 +412,6 @@ export interface Test3214 {
     notNull?: boolean;
 }
 
-/** */
 export interface Testdata {
     /**
      * @description description
@@ -389,7 +431,6 @@ export interface Testdata {
     totalPages?: number;
 }
 
-/** */
 export interface Sort {
     empty?: boolean;
     sorted?: boolean;
@@ -398,7 +439,6 @@ export interface Sort {
 
 import type { Test3214 } from "./Test3214";
 
-/** */
 export interface TestDto3 {
     test3214?: Test3214[];
 }
@@ -406,26 +446,17 @@ export interface TestDto3 {
 import type { TestDto3 } from "./TestDto3";
 import type { Testdata } from "./Testdata";
 
-/** */
 export interface TestDto2 {
-    /**
-     * @UUID type-TestDto3
-     */
     content?: TestDto3;
-    /**
-     * @UUID type-Testdata
-     */
     meta?: Testdata;
 }
 
-/** */
 export interface Test321 {
     id?: number;
 }
 
 import type { Test321 } from "./Test321";
 
-/** */
 export interface TestDto {
     /**
      * @description test321
@@ -435,11 +466,7 @@ export interface TestDto {
 
 import type { ApiResponse } from "./ApiResponse";
 
-/** */
 export interface RefList {
-    /**
-     * @UUID type-ApiResponse
-     */
     content?: ApiResponse;
     /**
      * @description string
@@ -456,14 +483,12 @@ export interface RefList {
     type?: string;
 }
 
-/** */
 export interface ApiResponse {
     code?: number;
     type?: string;
     message?: string;
 }
 
-/** */
 export interface Category {
     id?: number;
     name?: string;
@@ -471,13 +496,36 @@ export interface Category {
 
 import type { Category } from "./Category";
 import type { Tag } from "./Tag";
+/**
+ * @description pet status in the store
+ */
+export const petStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/**
+ * @description pet status in the store
+ */
+export const PetStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+/** pet status in the store */
+export const PetStatusEnumOption = [{
+    label: petStatusEnumLabel.Available,
+    value: PetStatusEnum.Available
+}, {
+    label: petStatusEnumLabel.Pending,
+    value: PetStatusEnum.Pending
+}, {
+    label: petStatusEnumLabel.Sold,
+    value: PetStatusEnum.Sold
+}];
 
-/** */
 export interface Pet {
     id?: number;
-    /**
-     * @UUID type-Category
-     */
     category?: Category;
     name: string;
     photoUrls: Array<string>;
@@ -485,16 +533,42 @@ export interface Pet {
     /**
      * @description pet status in the store
      */
-    status?: string;
+    status?: PetStatusEnum;
 }
 
-/** */
 export interface Tag {
     id?: number;
     name?: string;
 }
 
-/** */
+/**
+ * @description Order Status
+ */
+export const orderStatusEnumLabel = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+/**
+ * @description Order Status
+ */
+export const OrderStatusEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered'
+} as const;
+/** Order Status */
+export const OrderStatusEnumOption = [{
+    label: orderStatusEnumLabel.Placed,
+    value: OrderStatusEnum.Placed
+}, {
+    label: orderStatusEnumLabel.Approved,
+    value: OrderStatusEnum.Approved
+}, {
+    label: orderStatusEnumLabel.Delivered,
+    value: OrderStatusEnum.Delivered
+}];
+
 export interface Order {
     id?: number;
     petId?: number;
@@ -503,11 +577,10 @@ export interface Order {
     /**
      * @description Order Status
      */
-    status?: string;
+    status?: OrderStatusEnum;
     complete?: boolean;
 }
 
-/** */
 export interface User {
     id?: number;
     username?: string;
@@ -522,93 +595,6 @@ export interface User {
     userStatus?: number;
 }
 
-/**
- * @description description
- */
-export const ColumnTypeLabel = {
-    Char: '',
-    Char2: '',
-    Char3: ''
-};
-/**
- * @description pet status in the store
- */
-export const StatusLabel = {
-    Available: '',
-    Pending: '',
-    Sold: ''
-};
-/**
- * @description Order Status
- */
-export const Status1Label = {
-    Placed: '',
-    Approved: '',
-    Delivered: ''
-};
-
-/**
- * @description description
- */
-const enum ColumnType {
-    Char = "CHAR",
-    Char2 = "CHAR2",
-    Char3 = "CHAR3"
-}
-
-/**
- * @description pet status in the store
- */
-const enum Status {
-    Available = "available",
-    Pending = "pending",
-    Sold = "sold"
-}
-
-/**
- * @description Order Status
- */
-const enum Status1 {
-    Placed = "placed",
-    Approved = "approved",
-    Delivered = "delivered"
-}
-
-/** description */
-export const columnTypeOption = [{
-    label: ColumnTypeLabel.Char,
-    value: ColumnType.Char
-}, {
-    label: ColumnTypeLabel.Char2,
-    value: ColumnType.Char2
-}, {
-    label: ColumnTypeLabel.Char3,
-    value: ColumnType.Char3
-}];
-/** pet status in the store */
-export const statusOption = [{
-    label: StatusLabel.Available,
-    value: Status.Available
-}, {
-    label: StatusLabel.Pending,
-    value: Status.Pending
-}, {
-    label: StatusLabel.Sold,
-    value: Status.Sold
-}];
-/** Order Status */
-export const status1Option = [{
-    label: Status1Label.Placed,
-    value: Status1.Placed
-}, {
-    label: Status1Label.Approved,
-    value: Status1.Approved
-}, {
-    label: Status1Label.Delivered,
-    value: Status1.Delivered
-}];
-
-export * from "./enum";
 export * from "./Test32145";
 export * from "./Test3214";
 export * from "./Testdata";
@@ -629,6 +615,26 @@ export * from "./User";
 
 exports[`typerGenerator > compare TypeGenerator getFullText 1`] = `
 "import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
+export const petFindByStatusGetQueryParamsStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+export const PetFindByStatusGetQueryParamsStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+export const PetFindByStatusGetQueryParamsStatusEnumOption = [{
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Available,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Available
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Pending,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Pending
+}, {
+    label: petFindByStatusGetQueryParamsStatusEnumLabel.Sold,
+    value: PetFindByStatusGetQueryParamsStatusEnum.Sold
+}];
 
 /**
  * @tag pet
@@ -729,7 +735,7 @@ export namespace NewPet {
         /**
          * @description Status values that need to be considered for filter
          */
-        status: Array<string>;
+        status: Array<PetFindByStatusGetQueryParamsStatusEnum>;
     }
 
     /**
@@ -961,6 +967,34 @@ export interface Test32145 {
 }
 
 /**
+ * @description description
+ */
+export const test3214ColumnTypeEnumLabel = {
+    Char: '',
+    Char2: '',
+    Char3: ''
+};
+/**
+ * @description description
+ */
+export const Test3214ColumnTypeEnum = {
+    Char: 'CHAR',
+    Char2: 'CHAR2',
+    Char3: 'CHAR3'
+} as const;
+/** description */
+export const Test3214ColumnTypeEnumOption = [{
+    label: test3214ColumnTypeEnumLabel.Char,
+    value: Test3214ColumnTypeEnum.Char
+}, {
+    label: test3214ColumnTypeEnumLabel.Char2,
+    value: Test3214ColumnTypeEnum.Char2
+}, {
+    label: test3214ColumnTypeEnumLabel.Char3,
+    value: Test3214ColumnTypeEnum.Char3
+}];
+
+/**
  * @UUID type-Test3214
  */
 export interface Test3214 {
@@ -987,7 +1021,7 @@ export interface Test3214 {
     /**
      * @description description
      */
-    columnType?: string;
+    columnType?: Test3214ColumnTypeEnum;
     /**
      * @description description
      */
@@ -1123,6 +1157,33 @@ export interface NewCategory {
 
 import type { NewCategory } from "./NewCategory";
 import type { Tag } from "./Tag";
+/**
+ * @description pet status in the store
+ */
+export const petStatusEnumLabel = {
+    Available: '',
+    Pending: '',
+    Sold: ''
+};
+/**
+ * @description pet status in the store
+ */
+export const PetStatusEnum = {
+    Available: 'available',
+    Pending: 'pending',
+    Sold: 'sold'
+} as const;
+/** pet status in the store */
+export const PetStatusEnumOption = [{
+    label: petStatusEnumLabel.Available,
+    value: PetStatusEnum.Available
+}, {
+    label: petStatusEnumLabel.Pending,
+    value: PetStatusEnum.Pending
+}, {
+    label: petStatusEnumLabel.Sold,
+    value: PetStatusEnum.Sold
+}];
 
 /**
  * @UUID type-Pet
@@ -1139,7 +1200,7 @@ export interface Pet {
     /**
      * @description pet status in the store
      */
-    status?: string;
+    status?: PetStatusEnum;
 }
 
 /**
@@ -1149,6 +1210,34 @@ export interface Tag {
     id?: number;
     name?: string;
 }
+
+/**
+ * @description Order Status
+ */
+export const orderStatusEnumLabel = {
+    Placed: '',
+    Approved: '',
+    Delivered: ''
+};
+/**
+ * @description Order Status
+ */
+export const OrderStatusEnum = {
+    Placed: 'placed',
+    Approved: 'approved',
+    Delivered: 'delivered'
+} as const;
+/** Order Status */
+export const OrderStatusEnumOption = [{
+    label: orderStatusEnumLabel.Placed,
+    value: OrderStatusEnum.Placed
+}, {
+    label: orderStatusEnumLabel.Approved,
+    value: OrderStatusEnum.Approved
+}, {
+    label: orderStatusEnumLabel.Delivered,
+    value: OrderStatusEnum.Delivered
+}];
 
 /**
  * @UUID type-Order
@@ -1161,7 +1250,7 @@ export interface Order {
     /**
      * @description Order Status
      */
-    status?: string;
+    status?: OrderStatusEnum;
     complete?: boolean;
 }
 
@@ -1182,93 +1271,6 @@ export interface User {
     userStatus?: number;
 }
 
-/**
- * @description description
- */
-export const ColumnTypeLabel = {
-    Char: '',
-    Char2: '',
-    Char3: ''
-};
-/**
- * @description pet status in the store
- */
-export const StatusLabel = {
-    Available: '',
-    Pending: '',
-    Sold: ''
-};
-/**
- * @description Order Status
- */
-export const Status1Label = {
-    Placed: '',
-    Approved: '',
-    Delivered: ''
-};
-
-/**
- * @description description
- */
-const enum ColumnType {
-    Char = "CHAR",
-    Char2 = "CHAR2",
-    Char3 = "CHAR3"
-}
-
-/**
- * @description pet status in the store
- */
-const enum Status {
-    Available = "available",
-    Pending = "pending",
-    Sold = "sold"
-}
-
-/**
- * @description Order Status
- */
-const enum Status1 {
-    Placed = "placed",
-    Approved = "approved",
-    Delivered = "delivered"
-}
-
-/** description */
-export const columnTypeOption = [{
-    label: ColumnTypeLabel.Char,
-    value: ColumnType.Char
-}, {
-    label: ColumnTypeLabel.Char2,
-    value: ColumnType.Char2
-}, {
-    label: ColumnTypeLabel.Char3,
-    value: ColumnType.Char3
-}];
-/** pet status in the store */
-export const statusOption = [{
-    label: StatusLabel.Available,
-    value: Status.Available
-}, {
-    label: StatusLabel.Pending,
-    value: Status.Pending
-}, {
-    label: StatusLabel.Sold,
-    value: Status.Sold
-}];
-/** Order Status */
-export const status1Option = [{
-    label: Status1Label.Placed,
-    value: Status1.Placed
-}, {
-    label: Status1Label.Approved,
-    value: Status1.Approved
-}, {
-    label: Status1Label.Delivered,
-    value: Status1.Delivered
-}];
-
-export * from "./enum";
 export * from "./Test32145";
 export * from "./Test3214";
 export * from "./Testdata";

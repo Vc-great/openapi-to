@@ -36,6 +36,8 @@
     "@openapi-to/eslint-config": "workspace:*",
     "@openapi-to/ts-config": "workspace:*",
     "@openapi-to/tsup-config": "workspace:*",
+    "@openapi-to/plugin-zod": "workspace:*",
+    "@openapi-to/plugin-ts-type": "workspace:*",
     "@types/lodash": "^4.17.9",
     "utility-types": "^3.11.0"
   },

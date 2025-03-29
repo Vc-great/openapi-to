@@ -1,13 +1,16 @@
 import path from "node:path";
 
+import { pluginEnum } from "@openapi-to/core";
 import { TYPE_MODEL_FOLDER_NAME } from "@openapi-to/core/utils";
+import { ZOD_MODEL_FOLDER_NAME } from "@openapi-to/plugin-zod/src/constants.ts";
 
 import _ from "lodash";
 import { StructureKind } from "ts-morph";
 
-import { modelFolderName } from "./utils/modelFolderName.ts";
+import { FAKER_SUFFIX, MODEL_FOLDER_NAME } from "./constants.ts";
 import { Faker } from "./Faker";
 import { Schema } from "./Schema.ts";
+import { fakerNameAddSuffix, fileAddSuffix, refAddSuffix } from "./utils.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { SchemaObject } from "oas/types";
@@ -15,13 +18,13 @@ import type { OpenAPIV3 } from "openapi-types";
 import type { ImportDeclarationStructure } from "ts-morph";
 import type { StatementStructures } from "ts-morph";
 import type { Config } from "./types.ts";
+
 export class Component {
   private oas: Config["oas"];
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private readonly modelFolderName: string = modelFolderName;
   private context: PluginContext | null = null;
   private modelIndex: Set<string> = new Set<string>();
   private schema: Schema;
@@ -39,36 +42,30 @@ export class Component {
     return new Faker();
   }
 
+  get hasZodPlugin() {
+    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
+  }
+
   build() {}
 
-  /**
-   *
-   * @param context
-   * ```
-   * import {Order} from './models'
-   * export interface Response {
-   * order:Order
-   * }
-   *
-   * ```
-   */
   generateComponentType(): void {
     //todo requestBodies
     //this.generateComponentObjectType(this.openapi.component.requestBodyObject);
     _.forEach(this.openapi.component.schemas, (schema, key) => {
       if (this.openapi.isReference(schema)) {
-        this.generateComponentRefType(schema, key);
+        this.generateCodeComponentRef(schema, key);
         return;
       }
 
-      this.generateComponentSchemaType(schema, key);
+      this.generateCodeForComponentSchema(schema, key);
     });
   }
 
-  generateComponentRefType(
+  generateCodeComponentRef(
     schema: OpenAPIV3.ReferenceObject,
-    typeName: string,
+    key: string,
   ): void {
+    const name = fakerNameAddSuffix(key);
     this.createModelSourceFile(
       [
         ...this.ast.generateImportStatements([
@@ -78,28 +75,30 @@ export class Component {
             moduleSpecifier: `@faker-js/faker`,
           },
           {
-            namedImports: [this.openapi.getRefAlias(schema.$ref)],
+            namedImports: [refAddSuffix(this.openapi.getRefAlias(schema.$ref))],
             isTypeOnly: false,
-            moduleSpecifier: `/${this.modelFolderName}/index`,
+            moduleSpecifier: `/${MODEL_FOLDER_NAME}/index`,
           },
           {
-            namedImports: [_.upperFirst(_.camelCase(typeName))],
+            namedImports: [_.upperFirst(_.camelCase(name))],
             isTypeOnly: true,
-            moduleSpecifier: `../${TYPE_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(typeName))}`,
+            moduleSpecifier: this.hasZodPlugin
+              ? `../${ZOD_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`
+              : `../${TYPE_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`,
           },
         ]),
         this.ast.generateFunctionStatements({
-          name: _.camelCase(typeName),
+          name: _.camelCase(name),
           statements: `return ${this.openapi.getRefAlias(schema.$ref)}()`,
           returnType:
             this.openapi.upperFirstCurrentTagName +
             "." +
-            _.upperFirst(_.camelCase(typeName)),
+            _.upperFirst(_.camelCase(name)),
           isExported: true,
           docs: [], // [{ description: "" }],
         }),
       ],
-      _.upperFirst(_.camelCase(typeName)),
+      fileAddSuffix(key),
     );
   }
 
@@ -109,7 +108,7 @@ export class Component {
   ): void {
     const filePath = path.resolve(
       this.openapiToSingleConfig.output.dir || "./",
-      this.modelFolderName + "/" + fileName + ".ts",
+      MODEL_FOLDER_NAME + "/" + fileName + ".ts",
     );
 
     this.ast.createSourceFile(filePath, {
@@ -143,11 +142,14 @@ export class Component {
 
   generateModelIndex(): void {
     const statements = _.chain([...this.modelIndex])
-      .map((name) =>
-        this.ast.generateExportStatements({
-          moduleSpecifier: "./" + name,
-        }),
-      )
+      .map((name) => {
+        const fileName = name.endsWith(_.upperFirst(FAKER_SUFFIX))
+          ? name
+          : fileAddSuffix(name);
+        return this.ast.generateExportStatements({
+          moduleSpecifier: "./" + fileName,
+        });
+      })
       .value();
 
     this.createModelSourceFile(statements, "index");
@@ -156,27 +158,33 @@ export class Component {
   /**
    * schema type
    * @param schema
-   * @param typeName
+   * @param key
    */
-  generateComponentSchemaType(schema: SchemaObject, typeName: string): void {
+  generateCodeForComponentSchema(schema: SchemaObject, key: string): void {
+    const name = fakerNameAddSuffix(key);
     this.openapi.resetRefCache();
-
-    const schemaStatuments = this.ast.generateFunctionStatements({
-      name: _.camelCase(typeName),
+    const schemaStatements = this.ast.generateFunctionStatements({
+      name: _.camelCase(name),
       statements: `return ${this.schema.getStatementsFromSchema(schema)}`,
-      returnType: _.upperFirst(_.camelCase(typeName)),
+      returnType: _.upperFirst(_.camelCase(key)),
       isExported: true,
       docs: schema.description ? [{ description: schema.description }] : [],
     });
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
+        const name = this.openapi.getRefAlias(ref);
         return this.ast.generateImportStatements([
-          {
-            namedImports: [_.camelCase(this.openapi.getRefAlias(ref))],
-            isTypeOnly: false,
-            moduleSpecifier: `./` + _.camelCase(this.openapi.getRefAlias(ref)),
-          },
+          ...(name === key
+            ? []
+            : [
+                {
+                  namedImports: [fakerNameAddSuffix(name)],
+                  isTypeOnly: false,
+                  moduleSpecifier:
+                    `./` + refAddSuffix(this.openapi.getRefAlias(ref)),
+                },
+              ]),
         ]);
       })
       .flatten()
@@ -189,15 +197,15 @@ export class Component {
         moduleSpecifier: `@faker-js/faker`,
       },
       {
-        namedImports: [_.upperFirst(_.camelCase(typeName))],
+        namedImports: [_.upperFirst(_.camelCase(key))],
         isTypeOnly: true,
         moduleSpecifier: `../${TYPE_MODEL_FOLDER_NAME}`,
       },
     ]);
 
     this.createModelSourceFile(
-      [...importStatements, ...fakerImport, schemaStatuments],
-      _.camelCase(typeName),
+      [...importStatements, ...fakerImport, schemaStatements],
+      fileAddSuffix(key),
     );
   }
 }

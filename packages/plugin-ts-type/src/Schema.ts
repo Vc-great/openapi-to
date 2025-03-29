@@ -2,15 +2,13 @@ import { UUID_TAG_NAME } from "@openapi-to/core/utils";
 
 import _ from "lodash";
 
-import { modelFolderName } from "./utils/modelFolderName.ts";
-import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
-import { useEnumCache } from "./EnumCache.ts";
+import { UUID_PREFIX } from "./constants.ts";
+import { EnumGenerator } from "./EnumGenerator.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { SchemaObject } from "oas/types";
 import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
 import type { JSDocTagStructure } from "ts-morph";
-import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
 
 type OptionalKindOfPropertySignatureStructure =
@@ -22,22 +20,25 @@ export class Schema {
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private readonly modelFolderName: string = modelFolderName;
   private context: PluginContext | null = null;
+  public fromName: string | undefined;
+  private enumGenerator: EnumGenerator;
+  constructor(config: Config) {
+    this.oas = config.oas;
+    this.ast = config.ast;
+    this.pluginConfig = config.pluginConfig;
+    this.openapiToSingleConfig = config.openapiToSingleConfig;
+    this.openapi = config.openapi;
+    this.oldNode = config.oldNode;
 
-  private enumCache: EnumCache = useEnumCache();
-  constructor(cofig: Config) {
-    this.oas = cofig.oas;
-    this.ast = cofig.ast;
-    this.pluginConfig = cofig.pluginConfig;
-    this.openapiToSingleConfig = cofig.openapiToSingleConfig;
-    this.openapi = cofig.openapi;
-    this.oldNode = cofig.oldNode;
+    this.enumGenerator = EnumGenerator.getInstance(config);
   }
 
   getBaseTypeFromSchema(
     schema: SchemaObject | null,
+    fromName?: string,
   ): Array<OptionalKindOfPropertySignatureStructure> | undefined {
+    this.fromName = fromName;
     const version = this.oas.getVersion();
 
     if (!schema) {
@@ -163,12 +164,14 @@ export class Schema {
           .value();
 
         //
-        if (schema.enum && this.enumCache.enumUnique(schema.enum)) {
-          this.enumCache.set(schema, this.enumCache.getName(name));
+        if (schema.enum && this.enumGenerator.enumUnique(schema.enum)) {
+          const enumName =
+            _.upperFirst(this.fromName) + _.upperFirst(name) + "Enum";
+          this.enumGenerator.set(schema, enumName);
         }
 
         const UUID =
-          UUIDPrefix +
+          UUID_PREFIX +
           (this.openapi.isReference(schema)
             ? _.upperFirst(this.openapi.getRefAlias(schema.$ref))
             : "");
@@ -180,20 +183,22 @@ export class Schema {
           type: this.openapi.isReference(schema)
             ? (interfaceDeclaration?.getName() ??
               _.upperFirst(this.openapi.getRefAlias(schema.$ref)))
-            : this.formatterSchemaType(schema),
+            : this.formatterSchemaType(schema, name),
           docs: [
             {
               //  description: "\n",
               tags: _.chain([] as OptionalKind<JSDocTagStructure>[])
                 .push({
-                  leadingTrivia: this.openapi.isReference(schema)?"":'\n',
+                  leadingTrivia: this.openapi.isReference(schema) ? "" : "\n",
                   tagName: "description",
                   text: _.get(schema, "description", ""),
                 })
                 .concat(
-                  this.openapi.isReference(schema)
+                  this.openapi.isReference(schema) && this.pluginConfig?.compare
                     ? {
-                      leadingTrivia: _.get(schema, "description", "")?"": "\n",
+                        leadingTrivia: _.get(schema, "description", "")
+                          ? ""
+                          : "\n",
                         tagName: UUID_TAG_NAME,
                         text: UUID,
                       }
@@ -220,7 +225,20 @@ export class Schema {
     return typeStatements;
   }
 
-  formatterSchemaType(schema: SchemaObject | undefined): string {
+  formatterSchemaType(
+    schema: SchemaObject | undefined,
+    propertyName: string,
+  ): string {
+    if (!_.isEmpty(schema?.enum)) {
+      const enumName =
+        _.upperFirst(this.fromName) + _.upperFirst(propertyName) + "Enum";
+
+      if (schema?.enum && this.enumGenerator.enumUnique(schema.enum)) {
+        this.enumGenerator.set(schema, enumName);
+      }
+      return enumName;
+    }
+
     const numberEnum = [
       "int32",
       "int64",
@@ -265,7 +283,10 @@ export class Schema {
     }
 
     if (type === "array" && !this.openapi.isReference(schema.items)) {
-      const arrayType = this.formatterSchemaType(schema.items as SchemaObject);
+      const arrayType = this.formatterSchemaType(
+        schema.items as SchemaObject,
+        propertyName,
+      );
       return `Array<${arrayType}>`;
     }
 

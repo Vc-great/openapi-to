@@ -3,7 +3,7 @@ import { UUID_TAG_NAME } from "@openapi-to/core/utils";
 import _ from "lodash";
 import { Project } from "ts-morph";
 
-import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
+import { UUID_PREFIX } from "./constants.ts";
 
 import type {
   InterfaceDeclaration,
@@ -107,7 +107,7 @@ export class TypeOldNode {
         )
         .filter(Boolean)
         .forEach((uuid: string) => {
-          if (uuid.startsWith(UUIDPrefix)) {
+          if (uuid.startsWith(UUID_PREFIX)) {
             this.sourceFileCache.set(uuid, sourceFile);
           }
         })

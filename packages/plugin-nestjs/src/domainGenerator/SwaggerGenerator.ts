@@ -64,7 +64,7 @@ export class SwaggerGenerator {
               //name: parameterObject.name,
             },
             {
-              isArray: schemaObject.type === "array" ? true : undefined,
+              isArray: schemaObject?.type === "array" ? true : undefined,
               required: parameterObject.required,
             },
             {

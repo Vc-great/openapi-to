@@ -35,6 +35,11 @@ export class Zod {
     this.currentType += str;
     return this;
   }
+  nativeEnum(enumType: string): this {
+    const str = `.nativeEnum(${enumType})`;
+    this.currentType += str;
+    return this;
+  }
   unknown(): this {
     const str = `.unknown()`;
     this.currentType += str;

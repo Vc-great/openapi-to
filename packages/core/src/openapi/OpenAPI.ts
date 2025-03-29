@@ -4,6 +4,7 @@ import { isRef } from "oas/types";
 import { findSchemaDefinition } from "oas/utils";
 import { pinyin } from "pinyin-pro";
 
+import { removePunctuation } from "../utils/removePunctuation.ts";
 import { Component } from "./Component.ts";
 import { Parameter } from "./Parameter.ts";
 import { RequestBody } from "./RequestBody.ts";
@@ -64,7 +65,10 @@ export class OpenAPI {
   get currentTagNameOfPinYin() {
     const tagName = this.currentTagMetadata?.name || "";
     const name = this.containsChinese(tagName)
-      ? pinyin(tagName, { toneType: "none", type: "array" }).join("_")
+      ? pinyin(removePunctuation(tagName), {
+          toneType: "none",
+          type: "array",
+        }).join("_")
       : _.camelCase(tagName);
 
     return name;
@@ -332,10 +336,12 @@ export class OpenAPI {
     //todo ref cache
     this.refCache.set($ref, null);
     const typeName = $ref.replace(/.+\//, "");
-    const text = isChinese(typeName)
-      ? pinyin(typeName, { toneType: "none", type: "array" }).join()
-      : typeName;
-    return _.camelCase(text);
+    return isChinese(typeName)
+      ? pinyin(removePunctuation(typeName), {
+          toneType: "none",
+          type: "array",
+        }).join("_")
+      : _.camelCase(typeName);
   }
 
   getDomainNameByRef($ref: string): string {

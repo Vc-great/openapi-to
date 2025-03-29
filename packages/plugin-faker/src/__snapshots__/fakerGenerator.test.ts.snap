@@ -2,7 +2,7 @@
 
 exports[`faker > compare getFullText 1`] = `
 "import { faker } from "@faker-js/faker";
-import { testDto2, test32145, apiResponse, pet } from "./fakerModels";
+import { testDto2Faker, test32145Faker, apiResponseFaker, petFaker } from "./faker-models";
 import type { Pet } from "./newPet";
 
 /**
@@ -16,7 +16,7 @@ class PetFaker {
      * @UUID operationIdpost
      */
     newtestPost(): NonNullable<Pet.TestPostMutationResponse> {
-        return testDto2()
+        return testDto2Faker()
     }
 
     /**
@@ -24,7 +24,7 @@ class PetFaker {
      * @UUID operationIdput
      */
     newtestPut(): NonNullable<Pet.TestPutMutationResponse> {
-        return testDto2()
+        return testDto2Faker()
     }
 
     /**
@@ -32,7 +32,7 @@ class PetFaker {
      * @UUID operationIddelete
      */
     delByTest(): NonNullable<Pet.DelByTestMutationResponse> {
-        return test32145()
+        return test32145Faker()
     }
 
     /**
@@ -40,7 +40,7 @@ class PetFaker {
      * @UUID get/pet/test/{test-id}
      */
     testIdGet(): NonNullable<Pet.TestIdGetQueryResponse> {
-        return testDto2()
+        return testDto2Faker()
     }
 
     /**
@@ -49,7 +49,7 @@ class PetFaker {
      * @UUID uploadFile
      */
     uploadImagePost(): NonNullable<Pet.UploadImagePostMutationResponse> {
-        return apiResponse()
+        return apiResponseFaker()
     }
 
     /**
@@ -74,7 +74,7 @@ class PetFaker {
      * @UUID findPetsByStatus
      */
     findByStatusGet(): NonNullable<Pet.FindByStatusGetQueryResponse> {
-        return faker.helpers.multiple(() => pet(), {
+        return faker.helpers.multiple(() => petFaker(), {
             count: 10,
         })
     }
@@ -85,7 +85,7 @@ class PetFaker {
      * @UUID findPetsByTags
      */
     findByTagsGet(): NonNullable<Pet.FindByTagsGetQueryResponse> {
-        return faker.helpers.multiple(() => pet(), {
+        return faker.helpers.multiple(() => petFaker(), {
             count: 10,
         })
     }
@@ -96,7 +96,7 @@ class PetFaker {
      * @UUID getPetById
      */
     findByPetId(): NonNullable<Pet.FindByPetIdQueryResponse> {
-        return pet()
+        return petFaker()
     }
 
     /**
@@ -119,7 +119,7 @@ class PetFaker {
 export const petFaker = new PetFaker;
 
 import { faker } from "@faker-js/faker";
-import { testDto2, test32145, apiResponse, pet, order } from "./fakerModels";
+import { orderFaker } from "./faker-models";
 import type { Pet } from "./Pet";
 
 /**
@@ -133,7 +133,7 @@ class StoreFaker {
      * @UUID placeOrder
      */
     create(): NonNullable<Pet.CreateMutationResponse> {
-        return order()
+        return orderFaker()
     }
 
     /**
@@ -142,7 +142,7 @@ class StoreFaker {
      * @UUID getOrderById
      */
     findByOrderId(): NonNullable<Pet.FindByOrderIdQueryResponse> {
-        return order()
+        return orderFaker()
     }
 
     /**
@@ -167,7 +167,7 @@ class StoreFaker {
 export const storeFaker = new StoreFaker;
 
 import { faker } from "@faker-js/faker";
-import { testDto2, test32145, apiResponse, pet, order, user } from "./fakerModels";
+import { userFaker } from "./faker-models";
 import type { Pet } from "./Pet";
 
 /**
@@ -197,7 +197,7 @@ class UserFaker {
      * @UUID getUserByName
      */
     findByUsername(): NonNullable<Pet.FindByUsernameQueryResponse> {
-        return user()
+        return userFaker()
     }
 
     /**
@@ -246,22 +246,22 @@ class UserFaker {
 
 export const userFaker = new UserFaker;
 
-import { testdata } from "./testdata";
+import { testdataFaker } from "./testdataFaker";
 import { faker } from "@faker-js/faker";
 import type { Test32145 } from "../models";
 
-export function test32145(): Test32145 {
+export function test32145Faker(): Test32145 {
     return {
         /**this is description*/
         code: faker.number.int(),
-        meta: testdata()
+        meta: testdataFaker()
     }
 }
 
 import { faker } from "@faker-js/faker";
 import type { Test3214 } from "../models";
 
-export function test3214(): Test3214 {
+export function test3214Faker(): Test3214 {
     return {
         /**默认值*/
         columnDefault: faker.string.alpha(),
@@ -288,7 +288,7 @@ export function test3214(): Test3214 {
 import { faker } from "@faker-js/faker";
 import type { Testdata } from "../models";
 
-export function testdata(): Testdata {
+export function testdataFaker(): Testdata {
     return {
         /**this is description*/
         number: faker.number.int(),
@@ -304,7 +304,7 @@ export function testdata(): Testdata {
 import { faker } from "@faker-js/faker";
 import type { Sort } from "../models";
 
-export function sort(): Sort {
+export function sortFaker(): Sort {
     return {
         empty: faker.datatype.boolean(),
         sorted: faker.datatype.boolean(),
@@ -312,59 +312,59 @@ export function sort(): Sort {
     }
 }
 
-import { test3214 } from "./test3214";
+import { test3214Faker } from "./test3214Faker";
 import { faker } from "@faker-js/faker";
 import type { TestDto3 } from "../models";
 
-export function testDto3(): TestDto3 {
+export function testDto3Faker(): TestDto3 {
     return {
-        test3214: faker.helpers.multiple(() => test3214(), {
+        test3214: faker.helpers.multiple(() => test3214Faker(), {
             count: 10,
         })
     }
 }
 
-import { testDto3 } from "./testDto3";
-import { testdata } from "./testdata";
+import { testDto3Faker } from "./testDto3Faker";
+import { testdataFaker } from "./testdataFaker";
 import { faker } from "@faker-js/faker";
 import type { TestDto2 } from "../models";
 
-export function testDto2(): TestDto2 {
+export function testDto2Faker(): TestDto2 {
     return {
-        content: testDto3(),
-        meta: testdata()
+        content: testDto3Faker(),
+        meta: testdataFaker()
     }
 }
 
 import { faker } from "@faker-js/faker";
 import type { Test321 } from "../models";
 
-export function test321(): Test321 {
+export function test321Faker(): Test321 {
     return {
         id: faker.number.int()
     }
 }
 
-import { test321 } from "./test321";
+import { test321Faker } from "./test321Faker";
 import { faker } from "@faker-js/faker";
 import type { TestDto } from "../models";
 
-export function testDto(): TestDto {
+export function testDtoFaker(): TestDto {
     return {
         /**test321*/
-        test321: faker.helpers.multiple(() => test321(), {
+        test321: faker.helpers.multiple(() => test321Faker(), {
             count: 10,
         })
     }
 }
 
-import { apiResponse } from "./apiResponse";
+import { apiResponseFaker } from "./apiResponseFaker";
 import { faker } from "@faker-js/faker";
 import type { RefList } from "../models";
 
-export function refList(): RefList {
+export function refListFaker(): RefList {
     return {
-        content: apiResponse(),
+        content: apiResponseFaker(),
         /**string*/
         string: faker.string.alpha(),
         name: faker.string.alpha(),
@@ -378,7 +378,7 @@ export function refList(): RefList {
 import { faker } from "@faker-js/faker";
 import type { ApiResponse } from "../models";
 
-export function apiResponse(): ApiResponse {
+export function apiResponseFaker(): ApiResponse {
     return {
         code: faker.number.int(),
         type: faker.string.alpha(),
@@ -389,27 +389,27 @@ export function apiResponse(): ApiResponse {
 import { faker } from "@faker-js/faker";
 import type { Category } from "../models";
 
-export function category(): Category {
+export function categoryFaker(): Category {
     return {
         id: faker.number.int(),
         name: faker.string.alpha()
     }
 }
 
-import { category } from "./category";
-import { tag } from "./tag";
+import { categoryFaker } from "./categoryFaker";
+import { tagFaker } from "./tagFaker";
 import { faker } from "@faker-js/faker";
 import type { Pet } from "../models";
 
-export function pet(): Pet {
+export function petFaker(): Pet {
     return {
         id: faker.number.int(),
-        category: category(),
+        category: categoryFaker(),
         name: faker.string.alpha(),
         photoUrls: faker.helpers.multiple(() => faker.string.alpha(), {
             count: 10,
         }),
-        tags: faker.helpers.multiple(() => tag(), {
+        tags: faker.helpers.multiple(() => tagFaker(), {
             count: 10,
         }),
         /**pet status in the store*/
@@ -420,7 +420,7 @@ export function pet(): Pet {
 import { faker } from "@faker-js/faker";
 import type { Tag } from "../models";
 
-export function tag(): Tag {
+export function tagFaker(): Tag {
     return {
         id: faker.number.int(),
         name: faker.string.alpha()
@@ -430,7 +430,7 @@ export function tag(): Tag {
 import { faker } from "@faker-js/faker";
 import type { Order } from "../models";
 
-export function order(): Order {
+export function orderFaker(): Order {
     return {
         id: faker.number.int(),
         petId: faker.number.int(),
@@ -445,7 +445,7 @@ export function order(): Order {
 import { faker } from "@faker-js/faker";
 import type { User } from "../models";
 
-export function user(): User {
+export function userFaker(): User {
     return {
         id: faker.number.int(),
         username: faker.string.alpha(),
@@ -459,88 +459,75 @@ export function user(): User {
     }
 }
 
-export * from "./testdata";
-export * from "./test32145";
-export * from "./test3214";
-export * from "./sort";
-export * from "./testDto3";
-export * from "./testDto2";
-export * from "./test321";
-export * from "./testDto";
-export * from "./apiResponse";
-export * from "./refList";
-export * from "./category";
-export * from "./tag";
-export * from "./pet";
-export * from "./order";
-export * from "./user";
+export * from "./testdataFaker";
+export * from "./test32145.faker";
+export * from "./test3214.faker";
+export * from "./testdata.faker";
+export * from "./sort.faker";
+export * from "./test3214Faker";
+export * from "./testDto3.faker";
+export * from "./testDto3Faker";
+export * from "./testDto2.faker";
+export * from "./test321.faker";
+export * from "./test321Faker";
+export * from "./testDto.faker";
+export * from "./apiResponseFaker";
+export * from "./refList.faker";
+export * from "./apiResponse.faker";
+export * from "./category.faker";
+export * from "./categoryFaker";
+export * from "./tagFaker";
+export * from "./pet.faker";
+export * from "./tag.faker";
+export * from "./order.faker";
+export * from "./user.faker";
 "
 `;
 
 exports[`faker > getFullText 1`] = `
 "import { faker } from "@faker-js/faker";
-import { testDto2, test32145, apiResponse, pet } from "./fakerModels";
-import type { Pet } from "./Pet";
+import { testDto2Faker, test32145Faker, apiResponseFaker, petFaker } from "./faker-models";
+import type { Pet } from "./pet.type";
 
 /**
  * @tag pet
  * @description Everything about your Pets
- * @UUID Faker-pet
  */
 class PetFaker {
-    /**
-     * @summary summary
-     * @UUID operationIdpost
-     */
+    /** @summary summary */
     testPost(): NonNullable<Pet.TestPostMutationResponse> {
-        return testDto2()
+        return testDto2Faker()
     }
 
-    /**
-     * @summary summary
-     * @UUID operationIdput
-     */
+    /** @summary summary */
     testPut(): NonNullable<Pet.TestPutMutationResponse> {
-        return testDto2()
+        return testDto2Faker()
     }
 
-    /**
-     * @summary summary
-     * @UUID operationIddelete
-     */
+    /** @summary summary */
     delByTest(): NonNullable<Pet.DelByTestMutationResponse> {
-        return test32145()
+        return test32145Faker()
     }
 
-    /**
-     * @summary summary
-     * @UUID get/pet/test/{test-id}
-     */
+    /** @summary summary */
     testIdGet(): NonNullable<Pet.TestIdGetQueryResponse> {
-        return testDto2()
+        return testDto2Faker()
     }
 
     /**
      * @summary uploads an image
      * @description pet
-     * @UUID uploadFile
      */
     uploadImagePost(): NonNullable<Pet.UploadImagePostMutationResponse> {
-        return apiResponse()
+        return apiResponseFaker()
     }
 
-    /**
-     * @summary Add a new pet to the store
-     * @UUID addPet
-     */
+    /** @summary Add a new pet to the store */
     create(): NonNullable<Pet.CreateMutationResponse> {
         return {}
     }
 
-    /**
-     * @summary Update an existing pet
-     * @UUID updatePet
-     */
+    /** @summary Update an existing pet */
     update(): NonNullable<Pet.UpdateMutationResponse> {
         return {}
     }
@@ -548,10 +535,9 @@ class PetFaker {
     /**
      * @summary Finds Pets by status
      * @description Multiple status values can be provided with comma separated strings
-     * @UUID findPetsByStatus
      */
     findByStatusGet(): NonNullable<Pet.FindByStatusGetQueryResponse> {
-        return faker.helpers.multiple(() => pet(), {
+        return faker.helpers.multiple(() => petFaker(), {
             count: 10,
         })
     }
@@ -559,10 +545,9 @@ class PetFaker {
     /**
      * @summary Finds Pets by tags
      * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-     * @UUID findPetsByTags
      */
     findByTagsGet(): NonNullable<Pet.FindByTagsGetQueryResponse> {
-        return faker.helpers.multiple(() => pet(), {
+        return faker.helpers.multiple(() => petFaker(), {
             count: 10,
         })
     }
@@ -570,24 +555,17 @@ class PetFaker {
     /**
      * @summary Find pet by ID
      * @description Returns a single pet
-     * @UUID getPetById
      */
     findByPetId(): NonNullable<Pet.FindByPetIdQueryResponse> {
-        return pet()
+        return petFaker()
     }
 
-    /**
-     * @summary Updates a pet in the store with form data
-     * @UUID updatePetWithForm
-     */
+    /** @summary Updates a pet in the store with form data */
     petIdPost(): NonNullable<Pet.PetIdPostMutationResponse> {
         return {}
     }
 
-    /**
-     * @summary Deletes a pet
-     * @UUID deletePet
-     */
+    /** @summary Deletes a pet */
     delByPetId(): NonNullable<Pet.DelByPetIdMutationResponse> {
         return {}
     }
@@ -596,36 +574,30 @@ class PetFaker {
 export const petFaker = new PetFaker;
 
 import { faker } from "@faker-js/faker";
-import { testDto2, test32145, apiResponse, pet, order } from "./fakerModels";
-import type { Store } from "./Store";
+import { orderFaker } from "./faker-models";
+import type { Store } from "./store.type";
 
 /**
  * @tag store
  * @description Access to Petstore orders
- * @UUID Faker-store
  */
 class StoreFaker {
-    /**
-     * @summary Place an order for a pet
-     * @UUID placeOrder
-     */
+    /** @summary Place an order for a pet */
     create(): NonNullable<Store.CreateMutationResponse> {
-        return order()
+        return orderFaker()
     }
 
     /**
      * @summary Find purchase order by ID
      * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-     * @UUID getOrderById
      */
     findByOrderId(): NonNullable<Store.FindByOrderIdQueryResponse> {
-        return order()
+        return orderFaker()
     }
 
     /**
      * @summary Delete purchase order by ID
      * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-     * @UUID deleteOrder
      */
     delByOrderId(): NonNullable<Store.DelByOrderIdMutationResponse> {
         return {}
@@ -634,7 +606,6 @@ class StoreFaker {
     /**
      * @summary Returns pet inventories by status
      * @description Returns a map of status codes to quantities
-     * @UUID getInventory
      */
     inventoryGet(): NonNullable<Store.InventoryGetQueryResponse> {
         return {}
@@ -644,43 +615,32 @@ class StoreFaker {
 export const storeFaker = new StoreFaker;
 
 import { faker } from "@faker-js/faker";
-import { testDto2, test32145, apiResponse, pet, order, user } from "./fakerModels";
-import type { User } from "./User";
+import { userFaker } from "./faker-models";
+import type { User } from "./user.type";
 
 /**
  * @tag user
  * @description Operations about user
- * @UUID Faker-user
  */
 class UserFaker {
-    /**
-     * @summary Creates list of users with given input array
-     * @UUID createUsersWithArrayInput
-     */
+    /** @summary Creates list of users with given input array */
     createWithArrayPost(): NonNullable<User.CreateWithArrayPostMutationResponse> {
         return {}
     }
 
-    /**
-     * @summary Creates list of users with given input array
-     * @UUID createUsersWithListInput
-     */
+    /** @summary Creates list of users with given input array */
     createWithListPost(): NonNullable<User.CreateWithListPostMutationResponse> {
         return {}
     }
 
-    /**
-     * @summary Get user by user name
-     * @UUID getUserByName
-     */
+    /** @summary Get user by user name */
     findByUsername(): NonNullable<User.FindByUsernameQueryResponse> {
-        return user()
+        return userFaker()
     }
 
     /**
      * @summary Updated user
      * @description This can only be done by the logged in user.
-     * @UUID updateUser
      */
     usernamePut(): NonNullable<User.UsernamePutMutationResponse> {
         return {}
@@ -689,24 +649,17 @@ class UserFaker {
     /**
      * @summary Delete user
      * @description This can only be done by the logged in user.
-     * @UUID deleteUser
      */
     delByUsername(): NonNullable<User.DelByUsernameMutationResponse> {
         return {}
     }
 
-    /**
-     * @summary Logs user into the system
-     * @UUID loginUser
-     */
+    /** @summary Logs user into the system */
     loginGet(): NonNullable<User.LoginGetQueryResponse> {
         return
     }
 
-    /**
-     * @summary Logs out current logged in user session
-     * @UUID logoutUser
-     */
+    /** @summary Logs out current logged in user session */
     logoutGet(): NonNullable<User.LogoutGetQueryResponse> {
         return {}
     }
@@ -714,7 +667,6 @@ class UserFaker {
     /**
      * @summary Create user
      * @description This can only be done by the logged in user.
-     * @UUID createUser
      */
     create(): NonNullable<User.CreateMutationResponse> {
         return {}
@@ -723,22 +675,22 @@ class UserFaker {
 
 export const userFaker = new UserFaker;
 
-import { testdata } from "./testdata";
+import { testdataFaker } from "./testdataFaker";
 import { faker } from "@faker-js/faker";
 import type { Test32145 } from "../models";
 
-export function test32145(): Test32145 {
+export function test32145Faker(): Test32145 {
     return {
         /**this is description*/
         code: faker.number.int(),
-        meta: testdata()
+        meta: testdataFaker()
     }
 }
 
 import { faker } from "@faker-js/faker";
 import type { Test3214 } from "../models";
 
-export function test3214(): Test3214 {
+export function test3214Faker(): Test3214 {
     return {
         /**默认值*/
         columnDefault: faker.string.alpha(),
@@ -765,7 +717,7 @@ export function test3214(): Test3214 {
 import { faker } from "@faker-js/faker";
 import type { Testdata } from "../models";
 
-export function testdata(): Testdata {
+export function testdataFaker(): Testdata {
     return {
         /**this is description*/
         number: faker.number.int(),
@@ -781,7 +733,7 @@ export function testdata(): Testdata {
 import { faker } from "@faker-js/faker";
 import type { Sort } from "../models";
 
-export function sort(): Sort {
+export function sortFaker(): Sort {
     return {
         empty: faker.datatype.boolean(),
         sorted: faker.datatype.boolean(),
@@ -789,59 +741,59 @@ export function sort(): Sort {
     }
 }
 
-import { test3214 } from "./test3214";
+import { test3214Faker } from "./test3214Faker";
 import { faker } from "@faker-js/faker";
 import type { TestDto3 } from "../models";
 
-export function testDto3(): TestDto3 {
+export function testDto3Faker(): TestDto3 {
     return {
-        test3214: faker.helpers.multiple(() => test3214(), {
+        test3214: faker.helpers.multiple(() => test3214Faker(), {
             count: 10,
         })
     }
 }
 
-import { testDto3 } from "./testDto3";
-import { testdata } from "./testdata";
+import { testDto3Faker } from "./testDto3Faker";
+import { testdataFaker } from "./testdataFaker";
 import { faker } from "@faker-js/faker";
 import type { TestDto2 } from "../models";
 
-export function testDto2(): TestDto2 {
+export function testDto2Faker(): TestDto2 {
     return {
-        content: testDto3(),
-        meta: testdata()
+        content: testDto3Faker(),
+        meta: testdataFaker()
     }
 }
 
 import { faker } from "@faker-js/faker";
 import type { Test321 } from "../models";
 
-export function test321(): Test321 {
+export function test321Faker(): Test321 {
     return {
         id: faker.number.int()
     }
 }
 
-import { test321 } from "./test321";
+import { test321Faker } from "./test321Faker";
 import { faker } from "@faker-js/faker";
 import type { TestDto } from "../models";
 
-export function testDto(): TestDto {
+export function testDtoFaker(): TestDto {
     return {
         /**test321*/
-        test321: faker.helpers.multiple(() => test321(), {
+        test321: faker.helpers.multiple(() => test321Faker(), {
             count: 10,
         })
     }
 }
 
-import { apiResponse } from "./apiResponse";
+import { apiResponseFaker } from "./apiResponseFaker";
 import { faker } from "@faker-js/faker";
 import type { RefList } from "../models";
 
-export function refList(): RefList {
+export function refListFaker(): RefList {
     return {
-        content: apiResponse(),
+        content: apiResponseFaker(),
         /**string*/
         string: faker.string.alpha(),
         name: faker.string.alpha(),
@@ -855,7 +807,7 @@ export function refList(): RefList {
 import { faker } from "@faker-js/faker";
 import type { ApiResponse } from "../models";
 
-export function apiResponse(): ApiResponse {
+export function apiResponseFaker(): ApiResponse {
     return {
         code: faker.number.int(),
         type: faker.string.alpha(),
@@ -866,27 +818,27 @@ export function apiResponse(): ApiResponse {
 import { faker } from "@faker-js/faker";
 import type { Category } from "../models";
 
-export function category(): Category {
+export function categoryFaker(): Category {
     return {
         id: faker.number.int(),
         name: faker.string.alpha()
     }
 }
 
-import { category } from "./category";
-import { tag } from "./tag";
+import { categoryFaker } from "./categoryFaker";
+import { tagFaker } from "./tagFaker";
 import { faker } from "@faker-js/faker";
 import type { Pet } from "../models";
 
-export function pet(): Pet {
+export function petFaker(): Pet {
     return {
         id: faker.number.int(),
-        category: category(),
+        category: categoryFaker(),
         name: faker.string.alpha(),
         photoUrls: faker.helpers.multiple(() => faker.string.alpha(), {
             count: 10,
         }),
-        tags: faker.helpers.multiple(() => tag(), {
+        tags: faker.helpers.multiple(() => tagFaker(), {
             count: 10,
         }),
         /**pet status in the store*/
@@ -897,7 +849,7 @@ export function pet(): Pet {
 import { faker } from "@faker-js/faker";
 import type { Tag } from "../models";
 
-export function tag(): Tag {
+export function tagFaker(): Tag {
     return {
         id: faker.number.int(),
         name: faker.string.alpha()
@@ -907,7 +859,7 @@ export function tag(): Tag {
 import { faker } from "@faker-js/faker";
 import type { Order } from "../models";
 
-export function order(): Order {
+export function orderFaker(): Order {
     return {
         id: faker.number.int(),
         petId: faker.number.int(),
@@ -922,7 +874,7 @@ export function order(): Order {
 import { faker } from "@faker-js/faker";
 import type { User } from "../models";
 
-export function user(): User {
+export function userFaker(): User {
     return {
         id: faker.number.int(),
         username: faker.string.alpha(),
@@ -936,20 +888,27 @@ export function user(): User {
     }
 }
 
-export * from "./testdata";
-export * from "./test32145";
-export * from "./test3214";
-export * from "./sort";
-export * from "./testDto3";
-export * from "./testDto2";
-export * from "./test321";
-export * from "./testDto";
-export * from "./apiResponse";
-export * from "./refList";
-export * from "./category";
-export * from "./tag";
-export * from "./pet";
-export * from "./order";
-export * from "./user";
+export * from "./testdataFaker";
+export * from "./test32145.faker";
+export * from "./test3214.faker";
+export * from "./testdata.faker";
+export * from "./sort.faker";
+export * from "./test3214Faker";
+export * from "./testDto3.faker";
+export * from "./testDto3Faker";
+export * from "./testDto2.faker";
+export * from "./test321.faker";
+export * from "./test321Faker";
+export * from "./testDto.faker";
+export * from "./apiResponseFaker";
+export * from "./refList.faker";
+export * from "./apiResponse.faker";
+export * from "./category.faker";
+export * from "./categoryFaker";
+export * from "./tagFaker";
+export * from "./pet.faker";
+export * from "./tag.faker";
+export * from "./order.faker";
+export * from "./user.faker";
 "
 `;

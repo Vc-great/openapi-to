@@ -406,6 +406,12 @@ importers:
       '@openapi-to/eslint-config':
         specifier: workspace:*
         version: link:../config/eslint-config
+      '@openapi-to/plugin-ts-type':
+        specifier: workspace:*
+        version: link:../plugin-ts-type
+      '@openapi-to/plugin-zod':
+        specifier: workspace:*
+        version: link:../plugin-zod
       '@openapi-to/ts-config':
         specifier: workspace:*
         version: link:../config/ts-config
@@ -499,6 +505,15 @@ importers:
       '@openapi-to/eslint-config':
         specifier: workspace:*
         version: link:../config/eslint-config
+      '@openapi-to/plugin-ts-request':
+        specifier: workspace:*
+        version: link:../plugin-ts-request
+      '@openapi-to/plugin-ts-type':
+        specifier: workspace:*
+        version: link:../plugin-ts-type
+      '@openapi-to/plugin-zod':
+        specifier: workspace:*
+        version: link:../plugin-zod
       '@openapi-to/ts-config':
         specifier: workspace:*
         version: link:../config/ts-config
@@ -530,6 +545,12 @@ importers:
       '@openapi-to/eslint-config':
         specifier: workspace:*
         version: link:../config/eslint-config
+      '@openapi-to/plugin-ts-type':
+        specifier: workspace:*
+        version: link:../plugin-ts-type
+      '@openapi-to/plugin-zod':
+        specifier: workspace:*
+        version: link:../plugin-zod
       '@openapi-to/ts-config':
         specifier: workspace:*
         version: link:../config/ts-config

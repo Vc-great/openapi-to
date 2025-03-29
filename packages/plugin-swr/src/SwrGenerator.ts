@@ -2,9 +2,14 @@ import path from "node:path";
 
 import { pluginEnum } from "@openapi-to/core";
 import { URLPath } from "@openapi-to/core/utils";
+import { REQUEST_SUFFIX } from "@openapi-to/plugin-ts-request/src/constants.ts";
+import { TYPE_SUFFIX } from "@openapi-to/plugin-ts-type/src/constants.ts";
+import { ZOD_SUFFIX } from "@openapi-to/plugin-zod/src/constants.ts";
 
 import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
+
+import { SWR_SUFFIX } from "./constants.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
@@ -49,14 +54,18 @@ export class SwrGenerator {
   }
 
   get lowerFirstFileName(): string {
-    return _.lowerFirst(this.openapi.currentTagNameOfPinYin + ".swr");
+    return _.lowerFirst(this.openapi.currentTagNameOfPinYin + "." + SWR_SUFFIX);
   }
   get lowerFirsSWRKeyName(): string {
-    return _.lowerFirst(this.openapi.currentTagNameOfPinYin + "SWRKey");
+    return _.lowerFirst(
+      this.openapi.currentTagNameOfPinYin + _.toUpper(SWR_SUFFIX) + "Key",
+    );
   }
 
   get lowerFirstSWRName(): string {
-    return _.lowerFirst(this.openapi.currentTagNameOfPinYin + "SWR");
+    return _.lowerFirst(
+      this.openapi.currentTagNameOfPinYin + _.toUpper(SWR_SUFFIX),
+    );
   }
 
   get swrNamespaceTypeName(): string {
@@ -71,8 +80,8 @@ export class SwrGenerator {
 
   get lowerFirstNamespaceTypeName(): string {
     return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod)
-      ? _.lowerFirst(this.openapi.currentTagNameOfPinYin) + ".schema"
-      : _.lowerFirst(this.openapi.currentTagNameOfPinYin) + ".type";
+      ? _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + ZOD_SUFFIX
+      : _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX;
   }
 
   get responseDataType(): string {
@@ -133,11 +142,13 @@ export class SwrGenerator {
   //upperFirstQueryKeyNameOfNameSpace
 
   get serviceName(): string {
-    return `${this.openapi.currentTagNameOfPinYin}Service`;
+    return (
+      `${this.openapi.currentTagNameOfPinYin}` + _.upperFirst(REQUEST_SUFFIX)
+    );
   }
 
   get serviceFileName(): string {
-    return `${this.openapi.currentTagNameOfPinYin}.service`;
+    return `${this.openapi.currentTagNameOfPinYin}.${REQUEST_SUFFIX}`;
   }
 
   build(context: PluginContext): void {

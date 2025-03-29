@@ -6,11 +6,11 @@ import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
-import { zodSuffix } from "./utils/suffix.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Component } from "./Component.ts";
-import { useEnumCache } from "./EnumCache.ts";
+import { EnumGenerator } from "./EnumGenerator.ts";
 import { Schema } from "./Schema.ts";
+import { fileAddSuffix, refAddSuffix, zodNameAddSuffix } from "./utils.ts";
 import { Zod } from "./zod.ts";
 
 import type { ObjectStructure } from "@openapi-to/core";
@@ -21,7 +21,6 @@ import type {
   ImportDeclarationStructure,
   ModuleDeclarationStructure,
 } from "ts-morph";
-import type { EnumCache } from "./EnumCache.ts";
 import type { Config } from "./types.ts";
 import type { ZodOldNode } from "./ZodOldNode.ts";
 
@@ -40,13 +39,12 @@ type ResponseObject = {
 export class ZodGenerator {
   private operation: Operation | undefined;
   private oas: Config["oas"];
-  private readonly paramsZodSchema: string;
   private readonly openapi: Config["openapi"];
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private enumCache: EnumCache = useEnumCache();
-  private importCache: Set<string> = new Set<string>();
+
+  private enumGenerator: EnumGenerator;
   private component: Component;
   private schema: Schema;
   private oldNode: ZodOldNode;
@@ -58,10 +56,10 @@ export class ZodGenerator {
     this.pluginConfig = config.pluginConfig;
     this.openapiToSingleConfig = config.openapiToSingleConfig;
     this.openapi = config.openapi;
-    this.paramsZodSchema = "paramsZodSchema";
     this.component = new Component(config);
     this.schema = new Schema(config);
     this.oldNode = config.oldNode;
+    this.enumGenerator = EnumGenerator.getInstance(config);
   }
 
   get compare(): boolean {
@@ -80,24 +78,18 @@ export class ZodGenerator {
     return _.upperFirst(this.openapi.currentTagNameOfPinYin);
   }
 
-  get zodNameSpaceName(): string {
-    return this.openapi.currentTagNameOfPinYin + "Schema";
-  }
-
-  get zodFileName(): string {
-    return this.openapi.currentTagNameOfPinYin + ".schema";
-  }
-
   build(): void {
     _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
       this.oldNode.setCurrentSourceFile(UUIDPrefix + _.camelCase(tag));
+      this.enumGenerator.setPrefix(this.typeNameSpaceName);
+
       const statements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);
           return _.chain([] as Array<any | null>)
             .concat(this.generateParametersType())
             .concat(this.generateRequestBodyType())
-            .concat(this.generateResponseType())
+            .concat(this.generateCodeByResponse())
             .filter(Boolean)
             .value() as Array<VariableStatementStructure>;
         })
@@ -107,7 +99,8 @@ export class ZodGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.zodFileName + ".ts",
+        this.oldNode.baseName ||
+          fileAddSuffix(this.openapi.currentTagNameOfPinYin) + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -115,6 +108,7 @@ export class ZodGenerator {
       this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(refKey),
+          ...this.enumGenerator.generateEnum(),
           ...statements,
           this.generateZod(statements),
           this.generateNameSpace(statements),
@@ -123,125 +117,9 @@ export class ZodGenerator {
 
       this.openapi.resetRefCache();
     });
-    this.component.generateComponentType();
-    this.generateEnum();
+    this.enumGenerator.resetPrefix();
+    this.component.generateCodeByComponent();
     this.component.generateModelIndex();
-  }
-
-  /**
-   * @example
-   * ```
-   * export const enum TaskStatus {
-   *     WAIT_START = 'WAIT_START',
-   *     PROCESSING = 'PROCESSING',
-   *     FINISHED = 'FINISHED',
-   * }
-   *
-   * export const enum TaskStatusLabel {
-   *     WAIT_START:'WAIT_START',
-   *     PROCESSING = 'PROCESSING',
-   *     FINISHED = 'FINISHED',
-   * }
-   *
-   * export const taskStatusOption = [
-   *     { label: TaskStatusLabel.WAIT_START, value: TaskStatus.WAIT_START },
-   *     { label: TaskStatusLabel.PROCESSING, value: TaskStatus.PROCESSING },
-   *     { label: TaskStatusLabel.FINISHED, value: TaskStatus.FINISHED },
-   * ];
-   * ```
-   */
-  generateEnum(): void {
-    //
-    const labelStatements = _.chain(this.enumCache.entries())
-      .map(([schema, name]) => {
-        return this.ast.generateVariableStatements({
-          declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
-          declarations: [
-            {
-              name: _.upperFirst(_.camelCase(name)) + "Label",
-              initializer: this.ast.generateObject(
-                ((schema.enum || []) as Array<string>).reduce(
-                  (obj, item: string) => {
-                    const key: string = _.upperFirst(_.camelCase(item));
-                    obj[key] = "''";
-                    return obj;
-                  },
-                  {} as { [key: string]: string },
-                ),
-              ),
-            },
-          ],
-          docs: schema.description ? [{ description: schema.description }] : [],
-        });
-      })
-      .value();
-
-    //enum
-    const valueStatements = _.chain(this.enumCache.entries())
-      .map(([schema, name]) => {
-        return this.ast.generateEnumStatement({
-          isConst: true,
-          name: _.upperFirst(_.camelCase(name)),
-          members: (schema.enum || []).map((item: string) => {
-            return {
-              name: _.upperFirst(_.camelCase(item)),
-              value: item,
-            };
-          }),
-          docs: schema.description
-            ? [
-                {
-                  description: schema.description,
-                },
-              ]
-            : [],
-        });
-      })
-      .value();
-
-    // option
-    const optionStatements = _.chain(this.enumCache.entries())
-      .map(([schema, name]) => {
-        return this.ast.generateVariableStatements({
-          declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
-          declarations: [
-            {
-              name: name + "Option",
-              initializer:
-                "[" +
-                (schema.enum || []).reduce((arr, item: string) => {
-                  const obj = this.ast.generateObject({
-                    label:
-                      _.upperFirst(_.camelCase(name)) +
-                      "Label" +
-                      "." +
-                      _.upperFirst(_.camelCase(item)),
-                    value:
-                      _.upperFirst(_.camelCase(name)) +
-                      "." +
-                      _.upperFirst(_.camelCase(item)),
-                  });
-                  return arr + (arr ? "," : "") + obj;
-                }, "") +
-                "]",
-            },
-          ],
-          docs: schema.description ? [{ description: schema.description }] : [],
-        });
-      })
-      .value();
-
-    const enumPath = path.resolve(
-      this.openapiToSingleConfig.output.dir || "",
-      this.modelFolderName,
-      "enum" + ".ts",
-    );
-
-    this.ast.createSourceFile(enumPath, {
-      statements: [...labelStatements, ...valueStatements, ...optionStatements],
-    });
   }
 
   /**
@@ -256,10 +134,7 @@ export class ZodGenerator {
     importModel: Array<string>,
   ): Array<ImportDeclarationStructure> {
     const model = _.chain(importModel)
-      .map(
-        ($ref: string) =>
-          this.openapi.getRefAlias($ref) + _.upperFirst(zodSuffix),
-      )
+      .map(($ref: string) => refAddSuffix(this.openapi.getRefAlias($ref)))
       .value();
 
     const typeModel: ImportStatementsOmitKind = {
@@ -351,7 +226,9 @@ export class ZodGenerator {
       isExported: true,
       declarations: [
         {
-          name: this.oldNode.zodNameSpaceName ?? this.zodNameSpaceName,
+          name:
+            this.oldNode.zodNameSpaceName ??
+            zodNameAddSuffix(this.openapi.currentTagNameOfPinYin),
           initializer: this.ast.generateObject$2(objectStructure),
         },
       ],
@@ -381,6 +258,7 @@ export class ZodGenerator {
   }
 
   generateParametersType(): Array<VariableStatementStructure> {
+    const queryParamsName = this.openapi.requestName + "QueryParams";
     const queryParamsSchema =
       this.openapi.parameter?.getParametersSchema("query") || [];
     const queryStatements = this.ast.generateVariableStatements({
@@ -399,10 +277,13 @@ export class ZodGenerator {
       ],
       declarations: [
         {
-          name: this.openapi.requestName + "QueryParams",
+          name: queryParamsName,
           initializer: _.isEmpty(queryParamsSchema)
             ? this.z.head().unknown().optional().toString()
-            : this.schema.getZodFromSchema(queryParamsSchema),
+            : this.schema.getZodFromSchema(
+                queryParamsSchema,
+                this.typeNameSpaceName + _.upperFirst(queryParamsName),
+              ),
         },
       ],
     });
@@ -410,6 +291,7 @@ export class ZodGenerator {
     const pathParamsSchema =
       this.openapi.parameter?.getParametersSchema("path") || [];
 
+    const pathParamsName = this.openapi.requestName + "PathParams";
     const pathStatements = this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: true,
@@ -426,10 +308,13 @@ export class ZodGenerator {
       ],
       declarations: [
         {
-          name: this.openapi.requestName + "PathParams",
+          name: pathParamsName,
           initializer: _.isEmpty(pathParamsSchema)
             ? this.z.head().unknown().toString()
-            : this.schema.getZodFromSchema(pathParamsSchema),
+            : this.schema.getZodFromSchema(
+                pathParamsSchema,
+                this.typeNameSpaceName + _.upperFirst(pathParamsName),
+              ),
         },
       ],
     });
@@ -441,7 +326,7 @@ export class ZodGenerator {
       .value();
   }
 
-  generateResponseType(): Array<VariableStatementStructure> {
+  generateCodeByResponse(): Array<VariableStatementStructure> {
     const codes = this.openapi.response?.getResponseStatusCodes || [];
 
     const successCode = (codes || []).filter((code) =>
@@ -556,9 +441,7 @@ export class ZodGenerator {
             name: name,
             initializer: this.z
               .head()
-              .lazy(
-                this.openapi.getRefAlias(schema.$ref) + _.upperFirst(zodSuffix),
-              )
+              .lazy(refAddSuffix(this.openapi.getRefAlias(schema.$ref)))
               .toString(),
           },
         ],
@@ -585,7 +468,10 @@ export class ZodGenerator {
         declarations: [
           {
             name: name,
-            initializer: this.schema.formatterSchemaType(schema),
+            initializer: this.schema.formatterSchemaType(
+              schema,
+              this.typeNameSpaceName + _.upperFirst(jsonSchema?.label),
+            ),
           },
         ],
       });
@@ -646,10 +532,7 @@ export class ZodGenerator {
               name: this.openapi.bodyDataName,
               initializer: this.z
                 .head()
-                .lazy(
-                  this.openapi.getRefAlias(schema.$ref) +
-                    _.upperFirst(zodSuffix),
-                )
+                .lazy(refAddSuffix(this.openapi.getRefAlias(schema.$ref)))
                 .toString(),
             },
           ],
@@ -668,7 +551,10 @@ export class ZodGenerator {
           declarations: [
             {
               name: this.openapi.bodyDataName,
-              initializer: this.schema.formatterSchemaType(schema),
+              initializer: this.schema.formatterSchemaType(
+                schema,
+                this.typeNameSpaceName + "BodyData",
+              ),
             },
           ],
         }),

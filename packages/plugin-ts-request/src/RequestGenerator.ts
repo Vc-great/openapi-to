@@ -2,10 +2,13 @@ import path from "node:path";
 
 import { pluginEnum } from "@openapi-to/core";
 import { URLPath, UUID_TAG_NAME } from "@openapi-to/core/utils";
+import { TYPE_SUFFIX } from "@openapi-to/plugin-ts-type/src/constants.ts";
+import { ZOD_SUFFIX } from "@openapi-to/plugin-zod/src/constants.ts";
 
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
+import { REQUEST_SUFFIX } from "./constants.ts";
 import { RequestOldNode } from "./RequestOldNode.ts";
 import { RequestTypeEnum } from "./types.ts";
 
@@ -81,7 +84,8 @@ export class RequestGenerator {
   get className(): string {
     return (
       this.oldNode.classDeclaration?.getName() ??
-      _.upperFirst(this.openapi.currentTagNameOfPinYin) + "Service"
+      _.upperFirst(this.openapi.currentTagNameOfPinYin) +
+        _.upperFirst(REQUEST_SUFFIX)
     );
   }
 
@@ -92,7 +96,7 @@ export class RequestGenerator {
   get fileName(): string {
     return (
       this.oldNode.classDeclaration?.getName() ??
-      _.upperFirst(this.openapi.currentTagNameOfPinYin) + ".service"
+      _.upperFirst(this.openapi.currentTagNameOfPinYin) + "." + REQUEST_SUFFIX
     );
   }
 
@@ -106,21 +110,21 @@ export class RequestGenerator {
   get lowerFirstTypeFileName(): string {
     return (
       this.oldNode.typeNamespace.namedImport ||
-      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + ".type"
+      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX
     );
   }
 
   get zodTypeName(): string {
     return (
       this.oldNode.zodNamespace.namedImport ||
-      this.openapi.currentTagNameOfPinYin + "Schema"
+      this.openapi.currentTagNameOfPinYin + _.upperFirst(ZOD_SUFFIX)
     );
   }
 
   get zodFileName(): string {
     return (
       this.oldNode.zodNamespace.namedImport ||
-      this.openapi.currentTagNameOfPinYin + ".schema"
+      this.openapi.currentTagNameOfPinYin + "." + ZOD_SUFFIX
     );
   }
 

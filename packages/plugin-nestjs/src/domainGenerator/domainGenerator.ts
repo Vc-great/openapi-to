@@ -78,14 +78,16 @@ export class DomainGenerator extends NestjsGenerator {
             leadingTrivia: "\n",
             kind: StructureKind.PropertySignature,
             name: item.name,
-            type: this.schema.getSchemaType(schema),
+            type: schema ? this.schema.getSchemaType(schema) : "unknown",
             hasQuestionToken: !item.required,
-            initializer: JSON.stringify(schema.default),
+            initializer: JSON.stringify(schema?.default) || "",
             decorators: [
               ...validatorDecorator,
-              ...this.swaggerGenerator.generatorDecoratorFromParameterObject(
-                item,
-              ),
+              ...(item
+                ? this.swaggerGenerator.generatorDecoratorFromParameterObject(
+                    item,
+                  )
+                : []),
             ].filter(Boolean),
           };
         })

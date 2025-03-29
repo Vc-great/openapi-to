@@ -3,12 +3,14 @@ import path from "node:path";
 import { UUID_TAG_NAME } from "@openapi-to/core/utils";
 
 import _ from "lodash";
-import { VariableDeclarationKind } from "ts-morph";
 
-import { modelFolderName } from "./utils/modelFolderName.ts";
-import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
 import { Component } from "./Component.ts";
-import { useEnumCache } from "./EnumCache.ts";
+import {
+  TYPE_MODEL_FOLDER_NAME,
+  TYPE_SUFFIX,
+  UUID_PREFIX,
+} from "./constants.ts";
+import { EnumGenerator } from "./EnumGenerator.ts";
 import { Schema } from "./Schema.ts";
 
 import type { Operation } from "oas/operation";
@@ -19,7 +21,6 @@ import type {
   ModuleDeclarationStructure,
   TypeAliasDeclarationStructure,
 } from "ts-morph";
-import type { EnumCache } from "./EnumCache.ts";
 import type { TypeOldNode } from "./TypeOldNode.ts";
 import type { Config } from "./types.ts";
 type TypeStatements =
@@ -45,11 +46,11 @@ export class TypeGenerator {
   private readonly ast: Config["ast"];
   private readonly pluginConfig: Config["pluginConfig"];
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private enumCache: EnumCache = useEnumCache();
+  private enumGenerator: EnumGenerator;
   private importCache: Set<string> = new Set<string>();
   private component: Component;
   private schema: Schema;
-  private readonly modelFolderName: string = modelFolderName;
+  private readonly modelFolderName: string = TYPE_MODEL_FOLDER_NAME;
   private oldNode: TypeOldNode;
   constructor(config: Config) {
     this.oas = config.oas;
@@ -61,6 +62,7 @@ export class TypeGenerator {
     this.schema = new Schema(config);
     this.oldNode = config.oldNode;
     this.component = new Component(config);
+    this.enumGenerator = EnumGenerator.getInstance(config);
   }
 
   get compare(): boolean {
@@ -68,29 +70,33 @@ export class TypeGenerator {
   }
 
   get namespaceUUID(): string {
-    return UUIDPrefix + this.openapi.currentTagNameOfPinYin;
+    return UUID_PREFIX + this.openapi.currentTagNameOfPinYin;
   }
   get nameSpaceName(): string {
     return _.upperFirst(this.openapi.currentTagNameOfPinYin);
   }
 
-  get lowerFirstNameSpaceName(): string {
-    return _.lowerFirst(this.openapi.currentTagNameOfPinYin) + ".type";
+  get fileName(): string {
+    return (
+      this.oldNode.baseName ||
+      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX
+    );
   }
 
   build(): void {
     _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
-      this.oldNode.setCurrentSourceFile(UUIDPrefix + _.camelCase(tag));
-
+      this.oldNode.setCurrentSourceFile(UUID_PREFIX + _.camelCase(tag));
+      this.enumGenerator.setPrefix(this.nameSpaceName);
       const typeStatements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);
+
           return _.chain([] as Array<TypeStatements | null>)
             .concat(this.generateParametersType())
             .concat(this.generateRequestBodyType())
-            .concat(this.generateResponseType())
+            .concat(this.generateCodeByResponse())
             .filter(Boolean)
-            .value() as Array<TypeStatements>;
+            .value();
         })
         .flatten()
         .filter((x) => !_.isEmpty(x))
@@ -98,7 +104,7 @@ export class TypeGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.lowerFirstNameSpaceName + ".ts",
+        this.fileName + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -106,151 +112,18 @@ export class TypeGenerator {
       this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(refKey),
+          ...this.enumGenerator.generateEnum(),
           this.generateNameSpace(typeStatements),
         ],
       });
 
       this.openapi.resetRefCache();
     });
-    this.component.generateComponentType();
-    this.generateEnum();
+
+    this.enumGenerator.resetPrefix();
+    this.component.generateCodeByComponent();
+
     this.component.generateModelIndex();
-  }
-
-  /**
-   * @example
-   * ```
-   * export const enum TaskStatus {
-   *     WAIT_START = 'WAIT_START',
-   *     PROCESSING = 'PROCESSING',
-   *     FINISHED = 'FINISHED',
-   * }
-   *
-   * export const enum TaskStatusLabel {
-   *     WAIT_START:'WAIT_START',
-   *     PROCESSING = 'PROCESSING',
-   *     FINISHED = 'FINISHED',
-   * }
-   *
-   * export const taskStatusOption = [
-   *     { label: TaskStatusLabel.WAIT_START, value: TaskStatus.WAIT_START },
-   *     { label: TaskStatusLabel.PROCESSING, value: TaskStatus.PROCESSING },
-   *     { label: TaskStatusLabel.FINISHED, value: TaskStatus.FINISHED },
-   * ];
-   * ```
-   */
-  generateEnum(): void {
-    //
-    const labelStatements = _.chain(this.enumCache.entries())
-      .map(([schema, name]) => {
-        return this.ast.generateVariableStatements({
-          declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
-          declarations: [
-            {
-              name: _.upperFirst(_.camelCase(name)) + "Label",
-              initializer: this.ast.generateObject(
-                ((schema.enum || []) as Array<string>).reduce(
-                  (obj, item: string) => {
-                    const key: string = _.upperFirst(_.camelCase(item));
-                    obj[key] = "''";
-                    return obj;
-                  },
-                  {} as { [key: string]: string },
-                ),
-              ),
-            },
-          ],
-          docs: schema.description
-            ? [
-                {
-                  tags: [
-                    {
-                      leadingTrivia: "\n",
-                      tagName: "description",
-                      text: schema.description,
-                    },
-                  ],
-                },
-              ]
-            : [],
-        });
-      })
-      .value();
-
-    //enum
-    const valueStatements = _.chain(this.enumCache.entries())
-      .map(([schema, name]) => {
-        return this.ast.generateEnumStatement({
-          isConst: true,
-          name: _.upperFirst(_.camelCase(name)),
-          members: (schema.enum || []).map((item: string) => {
-            return {
-              name: _.upperFirst(_.camelCase(item)),
-              value: item,
-            };
-          }),
-          docs: schema.description
-            ? [
-                {
-                  tags: [
-                    {
-                      leadingTrivia: "\n",
-                      tagName: "description",
-                      text: schema.description,
-                    },
-                  ],
-                },
-              ]
-            : [],
-        });
-      })
-      .value();
-
-    // option
-    const optionStatements = _.chain(this.enumCache.entries())
-      .map(([schema, name]) => {
-        return this.ast.generateVariableStatements({
-          declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
-          declarations: [
-            {
-              name: name + "Option",
-              initializer:
-                "[" +
-                (schema.enum || []).reduce((arr, item: string) => {
-                  const obj = this.ast.generateObject({
-                    label:
-                      _.upperFirst(_.camelCase(name)) +
-                      "Label" +
-                      "." +
-                      _.upperFirst(_.camelCase(item)),
-                    value:
-                      _.upperFirst(_.camelCase(name)) +
-                      "." +
-                      _.upperFirst(_.camelCase(item)),
-                  });
-                  return arr + (arr ? "," : "") + obj;
-                }, "") +
-                "]",
-            },
-          ],
-          docs: [{ description: schema.description || "" }].filter(
-            (x) => x.description,
-          ),
-        });
-      })
-      .value();
-
-    const enumPath = path.resolve(
-      this.openapiToSingleConfig.output.dir || "",
-      this.modelFolderName,
-      "enum" + ".ts",
-    );
-
-    this.ast.createSourceFile(enumPath, {
-      statements: [...labelStatements, ...valueStatements, ...optionStatements],
-    });
   }
 
   /**
@@ -267,7 +140,7 @@ export class TypeGenerator {
     const model = _.chain(importModel)
       .map(($ref: string) => {
         const name = _.upperFirst(this.openapi.getRefAlias($ref));
-        const UUID = UUIDPrefix + name;
+        const UUID = UUID_PREFIX + name;
         const declaration = this.oldNode.declarationCache.get(UUID);
         return declaration?.getName() ?? name;
       })
@@ -280,7 +153,7 @@ export class TypeGenerator {
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
-      .push(typeModel)
+      .concat(_.isEmpty(model) ? [] : typeModel)
       .filter(Boolean)
       .value();
 
@@ -330,9 +203,13 @@ export class TypeGenerator {
   generateParametersType(): Array<
     InterfaceDeclarationStructure | TypeAliasDeclarationStructure
   > {
+    if (this.openapi.upperFirstRequestName === "FindByStatusGet") {
+      //debugger;
+    }
+    const queryParamsName = this.openapi.upperFirstRequestName + "QueryParams";
     const queryStatements = this.ast.generateInterfaceStatements({
       isExported: true,
-      name: this.openapi.upperFirstRequestName + "QueryParams",
+      name: queryParamsName,
       docs: [
         {
           tags: [
@@ -347,12 +224,13 @@ export class TypeGenerator {
       properties:
         this.schema.getBaseTypeFromSchema(
           this.openapi.parameter?.getParametersSchema("query") || null,
+          this.nameSpaceName + queryParamsName,
         ) || [],
     });
-
+    const pathParamsName = this.openapi.upperFirstRequestName + "PathParams";
     const pathStatements = this.ast.generateInterfaceStatements({
       isExported: true,
-      name: this.openapi.upperFirstRequestName + "PathParams",
+      name: pathParamsName,
       docs: [
         {
           tags: [
@@ -367,6 +245,7 @@ export class TypeGenerator {
       properties:
         this.schema.getBaseTypeFromSchema(
           this.openapi.parameter?.getParametersSchema("path") || null,
+          this.nameSpaceName + pathParamsName,
         ) || [],
     });
     //[mediaType, bodySchema, description]
@@ -382,7 +261,7 @@ export class TypeGenerator {
       .value();
   }
 
-  generateResponseType(): Array<
+  generateCodeByResponse(): Array<
     InterfaceDeclarationStructure | TypeAliasDeclarationStructure
   > {
     const codes = this.openapi.response?.getResponseStatusCodes || [];
@@ -500,7 +379,10 @@ export class TypeGenerator {
 
     return this.ast.generateTypeAliasStatements({
       name,
-      type: this.schema.formatterSchemaType(schema),
+      type: this.schema.formatterSchemaType(
+        schema,
+        this.nameSpaceName + _.upperFirst(jsonSchema?.label),
+      ),
       docs: description
         ? [
             {
@@ -552,7 +434,10 @@ export class TypeGenerator {
       return [
         this.ast.generateTypeAliasStatements({
           name: this.openapi.upperFirstBodyDataName,
-          type: this.schema.formatterSchemaType(schema),
+          type: this.schema.formatterSchemaType(
+            schema,
+            this.nameSpaceName + "BodyData",
+          ),
           docs: schema.description
             ? [
                 {

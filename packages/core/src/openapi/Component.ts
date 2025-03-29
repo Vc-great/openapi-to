@@ -1,12 +1,14 @@
+import isChinese from "is-chinese";
 import _ from "lodash";
+import { pinyin } from "pinyin-pro";
+
+import { removePunctuation } from "../utils/removePunctuation.ts";
 
 import type Oas from "oas";
 import type { MediaTypeObject } from "oas/types";
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { OpenAPI } from "./OpenAPI.ts";
-import isChinese from "is-chinese";
-import { pinyin } from "pinyin-pro";
 
 type RequestBodies = {
   [key: string]:
@@ -35,8 +37,11 @@ export class Component {
   get schemas() {
     return _.mapKeys(this.oas.api.components?.schemas, (value, key) => {
       return isChinese(key)
-        ? pinyin(key, { toneType: "none", type: "array" }).join()
-        : key;
+        ? pinyin(removePunctuation(key), {
+            toneType: "none",
+            type: "array",
+          }).join("_")
+        : _.camelCase(key);
     });
   }
   get requestBodyObject(): RequestBodyObject | null {

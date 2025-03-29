@@ -6,9 +6,11 @@ import _ from "lodash";
 import { StructureKind, VariableDeclarationKind } from "ts-morph";
 
 import { modelFolderName } from "./utils/modelFolderName.ts";
-import { zodSuffix } from "./utils/suffix.ts";
 import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
+import { ZOD_SUFFIX } from "./constants.ts";
+import { EnumGenerator } from "./EnumGenerator.ts";
 import { Schema } from "./Schema.ts";
+import { fileAddSuffix, refAddSuffix, zodNameAddSuffix } from "./utils.ts";
 import { Zod } from "./zod.ts";
 
 import type { PluginContext } from "@openapi-to/core";
@@ -26,9 +28,9 @@ export class Component {
   private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
   private readonly modelFolderName: string = modelFolderName;
   private context: PluginContext | null = null;
-  private modelIndex: Set<string> = new Set<string>(["enum"]);
+  private modelIndex: Set<string> = new Set<string>();
   private schema: Schema;
-
+  private enumGenerator: EnumGenerator;
   constructor(config: Config) {
     this.oas = config.oas;
     this.ast = config.ast;
@@ -37,6 +39,8 @@ export class Component {
     this.openapi = config.openapi;
     this.schema = new Schema(config);
     this.oldNode = config.oldNode;
+
+    this.enumGenerator = EnumGenerator.getInstance(config);
   }
 
   get z(): Zod {
@@ -54,62 +58,62 @@ export class Component {
    *
    * ```
    */
-  generateComponentType(): void {
+  generateCodeByComponent(): void {
     //todo requestBodies
     //this.generateComponentObjectType(this.openapi.component.requestBodyObject);
     _.forEach(this.openapi.component.schemas, (schema, key) => {
-      const name = key + _.upperFirst(zodSuffix);
       if (this.openapi.isReference(schema)) {
-        this.generateComponentRefType(schema, name);
+        this.generateCodeByComponentRef(schema, key);
         return;
       }
 
-      this.generateComponentSchemaType(schema, name);
+      this.generateCodeByComponentSchema(schema, key);
     });
   }
 
-  generateComponentRefType(
+  generateCodeByComponentRef(
     schema: OpenAPIV3.ReferenceObject,
-    typeName: string,
+    key: string,
   ): void {
-    const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
-    const upperFirstRefName = _.upperFirst(
-      this.openapi.getRefAlias(schema.$ref),
-    );
-    const UUID = UUIDPrefix + upperFirstTypeName + "-" + upperFirstRefName;
+    //    const name = key + _.upperFirst(ZOD_SUFFIX);
+    const name = zodNameAddSuffix(key);
+    const refName = refAddSuffix(this.openapi.getRefAlias(schema.$ref));
+    const UUID = UUIDPrefix + name + "-" + refName;
     const variableDeclaration = this.oldNode.variableDeclarationCache.get(UUID);
-
+    const statements = [
+      ...this.ast.generateImportStatements([
+        {
+          namedImports: ["z"],
+          isTypeOnly: false,
+          moduleSpecifier: `zod`,
+        },
+        {
+          namedImports: [variableDeclaration?.getName() ?? refName],
+          isTypeOnly: false,
+          moduleSpecifier: `/${this.modelFolderName}/index`,
+        },
+      ]),
+      this.ast.generateVariableStatements({
+        declarationKind: VariableDeclarationKind.Const,
+        isExported: true,
+        declarations: [
+          {
+            name: variableDeclaration?.getName() ?? name,
+            initializer: this.z
+              .head()
+              .lazy(variableDeclaration?.getName() ?? refName)
+              .toString(),
+          },
+        ],
+        docs: [],
+      }),
+    ];
     this.createModelSourceFile(
-      [
-        ...this.ast.generateImportStatements([
-          {
-            namedImports: ["z"],
-            isTypeOnly: false,
-            moduleSpecifier: `zod`,
-          },
-          {
-            namedImports: [variableDeclaration?.getName() ?? upperFirstRefName],
-            isTypeOnly: false,
-            moduleSpecifier: `/${this.modelFolderName}/index`,
-          },
-        ]),
-        this.ast.generateVariableStatements({
-          declarationKind: VariableDeclarationKind.Const,
-          isExported: true,
-          declarations: [
-            {
-              name: variableDeclaration?.getName() ?? upperFirstTypeName,
-              initializer: this.z
-                .head()
-                .lazy(variableDeclaration?.getName() ?? upperFirstRefName)
-                .toString(),
-            },
-          ],
-          docs: [], //[{ description: "" }],
-        }),
-      ],
-      variableDeclaration?.getName() ?? upperFirstTypeName,
+      statements,
+      variableDeclaration?.getName() ?? name,
     );
+    //
+    this.setModelIndexStatements(statements);
   }
 
   createModelSourceFile(
@@ -123,11 +127,9 @@ export class Component {
 
     this.ast.createSourceFile(filePath, {
       //...(this.generateModelImport() || [])
+      ...this.enumGenerator.generateEnum(),
       statements,
     });
-
-    //
-    this.setModelIndexStatements(statements);
   }
 
   setModelIndexStatements(statements: Array<StatementStructures>): void {
@@ -145,26 +147,31 @@ export class Component {
 
   generateModelIndex(): void {
     const statements = _.chain([...this.modelIndex])
-      .map((name) =>
-        this.ast.generateExportStatements({
-          moduleSpecifier: "./" + name,
-        }),
-      )
+      .map((name) => {
+        const fileName = name.endsWith(_.upperFirst(ZOD_SUFFIX))
+          ? name.replace(_.upperFirst(ZOD_SUFFIX), "")
+          : name;
+
+        return this.ast.generateExportStatements({
+          moduleSpecifier: "./" + fileAddSuffix(fileName),
+        });
+      })
       .value();
 
     this.createModelSourceFile(statements, "index");
+    //
+    this.setModelIndexStatements(statements);
   }
 
   /**
    * schema type
    * @param schema
-   * @param typeName
+   * @param key
    */
-  generateComponentSchemaType(schema: SchemaObject, typeName: string): void {
+  generateCodeByComponentSchema(schema: SchemaObject, key: string): void {
     this.openapi.resetRefCache();
-
-    const upperFirstTypeName = _.upperFirst(_.camelCase(typeName));
-    const UUID = UUIDPrefix + upperFirstTypeName;
+    const zodName = zodNameAddSuffix(key);
+    const UUID = UUIDPrefix + key;
     const variableDeclaration = this.oldNode.variableDeclarationCache.get(UUID);
 
     const schemaStatements = this.ast.generateVariableStatements({
@@ -172,8 +179,8 @@ export class Component {
       isExported: true,
       declarations: [
         {
-          name: variableDeclaration?.getName() ?? _.camelCase(typeName),
-          initializer: this.schema.getZodFromSchema(schema),
+          name: variableDeclaration?.getName() ?? zodName,
+          initializer: this.schema.getZodFromSchema(schema, key),
         },
       ],
       docs: [
@@ -194,7 +201,7 @@ export class Component {
               : []),
           ].filter((x) => x.text),
         },
-      ],
+      ].filter((x) => x.tags.some((y) => y.text)),
     });
 
     const zodImport = this.ast.generateImportStatements([
@@ -207,26 +214,34 @@ export class Component {
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
-        const UUID = UUIDPrefix + _.camelCase(this.openapi.getRefAlias(ref));
+        const UUID = UUIDPrefix + refAddSuffix(this.openapi.getRefAlias(ref));
         const declaration = this.oldNode.declarationCache.get(UUID);
         const name =
-          declaration?.getName() ?? _.camelCase(this.openapi.getRefAlias(ref));
+          declaration?.getName() ?? refAddSuffix(this.openapi.getRefAlias(ref));
 
         return this.ast.generateImportStatements([
-          {
-            namedImports: [name],
-            isTypeOnly: false,
-            moduleSpecifier: "./" + name,
-          },
+          ...(name === zodNameAddSuffix(key)
+            ? []
+            : [
+                {
+                  namedImports: [name],
+                  isTypeOnly: false,
+                  moduleSpecifier:
+                    "./" + fileAddSuffix(this.openapi.getRefAlias(ref)),
+                },
+              ]),
         ]);
       })
       .flatten()
       .value();
-
-    this.createModelSourceFile(
-      [...importStatements, ...zodImport, schemaStatements],
-      _.camelCase(typeName),
-    );
+    const statements = [
+      ...importStatements,
+      ...this.enumGenerator.generateEnum(),
+      ...zodImport,
+      schemaStatements,
+    ];
+    this.createModelSourceFile(statements, fileAddSuffix(key));
+    this.setModelIndexStatements(statements);
   }
 
   /*  generateComponentObjectType(

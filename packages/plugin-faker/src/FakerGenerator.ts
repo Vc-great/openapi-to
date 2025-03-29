@@ -1,13 +1,18 @@
 import path from "node:path";
 
+import { pluginEnum } from "@openapi-to/core";
 import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+import { TYPE_SUFFIX } from "@openapi-to/plugin-ts-type/src/constants.ts";
+import { ZOD_SUFFIX } from "@openapi-to/plugin-zod/src/constants.ts";
 
 import _ from "lodash";
 import { VariableDeclarationKind } from "ts-morph";
 
 import { Component } from "./Component.ts";
+import { MODEL_FOLDER_NAME } from "./constants.ts";
 import { FakerOldNode } from "./FakerOldNode.ts";
 import { Schema } from "./Schema.ts";
+import { classNameAddSuffix, fileAddSuffix, refAddSuffix } from "./utils.ts";
 
 import type { PluginContext } from "@openapi-to/core";
 import type { Operation } from "oas/operation";
@@ -73,7 +78,7 @@ export class FakerGenerator {
   get className() {
     return (
       this.oldNode.classDeclaration?.getName() ??
-      _.upperFirst(this.openapi.currentTagName) + "Faker"
+      classNameAddSuffix(this.openapi.currentTagNameOfPinYin)
     );
   }
 
@@ -81,12 +86,43 @@ export class FakerGenerator {
     return _.lowerFirst(this.className);
   }
 
+  get fileName(): string {
+    return (
+      this.oldNode.classDeclaration?.getName() ??
+      fileAddSuffix(this.openapi.currentTagNameOfPinYin)
+    );
+  }
+
+  get zodFileName(): string {
+    return this.openapi.currentTagNameOfPinYin + "." + ZOD_SUFFIX;
+  }
+
+  //zod or type
   get namespaceTypeName(): string {
     return (
       this.oldNode.typeNamespace.namedImport ||
-      _.upperFirst(this.openapi.currentTagName)
+      _.upperFirst(this.openapi.currentTagNameOfPinYin)
     );
   }
+
+  get upperFirstNamespaceTypeName(): string {
+    return (
+      this.oldNode.typeNamespace.namedImport ||
+      _.upperFirst(this.openapi.currentTagNameOfPinYin)
+    );
+  }
+
+  get lowerFirstTypeFileName(): string {
+    return (
+      this.oldNode.typeNamespace.namedImport ||
+      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX
+    );
+  }
+
+  get hasZodPlugin() {
+    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
+  }
+
   get methodOperationId(): string {
     return this.operation?.getOperationId() || "";
   }
@@ -96,6 +132,7 @@ export class FakerGenerator {
       this.oldNode.setCurrentSourceFile(
         this.classOperationIdPrefix + _.camelCase(tag),
       );
+
       const methodsStatements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag);
@@ -113,11 +150,11 @@ export class FakerGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.lowerFirstClassName + ".ts",
+        this.oldNode.baseName || this.fileName + ".ts",
       );
 
       const refKey = [...this.openapi.refCache.keys()];
-      return this.ast.createSourceFile(filePath, {
+      const sourceFile = this.ast.createSourceFile(filePath, {
         statements: [
           ...this.generateImport(refKey),
           this.generatorClass(methodsStatements),
@@ -125,6 +162,7 @@ export class FakerGenerator {
         ],
       });
       this.openapi.resetRefCache();
+      return sourceFile;
     });
 
     this.component.generateComponentType();
@@ -166,11 +204,11 @@ export class FakerGenerator {
     importModel: Array<string>,
   ): Array<ImportDeclarationStructure> {
     const model = _.chain(importModel)
-      .map(($ref: string) => _.camelCase(this.openapi.getRefAlias($ref)))
+      .map(($ref: string) => refAddSuffix(this.openapi.getRefAlias($ref)))
       .value();
     const fakerModels: ImportStatementsOmitKind = {
       namedImports: [...model],
-      moduleSpecifier: "./fakerModels",
+      moduleSpecifier: "./" + MODEL_FOLDER_NAME,
     };
 
     const faker: ImportStatementsOmitKind = {
@@ -178,6 +216,7 @@ export class FakerGenerator {
       moduleSpecifier: "@faker-js/faker",
     };
 
+    /*
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.namespaceTypeName],
@@ -185,11 +224,26 @@ export class FakerGenerator {
         this.oldNode.typeNamespace.moduleSpecifier ??
         `./${this.namespaceTypeName}`,
     };
+*/
+
+    const typeModel: ImportStatementsOmitKind = {
+      isTypeOnly: true,
+      namedImports: [this.upperFirstNamespaceTypeName],
+      moduleSpecifier:
+        this.oldNode.typeNamespace.moduleSpecifier ??
+        `./${this.lowerFirstTypeFileName}`,
+    };
+
+    const zodTypeModel: ImportStatementsOmitKind = {
+      isTypeOnly: true,
+      namedImports: [this.upperFirstNamespaceTypeName],
+      moduleSpecifier: `./${this.zodFileName}`,
+    };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
       .concat(faker)
       .concat(fakerModels)
-      .concat(typeModel)
+      .concat(this.hasZodPlugin ? [zodTypeModel] : [typeModel])
       .value();
 
     return this.ast.generateImportStatements(statements);
@@ -218,10 +272,14 @@ export class FakerGenerator {
                 this.openapi.currentTagMetadata &&
                 this.openapi.currentTagMetadata.description,
             },
-            {
-              tagName: UUID_TAG_NAME,
-              text: this.classOperationId,
-            },
+            ...(this.pluginConfig?.compare
+              ? [
+                  {
+                    tagName: UUID_TAG_NAME,
+                    text: this.classOperationId,
+                  },
+                ]
+              : []),
           ].filter((x) => x.text),
         },
       ],
@@ -237,7 +295,7 @@ export class FakerGenerator {
    * ```
    */
   generatorReturnType(): string {
-    return `NonNullable<${this.namespaceTypeName}.${this.openapi.upperFirstResponseName}>`;
+    return `NonNullable<${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstResponseName}>`;
   }
 
   /**
@@ -260,10 +318,14 @@ export class FakerGenerator {
             tagName: "description",
             text: this.operation?.getDescription(),
           },
-          {
-            tagName: UUID_TAG_NAME,
-            text: this.methodOperationId,
-          },
+          ...(this.pluginConfig?.compare
+            ? [
+                {
+                  tagName: UUID_TAG_NAME,
+                  text: this.methodOperationId,
+                },
+              ]
+            : []),
         ].filter((x) => x.text),
       },
     ];
@@ -323,7 +385,7 @@ export class FakerGenerator {
     }
 
     if (this.openapi.isReference(schema)) {
-      return `return ${this.openapi.getRefAlias(schema.$ref)}()`;
+      return `return ${refAddSuffix(this.openapi.getRefAlias(schema.$ref))}()`;
     }
 
     if (schema.type === "array") {
