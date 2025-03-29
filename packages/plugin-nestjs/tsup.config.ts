@@ -1,10 +1,10 @@
-import { optionsCJS, optionsESM } from '@openapi-to/tsup-config'
+import { optionsCJS, optionsESM } from "@openapi-to/config-tsup";
 
-import { defineConfig } from 'tsup'
+import { defineConfig } from "tsup";
 
 export default defineConfig([
   {
     ...optionsCJS,
   },
   optionsESM,
-])
+]);

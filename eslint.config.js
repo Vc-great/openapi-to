@@ -9,9 +9,9 @@ import { fileURLToPath } from "node:url";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 // configs
-import config from "@openapi-to/eslint-config/dist/es/flat.js";
+import config from "@openapi-to/config-eslint/dist/es/flat.js";
 
-import { ignores } from "@openapi-to/eslint-config";
+import { ignores } from "@openapi-to/config-eslint";
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
@@ -41,12 +41,7 @@ export default [
   },
   {
     files: ["packages/**", "examples/**"],
-    ignores: [
-      "e2e/**",
-      "docs/**",
-      "vitest.config.ts",
-      "vite.config.ts",
-    ],
+    ignores: ["e2e/**", "docs/**", "vitest.config.ts", "vite.config.ts"],
     languageOptions: {
       parserOptions: {
         ecmaVersion: "latest",
@@ -57,6 +52,6 @@ export default [
           "./packages/config/*/tsconfig.json",
         ],
       },
-    }
+    },
   },
 ];

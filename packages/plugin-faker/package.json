@@ -6,15 +6,15 @@
   "description": "Generator faker",
   "exports": {
     ".": {
-      "import": "./dist/es/index.js",
-      "require": "./dist/cjs/index.cjs"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./package.json": "./package.json",
     "./*": "./*"
   },
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/es/index.js",
-  "types": "./dist/es/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "!/**/**.test.**",
@@ -33,9 +33,9 @@
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "devDependencies": {
-    "@openapi-to/eslint-config": "workspace:*",
-    "@openapi-to/ts-config": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*",
+    "@openapi-to/config-eslint": "workspace:*",
+    "@openapi-to/config-ts": "workspace:*",
+    "@openapi-to/config-tsup": "workspace:*",
     "@openapi-to/plugin-ts-type": "workspace:*",
     "@openapi-to/plugin-zod": "workspace:*",
     "@types/lodash": "^4.17.9"

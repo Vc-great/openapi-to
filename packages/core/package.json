@@ -18,23 +18,29 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/es/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "default": "./dist/cjs/index.cjs"
+      "import": "./dist/index.js",
+      "require":  "./dist/index.cjs",
+      "default": "./dist/index.cjs"
     },
     "./utils": {
-      "import": "./dist/es/utils.js",
-      "require": "./dist/cjs/utils.cjs",
-      "default": "./dist/cjs/utils.cjs"
+      "import": "./dist/utils.js",
+      "require": "./dist/utils.cjs",
+      "default": "./dist/utils.cjs"
     },
     "./package.json": "./package.json",
     "./*": "./*"
   },
-  "main": "./dist/cjs/index.cjs",
-  "module": "./dist/es/index.js",
-  "types": "./dist/es/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "src",
+    "dist",
+    "*.d.ts",
+    "*.d.cts",
+    "schema.json",
+    "!/**/**.test.**",
+    "!/**/__tests__/**"
   ],
   "scripts": {
     "build": "tsup",
@@ -72,9 +78,9 @@
     "ts-morph": "^23.0.0"
   },
   "devDependencies": {
-    "@openapi-to/eslint-config": "workspace:*",
-    "@openapi-to/ts-config": "workspace:*",
-    "@openapi-to/tsup-config": "workspace:*",
+    "@openapi-to/config-eslint": "workspace:*",
+    "@openapi-to/config-ts": "workspace:*",
+    "@openapi-to/config-tsup": "workspace:*",
     "@types/fs-extra": "^11.0.4",
     "@types/is-url": "^1.2.32",
     "@types/lodash": "^4.17.9",

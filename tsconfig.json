@@ -1,11 +1,11 @@
 {
-  "extends": "@openapi-to/ts-config/base.json",
+  "extends": "@openapi-to/config-ts/base.json",
   "compilerOptions": {
     "baseUrl": ".",
     "types": [
       "vitest/globals",
       "bun-types",
-      "@openapi-to/ts-config"
+      "@openapi-to/config-ts"
     ],
   },
   "include": [

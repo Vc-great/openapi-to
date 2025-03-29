@@ -22,17 +22,17 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/es/index.js",
-      "require": "./dist/cjs/index.cjs"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./utils": {
-      "import": "./dist/es/utils.js",
-      "require": "./dist/cjs/utils.cjs"
+      "import": "./dist/utils.js",
+      "require": "./dist/utils.cjs"
     }
   },
-  "main": "./dist/cjs/index.cjs",
-  "module": "./dist/es/index.js",
-  "types": "./dist/es/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "openapi": "bin/openapi.js"
   },
@@ -76,6 +76,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
-    "@openapi-to/tsup-config": "workspace:*"
+    "@openapi-to/config-tsup": "workspace:*"
   }
 }

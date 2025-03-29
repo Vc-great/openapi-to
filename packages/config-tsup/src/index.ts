@@ -38,7 +38,7 @@ export const optionsESM: Options = {
   dts: true,
   splitting: true,
   banner: bannerESM,
-  outDir: "./dist/es",
+  outDir: "./dist",
 };
 
 export const optionsCJS: Options = {
@@ -47,7 +47,7 @@ export const optionsCJS: Options = {
   dts: true,
   banner: bannerCJS,
   splitting: true,
-  outDir: "./dist/cjs",
+  outDir: "./dist",
 };
 
 export const optionsFlat: Options = {

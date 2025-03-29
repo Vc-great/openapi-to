@@ -5,7 +5,7 @@
     "types": [
       "vitest/globals",
       "bun-types",
-      "../config/ts-config/reset.d.ts"
+      "../config-ts/reset.d.ts"
     ]
   },
   "include": [
