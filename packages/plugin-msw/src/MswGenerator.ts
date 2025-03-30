@@ -43,17 +43,15 @@ export class MswGenerator {
 
   get currentTagName() {
     return _.camelCase(
-      this.openapi &&
-        this.openapi.currentTagMetadata &&
-        this.openapi.currentTagMetadata.name,
+      this.openapi?.currentTagMetadata?.name,
     );
   }
   get handlersName(): string {
-    return this.currentTagName + "Handler";
+    return `${this.currentTagName}Handler`;
   }
 
   get fakerName(): string {
-    return this.currentTagName + "Faker";
+    return `${this.currentTagName}Faker`;
   }
 
   build(context: PluginContext): void {
@@ -65,7 +63,7 @@ export class MswGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.handlersName + ".ts",
+        `${this.handlersName}.ts`,
       );
       this.handlerCahce.add(this.handlersName);
 
@@ -105,7 +103,7 @@ export class MswGenerator {
         this.ast.generateImportStatements([
           {
             namedImports: ["HttpHandler"],
-            moduleSpecifier: `msw`,
+            moduleSpecifier: 'msw',
           },
         ]),
       )
@@ -119,9 +117,7 @@ export class MswGenerator {
           name: "handlers",
           type: "Array<HttpHandler>",
           initializer:
-            "[" +
-            [...this.handlerCahce].map((item) => "..." + item).join(",") +
-            "]",
+            `[${[...this.handlerCahce].map((item) => `...${item}`).join(",")}]`,
         },
       ],
       isExported: true,
@@ -249,7 +245,7 @@ export class MswGenerator {
       declarations: [
         {
           name: "handlers",
-          initializer: "[" + objectStructures.join(",") + "]",
+          initializer: `[${objectStructures.join(",")}]`,
         },
       ],
     });

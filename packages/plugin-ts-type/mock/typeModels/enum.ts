@@ -18,21 +18,21 @@ export const Status1Label = {
 };
 
 /** description */
-const enum ColumnType {
+enum ColumnType {
     Char = "CHAR",
     Char2 = "CHAR2",
     Char3 = "CHAR3"
 }
 
 /** pet status in the store */
-const enum Status {
+enum Status {
     Available = "available",
     Pending = "pending",
     Sold = "sold"
 }
 
 /** Order Status */
-const enum Status1 {
+enum Status1 {
     Placed = "placed",
     Approved = "approved",
     Delivered = "delivered"

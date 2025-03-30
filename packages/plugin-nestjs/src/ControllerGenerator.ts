@@ -26,10 +26,6 @@ export class ControllerGenerator extends NestjsGenerator {
   private nestjsCommonImports: Set<string> = new Set<string>();
   private swaggerImports: Set<string> = new Set<string>();
 
-  constructor(config: Config) {
-    super(config);
-  }
-
   get getResponseStatusCodes() {
     return this.openapi.response?.getResponseStatusCodes;
   }
@@ -261,8 +257,7 @@ export class ControllerGenerator extends NestjsGenerator {
     const ApiOperationDecorator: OptionalKind<DecoratorStructure> = {
       name: "ApiOperation",
       arguments: [
-        "{" +
-          _.chain([] as string[])
+        `{${_.chain([] as string[])
             .concat(
               this.operation?.getSummary()
                 ? `summary:'${this.operation?.getSummary()}'`
@@ -274,8 +269,7 @@ export class ControllerGenerator extends NestjsGenerator {
                 : [],
             )
             .join()
-            .value() +
-          "}",
+            .value()}}`,
       ],
     };
 
@@ -286,8 +280,7 @@ export class ControllerGenerator extends NestjsGenerator {
     const ApiResponseDecorator: OptionalKind<DecoratorStructure> = {
       name: "ApiResponse",
       arguments: [
-        "{" +
-          _.chain([] as string[])
+        `{${_.chain([] as string[])
             .push(`status: HttpStatus.${httpCode}`)
             .concat(
               successResponseJSONSchema?.description
@@ -297,13 +290,12 @@ export class ControllerGenerator extends NestjsGenerator {
             .concat(responseType ? responseType : [])
             .concat(
               successResponseJSONSchema?.type === "array"
-                ? ` isArray:true`
+                ? ' isArray:true'
                 : [],
             )
             .filter(Boolean)
             .join(",")
-            .value() +
-          "}",
+            .value()}}`,
       ],
     };
 

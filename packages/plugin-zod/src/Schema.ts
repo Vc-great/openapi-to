@@ -190,7 +190,7 @@ export class Schema {
         //
         if (schema.enum && this.enumGenerator.enumUnique(schema.enum)) {
           const enumName =
-            _.upperFirst(this.fromName) + _.upperFirst(name) + "Enum";
+            `${_.upperFirst(this.fromName) + _.upperFirst(name)}Enum`;
           this.enumGenerator.set(schema, enumName);
         }
 
@@ -246,7 +246,7 @@ export class Schema {
   ): string {
     if (!_.isEmpty(schema?.enum)) {
       const enumName =
-        _.upperFirst(this.fromName) + _.upperFirst(propertyName) + "Enum";
+        `${_.upperFirst(this.fromName) + _.upperFirst(propertyName)}Enum`;
 
       if (schema?.enum && this.enumGenerator.enumUnique(schema.enum)) {
         this.enumGenerator.set(schema, enumName);

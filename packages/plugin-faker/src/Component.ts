@@ -72,7 +72,7 @@ export class Component {
           {
             namedImports: ["faker"],
             isTypeOnly: false,
-            moduleSpecifier: `@faker-js/faker`,
+            moduleSpecifier: '@faker-js/faker',
           },
           {
             namedImports: [refAddSuffix(this.openapi.getRefAlias(schema.$ref))],
@@ -91,9 +91,7 @@ export class Component {
           name: _.camelCase(name),
           statements: `return ${this.openapi.getRefAlias(schema.$ref)}()`,
           returnType:
-            this.openapi.upperFirstCurrentTagName +
-            "." +
-            _.upperFirst(_.camelCase(name)),
+            `${this.openapi.upperFirstCurrentTagName}.${_.upperFirst(_.camelCase(name))}`,
           isExported: true,
           docs: [], // [{ description: "" }],
         }),
@@ -108,7 +106,7 @@ export class Component {
   ): void {
     const filePath = path.resolve(
       this.openapiToSingleConfig.output.dir || "./",
-      MODEL_FOLDER_NAME + "/" + fileName + ".ts",
+      `${MODEL_FOLDER_NAME}/${fileName}.ts`,
     );
 
     this.ast.createSourceFile(filePath, {
@@ -147,7 +145,7 @@ export class Component {
           ? name
           : fileAddSuffix(name);
         return this.ast.generateExportStatements({
-          moduleSpecifier: "./" + fileName,
+          moduleSpecifier: `./${fileName}`,
         });
       })
       .value();
@@ -182,7 +180,7 @@ export class Component {
                   namedImports: [fakerNameAddSuffix(name)],
                   isTypeOnly: false,
                   moduleSpecifier:
-                    `./` + refAddSuffix(this.openapi.getRefAlias(ref)),
+                    `./${refAddSuffix(this.openapi.getRefAlias(ref))}`,
                 },
               ]),
         ]);
@@ -194,7 +192,7 @@ export class Component {
       {
         namedImports: ["faker"],
         isTypeOnly: false,
-        moduleSpecifier: `@faker-js/faker`,
+        moduleSpecifier: '@faker-js/faker',
       },
       {
         namedImports: [_.upperFirst(_.camelCase(key))],

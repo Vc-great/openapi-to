@@ -5,7 +5,7 @@ import { formatOpenapiToConfig } from "@openapi-to/core/utils";
 
 import { cac } from "cac";
 import c from "picocolors";
-import process from "process";
+import process from "node:process";
 
 import { version } from "../../openapi/package.json";
 import { getCosmiConfig } from "./utils/getCosmiConfig.ts";

@@ -77,7 +77,7 @@ export class Component {
     const upperFirstRefName = _.upperFirst(
       this.openapi.getRefAlias(schema.$ref),
     );
-    const UUID = UUID_PREFIX + upperFirstTypeName + "-" + upperFirstRefName;
+    const UUID = `${UUID_PREFIX + upperFirstTypeName}-${upperFirstRefName}`;
     const typeDeclaration = this.oldNode.typeDeclarationCache.get(UUID);
     const statements = [
       ...this.ast.generateImportStatements([
@@ -121,7 +121,7 @@ export class Component {
   ): void {
     const filePath = path.resolve(
       this.openapiToSingleConfig.output.dir || "./",
-      this.modelFolderName + "/" + fileName + ".ts",
+      `${this.modelFolderName}/${fileName}.ts`,
     );
 
     this.ast.createSourceFile(filePath, {
@@ -149,7 +149,7 @@ export class Component {
     const statements = _.chain([...this.modelIndex])
       .map((name) =>
         this.ast.generateExportStatements({
-          moduleSpecifier: "./" + name,
+          moduleSpecifier: `./${name}`,
         }),
       )
       .value();
@@ -210,7 +210,7 @@ export class Component {
                 {
                   namedImports: [name],
                   isTypeOnly: true,
-                  moduleSpecifier: "./" + name,
+                  moduleSpecifier: `./${name}`,
                 },
               ]),
         ]);

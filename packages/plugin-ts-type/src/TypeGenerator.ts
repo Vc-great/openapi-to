@@ -79,7 +79,7 @@ export class TypeGenerator {
   get fileName(): string {
     return (
       this.oldNode.baseName ||
-      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX
+      `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${TYPE_SUFFIX}`
     );
   }
 
@@ -104,7 +104,7 @@ export class TypeGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.fileName + ".ts",
+        `${this.fileName}.ts`,
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -149,7 +149,7 @@ export class TypeGenerator {
     const typeModel: ImportStatementsOmitKind = {
       namedImports: [...model],
       isTypeOnly: true,
-      moduleSpecifier: "./" + this.modelFolderName,
+      moduleSpecifier: `./${this.modelFolderName}`,
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
@@ -206,7 +206,7 @@ export class TypeGenerator {
     if (this.openapi.upperFirstRequestName === "FindByStatusGet") {
       //debugger;
     }
-    const queryParamsName = this.openapi.upperFirstRequestName + "QueryParams";
+    const queryParamsName = `${this.openapi.upperFirstRequestName}QueryParams`;
     const queryStatements = this.ast.generateInterfaceStatements({
       isExported: true,
       name: queryParamsName,
@@ -227,7 +227,7 @@ export class TypeGenerator {
           this.nameSpaceName + queryParamsName,
         ) || [],
     });
-    const pathParamsName = this.openapi.upperFirstRequestName + "PathParams";
+    const pathParamsName = `${this.openapi.upperFirstRequestName}PathParams`;
     const pathStatements = this.ast.generateInterfaceStatements({
       isExported: true,
       name: pathParamsName,
@@ -287,7 +287,7 @@ export class TypeGenerator {
       .value() as Array<ResponseObject>;
 
     const errorType = this.ast.generateTypeAliasStatements({
-      name: this.openapi.upperFirstRequestName + "Error",
+      name: `${this.openapi.upperFirstRequestName}Error`,
       type:
         _.chain(errorCode)
           .filter((code) => responseObject.map((x) => x.code).includes(code))
@@ -436,7 +436,7 @@ export class TypeGenerator {
           name: this.openapi.upperFirstBodyDataName,
           type: this.schema.formatterSchemaType(
             schema,
-            this.nameSpaceName + "BodyData",
+            `${this.nameSpaceName}BodyData`,
           ),
           docs: schema.description
             ? [

@@ -94,7 +94,7 @@ export class FakerGenerator {
   }
 
   get zodFileName(): string {
-    return this.openapi.currentTagNameOfPinYin + "." + ZOD_SUFFIX;
+    return `${this.openapi.currentTagNameOfPinYin}.${ZOD_SUFFIX}`;
   }
 
   //zod or type
@@ -115,7 +115,7 @@ export class FakerGenerator {
   get lowerFirstTypeFileName(): string {
     return (
       this.oldNode.typeNamespace.namedImport ||
-      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX
+      `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${TYPE_SUFFIX}`
     );
   }
 
@@ -150,7 +150,7 @@ export class FakerGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.fileName + ".ts",
+        this.oldNode.baseName || `${this.fileName}.ts`,
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -183,7 +183,7 @@ export class FakerGenerator {
         declarations: [
           {
             name: this.lowerFirstClassName,
-            initializer: "new" + " " + this.className,
+            initializer: `new ${this.className}`,
           },
         ],
         isExported: true,
@@ -208,7 +208,7 @@ export class FakerGenerator {
       .value();
     const fakerModels: ImportStatementsOmitKind = {
       namedImports: [...model],
-      moduleSpecifier: "./" + MODEL_FOLDER_NAME,
+      moduleSpecifier: `./${MODEL_FOLDER_NAME}`,
     };
 
     const faker: ImportStatementsOmitKind = {
@@ -261,16 +261,12 @@ export class FakerGenerator {
             {
               tagName: "tag",
               text:
-                this.openapi &&
-                this.openapi.currentTagMetadata &&
-                this.openapi.currentTagMetadata.name,
+                this.openapi?.currentTagMetadata?.name,
             },
             {
               tagName: "description",
               text:
-                this.openapi &&
-                this.openapi.currentTagMetadata &&
-                this.openapi.currentTagMetadata.description,
+                this.openapi?.currentTagMetadata?.description,
             },
             ...(this.pluginConfig?.compare
               ? [
@@ -378,7 +374,7 @@ export class FakerGenerator {
     const schema = jsonSchema?.schema;
     const description = jsonSchema?.description;
     const isError = /^([3-5][0-9][0-9])$/.test(code);
-    const name = this.openapi.requestName + "Response" + (isError ? code : "");
+    const name = `${this.openapi.requestName}Response${isError ? code : ""}`;
 
     if (!schema) {
       return "return {}";
@@ -394,7 +390,7 @@ export class FakerGenerator {
     }
     //todo
     if ("additionalProperties" in schema) {
-      return `return {}`;
+      return 'return {}';
     }
 
     return `return ${this.schema.getStatementsFromSchema(schema)}`;

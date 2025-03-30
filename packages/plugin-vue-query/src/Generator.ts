@@ -48,11 +48,11 @@ export class Generator {
   }
 
   get lowerFirstFileName(): string {
-    return _.lowerFirst(this.openapi.currentTagName + "Query");
+    return _.lowerFirst(`${this.openapi.currentTagName}Query`);
   }
 
   get namespaceName(): string {
-    return _.upperFirst(this.openapi.currentTagName + "Query");
+    return _.upperFirst(`${this.openapi.currentTagName}Query`);
   }
 
   get isGetMethod(): boolean {
@@ -68,11 +68,11 @@ export class Generator {
   }
 
   get responseDataType(): string {
-    return this.namespaceTypeName + "." + this.openapi.upperFirstResponseName;
+    return `${this.namespaceTypeName}.${this.openapi.upperFirstResponseName}`;
   }
 
   get errorResponseTypeName() {
-    return this.namespaceTypeName + "." + this.openapi.errorResponseTypeName;
+    return `${this.namespaceTypeName}.${this.openapi.errorResponseTypeName}`;
   }
 
   get requestDataType(): string | undefined {
@@ -92,22 +92,21 @@ export class Generator {
     if (schema === null) {
       return undefined;
     }
-    return this.namespaceTypeName + "." + this.openapi.upperFirstBodyDataName;
+    return `${this.namespaceTypeName}.${this.openapi.upperFirstBodyDataName}`;
   }
 
   get queryKeyName(): string {
     if (this.operation?.method === "get") {
       return `${this.openapi.requestName}QueryKey`;
-    } else {
-      return `${this.openapi.requestName}MutationKey`;
     }
+      return `${this.openapi.requestName}MutationKey`;
   }
   get upperFirstQueryKeyName(): string {
     return _.upperFirst(this.queryKeyName);
   }
 
   get namespaceZodName(): string {
-    return this.openapi.currentTagName + "Zod";
+    return `${this.openapi.currentTagName}Zod`;
   }
 
   get APIName(): string {
@@ -155,7 +154,7 @@ export class Generator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.lowerFirstFileName + ".ts",
+        `${this.lowerFirstFileName}.ts`,
       );
 
       this.ast.createSourceFile(filePath, {
@@ -239,23 +238,23 @@ export class Generator {
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.namespaceTypeName],
-      moduleSpecifier: `./${this.pluginConfig?.typeDeclarationForm === "zod" ? this.openapi.currentTagName + "Zod" : _.upperFirst(this.openapi.currentTagName)}`,
+      moduleSpecifier: `./${this.pluginConfig?.typeDeclarationForm === "zod" ? `${this.openapi.currentTagName}Zod` : _.upperFirst(this.openapi.currentTagName)}`,
     };
 
     const mutation: ImportStatementsOmitKind = {
       isTypeOnly: false,
       namedImports: ["useMutation"],
-      moduleSpecifier: `@tanstack/vue-query`,
+      moduleSpecifier: '@tanstack/vue-query',
     };
 
     const useSWRType: ImportStatementsOmitKind = {
       namedImports: ["queryOptions, useQuery"],
-      moduleSpecifier: `@tanstack/vue-query`,
+      moduleSpecifier: '@tanstack/vue-query',
     };
 
     const vueType: ImportStatementsOmitKind = {
       namedImports: ["MaybeRef"],
-      moduleSpecifier: `vue`,
+      moduleSpecifier: 'vue',
     };
 
     const useSWRMutationType: ImportStatementsOmitKind = {
@@ -265,7 +264,7 @@ export class Generator {
         "UseQueryReturnType",
         "MutationObserverOptions",
       ],
-      moduleSpecifier: `@tanstack/vue-query`,
+      moduleSpecifier: '@tanstack/vue-query',
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
@@ -301,7 +300,7 @@ export class Generator {
         };
       })
       .map((x) => {
-        return x.name + ":" + (_.isString(x.type) ? x.type : "");
+        return `${x.name}:${_.isString(x.type) ? x.type : ""}`;
       })
       .value();
 
@@ -324,7 +323,7 @@ export class Generator {
       declarations: [
         {
           name: this.queryKeyName,
-          initializer: `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? "," + keys : ""}] as const`,
+          initializer: `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? `,${keys}` : ""}] as const`,
 
           //   docs: [{ description: "" }],
         },
@@ -366,10 +365,7 @@ export class Generator {
         return {
           name: _.camelCase(item.name),
           type:
-            this.namespaceTypeName +
-            "." +
-            this.openapi.upperFirstPathRequestName +
-            `['${_.camelCase(item.name)}']`,
+            `${this.namespaceTypeName}.${this.openapi.upperFirstPathRequestName}['${_.camelCase(item.name)}']`,
           decorators: [],
         };
       })
@@ -445,8 +441,8 @@ export class Generator {
       .value();
 
     const optionsParams = isGetMethod
-      ? `const { query: queryOption } = options ?? {}`
-      : `const { mutation: mutationOptions } = options ?? {}`;
+      ? 'const { query: queryOption } = options ?? {}'
+      : 'const { mutation: mutationOptions } = options ?? {}';
 
     const queryKey = isGetMethod
       ? `const queryKey = queryOption?.queryKey ?? ${this.queryKeyName}(${queryKeyParams})` //pathParams
@@ -533,7 +529,7 @@ export class Generator {
   generatorMethodsStatements(): FunctionDeclarationStructure {
     const statement = {
       isAsync: false,
-      name: "use" + this.openapi.upperFirstRequestName,
+      name: `use${this.openapi.upperFirstRequestName}`,
       decorators: [],
       typeParameters: this.generateTypeParameters(),
       parameters: [

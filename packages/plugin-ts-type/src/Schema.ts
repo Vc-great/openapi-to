@@ -166,7 +166,7 @@ export class Schema {
         //
         if (schema.enum && this.enumGenerator.enumUnique(schema.enum)) {
           const enumName =
-            _.upperFirst(this.fromName) + _.upperFirst(name) + "Enum";
+            `${_.upperFirst(this.fromName) + _.upperFirst(name)}Enum`;
           this.enumGenerator.set(schema, enumName);
         }
 
@@ -215,7 +215,7 @@ export class Schema {
     if (additionalProperties) {
       return [
         {
-          name: `[key:string]`,
+          name: '[key:string]',
           type: "unknown",
           // docs: [{ description: "" }],
         },
@@ -231,7 +231,7 @@ export class Schema {
   ): string {
     if (!_.isEmpty(schema?.enum)) {
       const enumName =
-        _.upperFirst(this.fromName) + _.upperFirst(propertyName) + "Enum";
+        `${_.upperFirst(this.fromName) + _.upperFirst(propertyName)}Enum`;
 
       if (schema?.enum && this.enumGenerator.enumUnique(schema.enum)) {
         this.enumGenerator.set(schema, enumName);
@@ -279,7 +279,7 @@ export class Schema {
     }
 
     if (type === "array" && this.openapi.isReference(schema.items)) {
-      return _.upperFirst(this.openapi.getRefAlias(schema.items.$ref)) + "[]";
+      return `${_.upperFirst(this.openapi.getRefAlias(schema.items.$ref))}[]`;
     }
 
     if (type === "array" && !this.openapi.isReference(schema.items)) {

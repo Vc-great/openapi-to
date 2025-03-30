@@ -262,9 +262,9 @@ export class Schema extends NestjsGenerator {
 
     if (type === "array" && this.openapi.isReference(schema.items)) {
       return (
-        _.upperFirst(
+        `${_.upperFirst(
           this.openapi.getRefAlias(_.get(schema, "items.$ref", "")),
-        ) + "[]"
+        )}[]`
       );
     }
 
@@ -312,7 +312,7 @@ export class Schema extends NestjsGenerator {
           isExported: true,
           declarations: [
             {
-              name: _.upperFirst(_.camelCase(name)) + "Label",
+              name: `${_.upperFirst(_.camelCase(name))}Label`,
               initializer: this.ast.generateObject(
                 ((schema.enum || []) as Array<string>).reduce(
                   (obj, item: string) => {
@@ -359,24 +359,17 @@ export class Schema extends NestjsGenerator {
           isExported: true,
           declarations: [
             {
-              name: name + "Option",
+              name: `${name}Option`,
               initializer:
-                "[" +
-                (schema.enum || []).reduce((arr, item: string) => {
+                `[${(schema.enum || []).reduce((arr, item: string) => {
                   const obj = this.ast.generateObject({
                     label:
-                      _.upperFirst(_.camelCase(name)) +
-                      "Label" +
-                      "." +
-                      _.upperFirst(_.camelCase(item)),
+                      `${_.upperFirst(_.camelCase(name))}Label.${_.upperFirst(_.camelCase(item))}`,
                     value:
-                      _.upperFirst(_.camelCase(name)) +
-                      "." +
-                      _.upperFirst(_.camelCase(item)),
+                      `${_.upperFirst(_.camelCase(name))}.${_.upperFirst(_.camelCase(item))}`,
                   });
                   return arr + (arr ? "," : "") + obj;
-                }, "") +
-                "]",
+                }, "")}]`,
             },
           ],
           docs: [{ description: schema.description || "" }],

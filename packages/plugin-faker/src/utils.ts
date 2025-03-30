@@ -12,7 +12,7 @@ export function fakerNameAddSuffix(fakerName: string): string {
 }
 
 export function fileAddSuffix(fileName: string): string {
-  return fileName + "." + FAKER_SUFFIX;
+  return `${fileName}.${FAKER_SUFFIX}`;
 }
 
 export function classNameAddSuffix(className: string): string {

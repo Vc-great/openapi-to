@@ -3,7 +3,7 @@ import { createLogger, LogMapper } from "@openapi-to/core";
 
 import { Presets, SingleBar } from "cli-progress";
 import c from "picocolors";
-import process from "process";
+import process from "node:process";
 
 import { getErrorCauses } from "./utils/getErrorCauses.ts";
 import { getSummary } from "./utils/getSummary.ts";

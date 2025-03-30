@@ -13,7 +13,7 @@ type UnionToInterFunction<U> = (
  * @template U 联合类型
  */
 type GetUnionLast<U> =
-  UnionToInterFunction<U> extends { (): infer A } ? A : never;
+  UnionToInterFunction<U> extends (() => infer A) ? A : never;
 
 /**
  * 在元组类型中前置插入一个新的类型（元素）；

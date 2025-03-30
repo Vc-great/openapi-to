@@ -16,9 +16,6 @@ import type { Config, ImportStatementsOmitKind } from "../types.ts";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 export class TypeormGenerator extends NestjsGenerator {
-  constructor(config: Config) {
-    super(config);
-  }
 
   get mapperName(): string {
     return `${_.upperFirst(this.openapi.currentTagName)}Mappers`;
@@ -200,17 +197,17 @@ export class ${this.mapperName} {
   generateImport(): Array<ImportDeclarationStructure> {
     const nestjsTypeorm: ImportStatementsOmitKind = {
       namedImports: ["InjectRepository"],
-      moduleSpecifier: `@nestjs/typeorm`,
+      moduleSpecifier: '@nestjs/typeorm',
     };
 
     const typeorm: ImportStatementsOmitKind = {
       namedImports: ["Repository"],
-      moduleSpecifier: `typeorm`,
+      moduleSpecifier: 'typeorm',
     };
 
     const mapper: ImportStatementsOmitKind = {
       namedImports: [this.mapperName],
-      moduleSpecifier: "./" + this.mapperName,
+      moduleSpecifier: `./${this.mapperName}`,
     };
 
     const entity: ImportStatementsOmitKind = {

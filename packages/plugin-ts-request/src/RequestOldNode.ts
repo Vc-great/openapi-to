@@ -164,7 +164,7 @@ export class RequestOldNode {
     }
 
     const project = new Project();
-    const folderName = this.openapiToSingleConfig.output.dir + "/*.ts";
+    const folderName = `${this.openapiToSingleConfig.output.dir}/*.ts`;
     const sourceFiles = project.addSourceFilesAtPaths(folderName);
     _.forEach(sourceFiles, (sourceFile) => {
       const classDeclaration = _.head(sourceFile.getClasses());
@@ -172,7 +172,7 @@ export class RequestOldNode {
         return;
       }
       const uuid = this.uuid(classDeclaration.getJsDocs());
-      if (uuid && uuid.startsWith("API-")) {
+      if (uuid?.startsWith("API-")) {
         this.sourceFileCache.set(uuid, sourceFile);
       }
     });

@@ -243,7 +243,7 @@ export class Schema {
 
     if (type === "array" && this.openapi.isReference(schema.items)) {
       return this.faker.helpers.multiple(
-        refAddSuffix(this.openapi.getRefAlias(schema.items.$ref)) + "()",
+        `${refAddSuffix(this.openapi.getRefAlias(schema.items.$ref))}()`,
       );
     }
 

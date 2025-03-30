@@ -16,7 +16,7 @@ export const definePlugin = createPlugin<PluginConfig>(
       const oas = new Oas({ ...openapiDocument });
       const openapi = new OpenAPI({}, oas);
       return {
-        name: pluginEnum.NestJs,
+        name: pluginEnum.NestJS,
         buildStart(context) {
           new ControllerGenerator({
             oas,

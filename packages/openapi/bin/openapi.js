@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { updateVersionNotifier } from "../dist/es/utils.js";
-import process from "process";
+import process from "node:process";
 
 import("@openapi-to/cli").then(({ run }) => {
   const currentNodeVersion = process.version.slice(1).split(".")[0];

@@ -100,7 +100,7 @@ export class ZodGenerator {
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
         this.oldNode.baseName ||
-          fileAddSuffix(this.openapi.currentTagNameOfPinYin) + ".ts",
+          `${fileAddSuffix(this.openapi.currentTagNameOfPinYin)}.ts`,
       );
 
       const refKey = [...this.openapi.refCache.keys()];
@@ -140,7 +140,7 @@ export class ZodGenerator {
     const typeModel: ImportStatementsOmitKind = {
       namedImports: [...model],
       isTypeOnly: false,
-      moduleSpecifier: "./" + this.modelFolderName,
+      moduleSpecifier: `./${this.modelFolderName}`,
     };
     const zod: ImportStatementsOmitKind = {
       namedImports: ["z"],
@@ -258,7 +258,7 @@ export class ZodGenerator {
   }
 
   generateParametersType(): Array<VariableStatementStructure> {
-    const queryParamsName = this.openapi.requestName + "QueryParams";
+    const queryParamsName = `${this.openapi.requestName}QueryParams`;
     const queryParamsSchema =
       this.openapi.parameter?.getParametersSchema("query") || [];
     const queryStatements = this.ast.generateVariableStatements({
@@ -291,7 +291,7 @@ export class ZodGenerator {
     const pathParamsSchema =
       this.openapi.parameter?.getParametersSchema("path") || [];
 
-    const pathParamsName = this.openapi.requestName + "PathParams";
+    const pathParamsName = `${this.openapi.requestName}PathParams`;
     const pathStatements = this.ast.generateVariableStatements({
       declarationKind: VariableDeclarationKind.Const,
       isExported: true,
@@ -361,7 +361,7 @@ export class ZodGenerator {
         docs: [], //[{ description: "" }],
         declarations: [
           {
-            name: this.openapi.requestName + "Error",
+            name: `${this.openapi.requestName}Error`,
             initializer: _.isEmpty(errorEnum)
               ? this.z.head().unknown().toString()
               : _.size(errorEnum) === 1
@@ -553,7 +553,7 @@ export class ZodGenerator {
               name: this.openapi.bodyDataName,
               initializer: this.schema.formatterSchemaType(
                 schema,
-                this.typeNameSpaceName + "BodyData",
+                `${this.typeNameSpaceName}BodyData`,
               ),
             },
           ],

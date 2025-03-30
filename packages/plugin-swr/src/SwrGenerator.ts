@@ -54,11 +54,11 @@ export class SwrGenerator {
   }
 
   get lowerFirstFileName(): string {
-    return _.lowerFirst(this.openapi.currentTagNameOfPinYin + "." + SWR_SUFFIX);
+    return _.lowerFirst(`${this.openapi.currentTagNameOfPinYin}.${SWR_SUFFIX}`);
   }
   get lowerFirsSWRKeyName(): string {
     return _.lowerFirst(
-      this.openapi.currentTagNameOfPinYin + _.toUpper(SWR_SUFFIX) + "Key",
+      `${this.openapi.currentTagNameOfPinYin + _.toUpper(SWR_SUFFIX)}Key`,
     );
   }
 
@@ -69,7 +69,7 @@ export class SwrGenerator {
   }
 
   get swrNamespaceTypeName(): string {
-    return _.upperFirst(this.openapi.currentTagNameOfPinYin + "Key");
+    return _.upperFirst(`${this.openapi.currentTagNameOfPinYin}Key`);
   }
 
   get upperFirstNamespaceTypeName(): string {
@@ -80,23 +80,19 @@ export class SwrGenerator {
 
   get lowerFirstNamespaceTypeName(): string {
     return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod)
-      ? _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + ZOD_SUFFIX
-      : _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX;
+      ? `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${ZOD_SUFFIX}`
+      : `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${TYPE_SUFFIX}`;
   }
 
   get responseDataType(): string {
     return (
-      this.upperFirstNamespaceTypeName +
-      "." +
-      this.openapi.upperFirstResponseName
+      `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstResponseName}`
     );
   }
 
   get errorResponseTypeName() {
     return (
-      this.upperFirstNamespaceTypeName +
-      "." +
-      this.openapi.errorResponseTypeName
+      `${this.upperFirstNamespaceTypeName}.${this.openapi.errorResponseTypeName}`
     );
   }
 
@@ -118,32 +114,29 @@ export class SwrGenerator {
       return undefined;
     }
     return (
-      this.upperFirstNamespaceTypeName +
-      "." +
-      this.openapi.upperFirstBodyDataName
+      `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstBodyDataName}`
     );
   }
 
   get keyName(): string {
     if (this.operation?.method === "get") {
       return `${this.openapi.requestName}QueryKey`;
-    } else {
-      return `${this.openapi.requestName}MutationKey`;
     }
+      return `${this.openapi.requestName}MutationKey`;
   }
   get upperFirstKeyName(): string {
     return _.upperFirst(this.keyName);
   }
   //
   get upperFirstQueryKeyNameOfNameSpace(): string {
-    return this.swrNamespaceTypeName + "." + _.upperFirst(this.keyName);
+    return `${this.swrNamespaceTypeName}.${_.upperFirst(this.keyName)}`;
   }
 
   //upperFirstQueryKeyNameOfNameSpace
 
   get serviceName(): string {
     return (
-      `${this.openapi.currentTagNameOfPinYin}` + _.upperFirst(REQUEST_SUFFIX)
+      `${this.openapi.currentTagNameOfPinYin}${_.upperFirst(REQUEST_SUFFIX)}`
     );
   }
 
@@ -192,7 +185,7 @@ export class SwrGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.lowerFirstFileName + ".ts",
+        `${this.lowerFirstFileName}.ts`,
       );
 
       this.ast.createSourceFile(filePath, {
@@ -294,17 +287,17 @@ export class SwrGenerator {
     const mutationType: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: ["SWRMutationConfiguration"],
-      moduleSpecifier: `swr/mutation`,
+      moduleSpecifier: 'swr/mutation',
     };
 
     const useSWRType: ImportStatementsOmitKind = {
       defaultImport: "useSWR",
-      moduleSpecifier: `swr`,
+      moduleSpecifier: 'swr',
     };
 
     const useSWRMutationType: ImportStatementsOmitKind = {
       defaultImport: "useSWRMutation",
-      moduleSpecifier: `swr/mutation`,
+      moduleSpecifier: 'swr/mutation',
     };
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
@@ -334,13 +327,13 @@ export class SwrGenerator {
       .map((x) => {
         const questionToken = x.name && x.hasQuestionToken ? "?" : "";
         return (
-          x.name + questionToken + ":" + (_.isString(x.type) ? x.type : "")
+          `${x.name + questionToken}:${_.isString(x.type) ? x.type : ""}`
         );
       })
       .value();
 
     const queryKey = this.openapi.parameter?.hasQueryParameters
-      ? `...(params ? [params] : [])`
+      ? '...(params ? [params] : [])'
       : "";
 
     const keys = _.chain([] as string[])
@@ -378,7 +371,7 @@ export class SwrGenerator {
             ...params
         } as const
     }`
-            : `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? "," + keys : ""}] as const`,
+            : `(${funcParams.join()}) => [{url:${url.requestPath},method:'${this.operation?.method}'}${keys ? `,${keys}` : ""}] as const`,
 
           //   docs: [{ description: "" }],
         },
@@ -411,9 +404,7 @@ export class SwrGenerator {
       name: "params",
       hasQuestionToken: this.openapi.parameter?.isQueryOptional,
       type:
-        this.upperFirstNamespaceTypeName +
-        "." +
-        this.openapi.upperFirstQueryRequestName,
+        `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstQueryRequestName}`,
       decorators: [],
     };
 
@@ -423,10 +414,7 @@ export class SwrGenerator {
         return {
           name: _.camelCase(item.name),
           type:
-            this.upperFirstNamespaceTypeName +
-            "." +
-            this.openapi.upperFirstPathRequestName +
-            `['${_.camelCase(item.name)}']`,
+            `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstPathRequestName}['${_.camelCase(item.name)}']`,
           decorators: [],
         };
       })
@@ -502,15 +490,15 @@ export class SwrGenerator {
       .value();
 
     const optionsParams = isGetMethod
-      ? `const { swr: queryOptions, shouldFetch = true } = options ?? {}`
-      : `const { swr: mutationOptions,shouldFetch =true} = options ?? {}`;
+      ? 'const { swr: queryOptions, shouldFetch = true } = options ?? {}'
+      : 'const { swr: mutationOptions,shouldFetch =true} = options ?? {}';
 
     const queryKey = isGetMethod
       ? `const queryKey = ${this.keyName}(${queryKeyParams})` //pathParams
       : `const mutationKey = ${this.keyName}(${queryKeyParams})`;
 
     //SWRMutationConfiguration<UserType.SetPasswordPostResponse, unknown, any, UserType.SetPasswordPostRequest>
-    const useSWRMutation = `useSWRMutation<${this.responseDataType},  ${this.errorResponseTypeName}, ${this.upperFirstQueryKeyNameOfNameSpace} | null${this.requestDataType ? "," + this.requestDataType : ",never"}>(shouldFetch ? mutationKey : null, async (_url,{ arg: data }) => {
+    const useSWRMutation = `useSWRMutation<${this.responseDataType},  ${this.errorResponseTypeName}, ${this.upperFirstQueryKeyNameOfNameSpace} | null${this.requestDataType ? `,${this.requestDataType}` : ",never"}>(shouldFetch ? mutationKey : null, async (_url,{ arg: data }) => {
         return ${this.serviceName}.${this.openapi.requestName}(${_.chain(
           [] as any,
         )
@@ -551,7 +539,7 @@ export class SwrGenerator {
       name: "options",
       hasQuestionToken: true,
       type: `{
-        swr?: SWRMutationConfiguration<${this.responseDataType},  ${this.errorResponseTypeName}, ${this.upperFirstQueryKeyNameOfNameSpace} | null${this.requestDataType ? "," + this.requestDataType : ",never"}>;
+        swr?: SWRMutationConfiguration<${this.responseDataType},  ${this.errorResponseTypeName}, ${this.upperFirstQueryKeyNameOfNameSpace} | null${this.requestDataType ? `,${this.requestDataType}` : ",never"}>;
         shouldFetch?: boolean;
         }`,
     };
@@ -560,7 +548,7 @@ export class SwrGenerator {
   generatorMethodsStatements(): FunctionDeclarationStructure {
     const statement = {
       isAsync: false,
-      name: "use" + this.openapi.upperFirstRequestName,
+      name: `use${this.openapi.upperFirstRequestName}`,
       decorators: [],
       parameters: [
         ...this.generatorMethodParameters(),

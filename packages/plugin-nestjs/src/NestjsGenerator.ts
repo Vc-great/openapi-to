@@ -63,20 +63,20 @@ export class NestjsGenerator {
   get transformerImportStatement(): ImportStatementsOmitKind {
     return {
       namedImports: ["plainToInstance"],
-      moduleSpecifier: `class-transformer`,
+      moduleSpecifier: 'class-transformer',
     };
   }
 
   get controllerClassName(): string {
-    return _.upperFirst(this.openapi.currentTagName) + "Controller";
+    return `${_.upperFirst(this.openapi.currentTagName)}Controller`;
   }
 
   get serviceClassName(): string {
-    return _.upperFirst(this.openapi.currentTagName) + "Service";
+    return `${_.upperFirst(this.openapi.currentTagName)}Service`;
   }
 
   get repositoryClassName(): string {
-    return _.upperFirst(this.openapi.currentTagName) + "Repository";
+    return `${_.upperFirst(this.openapi.currentTagName)}Repository`;
   }
 
   get resourcePath(): string {
@@ -90,19 +90,19 @@ export class NestjsGenerator {
   get controllerFilePath(): string {
     return path.resolve(
       this.resourcePath,
-      this.openapi.currentTagName + ".controller.ts",
+      `${this.openapi.currentTagName}.controller.ts`,
     );
   }
 
   get serviceFilePath(): string {
     return path.resolve(
       this.resourcePath,
-      this.openapi.currentTagName + ".service.ts",
+      `${this.openapi.currentTagName}.service.ts`,
     );
   }
 
   get serviceModuleSpecifier(): string {
-    return "./" + this.openapi.currentTagName + "." + "service";
+    return `./${this.openapi.currentTagName}.service`;
   }
 
   get repositoryName(): string {
@@ -120,21 +120,21 @@ export class NestjsGenerator {
   get repositoryFilePath(): string {
     return path.resolve(
       this.repositoryDirectory,
-      this.openapi.currentTagName + ".repository.ts",
+      `${this.openapi.currentTagName}.repository.ts`,
     );
   }
 
   get repositoryModuleFilePath(): string {
     return path.resolve(
       this.repositoryDirectory,
-      this.openapi.currentTagName + "-repository" + ".module.ts",
+      `${this.openapi.currentTagName}-repository.module.ts`,
     );
   }
 
   get repositoryMapperFilePath(): string {
     return path.resolve(
       this.repositoryDirectory,
-      this.openapi.currentTagName + ".mapper.ts",
+      `${this.openapi.currentTagName}.mapper.ts`,
     );
   }
 
@@ -344,13 +344,13 @@ export class NestjsGenerator {
     const arrayBody = this.openapi.requestBody?.arrayBody;
 
     return {
-      name: `data`,
+      name: 'data',
       type:
-        (this.BodyDtoName
+        `${this.BodyDtoName
           ? this.BodyDtoName
           : this.openapi.formatterSchemaType(
               _.get(arrayBody ?? {}, "schemaObject.type", "any"),
-            )) + `${arrayBody?.isArray ? "[]" : ""}`,
+            )}${arrayBody?.isArray ? "[]" : ""}`,
       decorators: [],
     };
   }

@@ -106,7 +106,7 @@ export class ZodOldNode {
     }
 
     const project = new Project();
-    const folderName = this.openapiToSingleConfig.output.dir + "/**/*.ts";
+    const folderName = `${this.openapiToSingleConfig.output.dir}/**/*.ts`;
     const sourceFiles = project.addSourceFilesAtPaths(folderName);
     _.forEach(sourceFiles, (sourceFile) => {
       const moduleDeclaration = _.head(sourceFile.getModules());

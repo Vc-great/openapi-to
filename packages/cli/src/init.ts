@@ -5,7 +5,7 @@ import { PackageManager } from "@openapi-to/core";
 import { folderName, pathExistsSync, readSync, write } from "@openapi-to/core";
 
 import c from "picocolors";
-import process from "process";
+import process from "node:process";
 
 import { spinner } from "./utils/spinner.ts";
 import { commonPresetMeta, modulePresetMeta } from "./presetMeta.ts";
@@ -14,7 +14,7 @@ export async function init(): Promise<undefined> {
   spinner.start("📦 Initializing openapi-to");
   await createConfig();
   await createGitignore();
-  spinner.succeed(`📦 initialized openapi-to`);
+  spinner.succeed('📦 initialized openapi-to');
   return;
 }
 

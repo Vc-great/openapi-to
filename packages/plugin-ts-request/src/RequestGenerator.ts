@@ -96,7 +96,7 @@ export class RequestGenerator {
   get fileName(): string {
     return (
       this.oldNode.classDeclaration?.getName() ??
-      _.upperFirst(this.openapi.currentTagNameOfPinYin) + "." + REQUEST_SUFFIX
+      `${_.upperFirst(this.openapi.currentTagNameOfPinYin)}.${REQUEST_SUFFIX}`
     );
   }
 
@@ -110,7 +110,7 @@ export class RequestGenerator {
   get lowerFirstTypeFileName(): string {
     return (
       this.oldNode.typeNamespace.namedImport ||
-      _.lowerFirst(this.openapi.currentTagNameOfPinYin) + "." + TYPE_SUFFIX
+      `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${TYPE_SUFFIX}`
     );
   }
 
@@ -124,7 +124,7 @@ export class RequestGenerator {
   get zodFileName(): string {
     return (
       this.oldNode.zodNamespace.namedImport ||
-      this.openapi.currentTagNameOfPinYin + "." + ZOD_SUFFIX
+      `${this.openapi.currentTagNameOfPinYin}.${ZOD_SUFFIX}`
     );
   }
 
@@ -152,9 +152,7 @@ export class RequestGenerator {
 
   get responseDataType(): string {
     return (
-      this.upperFirstNamespaceTypeName +
-      "." +
-      this.openapi.upperFirstResponseName
+      `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstResponseName}`
     );
   }
 
@@ -170,21 +168,16 @@ export class RequestGenerator {
       return "";
     }
     const errorResponseType =
-      this.upperFirstNamespaceTypeName +
-      "." +
-      this.openapi.upperFirstRequestName +
-      "Error";
+      `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstRequestName}Error`;
 
     return this.isCommonWithArrayResponseRequestType
       ? `Promise<[${errorResponseType},${this.responseDataType}]>`
-      : ``;
+      : '';
   }
 
   get requestDataType(): string {
     return (
-      this.upperFirstNamespaceTypeName +
-      "." +
-      this.openapi.upperFirstBodyDataName
+      `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstBodyDataName}`
     );
   }
 
@@ -215,7 +208,7 @@ export class RequestGenerator {
 
       const filePath = path.resolve(
         this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || this.fileName + ".ts",
+        this.oldNode.baseName || `${this.fileName}.ts`,
       );
 
       this.ast.createSourceFile(filePath, {
@@ -242,7 +235,7 @@ export class RequestGenerator {
         declarations: [
           {
             name: this.lowerFirstClassName,
-            initializer: "new" + " " + this.className,
+            initializer: `new ${this.className}`,
           },
         ],
         isExported: true,
@@ -349,9 +342,7 @@ export class RequestGenerator {
             {
               tagName: "description",
               text:
-                this.openapi &&
-                this.openapi.currentTagMetadata &&
-                this.openapi.currentTagMetadata.description,
+                this.openapi?.currentTagMetadata?.description,
             },
             ...(this.pluginConfig?.compare
               ? [
@@ -383,7 +374,7 @@ export class RequestGenerator {
       },
       {
         name: "responseZodSchema",
-        arguments: [this.zodTypeName + "." + this.openapi.responseName],
+        arguments: [`${this.zodTypeName}.${this.openapi.responseName}`],
       },
     ];
   }
@@ -401,15 +392,13 @@ export class RequestGenerator {
       name: "params",
       hasQuestionToken: this.openapi.parameter?.isQueryOptional,
       type:
-        this.upperFirstNamespaceTypeName +
-        "." +
-        this.openapi.upperFirstQueryRequestName,
+        `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstQueryRequestName}`,
       decorators: this.isCreateZodDecorator
         ? [
             {
               name: this.paramsZodSchema,
               arguments: [
-                this.zodTypeName + "." + this.openapi.queryRequestName,
+                `${this.zodTypeName}.${this.openapi.queryRequestName}`,
               ],
             },
           ]
@@ -423,7 +412,7 @@ export class RequestGenerator {
         ? [
             {
               name: this.paramsZodSchema,
-              arguments: [this.zodTypeName + "." + this.openapi.bodyDataName],
+              arguments: [`${this.zodTypeName}.${this.openapi.bodyDataName}`],
             },
           ]
         : [],
@@ -435,20 +424,13 @@ export class RequestGenerator {
         return {
           name: _.camelCase(item.name),
           type:
-            this.upperFirstNamespaceTypeName +
-            "." +
-            this.openapi.upperFirstPathRequestName +
-            `['${_.camelCase(item.name)}']`,
+            `${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstPathRequestName}['${_.camelCase(item.name)}']`,
           decorators: this.isCreateZodDecorator
             ? [
                 {
                   name: this.paramsZodSchema,
                   arguments: [
-                    this.zodTypeName +
-                      "." +
-                      this.openapi.pathRequestName +
-                      ".shape" +
-                      `.${_.camelCase(item.name)}`,
+                    `${this.zodTypeName}.${this.openapi.pathRequestName}.shape.${_.camelCase(item.name)}`,
                   ],
                 },
               ]
@@ -524,7 +506,7 @@ export class RequestGenerator {
 
   generatorParamsSerializer(): string {
     if (!this.pluginConfig?.compare) {
-      return `paramsSerializer(params:${this.upperFirstNamespaceTypeName + "." + this.openapi.upperFirstQueryRequestName}) {
+      return `paramsSerializer(params:${`${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstQueryRequestName}`}) {
             return qs.stringify(params)
         }`;
     }
@@ -566,11 +548,11 @@ export class RequestGenerator {
     };
 
     const requestFuncContent = _.chain([] as string[])
-      .push("method:" + "'" + this.operation?.method.toUpperCase() + "'")
+      .push(`method:'${this.operation?.method.toUpperCase()}'`)
       .push(header())
-      .push("url:" + url.requestPath)
+      .push(`url:${url.requestPath}`)
       .push(this.openapi.parameter?.hasQueryParameters ? "params" : "")
-      .push(this.openapi.requestBody?.hasRequestBody ? `data` : "")
+      .push(this.openapi.requestBody?.hasRequestBody ? 'data' : "")
       .push(this.openapi.response?.isDownLoad ? "responseType:'blob'" : "")
       .push("...requestConfig")
       .push(
@@ -622,7 +604,7 @@ export class RequestGenerator {
 
   generatorMethodsStatements(): MethodDeclarationStructure {
     const statement = {
-      isAsync: this.isCommonWithArrayResponseRequestType ? false : true,
+      isAsync: !this.isCommonWithArrayResponseRequestType,
       name: this.oldNode.methodName ?? this.openapi.requestName,
       decorators: this.isCreateZodDecorator
         ? this.generatorMethodDecorators()

@@ -2,30 +2,29 @@ export class Faker {
   get number() {
     const str = "faker.number";
     return {
-      int: () => str + `.int()`,
+      int: () => `${str}.int()`,
     };
   }
 
   get string() {
     const str = "faker.string";
     return {
-      alpha: () => str + `.alpha()`,
+      alpha: () => `${str}.alpha()`,
     };
   }
 
   get datatype() {
     const str = "faker.datatype";
     return {
-      boolean: () => str + `.boolean()`,
+      boolean: () => `${str}.boolean()`,
     };
   }
 
   get helpers() {
-    const head = `faker.helpers`;
+    const head = 'faker.helpers';
     return {
       multiple: (functionName: string) =>
-        head +
-        `.multiple(()=>${functionName}, {
+        `${head}.multiple(()=>${functionName}, {
         count: 10,
       })`,
     };

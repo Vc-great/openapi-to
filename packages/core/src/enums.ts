@@ -6,7 +6,7 @@ export enum pluginEnum {
   Request = "Request",
   SWR = "SWR",
   MSW = "MSW",
-  NestJs = "NestJs",
+  NestJS = "NestJS",
   Faker = "Faker",
   VueQuery = "VueQuery",
   Zod = "Zod",

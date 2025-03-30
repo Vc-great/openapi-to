@@ -32,7 +32,7 @@ export default function stringifyObject(input, options, pad = "") {
       const oneLined = string
         .replace(new RegExp(tokens.newline, "g"), "")
         .replace(new RegExp(tokens.newlineOrSpace, "g"), " ")
-        .replace(new RegExp(tokens.pad + "|" + tokens.indent, "g"), "");
+        .replace(new RegExp(`${tokens.pad}|${tokens.indent}`, "g"), "");
 
       if (oneLined.length <= options.inlineCharacterLimit) {
         return oneLined;
@@ -40,7 +40,7 @@ export default function stringifyObject(input, options, pad = "") {
 
       return string
         .replace(
-          new RegExp(tokens.newline + "|" + tokens.newlineOrSpace, "g"),
+          new RegExp(`${tokens.newline}|${tokens.newlineOrSpace}`, "g"),
           "\n",
         )
         .replace(new RegExp(tokens.pad, "g"), pad)
@@ -75,14 +75,12 @@ export default function stringifyObject(input, options, pad = "") {
       seen.push(input);
 
       const returnValue =
-        "[" +
-        tokens.newline +
-        input
+        `[${tokens.newline}${input
           .map((element, i) => {
             const eol =
               input.length - 1 === i
                 ? tokens.newline
-                : "," + tokens.newlineOrSpace;
+                : `,${tokens.newlineOrSpace}`;
 
             let value = stringify(element, options, pad + indent);
             if (options.transform) {
@@ -91,9 +89,7 @@ export default function stringifyObject(input, options, pad = "") {
 
             return tokens.indent + value + eol;
           })
-          .join("") +
-        tokens.pad +
-        "]";
+          .join("")}${tokens.pad}]`;
 
       seen.pop();
 
@@ -117,14 +113,12 @@ export default function stringifyObject(input, options, pad = "") {
       seen.push(input);
 
       const returnValue =
-        "{" +
-        tokens.newline +
-        objectKeys
+        `{${tokens.newline}${objectKeys
           .map((element, index) => {
             const eol =
               objectKeys.length - 1 === index
                 ? tokens.newline
-                : "," + tokens.newlineOrSpace;
+                : `,${tokens.newlineOrSpace}`;
             const isSymbol = typeof element === "symbol";
             const isClassic = !isSymbol && /^[a-z$_][$\w]*$/i.test(element);
             const key =
@@ -135,11 +129,9 @@ export default function stringifyObject(input, options, pad = "") {
               value = options.transform(input, element, value);
             }
 
-            return tokens.indent + String(key) + ": " + value + eol;
+            return `${tokens.indent + String(key)}: ${value}${eol}`;
           })
-          .join("") +
-        tokens.pad +
-        "}";
+          .join("")}${tokens.pad}}`;
 
       seen.pop();
 

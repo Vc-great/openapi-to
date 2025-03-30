@@ -74,9 +74,8 @@ export class EnumGenerator {
     //
     const labelName = (name: string) => {
       return (
-        _.lowerFirst(this.prefix) +
-        (this.prefix ? _.upperFirst(name) : _.lowerFirst(name)) +
-        "Label"
+        `${_.lowerFirst(this.prefix) +
+        (this.prefix ? _.upperFirst(name) : _.lowerFirst(name))}Label`
       );
     };
     const labelStatements = _.chain(this.entries())
@@ -128,7 +127,7 @@ export class EnumGenerator {
             {
               name: enumName(name),
               initializer:
-                this.ast.generateObject(
+                `${this.ast.generateObject(
                   ((schema.enum || []) as Array<string>).reduce(
                     (obj, item: string) => {
                       const key: string = _.upperFirst(_.camelCase(item));
@@ -137,7 +136,7 @@ export class EnumGenerator {
                     },
                     {} as { [key: string]: string },
                   ),
-                ) + "as const",
+                )}as const`,
             },
           ],
           docs: schema.description
@@ -165,19 +164,17 @@ export class EnumGenerator {
           isExported: true,
           declarations: [
             {
-              name: _.lowerFirst(this.prefix) + _.upperFirst(name) + "Option",
+              name: `${_.lowerFirst(this.prefix) + _.upperFirst(name)}Option`,
               initializer:
-                "[" +
-                (schema.enum || []).reduce((arr, item: string) => {
+                `[${(schema.enum || []).reduce((arr, item: string) => {
                   const obj = this.ast.generateObject({
                     label:
-                      labelName(name) + "." + _.upperFirst(_.camelCase(item)),
+                      `${labelName(name)}.${_.upperFirst(_.camelCase(item))}`,
                     value:
-                      enumName(name) + "." + _.upperFirst(_.camelCase(item)),
+                      `${enumName(name)}.${_.upperFirst(_.camelCase(item))}`,
                   });
                   return arr + (arr ? "," : "") + obj;
-                }, "") +
-                "]",
+                }, "")}]`,
             },
           ],
           docs: [{ description: schema.description || "" }].filter(
@@ -194,8 +191,8 @@ export class EnumGenerator {
 
   static getInstance(config: Config): EnumGenerator {
     if (!EnumGenerator.instance) {
-      this.instance = new EnumGenerator(config);
+      EnumGenerator.instance = new EnumGenerator(config);
     }
-    return this.instance;
+    return EnumGenerator.instance;
   }
 }

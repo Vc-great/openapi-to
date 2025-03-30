@@ -25,7 +25,7 @@ class NewPetAPI {
   ): Promise<[newPet.TestPostErrorResponse, newPet.TestPostResponse]> {
     return request({
       method: "post",
-      url: `/pet/test`,
+      url: '/pet/test',
       data: bodyParams,
     });
   }
@@ -44,7 +44,7 @@ class NewPetAPI {
   ): Promise<[newPet.TestPutErrorResponse, newPet.TestPutResponse]> {
     return request({
       method: "put",
-      url: `/pet/test`,
+      url: '/pet/test',
       data: bodyParams,
     });
   }
@@ -63,7 +63,7 @@ class NewPetAPI {
   ): Promise<[newPet.DelByTestErrorResponse, newPet.DelByTestResponse]> {
     return request({
       method: "delete",
-      url: `/pet/test`,
+      url: '/pet/test',
       data: bodyParams,
     });
   }
@@ -132,7 +132,7 @@ class NewPetAPI {
   ): Promise<[newPet.CreateErrorResponse, newPet.CreateResponse]> {
     return request({
       method: "post",
-      url: `/pet`,
+      url: '/pet',
       data: bodyParams,
     });
   }
@@ -151,7 +151,7 @@ class NewPetAPI {
   ): Promise<[newPet.UpdateErrorResponse, newPet.UpdateResponse]> {
     return request({
       method: "put",
-      url: `/pet`,
+      url: '/pet',
       data: bodyParams,
     });
   }
@@ -172,7 +172,7 @@ class NewPetAPI {
   > {
     return request({
       method: "get",
-      url: `/pet/findByStatus`,
+      url: '/pet/findByStatus',
       params: queryParams,
       paramsSerializer(params: newPet.FindByStatusGetQueryParams) {
         return qs.stringify(params);
@@ -196,7 +196,7 @@ class NewPetAPI {
   > {
     return request({
       method: "get",
-      url: `/pet/findByTags`,
+      url: '/pet/findByTags',
       params: queryParams,
       paramsSerializer(params: newPet.FindByTagsGetQueryParams) {
         return qs.stringify(params);

@@ -16,9 +16,6 @@ import type { Config } from "./types.ts";
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
 
 export class ServiceGenerator extends NestjsGenerator {
-  constructor(config: Config) {
-    super(config);
-  }
 
   get getResponseStatusCodes() {
     return this.openapi.response?.getResponseStatusCodes;

@@ -12,5 +12,5 @@ export function zodNameAddSuffix(zodName: string): string {
 }
 
 export function fileAddSuffix(fileName: string): string {
-  return _.lowerFirst(fileName) + "." + ZOD_SUFFIX;
+  return `${_.lowerFirst(fileName)}.${ZOD_SUFFIX}`;
 }

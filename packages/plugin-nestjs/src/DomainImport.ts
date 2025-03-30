@@ -35,7 +35,7 @@ export class DomainImport {
   }
 
   generateQueryDtoModuleSpecifier(operationId: string): string {
-    return "./" + DOMAIN_DIR + "/" + `${operationId}-query.dto`;
+    return `./${DOMAIN_DIR}/${operationId}-query.dto`;
   }
   generateQueryDtoFilePath(
     currentTagName: string,
@@ -45,7 +45,7 @@ export class DomainImport {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       `./${currentTagName}`,
-      queryDtoModuleSpecifier + ".ts",
+      `${queryDtoModuleSpecifier}.ts`,
     );
   }
 
@@ -65,7 +65,7 @@ export class DomainImport {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       `./${currentTagName}`,
-      bodyDtoModuleSpecifier + ".ts",
+      `${bodyDtoModuleSpecifier}.ts`,
     );
   }
 
@@ -97,7 +97,7 @@ export class DomainImport {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       `./${currentTagName}`,
-      responseModuleSpecifier + ".ts",
+      `${responseModuleSpecifier}.ts`,
     );
   }
 

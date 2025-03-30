@@ -12,5 +12,5 @@ export function typeNameAddSuffix(typeName: string): string {
 }
 
 export function fileAddSuffix(fileName: string): string {
-  return _.upperFirst(fileName) + "." + TYPE_SUFFIX;
+  return `${_.upperFirst(fileName)}.${TYPE_SUFFIX}`;
 }

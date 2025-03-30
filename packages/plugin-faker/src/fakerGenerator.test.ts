@@ -5,7 +5,7 @@ import { AST, OpenAPI } from "@openapi-to/core";
 
 import _ from "lodash";
 import Oas from "oas";
-import path from "path";
+import path from "node:path";
 
 import petStore from "../mock/petstore.json";
 import { FakerGenerator } from "./FakerGenerator.ts";

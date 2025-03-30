@@ -1,5 +1,5 @@
 export class Zod {
-  private currentType: string = "";
+  private currentType = "";
 
   head(): this {
     this.currentType = "z";
@@ -41,7 +41,7 @@ export class Zod {
     return this;
   }
   unknown(): this {
-    const str = `.unknown()`;
+    const str = '.unknown()';
     this.currentType += str;
     return this;
   }

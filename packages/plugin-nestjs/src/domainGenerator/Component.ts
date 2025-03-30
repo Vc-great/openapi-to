@@ -322,7 +322,7 @@ export class Component extends NestjsGenerator {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       REQUEST_BODIES_DIR,
-      this.handleDtoFileName(refName) + ".dto.ts",
+      `${this.handleDtoFileName(refName)}.dto.ts`,
     );
 
     const nestjsSwagger: ImportStatementsOmitKind = {
@@ -332,7 +332,7 @@ export class Component extends NestjsGenerator {
 
     const importSchemas: ImportStatementsOmitKind = {
       namedImports: property?.namedImports ?? [],
-      moduleSpecifier: "./" + SCHEMA_DIR,
+      moduleSpecifier: `./${SCHEMA_DIR}`,
     };
 
     if (!_.isEmpty(statements.properties)) {
@@ -436,8 +436,7 @@ export class Component extends NestjsGenerator {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       RESPONSES_DIR,
-      _.kebabCase(refName.endsWith("Vo") ? refName.slice(0, -2) : refName) +
-        ".vo.ts",
+      `${_.kebabCase(refName.endsWith("Vo") ? refName.slice(0, -2) : refName)}.vo.ts`,
     );
 
     const nestjsSwagger: ImportStatementsOmitKind = {
@@ -451,7 +450,7 @@ export class Component extends NestjsGenerator {
       .map((item) => {
         return {
           namedImports: [item],
-          moduleSpecifier: "./" + SCHEMA_DIR + "/" + item,
+          moduleSpecifier: `./${SCHEMA_DIR}/${item}`,
         };
       })
       .value();
@@ -522,7 +521,7 @@ export class Component extends NestjsGenerator {
       this.openapiToSingleConfig.output.dir,
       OUTPUT_DIR,
       RESPONSES_DIR,
-      this.handleDtoFileName(title) + ".dto.ts",
+      `${this.handleDtoFileName(title)}.dto.ts`,
     );
 
     const nestjsSwagger: ImportStatementsOmitKind = {

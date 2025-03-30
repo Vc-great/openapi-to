@@ -8,7 +8,6 @@ export class EnumCache {
     string
   >();
   private name: { [key: string]: number } = {};
-  constructor() {}
 
   entries(): Array<[SchemaObject, string]> {
     return [...this.enumCache.entries()];

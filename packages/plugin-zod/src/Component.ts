@@ -78,14 +78,14 @@ export class Component {
     //    const name = key + _.upperFirst(ZOD_SUFFIX);
     const name = zodNameAddSuffix(key);
     const refName = refAddSuffix(this.openapi.getRefAlias(schema.$ref));
-    const UUID = UUIDPrefix + name + "-" + refName;
+    const UUID = `${UUIDPrefix + name}-${refName}`;
     const variableDeclaration = this.oldNode.variableDeclarationCache.get(UUID);
     const statements = [
       ...this.ast.generateImportStatements([
         {
           namedImports: ["z"],
           isTypeOnly: false,
-          moduleSpecifier: `zod`,
+          moduleSpecifier: 'zod',
         },
         {
           namedImports: [variableDeclaration?.getName() ?? refName],
@@ -122,7 +122,7 @@ export class Component {
   ): void {
     const filePath = path.resolve(
       this.openapiToSingleConfig.output.dir || "./",
-      this.modelFolderName + "/" + fileName + ".ts",
+      `${this.modelFolderName}/${fileName}.ts`,
     );
 
     this.ast.createSourceFile(filePath, {
@@ -153,7 +153,7 @@ export class Component {
           : name;
 
         return this.ast.generateExportStatements({
-          moduleSpecifier: "./" + fileAddSuffix(fileName),
+          moduleSpecifier: `./${fileAddSuffix(fileName)}`,
         });
       })
       .value();
@@ -208,7 +208,7 @@ export class Component {
       {
         namedImports: ["z"],
         isTypeOnly: false,
-        moduleSpecifier: `zod`,
+        moduleSpecifier: 'zod',
       },
     ]);
 
@@ -227,7 +227,7 @@ export class Component {
                   namedImports: [name],
                   isTypeOnly: false,
                   moduleSpecifier:
-                    "./" + fileAddSuffix(this.openapi.getRefAlias(ref)),
+                    `./${fileAddSuffix(this.openapi.getRefAlias(ref))}`,
                 },
               ]),
         ]);

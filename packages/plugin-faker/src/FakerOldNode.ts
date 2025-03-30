@@ -99,7 +99,7 @@ export class FakerOldNode {
     }
 
     const project = new Project();
-    const folderName = this.openapiToSingleConfig.output.dir + "/*.ts";
+    const folderName = `${this.openapiToSingleConfig.output.dir}/*.ts`;
     const sourceFiles = project.addSourceFilesAtPaths(folderName);
     _.forEach(sourceFiles, (sourceFile) => {
       const classDeclaration = _.head(sourceFile.getClasses());
@@ -107,7 +107,7 @@ export class FakerOldNode {
         return;
       }
       const uuid = this.uuid(classDeclaration.getJsDocs());
-      if (uuid && uuid.startsWith("Faker-")) {
+      if (uuid?.startsWith("Faker-")) {
         this.sourceFileCache.set(uuid, sourceFile);
       }
     });
