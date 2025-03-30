@@ -110,10 +110,10 @@ export class Parameter {
     const path = this.operation.path.replace(
       /{([\w-]+)}/g,
       (_matchData, pathParams: string) => {
-        return "${" + _.camelCase(pathParams) + "}";
+        return `\${${_.camelCase(pathParams)}}`;
       },
     );
-    return "`" + path + "`";
+    return `\`${path}\``;
   }
 
   getParametersSchema(inKey: "path" | "query" | "header"): SchemaObject | null {

@@ -27,7 +27,7 @@ type Executed = {
 export class PluginManager {
   private plugins: Array<PluginFactory>;
   readonly executed: Array<Executed> = [];
-  filesCreated: number = 0;
+  filesCreated = 0;
   constructor(
     private readonly openapiToSingleConfig: OpenapiToSingleConfig,
     private readonly openapiDocument: OpenAPIDocument,

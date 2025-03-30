@@ -30,10 +30,10 @@ export class URLPath {
     const str = this.path.replace(
       /{([\w-]+)}/g,
       (matchData, params: string) => {
-        return "${" + _.camelCase(params) + "}";
+        return `\${${_.camelCase(params)}}`;
       },
     );
-    return "`" + str + "`";
+    return `\`${str}\``;
   }
 
   /**
@@ -42,7 +42,7 @@ export class URLPath {
    */
   get toURLPath(): string {
     return this.path.replace(/{([\w-]+)}/g, (matchData, params: string) => {
-      return ":" + _.camelCase(params);
+      return `:${_.camelCase(params)}`;
     });
     // return this.path.replaceAll("{", ":").replaceAll("}", "");
   }

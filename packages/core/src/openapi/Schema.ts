@@ -49,8 +49,8 @@ export class Schema {
       .some((str) => str === "requestBodies");
 
     const schemaPath = isRequestBodies
-      ? "requestBodies." + componentName
-      : "schemas." + componentName;
+      ? `requestBodies.${componentName}`
+      : `schemas.${componentName}`;
 
     const schema = _.get(this.oas.api.components, schemaPath, undefined) as
       | OpenAPIV3.SchemaObject

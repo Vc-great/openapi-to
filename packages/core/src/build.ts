@@ -71,7 +71,7 @@ export async function swagger2ToOpenapi3(
 
   if (err) {
     throw new Error(
-      "An error occurred with the conversion of swagger to openapi." + err,
+      `An error occurred with the conversion of swagger to openapi.${err}`,
     );
   }
   return options.openapi;

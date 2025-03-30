@@ -69,8 +69,7 @@ export class Response {
         responseObject.content?.["application/json"] ||
         responseObject.content?.["*/*"];
       const schemaObject =
-        mediaTypeObject &&
-        mediaTypeObject.schema &&
+        mediaTypeObject?.schema &&
         "$ref" in mediaTypeObject.schema
           ? (this.openapi.findSchemaDefinition(
               mediaTypeObject?.schema.$ref,
@@ -89,8 +88,7 @@ export class Response {
       const mediaTypeObject =
         response?.content?.["application/json"] || response?.content?.["*/*"];
       const schemaObject =
-        mediaTypeObject &&
-        mediaTypeObject.schema &&
+        mediaTypeObject?.schema &&
         "$ref" in mediaTypeObject.schema
           ? (this.openapi.findSchemaDefinition(
               mediaTypeObject?.schema.$ref,
@@ -99,8 +97,7 @@ export class Response {
 
       return {
         type:
-          mediaTypeObject &&
-          mediaTypeObject.schema &&
+          mediaTypeObject?.schema &&
           "$ref" in mediaTypeObject.schema
             ? undefined
             : schemaObject?.type,

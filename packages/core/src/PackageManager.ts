@@ -62,7 +62,7 @@ export class PackageManager {
     try {
       let location = this.getLocation(path);
 
-      if (os.platform() == "win32") {
+      if (os.platform() === "win32") {
         location = pathToFileURL(location).href;
       }
 

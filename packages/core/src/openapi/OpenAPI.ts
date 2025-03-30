@@ -18,7 +18,7 @@ import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { HttpMethod, PathGroup, PathGroupByTag } from "../types";
 
-const enum WriteModel {
+enum WriteModel {
   await = "await",
   succeed = "succeed",
 }
@@ -48,7 +48,7 @@ export class OpenAPI {
   constructor(
     public config: object,
     public oas: Oas,
-    public isFromPlugins: boolean = true,
+    public isFromPlugins = true,
   ) {
     this.config = config;
     this.oas = oas;
@@ -86,7 +86,7 @@ export class OpenAPI {
     if (!this.operation?.path) {
       return "";
     }
-    const key = this.operation.path + "_" + this.operation.method;
+    const key = `${this.operation.path}_${this.operation.method}`;
     return this.methodNameMap.get(key) || "";
   }
 
@@ -103,7 +103,7 @@ export class OpenAPI {
   }
 
   get errorResponseTypeName(): string {
-    return this.upperFirstRequestName + "Error";
+    return `${this.upperFirstRequestName}Error`;
   }
 
   get queryRequestName(): string {
@@ -193,7 +193,7 @@ export class OpenAPI {
       _.forEach(pathGroup, ({ path, method, tag }) => {
         openapi.setCurrentOperation(path, method, tag);
         const currentName = openapi.generateMethodName();
-        const key = openapi.operation?.path + "_" + openapi.operation?.method;
+        const key = `${openapi.operation?.path}_${openapi.operation?.method}`;
         if (nameSet.has(currentName)) {
           const num = nameCount.get(currentName) || 0;
           const name = currentName + (num + 1);
@@ -270,7 +270,7 @@ export class OpenAPI {
 
     //detail
     if (hasBracket && isDetail) {
-      return name.get("DETAIL") + "By" + lasePathParams;
+      return `${name.get("DETAIL")}By${lasePathParams}`;
     }
     //其他带括号
     if (hasBracket) {
@@ -313,9 +313,8 @@ export class OpenAPI {
     const part = _.last(pathParts) || "";
     if (part.startsWith("{") && part.endsWith("}")) {
       return _.upperFirst(_.camelCase(part.slice(1, -1)));
-    } else {
-      return part;
     }
+      return part;
   }
 
   /**

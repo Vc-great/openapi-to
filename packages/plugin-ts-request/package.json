@@ -23,8 +23,8 @@
   "scripts": {
     "build": "tsup",
     "clean": "npx rimraf ./dist",
-    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint --format pretty .",
-    "lint-fix": "bun run lint --quiet --fix",
+    "lint": "bun biome lint .",
+    "lint:fix": "bun biome lint --write --unsafe .",
     "release": "pnpm publish --no-git-check",
     "release:canary": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag canary",
     "release:alpha": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag alpha",
@@ -33,7 +33,6 @@
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "devDependencies": {
-    "@openapi-to/config-eslint": "workspace:*",
     "@openapi-to/config-ts": "workspace:*",
     "@openapi-to/config-tsup": "workspace:*",
     "@openapi-to/plugin-zod": "workspace:*",
