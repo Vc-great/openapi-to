@@ -1,34 +1,33 @@
-import type { AST, OpenAPI, OpenapiToSingleConfig } from "@openapi-to/core";
-import type Oas from "oas";
+import type { AST, OpenAPI, OpenapiToSingleConfig } from '@openapi-to/core'
+import type Oas from 'oas'
 
 export enum RequestTypeEnum {
-  AXIOS = "axios",
-  COMMON = "common",
-  COMMON_WITH_ARRAY_RESPONSE = "commonWithArrayResponse",
+  AXIOS = 'axios',
+  COMMON = 'common',
 }
 
-export type RequestType = "axios" | "common" | "commonWithArrayResponse";
+export type RequestType = 'axios' | 'common'
 
 export type PluginConfig = {
-  createZodDecorator?: boolean;
-  compare?: boolean;
+  createZodDecorator?: boolean
+  compare?: boolean
   zodDecoratorImportDeclaration?: {
-    moduleSpecifier: string;
-  };
+    moduleSpecifier: string
+  }
   requestImportDeclaration?: {
-    moduleSpecifier: string;
-  };
+    moduleSpecifier: string
+  }
   requestConfigTypeImportDeclaration?: {
-    namedImports: Array<string>;
-    moduleSpecifier: string;
-  };
-  requestType?: RequestType;
-};
+    namedImports: Array<string>
+    moduleSpecifier: string
+  }
+  requestType?: RequestType
+}
 
 export type Config = {
-  oas: Oas;
-  openapi: OpenAPI;
-  ast: AST;
-  pluginConfig: PluginConfig | undefined;
-  openapiToSingleConfig: OpenapiToSingleConfig;
-};
+  oas: Oas
+  openapi: OpenAPI
+  ast: AST
+  pluginConfig: PluginConfig | undefined
+  openapiToSingleConfig: OpenapiToSingleConfig
+}

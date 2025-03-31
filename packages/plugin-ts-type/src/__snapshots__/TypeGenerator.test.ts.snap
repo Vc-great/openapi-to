@@ -1,26 +1,27 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`typerGenerator > TypeGenerator getFullText 1`] = `
-"import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
+"import type { TestDto2Model, Test32145Model, ApiResponseModel, PetModel } from "./models";
 export const petFindByStatusGetQueryParamsStatusEnumLabel = {
     Available: '',
     Pending: '',
     Sold: ''
 };
-export const PetFindByStatusGetQueryParamsStatusEnum = {
+export const petFindByStatusGetQueryParamsStatusEnum = {
     Available: 'available',
     Pending: 'pending',
     Sold: 'sold'
 } as const;
+export type PetFindByStatusGetQueryParamsStatusEnum = (typeof petFindByStatusGetQueryParamsStatusEnum)[keyof typeof petFindByStatusGetQueryParamsStatusEnum];
 export const PetFindByStatusGetQueryParamsStatusEnumOption = [{
     label: petFindByStatusGetQueryParamsStatusEnumLabel.Available,
-    value: PetFindByStatusGetQueryParamsStatusEnum.Available
+    value: petFindByStatusGetQueryParamsStatusEnum.Available
 }, {
     label: petFindByStatusGetQueryParamsStatusEnumLabel.Pending,
-    value: PetFindByStatusGetQueryParamsStatusEnum.Pending
+    value: petFindByStatusGetQueryParamsStatusEnum.Pending
 }, {
     label: petFindByStatusGetQueryParamsStatusEnumLabel.Sold,
-    value: PetFindByStatusGetQueryParamsStatusEnum.Sold
+    value: petFindByStatusGetQueryParamsStatusEnum.Sold
 }];
 
 /**
@@ -31,18 +32,18 @@ export namespace Pet {
     /**
      * @description OK
      */
-    export type TestPostMutationResponse = TestDto2;
+    export type TestPostMutationResponse = TestDto2Model;
     export type TestPostError = unknown;
     /**
      * @description OK
      */
-    export type TestPutMutationResponse = TestDto2;
+    export type TestPutMutationResponse = TestDto2Model;
     export type TestPutError = unknown;
     export type DelByTestMutationRequest = Array<number>;
     /**
      * @description OK
      */
-    export type DelByTestMutationResponse = Test32145;
+    export type DelByTestMutationResponse = Test32145Model;
     export type DelByTestError = unknown;
 
     /**
@@ -80,8 +81,35 @@ export namespace Pet {
     /**
      * @description OK
      */
-    export type TestIdGetQueryResponse = TestDto2;
+    export type TestIdGetQueryResponse = TestDto2Model;
     export type TestIdGetError = unknown;
+
+    /**
+     * @description queryParams
+     */
+    export interface UploadImageOctetStreamPostQueryParams {
+        /**
+         * @description Additional Metadata
+         */
+        additionalMetadata?: string;
+    }
+
+    /**
+     * @description pathParams
+     */
+    export interface UploadImageOctetStreamPostPathParams {
+        /**
+         * @description ID of pet to update
+         */
+        petId: number;
+    }
+
+    export type UploadImageOctetStreamPostMutationRequest = Blob;
+    /**
+     * @description successful operation
+     */
+    export type UploadImageOctetStreamPostMutationResponse = ApiResponseModel;
+    export type UploadImageOctetStreamPostError = unknown;
 
     /**
      * @description pathParams
@@ -107,7 +135,7 @@ export namespace Pet {
     /**
      * @description successful operation
      */
-    export type UploadImagePostMutationResponse = ApiResponse;
+    export type UploadImagePostMutationResponse = ApiResponseModel;
     export type UploadImagePostError = unknown;
     export type CreateError = unknown;
     export type CreateMutationResponse = unknown;
@@ -127,7 +155,7 @@ export namespace Pet {
     /**
      * @description successful operation
      */
-    export type FindByStatusGetQueryResponse = Pet[];
+    export type FindByStatusGetQueryResponse = PetModel[];
     export type FindByStatusGetError = unknown;
 
     /**
@@ -143,7 +171,7 @@ export namespace Pet {
     /**
      * @description successful operation
      */
-    export type FindByTagsGetQueryResponse = Pet[];
+    export type FindByTagsGetQueryResponse = PetModel[];
     export type FindByTagsGetError = unknown;
 
     /**
@@ -159,7 +187,7 @@ export namespace Pet {
     /**
      * @description successful operation
      */
-    export type FindByPetIdQueryResponse = Pet;
+    export type FindByPetIdQueryResponse = PetModel;
     export type FindByPetIdError = unknown;
 
     /**
@@ -200,18 +228,18 @@ export namespace Pet {
     export type DelByPetIdMutationResponse = unknown;
 }
 
-import type { Order } from "./models";
+import type { OrderModel } from "./models";
 
 /**
  * @tag store
  * @description Access to Petstore orders
  */
 export namespace Store {
-    export type CreateMutationRequest = Order;
+    export type CreateMutationRequest = OrderModel;
     /**
      * @description successful operation
      */
-    export type CreateMutationResponse = Order;
+    export type CreateMutationResponse = OrderModel;
     export type CreateError = unknown;
 
     /**
@@ -227,7 +255,7 @@ export namespace Store {
     /**
      * @description successful operation
      */
-    export type FindByOrderIdQueryResponse = Order;
+    export type FindByOrderIdQueryResponse = OrderModel;
     export type FindByOrderIdError = unknown;
 
     /**
@@ -253,7 +281,7 @@ export namespace Store {
     export type InventoryGetError = unknown;
 }
 
-import type { User } from "./models";
+import type { UserModel } from "./models";
 
 /**
  * @tag user
@@ -278,7 +306,7 @@ export namespace User {
     /**
      * @description successful operation
      */
-    export type FindByUsernameQueryResponse = User;
+    export type FindByUsernameQueryResponse = UserModel;
     export type FindByUsernameError = unknown;
 
     /**
@@ -291,7 +319,7 @@ export namespace User {
         username: string;
     }
 
-    export type UsernamePutMutationRequest = User;
+    export type UsernamePutMutationRequest = UserModel;
     export type UsernamePutError = unknown;
     export type UsernamePutMutationResponse = unknown;
 
@@ -329,19 +357,19 @@ export namespace User {
     export type LoginGetError = unknown;
     export type LogoutGetError = unknown;
     export type LogoutGetQueryResponse = unknown;
-    export type CreateMutationRequest = User;
+    export type CreateMutationRequest = UserModel;
     export type CreateError = unknown;
     export type CreateMutationResponse = unknown;
 }
 
-import type { Testdata } from "./Testdata";
+import type { TestdataModel } from "./testdata.model";
 
-export interface Test32145 {
+export interface Test32145Model {
     /**
      * @description description
      */
     code?: number;
-    meta?: Testdata;
+    meta?: TestdataModel;
 }
 
 /**
@@ -355,24 +383,25 @@ export const test3214ColumnTypeEnumLabel = {
 /**
  * @description description
  */
-export const Test3214ColumnTypeEnum = {
+export const test3214ColumnTypeEnum = {
     Char: 'CHAR',
     Char2: 'CHAR2',
     Char3: 'CHAR3'
 } as const;
+export type Test3214ColumnTypeEnum = (typeof test3214ColumnTypeEnum)[keyof typeof test3214ColumnTypeEnum];
 /** description */
 export const Test3214ColumnTypeEnumOption = [{
     label: test3214ColumnTypeEnumLabel.Char,
-    value: Test3214ColumnTypeEnum.Char
+    value: test3214ColumnTypeEnum.Char
 }, {
     label: test3214ColumnTypeEnumLabel.Char2,
-    value: Test3214ColumnTypeEnum.Char2
+    value: test3214ColumnTypeEnum.Char2
 }, {
     label: test3214ColumnTypeEnumLabel.Char3,
-    value: Test3214ColumnTypeEnum.Char3
+    value: test3214ColumnTypeEnum.Char3
 }];
 
-export interface Test3214 {
+export interface Test3214Model {
     /**
      * @description 默认值
      */
@@ -412,7 +441,7 @@ export interface Test3214 {
     notNull?: boolean;
 }
 
-export interface Testdata {
+export interface TestdataModel {
     /**
      * @description description
      */
@@ -431,43 +460,43 @@ export interface Testdata {
     totalPages?: number;
 }
 
-export interface Sort {
+export interface SortModel {
     empty?: boolean;
     sorted?: boolean;
     unsorted?: boolean;
 }
 
-import type { Test3214 } from "./Test3214";
+import type { Test3214Model } from "./test3214.model";
 
-export interface TestDto3 {
-    test3214?: Test3214[];
+export interface TestDto3Model {
+    test3214?: Test3214Model[];
 }
 
-import type { TestDto3 } from "./TestDto3";
-import type { Testdata } from "./Testdata";
+import type { TestDto3Model } from "./testDto3.model";
+import type { TestdataModel } from "./testdata.model";
 
-export interface TestDto2 {
-    content?: TestDto3;
-    meta?: Testdata;
+export interface TestDto2Model {
+    content?: TestDto3Model;
+    meta?: TestdataModel;
 }
 
-export interface Test321 {
+export interface Test321Model {
     id?: number;
 }
 
-import type { Test321 } from "./Test321";
+import type { Test321Model } from "./test321.model";
 
-export interface TestDto {
+export interface TestDtoModel {
     /**
      * @description test321
      */
-    test321?: Test321[];
+    test321?: Test321Model[];
 }
 
-import type { ApiResponse } from "./ApiResponse";
+import type { ApiResponseModel } from "./apiResponse.model";
 
-export interface RefList {
-    content?: ApiResponse;
+export interface RefListModel {
+    content?: ApiResponseModel;
     /**
      * @description string
      */
@@ -483,19 +512,19 @@ export interface RefList {
     type?: string;
 }
 
-export interface ApiResponse {
+export interface ApiResponseModel {
     code?: number;
     type?: string;
     message?: string;
 }
 
-export interface Category {
+export interface CategoryModel {
     id?: number;
     name?: string;
 }
 
-import type { Category } from "./Category";
-import type { Tag } from "./Tag";
+import type { CategoryModel } from "./category.model";
+import type { TagModel } from "./tag.model";
 /**
  * @description pet status in the store
  */
@@ -507,36 +536,37 @@ export const petStatusEnumLabel = {
 /**
  * @description pet status in the store
  */
-export const PetStatusEnum = {
+export const petStatusEnum = {
     Available: 'available',
     Pending: 'pending',
     Sold: 'sold'
 } as const;
+export type PetStatusEnum = (typeof petStatusEnum)[keyof typeof petStatusEnum];
 /** pet status in the store */
 export const PetStatusEnumOption = [{
     label: petStatusEnumLabel.Available,
-    value: PetStatusEnum.Available
+    value: petStatusEnum.Available
 }, {
     label: petStatusEnumLabel.Pending,
-    value: PetStatusEnum.Pending
+    value: petStatusEnum.Pending
 }, {
     label: petStatusEnumLabel.Sold,
-    value: PetStatusEnum.Sold
+    value: petStatusEnum.Sold
 }];
 
-export interface Pet {
+export interface PetModel {
     id?: number;
-    category?: Category;
+    category?: CategoryModel;
     name: string;
     photoUrls: Array<string>;
-    tags?: Tag[];
+    tags?: TagModel[];
     /**
      * @description pet status in the store
      */
     status?: PetStatusEnum;
 }
 
-export interface Tag {
+export interface TagModel {
     id?: number;
     name?: string;
 }
@@ -552,24 +582,25 @@ export const orderStatusEnumLabel = {
 /**
  * @description Order Status
  */
-export const OrderStatusEnum = {
+export const orderStatusEnum = {
     Placed: 'placed',
     Approved: 'approved',
     Delivered: 'delivered'
 } as const;
+export type OrderStatusEnum = (typeof orderStatusEnum)[keyof typeof orderStatusEnum];
 /** Order Status */
 export const OrderStatusEnumOption = [{
     label: orderStatusEnumLabel.Placed,
-    value: OrderStatusEnum.Placed
+    value: orderStatusEnum.Placed
 }, {
     label: orderStatusEnumLabel.Approved,
-    value: OrderStatusEnum.Approved
+    value: orderStatusEnum.Approved
 }, {
     label: orderStatusEnumLabel.Delivered,
-    value: OrderStatusEnum.Delivered
+    value: orderStatusEnum.Delivered
 }];
 
-export interface Order {
+export interface OrderModel {
     id?: number;
     petId?: number;
     quantity?: number;
@@ -581,7 +612,7 @@ export interface Order {
     complete?: boolean;
 }
 
-export interface User {
+export interface UserModel {
     id?: number;
     username?: string;
     firstName?: string;
@@ -595,45 +626,49 @@ export interface User {
     userStatus?: number;
 }
 
-export * from "./Test32145";
-export * from "./Test3214";
-export * from "./Testdata";
-export * from "./Sort";
-export * from "./TestDto3";
-export * from "./TestDto2";
-export * from "./Test321";
-export * from "./TestDto";
-export * from "./RefList";
-export * from "./ApiResponse";
-export * from "./Category";
-export * from "./Pet";
-export * from "./Tag";
-export * from "./Order";
-export * from "./User";
+export * from "./test32145.model";
+export * from "./test3214ColumnTypeEnum";
+export * from "./test3214.model";
+export * from "./testdata.model";
+export * from "./sort.model";
+export * from "./testDto3.model";
+export * from "./testDto2.model";
+export * from "./test321.model";
+export * from "./testDto.model";
+export * from "./refList.model";
+export * from "./apiResponse.model";
+export * from "./category.model";
+export * from "./petStatusEnum";
+export * from "./pet.model";
+export * from "./tag.model";
+export * from "./orderStatusEnum";
+export * from "./order.model";
+export * from "./user.model";
 "
 `;
 
 exports[`typerGenerator > compare TypeGenerator getFullText 1`] = `
-"import type { TestDto2, Test32145, ApiResponse, Pet } from "./models";
+"import type { TestDto2Model, Test32145Model, ApiResponseModel, PetModel } from "./models";
 export const petFindByStatusGetQueryParamsStatusEnumLabel = {
     Available: '',
     Pending: '',
     Sold: ''
 };
-export const PetFindByStatusGetQueryParamsStatusEnum = {
+export const petFindByStatusGetQueryParamsStatusEnum = {
     Available: 'available',
     Pending: 'pending',
     Sold: 'sold'
 } as const;
+export type PetFindByStatusGetQueryParamsStatusEnum = (typeof petFindByStatusGetQueryParamsStatusEnum)[keyof typeof petFindByStatusGetQueryParamsStatusEnum];
 export const PetFindByStatusGetQueryParamsStatusEnumOption = [{
     label: petFindByStatusGetQueryParamsStatusEnumLabel.Available,
-    value: PetFindByStatusGetQueryParamsStatusEnum.Available
+    value: petFindByStatusGetQueryParamsStatusEnum.Available
 }, {
     label: petFindByStatusGetQueryParamsStatusEnumLabel.Pending,
-    value: PetFindByStatusGetQueryParamsStatusEnum.Pending
+    value: petFindByStatusGetQueryParamsStatusEnum.Pending
 }, {
     label: petFindByStatusGetQueryParamsStatusEnumLabel.Sold,
-    value: PetFindByStatusGetQueryParamsStatusEnum.Sold
+    value: petFindByStatusGetQueryParamsStatusEnum.Sold
 }];
 
 /**
@@ -645,18 +680,18 @@ export namespace NewPet {
     /**
      * @description OK
      */
-    export type TestPostMutationResponse = TestDto2;
+    export type TestPostMutationResponse = TestDto2Model;
     export type TestPostError = unknown;
     /**
      * @description OK
      */
-    export type TestPutMutationResponse = TestDto2;
+    export type TestPutMutationResponse = TestDto2Model;
     export type TestPutError = unknown;
     export type DelByTestMutationRequest = Array<number>;
     /**
      * @description OK
      */
-    export type DelByTestMutationResponse = Test32145;
+    export type DelByTestMutationResponse = Test32145Model;
     export type DelByTestError = unknown;
 
     /**
@@ -694,8 +729,35 @@ export namespace NewPet {
     /**
      * @description OK
      */
-    export type TestIdGetQueryResponse = TestDto2;
+    export type TestIdGetQueryResponse = TestDto2Model;
     export type TestIdGetError = unknown;
+
+    /**
+     * @description queryParams
+     */
+    export interface UploadImageOctetStreamPostQueryParams {
+        /**
+         * @description Additional Metadata
+         */
+        additionalMetadata?: string;
+    }
+
+    /**
+     * @description pathParams
+     */
+    export interface UploadImageOctetStreamPostPathParams {
+        /**
+         * @description ID of pet to update
+         */
+        petId: number;
+    }
+
+    export type UploadImageOctetStreamPostMutationRequest = Blob;
+    /**
+     * @description successful operation
+     */
+    export type UploadImageOctetStreamPostMutationResponse = ApiResponseModel;
+    export type UploadImageOctetStreamPostError = unknown;
 
     /**
      * @description pathParams
@@ -721,7 +783,7 @@ export namespace NewPet {
     /**
      * @description successful operation
      */
-    export type UploadImagePostMutationResponse = ApiResponse;
+    export type UploadImagePostMutationResponse = ApiResponseModel;
     export type UploadImagePostError = unknown;
     export type CreateError = unknown;
     export type CreateMutationResponse = unknown;
@@ -741,7 +803,7 @@ export namespace NewPet {
     /**
      * @description successful operation
      */
-    export type FindByStatusGetQueryResponse = Pet[];
+    export type FindByStatusGetQueryResponse = PetModel[];
     export type FindByStatusGetError = unknown;
 
     /**
@@ -757,7 +819,7 @@ export namespace NewPet {
     /**
      * @description successful operation
      */
-    export type FindByTagsGetQueryResponse = Pet[];
+    export type FindByTagsGetQueryResponse = PetModel[];
     export type FindByTagsGetError = unknown;
 
     /**
@@ -773,7 +835,7 @@ export namespace NewPet {
     /**
      * @description successful operation
      */
-    export type FindByPetIdQueryResponse = Pet;
+    export type FindByPetIdQueryResponse = PetModel;
     export type FindByPetIdError = unknown;
 
     /**
@@ -814,7 +876,7 @@ export namespace NewPet {
     export type DelByPetIdMutationResponse = unknown;
 }
 
-import type { Order } from "./models";
+import type { OrderModel } from "./models";
 
 /**
  * @tag store
@@ -822,11 +884,11 @@ import type { Order } from "./models";
  * @UUID type-store
  */
 export namespace Store {
-    export type CreateMutationRequest = Order;
+    export type CreateMutationRequest = OrderModel;
     /**
      * @description successful operation
      */
-    export type CreateMutationResponse = Order;
+    export type CreateMutationResponse = OrderModel;
     export type CreateError = unknown;
 
     /**
@@ -842,7 +904,7 @@ export namespace Store {
     /**
      * @description successful operation
      */
-    export type FindByOrderIdQueryResponse = Order;
+    export type FindByOrderIdQueryResponse = OrderModel;
     export type FindByOrderIdError = unknown;
 
     /**
@@ -868,7 +930,7 @@ export namespace Store {
     export type InventoryGetError = unknown;
 }
 
-import type { User } from "./models";
+import type { UserModel } from "./models";
 
 /**
  * @tag user
@@ -894,7 +956,7 @@ export namespace User {
     /**
      * @description successful operation
      */
-    export type FindByUsernameQueryResponse = User;
+    export type FindByUsernameQueryResponse = UserModel;
     export type FindByUsernameError = unknown;
 
     /**
@@ -907,7 +969,7 @@ export namespace User {
         username: string;
     }
 
-    export type UsernamePutMutationRequest = User;
+    export type UsernamePutMutationRequest = UserModel;
     export type UsernamePutError = unknown;
     export type UsernamePutMutationResponse = unknown;
 
@@ -945,17 +1007,17 @@ export namespace User {
     export type LoginGetError = unknown;
     export type LogoutGetError = unknown;
     export type LogoutGetQueryResponse = unknown;
-    export type CreateMutationRequest = User;
+    export type CreateMutationRequest = UserModel;
     export type CreateError = unknown;
     export type CreateMutationResponse = unknown;
 }
 
-import type { Testdata } from "./Testdata";
+import type { TestdataModel } from "./testdata.model";
 
 /**
- * @UUID type-Test32145
+ * @UUID type-Test32145Model
  */
-export interface Test32145 {
+export interface Test32145Model {
     /**
      * @description description
      */
@@ -977,27 +1039,28 @@ export const test3214ColumnTypeEnumLabel = {
 /**
  * @description description
  */
-export const Test3214ColumnTypeEnum = {
+export const test3214ColumnTypeEnum = {
     Char: 'CHAR',
     Char2: 'CHAR2',
     Char3: 'CHAR3'
 } as const;
+export type Test3214ColumnTypeEnum = (typeof test3214ColumnTypeEnum)[keyof typeof test3214ColumnTypeEnum];
 /** description */
 export const Test3214ColumnTypeEnumOption = [{
     label: test3214ColumnTypeEnumLabel.Char,
-    value: Test3214ColumnTypeEnum.Char
+    value: test3214ColumnTypeEnum.Char
 }, {
     label: test3214ColumnTypeEnumLabel.Char2,
-    value: Test3214ColumnTypeEnum.Char2
+    value: test3214ColumnTypeEnum.Char2
 }, {
     label: test3214ColumnTypeEnumLabel.Char3,
-    value: Test3214ColumnTypeEnum.Char3
+    value: test3214ColumnTypeEnum.Char3
 }];
 
 /**
- * @UUID type-Test3214
+ * @UUID type-Test3214Model
  */
-export interface Test3214 {
+export interface Test3214Model {
     /**
      * @description 默认值
      */
@@ -1038,9 +1101,9 @@ export interface Test3214 {
 }
 
 /**
- * @UUID type-Testdata
+ * @UUID type-TestdataModel
  */
-export interface Testdata {
+export interface TestdataModel {
     /**
      * @description description
      */
@@ -1060,30 +1123,30 @@ export interface Testdata {
 }
 
 /**
- * @UUID type-Sort
+ * @UUID type-SortModel
  */
-export interface Sort {
+export interface SortModel {
     empty?: boolean;
     sorted?: boolean;
     unsorted?: boolean;
 }
 
-import type { Test3214 } from "./Test3214";
+import type { Test3214Model } from "./test3214.model";
 
 /**
- * @UUID type-TestDto3
+ * @UUID type-TestDto3Model
  */
-export interface TestDto3 {
-    test3214?: Test3214[];
+export interface TestDto3Model {
+    test3214?: Test3214Model[];
 }
 
-import type { TestDto3 } from "./TestDto3";
-import type { Testdata } from "./Testdata";
+import type { TestDto3Model } from "./testDto3.model";
+import type { TestdataModel } from "./testdata.model";
 
 /**
- * @UUID type-TestDto2
+ * @UUID type-TestDto2Model
  */
-export interface TestDto2 {
+export interface TestDto2Model {
     /**
      * @UUID type-TestDto3
      */
@@ -1095,30 +1158,30 @@ export interface TestDto2 {
 }
 
 /**
- * @UUID type-Test321
+ * @UUID type-Test321Model
  */
-export interface Test321 {
+export interface Test321Model {
     id?: number;
 }
 
-import type { Test321 } from "./Test321";
+import type { Test321Model } from "./test321.model";
 
 /**
- * @UUID type-TestDto
+ * @UUID type-TestDtoModel
  */
-export interface NewTestDto {
+export interface TestDtoModel {
     /**
      * @description test321
      */
-    test321?: Test321[];
+    test321?: Test321Model[];
 }
 
-import type { ApiResponse } from "./ApiResponse";
+import type { ApiResponseModel } from "./apiResponse.model";
 
 /**
- * @UUID type-RefList
+ * @UUID type-RefListModel
  */
-export interface RefList {
+export interface RefListModel {
     /**
      * @UUID type-ApiResponse
      */
@@ -1139,24 +1202,24 @@ export interface RefList {
 }
 
 /**
- * @UUID type-ApiResponse
+ * @UUID type-ApiResponseModel
  */
-export interface ApiResponse {
+export interface ApiResponseModel {
     code?: number;
     type?: string;
     message?: string;
 }
 
 /**
- * @UUID type-Category
+ * @UUID type-CategoryModel
  */
-export interface NewCategory {
+export interface CategoryModel {
     id?: number;
     name?: string;
 }
 
-import type { NewCategory } from "./NewCategory";
-import type { Tag } from "./Tag";
+import type { NewCategoryModel } from "./category.model";
+import type { TagModel } from "./tag.model";
 /**
  * @description pet status in the store
  */
@@ -1168,27 +1231,28 @@ export const petStatusEnumLabel = {
 /**
  * @description pet status in the store
  */
-export const PetStatusEnum = {
+export const petStatusEnum = {
     Available: 'available',
     Pending: 'pending',
     Sold: 'sold'
 } as const;
+export type PetStatusEnum = (typeof petStatusEnum)[keyof typeof petStatusEnum];
 /** pet status in the store */
 export const PetStatusEnumOption = [{
     label: petStatusEnumLabel.Available,
-    value: PetStatusEnum.Available
+    value: petStatusEnum.Available
 }, {
     label: petStatusEnumLabel.Pending,
-    value: PetStatusEnum.Pending
+    value: petStatusEnum.Pending
 }, {
     label: petStatusEnumLabel.Sold,
-    value: PetStatusEnum.Sold
+    value: petStatusEnum.Sold
 }];
 
 /**
- * @UUID type-Pet
+ * @UUID type-PetModel
  */
-export interface Pet {
+export interface PetModel {
     id?: number;
     /**
      * @UUID type-Category
@@ -1196,7 +1260,7 @@ export interface Pet {
     category?: NewCategory;
     name: string;
     photoUrls: Array<string>;
-    tags?: Tag[];
+    tags?: TagModel[];
     /**
      * @description pet status in the store
      */
@@ -1204,9 +1268,9 @@ export interface Pet {
 }
 
 /**
- * @UUID type-Tag
+ * @UUID type-TagModel
  */
-export interface Tag {
+export interface TagModel {
     id?: number;
     name?: string;
 }
@@ -1222,27 +1286,28 @@ export const orderStatusEnumLabel = {
 /**
  * @description Order Status
  */
-export const OrderStatusEnum = {
+export const orderStatusEnum = {
     Placed: 'placed',
     Approved: 'approved',
     Delivered: 'delivered'
 } as const;
+export type OrderStatusEnum = (typeof orderStatusEnum)[keyof typeof orderStatusEnum];
 /** Order Status */
 export const OrderStatusEnumOption = [{
     label: orderStatusEnumLabel.Placed,
-    value: OrderStatusEnum.Placed
+    value: orderStatusEnum.Placed
 }, {
     label: orderStatusEnumLabel.Approved,
-    value: OrderStatusEnum.Approved
+    value: orderStatusEnum.Approved
 }, {
     label: orderStatusEnumLabel.Delivered,
-    value: OrderStatusEnum.Delivered
+    value: orderStatusEnum.Delivered
 }];
 
 /**
- * @UUID type-Order
+ * @UUID type-OrderModel
  */
-export interface Order {
+export interface OrderModel {
     id?: number;
     petId?: number;
     quantity?: number;
@@ -1255,9 +1320,9 @@ export interface Order {
 }
 
 /**
- * @UUID type-User
+ * @UUID type-UserModel
  */
-export interface User {
+export interface UserModel {
     id?: number;
     username?: string;
     firstName?: string;
@@ -1271,20 +1336,23 @@ export interface User {
     userStatus?: number;
 }
 
-export * from "./Test32145";
-export * from "./Test3214";
-export * from "./Testdata";
-export * from "./Sort";
-export * from "./TestDto3";
-export * from "./TestDto2";
-export * from "./Test321";
-export * from "./NewTestDto";
-export * from "./RefList";
-export * from "./ApiResponse";
-export * from "./NewCategory";
-export * from "./Pet";
-export * from "./Tag";
-export * from "./Order";
-export * from "./User";
+export * from "./test32145.model";
+export * from "./test3214ColumnTypeEnum";
+export * from "./test3214.model";
+export * from "./testdata.model";
+export * from "./sort.model";
+export * from "./testDto3.model";
+export * from "./testDto2.model";
+export * from "./test321.model";
+export * from "./testDto.model";
+export * from "./refList.model";
+export * from "./apiResponse.model";
+export * from "./category.model";
+export * from "./petStatusEnum";
+export * from "./pet.model";
+export * from "./tag.model";
+export * from "./orderStatusEnum";
+export * from "./order.model";
+export * from "./user.model";
 "
 `;

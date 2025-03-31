@@ -1,51 +1,46 @@
-import _ from "lodash";
-import { VariableDeclarationKind } from "ts-morph";
+import _ from 'lodash'
+import { type TypeAliasDeclarationStructure, VariableDeclarationKind } from 'ts-morph'
 
-import type { SchemaObject } from "oas/types";
-import type {
-  EnumDeclarationStructure,
-  VariableStatementStructure,
-} from "ts-morph";
-import type { Config } from "./types.ts";
+import type { SchemaObject } from 'oas/types'
+import type { EnumDeclarationStructure, VariableStatementStructure } from 'ts-morph'
+import { TYPE_MODEL_SUFFIX } from './constants.ts'
+import type { Config } from './types.ts'
 
 export class EnumGenerator {
-  private enumCache: Map<SchemaObject, string> = new Map<
-    SchemaObject,
-    string
-  >();
-  private ast: Config["ast"];
-  private prefix: string | undefined;
-  static instance: EnumGenerator;
+  private enumCache: Map<SchemaObject, string> = new Map<SchemaObject, string>()
+  private ast: Config['ast']
+  private prefix: string | undefined
+  static instance: EnumGenerator
   constructor(config: Config) {
-    this.ast = config.ast;
+    this.ast = config.ast
 
     if (EnumGenerator.instance) {
-      return EnumGenerator.instance;
+      return EnumGenerator.instance
     }
-    EnumGenerator.instance = this;
+    EnumGenerator.instance = this
   }
 
   entries(): Array<[SchemaObject, string]> {
-    return [...this.enumCache.entries()];
+    return [...this.enumCache.entries()]
   }
 
   set(schema: SchemaObject, name: string): void {
-    this.enumCache.set(schema, name);
+    this.enumCache.set(schema, name)
   }
 
   enumUnique(enumOfSchema: Array<unknown> | null): boolean {
-    const enumOfSchemaString = enumOfSchema?.join() || "";
+    const enumOfSchemaString = enumOfSchema?.join() || ''
     return !_.chain([...this.enumCache.keys()])
       .some((schema) => enumOfSchemaString === schema.enum?.join())
-      .value();
+      .value()
   }
 
   setPrefix(prefix: string): void {
-    this.prefix = prefix;
+    this.prefix = prefix
   }
 
   resetPrefix(): void {
-    this.prefix = undefined;
+    this.prefix = undefined
   }
 
   /**
@@ -57,11 +52,13 @@ export class EnumGenerator {
    *     FINISHED = 'FINISHED',
    * }
    *
-   * export const enum TaskStatusLabel {
+   * export const  TaskStatusLabel ={
    *     WAIT_START:'WAIT_START',
    *     PROCESSING = 'PROCESSING',
    *     FINISHED = 'FINISHED',
    * }
+   *
+   * export type OrderStatusEnum = (typeof orderStatusEnum)[keyof typeof orderStatusEnum]
    *
    * export const taskStatusOption = [
    *     { label: TaskStatusLabel.WAIT_START, value: TaskStatus.WAIT_START },
@@ -70,11 +67,9 @@ export class EnumGenerator {
    * ];
    * ```
    */
-  generateEnum(): Array<VariableStatementStructure | EnumDeclarationStructure> {
+  generateEnum(): Array<VariableStatementStructure | EnumDeclarationStructure | TypeAliasDeclarationStructure> {
     //
-    const labelName = (name: string) =>
-      `${_.lowerFirst(this.prefix) +
-      (this.prefix ? _.upperFirst(name) : _.lowerFirst(name))}Label`;
+    const labelName = (name: string) => `${_.lowerFirst(this.prefix) + (this.prefix ? _.upperFirst(name) : _.lowerFirst(name))}Label`
 
     const labelStatements = _.chain(this.entries())
       .map(([schema, name]) => {
@@ -87,9 +82,9 @@ export class EnumGenerator {
               initializer: this.ast.generateObject(
                 ((schema.enum || []) as Array<string>).reduce(
                   (obj, item: string) => {
-                    const key: string = _.upperFirst(_.camelCase(item));
-                    obj[key] = "''";
-                    return obj;
+                    const key: string = _.upperFirst(_.camelCase(item))
+                    obj[key] = "''"
+                    return obj
                   },
                   {} as { [key: string]: string },
                 ),
@@ -101,41 +96,40 @@ export class EnumGenerator {
                 {
                   tags: [
                     {
-                      leadingTrivia: "\n",
-                      tagName: "description",
+                      leadingTrivia: '\n',
+                      tagName: 'description',
                       text: schema.description,
                     },
                   ],
                 },
               ]
             : [],
-        });
+        })
       })
-      .value();
+      .value()
 
     //enum
-    const enumName = (name: string) =>
-      _.upperFirst(this.prefix) + _.upperFirst(name);
+    const enumConstName = (name: string) => _.lowerFirst(this.prefix) + (this.prefix ? _.upperFirst(name) : _.lowerFirst(name))
     const valueStatements = _.chain(this.entries())
       .map(([schema, name]) => {
-        return this.ast.generateVariableStatements({
+        const asConstName = enumConstName(name)
+
+        const asConstEnum = this.ast.generateVariableStatements({
           declarationKind: VariableDeclarationKind.Const,
           isExported: true,
-
           declarations: [
             {
-              name: enumName(name),
-              initializer:
-                `${this.ast.generateObject(
-                  ((schema.enum || []) as Array<string>).reduce(
-                    (obj, item: string) => {
-                      const key: string = _.upperFirst(_.camelCase(item));
-                      obj[key] = _.isNumber(item) ? item : `'${item}'`;
-                      return obj;
-                    },
-                    {} as { [key: string]: string },
-                  ),
-                )}as const`,
+              name: asConstName,
+              initializer: `${this.ast.generateObject(
+                ((schema.enum || []) as Array<string>).reduce(
+                  (obj, item: string) => {
+                    const key: string = _.upperFirst(_.camelCase(item))
+                    obj[key] = _.isNumber(item) ? item : `'${item}'`
+                    return obj
+                  },
+                  {} as { [key: string]: string },
+                ),
+              )}as const`,
             },
           ],
           docs: schema.description
@@ -143,17 +137,26 @@ export class EnumGenerator {
                 {
                   tags: [
                     {
-                      leadingTrivia: "\n",
-                      tagName: "description",
+                      leadingTrivia: '\n',
+                      tagName: 'description',
                       text: schema.description,
                     },
                   ],
                 },
               ]
             : [],
-        });
+        })
+
+        const enumType = this.ast.generateTypeAliasStatements({
+          name: _.upperFirst(asConstName),
+          type: `(typeof ${asConstName})[keyof typeof ${asConstName}]`,
+          docs: [], //[{ description: "" }],
+          isExported: true,
+        })
+        return [asConstEnum, enumType]
       })
-      .value();
+      .flatten()
+      .value()
 
     // option
     const optionStatements = _.chain(this.entries())
@@ -164,34 +167,29 @@ export class EnumGenerator {
           declarations: [
             {
               name: `${_.lowerFirst(this.prefix) + _.upperFirst(name)}Option`,
-              initializer:
-                `[${(schema.enum || []).reduce((arr, item: string) => {
-                  const obj = this.ast.generateObject({
-                    label:
-                      `${labelName(name)}.${_.upperFirst(_.camelCase(item))}`,
-                    value:
-                      `${enumName(name)}.${_.upperFirst(_.camelCase(item))}`,
-                  });
-                  return arr + (arr ? "," : "") + obj;
-                }, "")}]`,
+              initializer: `[${(schema.enum || []).reduce((arr, item: string) => {
+                const obj = this.ast.generateObject({
+                  label: `${labelName(name)}.${_.upperFirst(_.camelCase(item))}`,
+                  value: `${enumConstName(name)}.${_.upperFirst(_.camelCase(item))}`,
+                })
+                return arr + (arr ? ',' : '') + obj
+              }, '')}]`,
             },
           ],
-          docs: [{ description: schema.description || "" }].filter(
-            (x) => x.description,
-          ),
-        });
+          docs: [{ description: schema.description || '' }].filter((x) => x.description),
+        })
       })
-      .value();
+      .value()
 
-    this.enumCache.clear();
+    this.enumCache.clear()
 
-    return [...labelStatements, ...valueStatements, ...optionStatements];
+    return [...labelStatements, ...valueStatements, ...optionStatements]
   }
 
   static getInstance(config: Config): EnumGenerator {
     if (!EnumGenerator.instance) {
-      EnumGenerator.instance = new EnumGenerator(config);
+      EnumGenerator.instance = new EnumGenerator(config)
     }
-    return EnumGenerator.instance;
+    return EnumGenerator.instance
   }
 }

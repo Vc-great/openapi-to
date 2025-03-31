@@ -2,7 +2,7 @@
 
 exports[`swr > swr getFullText 1`] = `
 "import { petService } from "./pet.service";
-import type { Pet } from "./pet.type";
+import type { Pet } from "./pet.types";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import type { SWRMutationConfiguration } from "swr/mutation";
@@ -84,7 +84,7 @@ function useDelByTest(options?: {
     const mutationKey = delByTestMutationKey()
 
     return useSWRMutation<Pet.DelByTestMutationResponse, Pet.DelByTestError, PetKey.DelByTestMutationKey | null, Pet.DelByTestMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
-        return petService.delByTest(data,);
+        return petService.delByTest(data);
     }, mutationOptions);
 }
 
@@ -118,7 +118,7 @@ function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], optio
     const mutationKey = uploadImagePostMutationKey(petId)
 
     return useSWRMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, PetKey.UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
-        return petService.uploadImagePost(data, petId);
+        return petService.uploadImagePost(petId, data);
     }, mutationOptions);
 }
 
@@ -220,7 +220,7 @@ function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options?: {
     const mutationKey = petIdPostMutationKey(petId)
 
     return useSWRMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetKey.PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
-        return petService.petIdPost(data, petId);
+        return petService.petIdPost(petId, data);
     }, mutationOptions);
 }
 
@@ -246,7 +246,7 @@ export const petSWR = {
 };
 
 import { storeService } from "./store.service";
-import type { Store } from "./store.type";
+import type { Store } from "./store.types";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import type { SWRMutationConfiguration } from "swr/mutation";
@@ -276,7 +276,7 @@ function useCreate(options?: {
     const mutationKey = createMutationKey()
 
     return useSWRMutation<Store.CreateMutationResponse, Store.CreateError, StoreKey.CreateMutationKey | null, Store.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
-        return storeService.create(data,);
+        return storeService.create(data);
     }, mutationOptions);
 }
 
@@ -345,7 +345,7 @@ export const storeSWR = {
 };
 
 import { userService } from "./user.service";
-import type { User } from "./user.type";
+import type { User } from "./user.types";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import type { SWRMutationConfiguration } from "swr/mutation";
@@ -435,7 +435,7 @@ function useUsernamePut(username: User.UsernamePutPathParams['username'], option
     const mutationKey = usernamePutMutationKey(username)
 
     return useSWRMutation<User.UsernamePutMutationResponse, User.UsernamePutError, UserKey.UsernamePutMutationKey | null, User.UsernamePutMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
-        return userService.usernamePut(data, username);
+        return userService.usernamePut(username, data);
     }, mutationOptions);
 }
 
@@ -503,7 +503,7 @@ function useCreate(options?: {
     const mutationKey = createMutationKey()
 
     return useSWRMutation<User.CreateMutationResponse, User.CreateError, UserKey.CreateMutationKey | null, User.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
-        return userService.create(data,);
+        return userService.create(data);
     }, mutationOptions);
 }
 

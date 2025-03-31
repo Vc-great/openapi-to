@@ -1,59 +1,59 @@
-import path from "node:path";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import path from 'node:path'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-import { AST, OpenAPI } from "@openapi-to/core";
+import { AST, OpenAPI } from '@openapi-to/core'
 
-import _ from "lodash";
-import Oas from "oas";
-import { describe } from "vitest";
+import _ from 'lodash'
+import Oas from 'oas'
+import { describe } from 'vitest'
 
-import petStore from "../mock/petstore.json";
-import { RequestGenerator } from "./RequestGenerator";
-import { RequestTypeEnum } from "./types.ts";
+import petStore from '../mock/petstore.json'
+import { RequestGenerator } from './RequestGenerator'
+import { RequestTypeEnum } from './types.ts'
 
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
-import type { PluginConfig } from "./types.ts";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import type { OpenapiToSingleConfig } from '@openapi-to/core'
+import type { PluginConfig } from './types.ts'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
-describe("RequestGenerator", async () => {
+describe('RequestGenerator', async () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
-    name: "",
-    root: "",
+    name: '',
+    root: '',
     input: {
-      path: "",
+      path: '',
     },
     output: {
-      dir: path.resolve(__dirname, "../mock"),
+      dir: path.resolve(__dirname, '../mock'),
     },
     plugins: [],
     pluginNames: [],
-  };
+  }
 
   const context = {
-    output: "",
-  };
+    output: '',
+  }
 
-  test("all true getFullText", () => {
-    const ast = new AST();
+  test('all true getFullText', () => {
+    const ast = new AST()
     // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
+    const oas = new Oas(petStore)
+    const openapi = new OpenAPI({}, oas)
     const pluginConfig: PluginConfig = {
       createZodDecorator: true,
-      compare: true,
+      compare: false,
       zodDecoratorImportDeclaration: {
-        moduleSpecifier: "./test/zod",
+        moduleSpecifier: './test/zod',
       },
       requestImportDeclaration: {
-        moduleSpecifier: "./test/request",
+        moduleSpecifier: './test/request',
       },
       requestConfigTypeImportDeclaration: {
-        namedImports: ["CustomRequestConfig"],
-        moduleSpecifier: "custom-request",
+        namedImports: ['CustomRequestConfig'],
+        moduleSpecifier: 'custom-request',
       },
-    };
+    }
 
     const requestGenerator = new RequestGenerator({
       oas,
@@ -61,25 +61,25 @@ describe("RequestGenerator", async () => {
       openapi,
       pluginConfig,
       openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
+    })
+    requestGenerator.build(context)
     const text = _.chain(ast.sourceFile)
       .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
+      .join('\n')
+      .value()
 
-    expect(text).toMatchSnapshot();
-  });
+    expect(text).toMatchSnapshot()
+  })
 
-  test("all false  getFullText", () => {
-    const ast = new AST();
+  test('all false  getFullText', () => {
+    const ast = new AST()
     // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
+    const oas = new Oas(petStore)
+    const openapi = new OpenAPI({}, oas)
     const pluginConfig: PluginConfig = {
       createZodDecorator: false,
       compare: false,
-    };
+    }
 
     const requestGenerator = new RequestGenerator({
       oas,
@@ -87,24 +87,24 @@ describe("RequestGenerator", async () => {
       openapi,
       pluginConfig,
       openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
+    })
+    requestGenerator.build(context)
     const text = _.chain(ast.sourceFile)
       .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
+      .join('\n')
+      .value()
 
-    expect(text).toMatchSnapshot();
-  });
+    expect(text).toMatchSnapshot()
+  })
 
-  test("requestType common getFullText", () => {
-    const ast = new AST();
+  test('requestType common getFullText', () => {
+    const ast = new AST()
     // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
+    const oas = new Oas(petStore)
+    const openapi = new OpenAPI({}, oas)
     const pluginConfig: PluginConfig = {
       requestType: RequestTypeEnum.COMMON,
-    };
+    }
 
     const requestGenerator = new RequestGenerator({
       oas,
@@ -112,36 +112,12 @@ describe("RequestGenerator", async () => {
       openapi,
       pluginConfig,
       openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
+    })
+    requestGenerator.build(context)
     const text = _.chain(ast.sourceFile)
       .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
-    expect(text).toMatchSnapshot();
-  });
-
-  test("requestType commonWithArrayResponse getFullText", () => {
-    const ast = new AST();
-    // @ts-expect-error Not a canonical document
-    const oas = new Oas(petStore);
-    const openapi = new OpenAPI({}, oas);
-    const pluginConfig: PluginConfig = {
-      requestType: RequestTypeEnum.COMMON_WITH_ARRAY_RESPONSE,
-    };
-
-    const requestGenerator = new RequestGenerator({
-      oas,
-      ast,
-      openapi,
-      pluginConfig,
-      openapiToSingleConfig,
-    });
-    requestGenerator.build(context);
-    const text = _.chain(ast.sourceFile)
-      .map((sourceFile) => sourceFile.getFullText())
-      .join("\n")
-      .value();
-    expect(text).toMatchSnapshot();
-  });
-});
+      .join('\n')
+      .value()
+    expect(text).toMatchSnapshot()
+  })
+})

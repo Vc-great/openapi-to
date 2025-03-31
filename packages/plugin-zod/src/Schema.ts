@@ -1,39 +1,40 @@
-import _ from "lodash";
+import _ from 'lodash'
 
-import { modelFolderName } from "./utils/modelFolderName.ts";
-import { zodSuffix } from "./utils/suffix.ts";
-import { UUIDPrefix } from "./utils/UUIDPrefix.ts";
-import { EnumGenerator } from "./EnumGenerator.ts";
-import { Zod } from "./zod.ts";
+import { EnumGenerator } from './EnumGenerator.ts'
+import { UUIDPrefix } from './utils/UUIDPrefix.ts'
 
-import type { ObjectStructure, PluginContext } from "@openapi-to/core";
-import type { SchemaObject } from "oas/types";
-import type { Config } from "./types.ts";
+import { zodSuffix } from './utils/suffix.ts'
+import { Zod } from './zod.ts'
+
+import type { ObjectStructure, PluginContext } from '@openapi-to/core'
+import type { SchemaObject } from 'oas/types'
+import { ZOD_MODEL_FOLDER_NAME } from './constants.ts'
+import type { Config } from './types.ts'
 export class Schema {
-  private oas: Config["oas"];
-  private oldNode: Config["oldNode"];
-  private readonly openapi: Config["openapi"];
-  private readonly ast: Config["ast"];
-  private readonly pluginConfig: Config["pluginConfig"];
-  private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private readonly modelFolderName: string = modelFolderName;
-  private context: PluginContext | null = null;
+  private oas: Config['oas']
+  private oldNode: Config['oldNode']
+  private readonly openapi: Config['openapi']
+  private readonly ast: Config['ast']
+  private readonly pluginConfig: Config['pluginConfig']
+  private readonly openapiToSingleConfig: Config['openapiToSingleConfig']
+  private readonly modelFolderName: string = ZOD_MODEL_FOLDER_NAME
+  private context: PluginContext | null = null
 
-  public fromName: string | undefined;
-  private enumGenerator: EnumGenerator;
+  public fromName: string | undefined
+  private enumGenerator: EnumGenerator
   constructor(config: Config) {
-    this.oas = config.oas;
-    this.ast = config.ast;
-    this.pluginConfig = config.pluginConfig;
-    this.openapiToSingleConfig = config.openapiToSingleConfig;
-    this.openapi = config.openapi;
-    this.oldNode = config.oldNode;
+    this.oas = config.oas
+    this.ast = config.ast
+    this.pluginConfig = config.pluginConfig
+    this.openapiToSingleConfig = config.openapiToSingleConfig
+    this.openapi = config.openapi
+    this.oldNode = config.oldNode
 
-    this.enumGenerator = EnumGenerator.getInstance(config);
+    this.enumGenerator = EnumGenerator.getInstance(config)
   }
 
   get z(): Zod {
-    return new Zod();
+    return new Zod()
   }
 
   /**
@@ -45,15 +46,12 @@ export class Schema {
    * z.object({})
    * ```
    */
-  getZodFromSchema(
-    schema: SchemaObject | undefined,
-    fromName?: string,
-  ): string {
-    this.fromName = fromName;
-    const version = this.oas.getVersion();
+  getZodFromSchema(schema: SchemaObject | undefined, fromName?: string): string {
+    this.fromName = fromName
+    const version = this.oas.getVersion()
 
     if (!schema) {
-      return "";
+      return ''
     }
 
     /*    if (this.openapi.isReference(schema)) {
@@ -61,24 +59,24 @@ export class Schema {
     }*/
 
     if (schema.oneOf) {
-      return "";
+      return ''
     }
 
     if (schema.anyOf) {
-      return "";
+      return ''
     }
 
     if (schema.allOf) {
-      return "";
+      return ''
     }
 
     if (schema.enum) {
-      return "";
+      return ''
     }
 
-    if ("items" in schema) {
+    if ('items' in schema) {
       // items -> array
-      return "";
+      return ''
     }
 
     /**
@@ -86,13 +84,13 @@ export class Schema {
      * @link https://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation
      */
 
-    if ("prefixItems" in schema) {
-      return "";
+    if ('prefixItems' in schema) {
+      return ''
     }
 
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
-      return this.z.head().object(this.getZodFromProperties(schema)).toString();
+      return this.z.head().object(this.getZodFromProperties(schema)).toString()
     }
 
     /**
@@ -105,7 +103,7 @@ export class Schema {
      * > Use of this keyword is functionally equivalent to an "enum" (Section 6.1.2) with a single value.
      * > An instance validates successfully against this keyword if its value is equal to the value of the keyword.
      */
-    if (version === "3.1" && "const" in schema) {
+    if (version === '3.1' && 'const' in schema) {
       // const keyword takes precendence over the actual type.
     }
 
@@ -153,7 +151,7 @@ export class Schema {
       return factory.createTypeReferenceNode("Blob", []);
     }*/
 
-    return "";
+    return ''
   }
 
   /**
@@ -169,177 +167,127 @@ export class Schema {
    */
   getZodFromProperties(baseSchema?: SchemaObject): string {
     if (!baseSchema) {
-      return "{}";
+      return '{}'
     }
 
-    const properties = baseSchema?.properties || {};
-    const required = baseSchema?.required;
-    const additionalProperties = baseSchema?.additionalProperties;
+    const properties = baseSchema?.properties || {}
+    const required = baseSchema?.required
+    const additionalProperties = baseSchema?.additionalProperties
 
-    const objectStructure: Array<ObjectStructure> = Object.keys(properties).map(
-      (name) => {
-        const schema = properties[name] as SchemaObject;
+    const objectStructure: Array<ObjectStructure> = Object.keys(properties).map((name) => {
+      const schema = properties[name] as SchemaObject
 
-        const isRequired = _.chain([] as Array<string>)
-          .push(_.isBoolean(required) ? name : "")
-          .concat(_.isArray(required) ? required : "")
-          .filter(Boolean)
-          .includes(name)
-          .value();
+      const isRequired = _.chain([] as Array<string>)
+        .push(_.isBoolean(required) ? name : '')
+        .concat(_.isArray(required) ? required : '')
+        .filter(Boolean)
+        .includes(name)
+        .value()
 
-        //
-        if (schema.enum && this.enumGenerator.enumUnique(schema.enum)) {
-          const enumName =
-            `${_.upperFirst(this.fromName) + _.upperFirst(name)}Enum`;
-          this.enumGenerator.set(schema, enumName);
-        }
+      //
+      if (schema.enum && this.enumGenerator.enumUnique(schema.enum)) {
+        const enumName = `${_.upperFirst(this.fromName) + _.upperFirst(name)}Enum`
+        this.enumGenerator.set(schema, enumName)
+      }
 
-        const UUID =
-          UUIDPrefix +
-          (this.openapi.isReference(schema)
-            ? _.upperFirst(this.openapi.getRefAlias(schema.$ref))
-            : "");
-        const variableDeclaration =
-          this.oldNode.variableDeclarationCache.get(UUID);
+      const UUID = UUIDPrefix + (this.openapi.isReference(schema) ? _.upperFirst(this.openapi.getRefAlias(schema.$ref)) : '')
+      const variableDeclaration = this.oldNode.variableDeclarationCache.get(UUID)
 
-        return {
-          key: name,
-          value: this.openapi.isReference(schema)
-            ? this.z
-                .head()
-                .lazy(
-                  variableDeclaration?.getName() ??
-                    this.openapi.getRefAlias(schema.$ref) +
-                      _.upperFirst(zodSuffix),
-                )
-                .optional(isRequired)
-                .toString()
-            : this.formatterSchemaType(schema, name) +
-              this.z.optional(isRequired).toString(),
-          docs: _.get(schema, "description")
-            ? [
-                {
-                  tags: [
-                    {
-                      tagName: "description",
-                      text: _.get(schema, "description"),
-                    },
-                  ],
-                },
-              ]
-            : [],
-        };
-      },
-    );
+      return {
+        key: name,
+        value: this.openapi.isReference(schema)
+          ? this.z
+              .head()
+              .lazy(variableDeclaration?.getName() ?? this.openapi.getRefAlias(schema.$ref) + _.upperFirst(zodSuffix))
+              .optional(isRequired)
+              .toString()
+          : this.formatterSchemaType(schema, name) + this.z.optional(isRequired).toString(),
+        docs: _.get(schema, 'description')
+          ? [
+              {
+                tags: [
+                  {
+                    tagName: 'description',
+                    text: _.get(schema, 'description'),
+                  },
+                ],
+              },
+            ]
+          : [],
+      }
+    })
 
     //todo additionalProperties
     if (additionalProperties) {
-      return "{}";
+      return '{}'
     }
 
-    return this.ast.generateObject$2(objectStructure);
+    return this.ast.generateObject$2(objectStructure)
   }
 
-  formatterSchemaType(
-    schema: SchemaObject | undefined,
-    propertyName: string,
-  ): string {
+  formatterSchemaType(schema: SchemaObject | undefined, propertyName: string): string {
     if (!_.isEmpty(schema?.enum)) {
-      const enumName =
-        `${_.upperFirst(this.fromName) + _.upperFirst(propertyName)}Enum`;
+      const enumName = `${_.upperFirst(this.fromName) + _.upperFirst(propertyName)}Enum`
 
       if (schema?.enum && this.enumGenerator.enumUnique(schema.enum)) {
-        this.enumGenerator.set(schema, enumName);
+        this.enumGenerator.set(schema, enumName)
       }
-      return enumName;
+      return this.z.head().nativeEnum(enumName).toString()
     }
-    const numberEnum = [
-      "int32",
-      "int64",
-      "float",
-      "double",
-      "integer",
-      "long",
-      "number",
-      "int",
-    ];
+    const numberEnum = ['int32', 'int64', 'float', 'double', 'integer', 'long', 'number', 'int']
 
-    const stringEnum = ["string", "email", "password", "url", "byte", "binary"];
+    const stringEnum = ['string', 'email', 'password', 'url', 'byte', 'binary']
     // const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
 
     if (_.isUndefined(schema)) {
-      return this.z.head().unknown().toString();
+      return this.z.head().unknown().toString()
     }
 
-    const type = schema.type;
-    if (typeof type !== "string") {
-      return this.z.head().unknown().toString();
+    const type = schema.type
+    if (typeof type !== 'string') {
+      return this.z.head().unknown().toString()
     }
 
-    if (numberEnum.includes(type) || numberEnum.includes(schema.format || "")) {
-      return this.z.head().number().toString();
+    if (numberEnum.includes(type) || numberEnum.includes(schema.format || '')) {
+      return this.z.head().number().toString()
     }
 
     /*   if (dateEnum.includes(type)) {
       return "Date";
     }*/
 
-    if (stringEnum.includes(type || "")) {
-      return this.z.head().string().toString();
+    if (stringEnum.includes(type || '')) {
+      return this.z.head().string().toString()
     }
 
-    if (type === "boolean") {
-      return this.z.head().boolean().toString();
+    if (type === 'boolean') {
+      return this.z.head().boolean().toString()
     }
 
-    if (type === "array" && this.openapi.isReference(schema.items)) {
+    if (type === 'array' && this.openapi.isReference(schema.items)) {
       return this.z
         .head()
-        .lazy(
-          new Zod()
-            .array(
-              this.openapi.getRefAlias(schema.items.$ref) +
-                _.upperFirst(zodSuffix),
-            )
-            .toString(),
-        )
-        .toString();
+        .lazy(new Zod().array(this.openapi.getRefAlias(schema.items.$ref) + _.upperFirst(zodSuffix)).toString())
+        .toString()
     }
 
-    if (
-      type === "array" &&
-      !this.openapi.isReference(schema.items) &&
-      !_.isBoolean(schema.items) &&
-      schema.items &&
-      "enum" in schema.items
-    ) {
-      const arrayType = this.formatterSchemaType(
-        schema.items as SchemaObject,
-        propertyName,
-      );
-      return this.z.head().nativeEnum(arrayType).toString();
+    if (type === 'array' && !this.openapi.isReference(schema.items) && !_.isBoolean(schema.items) && schema.items && 'enum' in schema.items) {
+      return this.formatterSchemaType(schema.items as SchemaObject, propertyName)
     }
 
-    if (
-      type === "array" &&
-      !this.openapi.isReference(schema.items) &&
-      !_.isBoolean(schema.items)
-    ) {
-      const arrayType = this.formatterSchemaType(
-        schema.items as SchemaObject,
-        propertyName,
-      );
-      return this.z.array(arrayType).toString();
+    if (type === 'array' && !this.openapi.isReference(schema.items) && !_.isBoolean(schema.items)) {
+      const arrayType = this.formatterSchemaType(schema.items as SchemaObject, propertyName)
+      return this.z.array(arrayType).toString()
     }
 
     //todo 嵌套object
-    if (type === "object" && schema.properties) {
+    if (type === 'object' && schema.properties) {
       return this.z
         .head()
         .object(this.getZodFromProperties(schema || []))
-        .toString();
+        .toString()
     }
 
-    return this.z.head().unknown().toString();
+    return this.z.head().unknown().toString()
   }
 }

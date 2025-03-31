@@ -1,37 +1,31 @@
-import _ from "lodash";
+import _ from 'lodash'
 
-import { Faker } from "./Faker.ts";
-import { refAddSuffix } from "./utils.ts";
+import { Faker } from './Faker.ts'
+import { formatRefName } from './utils.ts'
 
-import type { ObjectStructure, PluginContext } from "@openapi-to/core";
-import type { SchemaObject } from "oas/types";
-import type { Config } from "./types.ts";
+import type { ObjectStructure, PluginContext } from '@openapi-to/core'
+import type { SchemaObject } from 'oas/types'
+import type { Config } from './types.ts'
 
 export class Schema {
-  private oas: Config["oas"];
-  private readonly openapi: Config["openapi"];
-  private readonly ast: Config["ast"];
-  private readonly pluginConfig: Config["pluginConfig"];
-  private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
+  private oas: Config['oas']
+  private readonly openapi: Config['openapi']
+  private readonly ast: Config['ast']
+  private readonly pluginConfig: Config['pluginConfig']
+  private readonly openapiToSingleConfig: Config['openapiToSingleConfig']
 
-  private context: PluginContext | null = null;
+  private context: PluginContext | null = null
 
-  constructor({
-    oas,
-    openapi,
-    ast,
-    pluginConfig,
-    openapiToSingleConfig,
-  }: Config) {
-    this.oas = oas;
-    this.ast = ast;
-    this.pluginConfig = pluginConfig;
-    this.openapiToSingleConfig = openapiToSingleConfig;
-    this.openapi = openapi;
+  constructor({ oas, openapi, ast, pluginConfig, openapiToSingleConfig }: Config) {
+    this.oas = oas
+    this.ast = ast
+    this.pluginConfig = pluginConfig
+    this.openapiToSingleConfig = openapiToSingleConfig
+    this.openapi = openapi
   }
 
   get faker(): Faker {
-    return new Faker();
+    return new Faker()
   }
 
   /**
@@ -44,10 +38,10 @@ export class Schema {
    * ```
    */
   getStatementsFromSchema(schema: SchemaObject | undefined): string {
-    const version = this.oas.getVersion();
+    const version = this.oas.getVersion()
 
     if (!schema) {
-      return "";
+      return ''
     }
 
     /*    if (this.openapi.isReference(schema)) {
@@ -55,24 +49,24 @@ export class Schema {
     }*/
 
     if (schema.oneOf) {
-      return "";
+      return ''
     }
 
     if (schema.anyOf) {
-      return "";
+      return ''
     }
 
     if (schema.allOf) {
-      return "";
+      return ''
     }
 
     if (schema.enum) {
-      return "";
+      return ''
     }
 
-    if ("items" in schema) {
+    if ('items' in schema) {
       // items -> array
-      return "";
+      return ''
     }
 
     /**
@@ -80,13 +74,13 @@ export class Schema {
      * @link https://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation
      */
 
-    if ("prefixItems" in schema) {
-      return "";
+    if ('prefixItems' in schema) {
+      return ''
     }
 
     if (schema.properties || schema.additionalProperties) {
       // properties -> literal type
-      return this.getObjectProperties(schema);
+      return this.getObjectProperties(schema)
     }
 
     /**
@@ -99,7 +93,7 @@ export class Schema {
      * > Use of this keyword is functionally equivalent to an "enum" (Section 6.1.2) with a single value.
      * > An instance validates successfully against this keyword if its value is equal to the value of the keyword.
      */
-    if (version === "3.1" && "const" in schema) {
+    if (version === '3.1' && 'const' in schema) {
       // const keyword takes precendence over the actual type.
     }
 
@@ -147,7 +141,7 @@ export class Schema {
       return factory.createTypeReferenceNode("Blob", []);
     }*/
 
-    return "";
+    return ''
   }
 
   /**
@@ -163,104 +157,83 @@ export class Schema {
    */
   getObjectProperties(baseSchema?: SchemaObject): string {
     if (!baseSchema) {
-      return "";
+      return ''
     }
 
-    const properties = baseSchema?.properties || {};
-    const required = baseSchema?.required;
-    const additionalProperties = baseSchema?.additionalProperties;
+    const properties = baseSchema?.properties || {}
+    const required = baseSchema?.required
+    const additionalProperties = baseSchema?.additionalProperties
 
-    const objectStructure: Array<ObjectStructure> = Object.keys(properties).map(
-      (name) => {
-        const schema = properties[name] as SchemaObject;
+    const objectStructure: Array<ObjectStructure> = Object.keys(properties).map((name) => {
+      const schema = properties[name] as SchemaObject
 
-        const isRequired = _.chain([] as Array<string>)
-          .push(_.isBoolean(required) ? name : "")
-          .concat(_.isArray(required) ? required : "")
-          .filter(Boolean)
-          .includes(name)
-          .value();
+      const isRequired = _.chain([] as Array<string>)
+        .push(_.isBoolean(required) ? name : '')
+        .concat(_.isArray(required) ? required : '')
+        .filter(Boolean)
+        .includes(name)
+        .value()
 
-        return {
-          key: name,
-          value: this.openapi.isReference(schema)
-            ? `${refAddSuffix(this.openapi.getRefAlias(schema.$ref))}()`
-            : this.formatterSchemaType(schema),
-          docs: _.get(schema, "description")
-            ? [{ description: _.get(schema, "description") }]
-            : [],
-        };
-      },
-    );
+      return {
+        key: name,
+        value: this.openapi.isReference(schema) ? `${formatRefName(this.openapi.getRefAlias(schema.$ref))}()` : this.formatterSchemaType(schema),
+        docs: _.get(schema, 'description') ? [{ description: _.get(schema, 'description') }] : [],
+      }
+    })
 
     //todo additionalProperties
     if (additionalProperties) {
-      return "";
+      return ''
     }
 
-    return this.ast.generateObject$2(objectStructure);
+    return this.ast.generateObject$2(objectStructure)
   }
 
   formatterSchemaType(schema: SchemaObject | undefined): string {
-    const numberEnum = [
-      "int32",
-      "int64",
-      "float",
-      "double",
-      "integer",
-      "long",
-      "number",
-      "int",
-    ];
+    const numberEnum = ['int32', 'int64', 'float', 'double', 'integer', 'long', 'number', 'int']
 
-    const stringEnum = ["string", "email", "password", "url", "byte", "binary"];
+    const stringEnum = ['string', 'email', 'password', 'url', 'byte', 'binary']
     // const dateEnum = ["Date", "date", "dateTime", "date-time", "datetime"];
 
     if (_.isUndefined(schema)) {
-      return "undefined";
+      return 'undefined'
     }
 
-    const type = schema.type;
-    if (typeof type !== "string") {
-      return "undefined";
+    const type = schema.type
+    if (typeof type !== 'string') {
+      return 'undefined'
     }
 
-    if (numberEnum.includes(type) || numberEnum.includes(schema.format || "")) {
-      return this.faker.number.int();
+    if (numberEnum.includes(type) || numberEnum.includes(schema.format || '')) {
+      return this.faker.number.int()
     }
 
     /*   if (dateEnum.includes(type)) {
       return "Date";
     }*/
 
-    if (stringEnum.includes(type || "")) {
-      return this.faker.string.alpha();
+    if (stringEnum.includes(type || '')) {
+      return this.faker.string.alpha()
     }
 
-    if (type === "boolean") {
-      return this.faker.datatype.boolean();
+    if (type === 'boolean') {
+      return this.faker.datatype.boolean()
     }
 
-    if (type === "array" && this.openapi.isReference(schema.items)) {
-      return this.faker.helpers.multiple(
-        `${refAddSuffix(this.openapi.getRefAlias(schema.items.$ref))}()`,
-      );
+    if (type === 'array' && this.openapi.isReference(schema.items)) {
+      return this.faker.helpers.multiple(`${formatRefName(this.openapi.getRefAlias(schema.items.$ref))}()`)
     }
 
-    if (
-      type === "array" &&
-      !this.openapi.isReference(schema.items) &&
-      !_.isBoolean(schema.items)
-    ) {
-      const arrayType = this.formatterSchemaType(schema.items as SchemaObject);
-      return this.faker.helpers.multiple(arrayType);
+    if (type === 'array' && !this.openapi.isReference(schema.items) && !_.isBoolean(schema.items)) {
+      const arrayType = this.formatterSchemaType(schema.items as SchemaObject)
+      return this.faker.helpers.multiple(arrayType)
     }
 
     //todo 嵌套object
-    if (type === "object" && schema.properties) {
-      return this.getObjectProperties(schema || []);
+    if (type === 'object' && schema.properties) {
+      return this.getObjectProperties(schema || [])
     }
 
-    return "undefined";
+    return 'undefined'
   }
 }

@@ -1,46 +1,42 @@
-import path from "node:path";
+import path from 'node:path'
 
-import { UUID_TAG_NAME } from "@openapi-to/core/utils";
+import { UUID_TAG_NAME } from '@openapi-to/core/utils'
 
-import _ from "lodash";
-import { StructureKind } from "ts-morph";
+import _ from 'lodash'
+import { StructureKind } from 'ts-morph'
 
-import { TYPE_MODEL_FOLDER_NAME, UUID_PREFIX } from "./constants.ts";
-import { EnumGenerator } from "./EnumGenerator.ts";
-import { Schema } from "./Schema.ts";
-import { typeNameAddSuffix } from "./utils.ts";
+import { EnumGenerator } from './EnumGenerator.ts'
+import { Schema } from './Schema.ts'
+import { TYPE_MODEL_FOLDER_NAME, TYPE_MODEL_SUFFIX, UUID_PREFIX } from './constants.ts'
+import { typeNameAddSuffix } from './utils.ts'
 
-import type { PluginContext } from "@openapi-to/core";
-import type { SchemaObject } from "oas/types";
-import type { OpenAPIV3 } from "openapi-types";
-import type {
-  InterfaceDeclarationStructure,
-  StatementStructures,
-  TypeAliasDeclarationStructure,
-} from "ts-morph";
-import type { Config } from "./types.ts";
+import type { PluginContext } from '@openapi-to/core'
+import type { SchemaObject } from 'oas/types'
+import type { OpenAPIV3 } from 'openapi-types'
+import type { InterfaceDeclarationStructure, StatementStructures, TypeAliasDeclarationStructure } from 'ts-morph'
+import type { Config } from './types.ts'
 export class Component {
-  private oas: Config["oas"];
-  private oldNode: Config["oldNode"];
-  private readonly openapi: Config["openapi"];
-  private readonly ast: Config["ast"];
-  private readonly pluginConfig: Config["pluginConfig"];
-  private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private readonly modelFolderName: string = TYPE_MODEL_FOLDER_NAME;
-  private context: PluginContext | null = null;
-  private modelIndex: Set<string> = new Set<string>();
-  private schema: Schema;
-  private enumGenerator: EnumGenerator;
+  private oas: Config['oas']
+  private oldNode: Config['oldNode']
+  private readonly openapi: Config['openapi']
+  private readonly ast: Config['ast']
+  private readonly pluginConfig: Config['pluginConfig']
+  private readonly openapiToSingleConfig: Config['openapiToSingleConfig']
+  private readonly modelFolderName: string = TYPE_MODEL_FOLDER_NAME
+  private context: PluginContext | null = null
+  private modelIndex: Set<string> = new Set<string>()
+  private schema: Schema
+  private enumGenerator: EnumGenerator
   constructor(config: Config) {
-    this.oas = config.oas;
-    this.ast = config.ast;
-    this.pluginConfig = config.pluginConfig;
-    this.openapiToSingleConfig = config.openapiToSingleConfig;
-    this.openapi = config.openapi;
-    this.schema = new Schema(config);
-    this.oldNode = config.oldNode;
+    this.oas = config.oas
+    this.ast = config.ast
+    this.pluginConfig = config.pluginConfig
+    this.openapiToSingleConfig = config.openapiToSingleConfig
+    this.openapi = config.openapi
+    this.schema = new Schema(config)
+    this.oldNode = config.oldNode
 
-    this.enumGenerator = EnumGenerator.getInstance(config);
+    this.enumGenerator = EnumGenerator.getInstance(config)
   }
 
   build() {}
@@ -61,30 +57,23 @@ export class Component {
     //this.generateComponentObjectType(this.openapi.component.requestBodyObject);
     _.forEach(this.openapi.component.schemas, (schema, key) => {
       if (this.openapi.isReference(schema)) {
-        this.generateCodeByComponentRef(schema, key);
-        return;
+        this.generateCodeByComponentRef(schema, key)
+        return
       }
 
-      this.generateCodeByComponentSchema(schema, key);
-    });
+      this.generateCodeByComponentSchema(schema, key)
+    })
   }
 
-  generateCodeByComponentRef(
-    schema: OpenAPIV3.ReferenceObject,
-    typeName: string,
-  ): void {
-    const upperFirstTypeName = _.upperFirst(typeName);
-    const upperFirstRefName = _.upperFirst(
-      this.openapi.getRefAlias(schema.$ref),
-    );
-    const UUID = `${UUID_PREFIX + upperFirstTypeName}-${upperFirstRefName}`;
-    const typeDeclaration = this.oldNode.typeDeclarationCache.get(UUID);
+  generateCodeByComponentRef(schema: OpenAPIV3.ReferenceObject, key: string): void {
+    const upperFirstTypeName = _.upperFirst(key) + _.upperFirst(TYPE_MODEL_SUFFIX)
+    const upperFirstRefName = _.upperFirst(this.openapi.getRefAlias(schema.$ref)) + _.upperFirst(TYPE_MODEL_SUFFIX)
+    const UUID = `${UUID_PREFIX + upperFirstTypeName}-${upperFirstRefName}`
+    const typeDeclaration = this.oldNode.typeDeclarationCache.get(UUID)
     const statements = [
       ...this.ast.generateImportStatements([
         {
-          namedImports: [
-            typeDeclaration?.getType()?.getText() ?? upperFirstRefName,
-          ],
+          namedImports: [typeDeclaration?.getType()?.getText() ?? upperFirstRefName],
           isTypeOnly: true,
           moduleSpecifier: `/${TYPE_MODEL_FOLDER_NAME}/index`,
         },
@@ -98,7 +87,7 @@ export class Component {
               ...(this.pluginConfig?.compare
                 ? [
                     {
-                      leadingTrivia: "\n",
+                      leadingTrivia: '\n',
                       tagName: UUID_TAG_NAME,
                       text: UUID,
                     },
@@ -109,53 +98,44 @@ export class Component {
         ],
         isExported: true,
       }),
-    ];
+    ]
 
-    this.createModelSourceFile(statements, upperFirstTypeName);
-    this.setModelIndexStatements(statements);
+    this.createModelSourceFile(statements, `${_.lowerFirst(key)}.${TYPE_MODEL_SUFFIX}`)
+    this.setModelIndexStatements(statements)
   }
 
-  createModelSourceFile(
-    statements: Array<StatementStructures>,
-    fileName: string,
-  ): void {
-    const filePath = path.resolve(
-      this.openapiToSingleConfig.output.dir || "./",
-      `${this.modelFolderName}/${fileName}.ts`,
-    );
+  createModelSourceFile(statements: Array<StatementStructures>, fileName: string): void {
+    const filePath = path.resolve(this.openapiToSingleConfig.output.dir || './', `${this.modelFolderName}/${fileName}.ts`)
 
     this.ast.createSourceFile(filePath, {
       //...(this.generateModelImport() || [])
       ...this.enumGenerator.generateEnum(),
       statements,
-    });
+    })
   }
 
   setModelIndexStatements(statements: Array<StatementStructures>): void {
-    const whiteKind = [StructureKind.TypeAlias, StructureKind.Interface];
+    const whiteKind = [StructureKind.TypeAlias, StructureKind.Interface]
 
     const names = _.chain(statements)
       .filter((item) => whiteKind.includes(item.kind))
-      .map(
-        (item: TypeAliasDeclarationStructure | InterfaceDeclarationStructure) =>
-          item.name,
-      )
-      .value() as unknown as string[];
+      .map((item: TypeAliasDeclarationStructure | InterfaceDeclarationStructure) => item.name)
+      .value() as unknown as string[]
 
-    _.forEach(names, (name) => this.modelIndex.add(name));
+    _.forEach(names, (name) => this.modelIndex.add(name))
   }
 
   generateModelIndex(): void {
     const statements = _.chain([...this.modelIndex])
       .map((name) =>
         this.ast.generateExportStatements({
-          moduleSpecifier: `./${name}`,
+          moduleSpecifier: `./${_.lowerFirst(name).replace(/Model/, '.model')}`,
         }),
       )
-      .value();
+      .value()
 
-    this.createModelSourceFile(statements, "index");
-    this.setModelIndexStatements(statements);
+    this.createModelSourceFile(statements, 'index')
+    this.setModelIndexStatements(statements)
   }
 
   /**
@@ -164,12 +144,11 @@ export class Component {
    * @param key
    */
   generateCodeByComponentSchema(schema: SchemaObject, key: string): void {
-    this.openapi.resetRefCache();
+    this.openapi.resetRefCache()
 
-    const upperFirstTypeName = _.upperFirst(key);
-    const UUID = UUID_PREFIX + upperFirstTypeName;
-    const interfaceDeclaration =
-      this.oldNode.interfaceDeclarationCache.get(UUID);
+    const upperFirstTypeName = _.upperFirst(key) + _.upperFirst(TYPE_MODEL_SUFFIX)
+    const UUID = UUID_PREFIX + upperFirstTypeName
+    const interfaceDeclaration = this.oldNode.interfaceDeclarationCache.get(UUID)
 
     const schemaStatements = this.ast.generateInterfaceStatements({
       isExported: true,
@@ -180,13 +159,13 @@ export class Component {
           // description: "\n",
           tags: [
             {
-              tagName: "description",
-              text: schema.description || "",
+              tagName: 'description',
+              text: schema.description || '',
             },
             ...(this.pluginConfig?.compare
               ? [
                   {
-                    leadingTrivia: schema.description ? "" : "\n",
+                    leadingTrivia: schema.description ? '' : '\n',
                     tagName: UUID_TAG_NAME,
                     text: UUID,
                   },
@@ -195,37 +174,32 @@ export class Component {
           ].filter((x) => x.text),
         },
       ].filter((x) => x.tags.some((y) => y.text)),
-    });
+    })
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
-        const UUID = UUID_PREFIX + _.upperFirst(this.openapi.getRefAlias(ref));
-        const declaration = this.oldNode.declarationCache.get(UUID);
-        const name =
-          declaration?.getName() ?? _.upperFirst(this.openapi.getRefAlias(ref));
+        const UUID = UUID_PREFIX + _.upperFirst(this.openapi.getRefAlias(ref))
+        const declaration = this.oldNode.declarationCache.get(UUID)
+        const name = declaration?.getName() ?? _.upperFirst(this.openapi.getRefAlias(ref))
         return this.ast.generateImportStatements([
           ...(name === typeNameAddSuffix(key)
             ? []
             : [
                 {
-                  namedImports: [name],
+                  namedImports: [name + _.upperFirst(TYPE_MODEL_SUFFIX)],
                   isTypeOnly: true,
-                  moduleSpecifier: `./${name}`,
+                  moduleSpecifier: `./${`${_.lowerFirst(this.openapi.getRefAlias(ref))}.${TYPE_MODEL_SUFFIX}`}`,
                 },
               ]),
-        ]);
+        ])
       })
       .flatten()
-      .value();
+      .value()
 
-    const statements = [
-      ...importStatements,
-      ...this.enumGenerator.generateEnum(),
-      schemaStatements,
-    ];
+    const statements = [...importStatements, ...this.enumGenerator.generateEnum(), schemaStatements]
 
-    this.createModelSourceFile(statements, _.upperFirst(key));
-    this.setModelIndexStatements(statements);
+    this.createModelSourceFile(statements, `${_.lowerFirst(key)}.${TYPE_MODEL_SUFFIX}`)
+    this.setModelIndexStatements(statements)
   }
 
   /*  generateComponentObjectType(

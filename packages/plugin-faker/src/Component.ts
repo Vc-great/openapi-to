@@ -1,49 +1,49 @@
-import path from "node:path";
+import path from 'node:path'
 
-import { pluginEnum } from "@openapi-to/core";
-import { TYPE_MODEL_FOLDER_NAME } from "@openapi-to/core/utils";
-import { ZOD_MODEL_FOLDER_NAME } from "@openapi-to/plugin-zod/src/constants.ts";
+import { pluginEnum } from '@openapi-to/core'
+import { TYPE_MODEL_FOLDER_NAME } from '@openapi-to/core/utils'
+import { formatRefName as formatTypeRefName } from '@openapi-to/plugin-ts-type/src/utils.ts'
+import { ZOD_MODEL_FOLDER_NAME } from '@openapi-to/plugin-zod/src/constants.ts'
+import _ from 'lodash'
+import { StructureKind } from 'ts-morph'
 
-import _ from "lodash";
-import { StructureKind } from "ts-morph";
+import { Faker } from './Faker'
+import { Schema } from './Schema.ts'
+import { FAKER_SUFFIX, MODEL_FOLDER_NAME } from './constants.ts'
+import { formatFileName, formatModelFileName, formatModelMethodName, formatRefName } from './utils.ts'
 
-import { FAKER_SUFFIX, MODEL_FOLDER_NAME } from "./constants.ts";
-import { Faker } from "./Faker";
-import { Schema } from "./Schema.ts";
-import { fakerNameAddSuffix, fileAddSuffix, refAddSuffix } from "./utils.ts";
-
-import type { PluginContext } from "@openapi-to/core";
-import type { SchemaObject } from "oas/types";
-import type { OpenAPIV3 } from "openapi-types";
-import type { ImportDeclarationStructure } from "ts-morph";
-import type { StatementStructures } from "ts-morph";
-import type { Config } from "./types.ts";
+import type { PluginContext } from '@openapi-to/core'
+import type { SchemaObject } from 'oas/types'
+import type { OpenAPIV3 } from 'openapi-types'
+import type { ImportDeclarationStructure } from 'ts-morph'
+import type { StatementStructures } from 'ts-morph'
+import type { Config } from './types.ts'
 
 export class Component {
-  private oas: Config["oas"];
-  private readonly openapi: Config["openapi"];
-  private readonly ast: Config["ast"];
-  private readonly pluginConfig: Config["pluginConfig"];
-  private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private context: PluginContext | null = null;
-  private modelIndex: Set<string> = new Set<string>();
-  private schema: Schema;
+  private oas: Config['oas']
+  private readonly openapi: Config['openapi']
+  private readonly ast: Config['ast']
+  private readonly pluginConfig: Config['pluginConfig']
+  private readonly openapiToSingleConfig: Config['openapiToSingleConfig']
+  private context: PluginContext | null = null
+  private modelIndex: Set<string> = new Set<string>()
+  private schema: Schema
 
   constructor(config: Config) {
-    this.oas = config.oas;
-    this.ast = config.ast;
-    this.pluginConfig = config.pluginConfig;
-    this.openapiToSingleConfig = config.openapiToSingleConfig;
-    this.openapi = config.openapi;
-    this.schema = new Schema(config);
+    this.oas = config.oas
+    this.ast = config.ast
+    this.pluginConfig = config.pluginConfig
+    this.openapiToSingleConfig = config.openapiToSingleConfig
+    this.openapi = config.openapi
+    this.schema = new Schema(config)
   }
 
   get faker(): Faker {
-    return new Faker();
+    return new Faker()
   }
 
   get hasZodPlugin() {
-    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
+    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod)
   }
 
   build() {}
@@ -53,34 +53,31 @@ export class Component {
     //this.generateComponentObjectType(this.openapi.component.requestBodyObject);
     _.forEach(this.openapi.component.schemas, (schema, key) => {
       if (this.openapi.isReference(schema)) {
-        this.generateCodeComponentRef(schema, key);
-        return;
+        this.generateCodeComponentRef(schema, key)
+        return
       }
 
-      this.generateCodeForComponentSchema(schema, key);
-    });
+      this.generateCodeForComponentSchema(schema, key)
+    })
   }
 
-  generateCodeComponentRef(
-    schema: OpenAPIV3.ReferenceObject,
-    key: string,
-  ): void {
-    const name = fakerNameAddSuffix(key);
+  generateCodeComponentRef(schema: OpenAPIV3.ReferenceObject, key: string): void {
+    const name = formatModelMethodName(key)
     this.createModelSourceFile(
       [
         ...this.ast.generateImportStatements([
           {
-            namedImports: ["faker"],
+            namedImports: ['faker'],
             isTypeOnly: false,
             moduleSpecifier: '@faker-js/faker',
           },
           {
-            namedImports: [refAddSuffix(this.openapi.getRefAlias(schema.$ref))],
+            namedImports: [formatRefName(this.openapi.getRefAlias(schema.$ref))],
             isTypeOnly: false,
             moduleSpecifier: `/${MODEL_FOLDER_NAME}/index`,
           },
           {
-            namedImports: [_.upperFirst(_.camelCase(name))],
+            namedImports: [formatTypeRefName(_.camelCase(name))],
             isTypeOnly: true,
             moduleSpecifier: this.hasZodPlugin
               ? `../${ZOD_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`
@@ -90,67 +87,54 @@ export class Component {
         this.ast.generateFunctionStatements({
           name: _.camelCase(name),
           statements: `return ${this.openapi.getRefAlias(schema.$ref)}()`,
-          returnType:
-            `${this.openapi.upperFirstCurrentTagName}.${_.upperFirst(_.camelCase(name))}`,
+          returnType: `${this.openapi.upperFirstCurrentTagName}.${_.upperFirst(_.camelCase(name))}`,
           isExported: true,
           docs: [], // [{ description: "" }],
         }),
       ],
-      fileAddSuffix(key),
-    );
+      formatModelFileName(key),
+    )
   }
 
-  createModelSourceFile(
-    statements: Array<StatementStructures>,
-    fileName: string,
-  ): void {
-    const filePath = path.resolve(
-      this.openapiToSingleConfig.output.dir || "./",
-      `${MODEL_FOLDER_NAME}/${fileName}.ts`,
-    );
+  createModelSourceFile(statements: Array<StatementStructures>, fileName: string): void {
+    const filePath = path.resolve(this.openapiToSingleConfig.output.dir || './', `${MODEL_FOLDER_NAME}/${fileName}.ts`)
 
     this.ast.createSourceFile(filePath, {
       //...(this.generateModelImport() || [])
       statements,
-    });
+    })
 
     //
-    this.setModelIndexStatements(statements);
+    this.setModelIndexStatements(statements)
   }
 
   setModelIndexStatements(statements: Array<StatementStructures>): void {
     //
-    const whiteKind = [StructureKind.ImportDeclaration];
+    const whiteKind = [StructureKind.ImportDeclaration]
 
     const names = _.chain(statements)
       .filter((item) => whiteKind.includes(item.kind))
-      .filter(
-        (item) =>
-          "moduleSpecifier" in item &&
-          item.moduleSpecifier !== "@faker-js/faker",
-      )
-      .map((item: ImportDeclarationStructure) =>
-        _.get(item, "namedImports[0]", ""),
-      )
+      .filter((item) => 'moduleSpecifier' in item && item.moduleSpecifier !== '@faker-js/faker')
+      .map((item: ImportDeclarationStructure) => _.get(item, 'namedImports[0]', ''))
       .map((item: string) => _.camelCase(item))
-      .value() as unknown as string[];
+      .value() as unknown as string[]
 
-    _.forEach(names, (name) => this.modelIndex.add(name));
+    _.forEach(names, (name) => this.modelIndex.add(name))
   }
 
   generateModelIndex(): void {
     const statements = _.chain([...this.modelIndex])
       .map((name) => {
         const fileName = name.endsWith(_.upperFirst(FAKER_SUFFIX))
-          ? name
-          : fileAddSuffix(name);
+          ? formatModelFileName(name.replace(_.upperFirst(FAKER_SUFFIX), ''))
+          : formatModelFileName(name)
         return this.ast.generateExportStatements({
           moduleSpecifier: `./${fileName}`,
-        });
+        })
       })
-      .value();
+      .value()
 
-    this.createModelSourceFile(statements, "index");
+    this.createModelSourceFile(statements, 'index')
   }
 
   /**
@@ -159,51 +143,49 @@ export class Component {
    * @param key
    */
   generateCodeForComponentSchema(schema: SchemaObject, key: string): void {
-    const name = fakerNameAddSuffix(key);
-    this.openapi.resetRefCache();
+    const name = formatModelMethodName(key)
+    this.openapi.resetRefCache()
     const schemaStatements = this.ast.generateFunctionStatements({
       name: _.camelCase(name),
       statements: `return ${this.schema.getStatementsFromSchema(schema)}`,
-      returnType: _.upperFirst(_.camelCase(key)),
+      returnType: formatTypeRefName(_.camelCase(key)),
       isExported: true,
       docs: schema.description ? [{ description: schema.description }] : [],
-    });
+    })
 
     const importStatements = _.chain([...this.openapi.refCache.keys()])
       .map((ref) => {
-        const name = this.openapi.getRefAlias(ref);
+        const name = this.openapi.getRefAlias(ref)
         return this.ast.generateImportStatements([
           ...(name === key
             ? []
             : [
                 {
-                  namedImports: [fakerNameAddSuffix(name)],
+                  namedImports: [formatModelMethodName(name)],
                   isTypeOnly: false,
-                  moduleSpecifier:
-                    `./${refAddSuffix(this.openapi.getRefAlias(ref))}`,
+                  moduleSpecifier: `./${formatModelFileName(this.openapi.getRefAlias(ref))}`,
                 },
               ]),
-        ]);
+        ])
       })
       .flatten()
-      .value();
+      .value()
 
     const fakerImport = this.ast.generateImportStatements([
       {
-        namedImports: ["faker"],
+        namedImports: ['faker'],
         isTypeOnly: false,
         moduleSpecifier: '@faker-js/faker',
       },
       {
-        namedImports: [_.upperFirst(_.camelCase(key))],
+        namedImports: [formatTypeRefName(_.camelCase(key))],
         isTypeOnly: true,
-        moduleSpecifier: `../${TYPE_MODEL_FOLDER_NAME}`,
+        moduleSpecifier: this.hasZodPlugin
+          ? `../${ZOD_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`
+          : `../${TYPE_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`,
       },
-    ]);
+    ])
 
-    this.createModelSourceFile(
-      [...importStatements, ...fakerImport, schemaStatements],
-      fileAddSuffix(key),
-    );
+    this.createModelSourceFile([...importStatements, ...fakerImport, schemaStatements], formatModelFileName(key))
   }
 }

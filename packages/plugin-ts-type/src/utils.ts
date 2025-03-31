@@ -1,16 +1,16 @@
-import _ from "lodash";
+import _ from 'lodash'
 
-import { TYPE_SUFFIX } from "./constants.ts";
+import { TYPE_MODEL_SUFFIX, TYPE_SUFFIX } from './constants.ts'
 
-export function refAddSuffix(ref: string): string {
-  return _.upperFirst(ref) + _.upperFirst(TYPE_SUFFIX);
+export function formatRefName(ref: string): string {
+  return _.upperFirst(ref) + _.upperFirst(TYPE_MODEL_SUFFIX)
 }
 
 //todo
 export function typeNameAddSuffix(typeName: string): string {
-  return _.upperFirst(typeName);
+  return _.upperFirst(typeName)
 }
 
 export function fileAddSuffix(fileName: string): string {
-  return `${_.upperFirst(fileName)}.${TYPE_SUFFIX}`;
+  return `${_.upperFirst(fileName)}.${TYPE_SUFFIX}`
 }

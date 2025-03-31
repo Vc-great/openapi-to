@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@openapi-to/core": "workspace:*",
+    "@openapi-to/plugin-faker": "workspace:*",
     "lodash": "^4.17.21",
     "oas": "^24.9.0",
     "ts-morph": "^23.0.0"

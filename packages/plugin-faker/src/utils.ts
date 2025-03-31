@@ -1,20 +1,23 @@
-import _ from "lodash";
+import _ from 'lodash'
 
-import { FAKER_SUFFIX } from "./constants.ts";
+import { FAKER_SUFFIX } from './constants.ts'
 
-export function refAddSuffix(ref: string): string {
-  return ref + _.upperFirst(FAKER_SUFFIX);
+export function formatRefName(ref: string): string {
+  return `${_.lowerFirst(ref)}${_.upperFirst(FAKER_SUFFIX)}`
 }
 
-//todo
-export function fakerNameAddSuffix(fakerName: string): string {
-  return fakerName + _.upperFirst(FAKER_SUFFIX);
+export function formatModelMethodName(fakerName: string): string {
+  return `${_.lowerFirst(fakerName)}${_.upperFirst(FAKER_SUFFIX)}`
 }
 
-export function fileAddSuffix(fileName: string): string {
-  return `${fileName}.${FAKER_SUFFIX}`;
+export function formatModelFileName(fileName: string): string {
+  return `${_.lowerFirst(fileName)}-faker.model`
 }
 
-export function classNameAddSuffix(className: string): string {
-  return _.upperFirst(className) + _.upperFirst(FAKER_SUFFIX);
+export function formatFileName(fileName: string): string {
+  return `${_.lowerFirst(fileName)}-faker.service`
+}
+
+export function formatClassName(className: string): string {
+  return `${_.upperFirst(className)}FakerService`
 }

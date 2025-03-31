@@ -1,11 +1,12 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`vue-query > vue-query getFullText 1`] = `
-"import { petAPI } from "./petAPI";
-import type { Pet } from "./Pet";
-import { MaybeRef } from "vue";
+"import { petService } from "./pet.service";
+import type { Pet } from "./pet.types";
+import type { MaybeRef } from "vue";
+import { toValue } from "vue";
 import { queryOptions, useQuery } from "@tanstack/vue-query";
-import { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import type { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
 import { useMutation } from "@tanstack/vue-query";
 
 export const testPostMutationKey = () => [{ url: \`/pet/test\`, method: 'post' }] as const;
@@ -54,7 +55,7 @@ function useTestPost(options?: {
 
     return useMutation<Pet.TestPostMutationResponse, Pet.TestPostError>({
         mutationFn: async () => {
-            return petAPI.testPost();
+            return petService.testPost();
         },
         mutationKey,
         ...mutationOptions
@@ -71,7 +72,7 @@ function useTestPut(options?: {
 
     return useMutation<Pet.TestPutMutationResponse, Pet.TestPutError>({
         mutationFn: async () => {
-            return petAPI.testPut();
+            return petService.testPut();
         },
         mutationKey,
         ...mutationOptions
@@ -88,7 +89,7 @@ function useDelByTest(options?: {
 
     return useMutation<Pet.DelByTestMutationResponse, Pet.DelByTestError, { data: Pet.DelByTestMutationRequest }>({
         mutationFn: async ({ data }) => {
-            return petAPI.delByTest(data);
+            return petService.delByTest(data);
         },
         mutationKey,
         ...mutationOptions
@@ -107,7 +108,7 @@ function useTestIdGet<TData = Pet.TestIdGetQueryResponse, TQueryData = Pet.TestI
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return petAPI.testIdGet(testId, params);
+                return petService.testIdGet(toValue(testId), toValue(params), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -128,7 +129,7 @@ function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], optio
 
     return useMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, { data: Pet.UploadImagePostMutationRequest }>({
         mutationFn: async ({ data }) => {
-            return petAPI.uploadImagePost(petId, data);
+            return petService.uploadImagePost(toValue(petId), data);
         },
         mutationKey,
         ...mutationOptions
@@ -145,7 +146,7 @@ function useCreate(options?: {
 
     return useMutation<Pet.CreateMutationResponse, Pet.CreateError>({
         mutationFn: async () => {
-            return petAPI.create();
+            return petService.create();
         },
         mutationKey,
         ...mutationOptions
@@ -162,7 +163,7 @@ function useUpdate(options?: {
 
     return useMutation<Pet.UpdateMutationResponse, Pet.UpdateError>({
         mutationFn: async () => {
-            return petAPI.update();
+            return petService.update();
         },
         mutationKey,
         ...mutationOptions
@@ -184,7 +185,7 @@ function useFindByStatusGet<TData = Pet.FindByStatusGetQueryResponse, TQueryData
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return petAPI.findByStatusGet(params);
+                return petService.findByStatusGet(toValue(params), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -207,7 +208,7 @@ function useFindByTagsGet<TData = Pet.FindByTagsGetQueryResponse, TQueryData = P
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return petAPI.findByTagsGet(params);
+                return petService.findByTagsGet(toValue(params), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -230,7 +231,7 @@ function useFindByPetId<TData = Pet.FindByPetIdQueryResponse, TQueryData = Pet.F
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return petAPI.findByPetId(petId);
+                return petService.findByPetId(toValue(petId), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -248,7 +249,7 @@ function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options?: {
 
     return useMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, { data: Pet.PetIdPostMutationRequest }>({
         mutationFn: async ({ data }) => {
-            return petAPI.petIdPost(petId, data);
+            return petService.petIdPost(toValue(petId), data);
         },
         mutationKey,
         ...mutationOptions
@@ -265,7 +266,7 @@ function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options?: {
 
     return useMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError>({
         mutationFn: async () => {
-            return petAPI.delByPetId(petId);
+            return petService.delByPetId(toValue(petId));
         },
         mutationKey,
         ...mutationOptions
@@ -291,11 +292,11 @@ export namespace PetQuery {
     export type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
 }
 
-import { storeAPI } from "./storeAPI";
-import type { Store } from "./Store";
-import { MaybeRef } from "vue";
+import { storeService } from "./store.service";
+import type { Store } from "./store.types";
+import { toValue } from "vue";
 import { queryOptions, useQuery } from "@tanstack/vue-query";
-import { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import type { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
 import { useMutation } from "@tanstack/vue-query";
 
 export const createMutationKey = () => [{ url: \`/store/order\`, method: 'post' }] as const;
@@ -320,7 +321,7 @@ function useCreate(options?: {
 
     return useMutation<Store.CreateMutationResponse, Store.CreateError, { data: Store.CreateMutationRequest }>({
         mutationFn: async ({ data }) => {
-            return storeAPI.create(data);
+            return storeService.create(data);
         },
         mutationKey,
         ...mutationOptions
@@ -342,7 +343,7 @@ function useFindByOrderId<TData = Store.FindByOrderIdQueryResponse, TQueryData =
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return storeAPI.findByOrderId(orderId);
+                return storeService.findByOrderId(toValue(orderId), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -363,7 +364,7 @@ function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], optio
 
     return useMutation<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError>({
         mutationFn: async () => {
-            return storeAPI.delByOrderId(orderId);
+            return storeService.delByOrderId(toValue(orderId));
         },
         mutationKey,
         ...mutationOptions
@@ -385,7 +386,7 @@ function useInventoryGet<TData = Store.InventoryGetQueryResponse, TQueryData = S
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return storeAPI.inventoryGet();
+                return storeService.inventoryGet();
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -404,11 +405,12 @@ export namespace StoreQuery {
     export type InventoryGetQueryKey = ReturnType<typeof inventoryGetQueryKey>;
 }
 
-import { userAPI } from "./userAPI";
-import type { User } from "./User";
-import { MaybeRef } from "vue";
+import { userService } from "./user.service";
+import type { User } from "./user.types";
+import type { MaybeRef } from "vue";
+import { toValue } from "vue";
 import { queryOptions, useQuery } from "@tanstack/vue-query";
-import { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import type { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
 import { useMutation } from "@tanstack/vue-query";
 
 export const createWithArrayPostMutationKey = () => [{ url: \`/user/createWithArray\`, method: 'post' }] as const;
@@ -445,7 +447,7 @@ function useCreateWithArrayPost(options?: {
 
     return useMutation<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError>({
         mutationFn: async () => {
-            return userAPI.createWithArrayPost();
+            return userService.createWithArrayPost();
         },
         mutationKey,
         ...mutationOptions
@@ -462,7 +464,7 @@ function useCreateWithListPost(options?: {
 
     return useMutation<User.CreateWithListPostMutationResponse, User.CreateWithListPostError>({
         mutationFn: async () => {
-            return userAPI.createWithListPost();
+            return userService.createWithListPost();
         },
         mutationKey,
         ...mutationOptions
@@ -481,7 +483,7 @@ function useFindByUsername<TData = User.FindByUsernameQueryResponse, TQueryData 
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return userAPI.findByUsername(username);
+                return userService.findByUsername(toValue(username), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -502,7 +504,7 @@ function useUsernamePut(username: User.UsernamePutPathParams['username'], option
 
     return useMutation<User.UsernamePutMutationResponse, User.UsernamePutError, { data: User.UsernamePutMutationRequest }>({
         mutationFn: async ({ data }) => {
-            return userAPI.usernamePut(username, data);
+            return userService.usernamePut(toValue(username), data);
         },
         mutationKey,
         ...mutationOptions
@@ -522,7 +524,7 @@ function useDelByUsername(username: User.DelByUsernamePathParams['username'], op
 
     return useMutation<User.DelByUsernameMutationResponse, User.DelByUsernameError>({
         mutationFn: async () => {
-            return userAPI.delByUsername(username);
+            return userService.delByUsername(toValue(username));
         },
         mutationKey,
         ...mutationOptions
@@ -541,7 +543,7 @@ function useLoginGet<TData = User.LoginGetQueryResponse, TQueryData = User.Login
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return userAPI.loginGet(params);
+                return userService.loginGet(toValue(params), { signal });
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -561,7 +563,7 @@ function useLogoutGet<TData = User.LogoutGetQueryResponse, TQueryData = User.Log
         ...(queryOptions({
             queryKey: queryKey as QueryKey,
             queryFn: async ({ signal }) => {
-                return userAPI.logoutGet();
+                return userService.logoutGet();
             }
         }) as QueryObserverOptions),
         ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
@@ -582,7 +584,7 @@ function useCreate(options?: {
 
     return useMutation<User.CreateMutationResponse, User.CreateError, { data: User.CreateMutationRequest }>({
         mutationFn: async ({ data }) => {
-            return userAPI.create(data);
+            return userService.create(data);
         },
         mutationKey,
         ...mutationOptions

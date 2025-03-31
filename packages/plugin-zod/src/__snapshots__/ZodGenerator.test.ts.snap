@@ -2,7 +2,7 @@
 
 exports[`zodGenerator > compare zodGenerator getFullText 1`] = `
 "import { z } from "zod";
-import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schema";
+import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schemas";
 export const petFindByStatusGetQueryParamsStatusEnumLabel = {
     Available: '',
     Pending: '',
@@ -74,6 +74,30 @@ export const testIdGetPathParams = z.object({
  */
 const testIdGetQueryResponse = z.lazy(() => testDto2Schema);
 const testIdGetError = z.unknown();
+/**
+ * @description queryParams
+ */
+const uploadImageOctetStreamPostQueryParams = z.object({
+    /**
+    *@description:Additional Metadata
+    */
+    additionalMetadata: z.string().optional()
+});
+/**
+ * @description pathParams
+ */
+export const uploadImageOctetStreamPostPathParams = z.object({
+    /**
+    *@description:ID of pet to update
+    */
+    petId: z.number()
+});
+const uploadImageOctetStreamPostMutationRequest = z.instanceof(File);
+/**
+ * @description successful operation
+ */
+const uploadImageOctetStreamPostMutationResponse = z.lazy(() => apiResponseSchema);
+const uploadImageOctetStreamPostError = z.unknown();
 /**
  * @description pathParams
  */
@@ -212,6 +236,20 @@ export const newPetZod = {
     testIdGetQueryResponse,
     testIdGetError,
     /**
+    *@description:queryParams
+    */
+    uploadImageOctetStreamPostQueryParams,
+    /**
+    *@description:pathParams
+    */
+    uploadImageOctetStreamPostPathParams,
+    uploadImageOctetStreamPostMutationRequest,
+    /**
+    *@description:successful operation
+    */
+    uploadImageOctetStreamPostMutationResponse,
+    uploadImageOctetStreamPostError,
+    /**
     *@description:pathParams
     */
     uploadImagePostPathParams,
@@ -303,6 +341,20 @@ export namespace Pet {
     export type TestIdGetQueryResponse = z.infer<typeof testIdGetQueryResponse>;
     export type TestIdGetError = z.infer<typeof testIdGetError>;
     /**
+     * @description queryParams
+     */
+    export type UploadImageOctetStreamPostQueryParams = z.infer<typeof uploadImageOctetStreamPostQueryParams>;
+    /**
+     * @description pathParams
+     */
+    export type UploadImageOctetStreamPostPathParams = z.infer<typeof uploadImageOctetStreamPostPathParams>;
+    export type UploadImageOctetStreamPostMutationRequest = z.infer<typeof uploadImageOctetStreamPostMutationRequest>;
+    /**
+     * @description successful operation
+     */
+    export type UploadImageOctetStreamPostMutationResponse = z.infer<typeof uploadImageOctetStreamPostMutationResponse>;
+    export type UploadImageOctetStreamPostError = z.infer<typeof uploadImageOctetStreamPostError>;
+    /**
      * @description pathParams
      */
     export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
@@ -359,7 +411,7 @@ export namespace Pet {
 }
 
 import { z } from "zod";
-import { orderSchema } from "./zod-schema";
+import { orderSchema } from "./zod-schemas";
 const createMutationRequest = z.lazy(() => orderSchema);
 /**
  * @description successful operation
@@ -465,7 +517,7 @@ export namespace Store {
 }
 
 import { z } from "zod";
-import { userSchema } from "./zod-schema";
+import { userSchema } from "./zod-schemas";
 const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
@@ -636,6 +688,8 @@ export const test32145Schema = z.object({
     code: z.number().optional(),
     meta: z.lazy(() => testdata).optional()
 });
+/** @UUID zod-test32145 */
+export type Test32145Model = z.infer<typeof test32145Schema>;
 
 /**
  * @description description
@@ -690,7 +744,7 @@ export const test3214Schema = z.object({
     /**
     *@description:description
     */
-    columnType: Test3214ColumnTypeEnum.optional(),
+    columnType: z.nativeEnum(Test3214ColumnTypeEnum).optional(),
     /**
     *@description:description
     */
@@ -705,6 +759,8 @@ export const test3214Schema = z.object({
     */
     notNull: z.boolean().optional()
 });
+/** @UUID zod-test3214 */
+export type Test3214Model = z.infer<typeof test3214Schema>;
 
 import { z } from "zod";
 /** @UUID zod-testdata */
@@ -726,6 +782,8 @@ export const testdataSchema = z.object({
     */
     totalPages: z.number().optional()
 });
+/** @UUID zod-testdata */
+export type TestdataModel = z.infer<typeof testdataSchema>;
 
 import { z } from "zod";
 /** @UUID zod-sort */
@@ -734,6 +792,8 @@ export const sortSchema = z.object({
     sorted: z.boolean().optional(),
     unsorted: z.boolean().optional()
 });
+/** @UUID zod-sort */
+export type SortModel = z.infer<typeof sortSchema>;
 
 import { test3214Schema } from "./test3214.schema";
 import { z } from "zod";
@@ -741,6 +801,8 @@ import { z } from "zod";
 export const testDto3Schema = z.object({
     test3214: z.lazy(() => test3214Schema.array()).optional()
 });
+/** @UUID zod-testDto3 */
+export type TestDto3Model = z.infer<typeof testDto3Schema>;
 
 import { testDto3Schema } from "./testDto3.schema";
 import { testdataSchema } from "./testdata.schema";
@@ -750,12 +812,16 @@ export const testDto2Schema = z.object({
     content: z.lazy(() => testDto3).optional(),
     meta: z.lazy(() => testdata).optional()
 });
+/** @UUID zod-testDto2 */
+export type TestDto2Model = z.infer<typeof testDto2Schema>;
 
 import { z } from "zod";
 /** @UUID zod-test321 */
 export const test321Schema = z.object({
     id: z.number().optional()
 });
+/** @UUID zod-test321 */
+export type Test321Model = z.infer<typeof test321Schema>;
 
 import { test321Schema } from "./test321.schema";
 import { z } from "zod";
@@ -766,6 +832,8 @@ export const testDtoSchema = z.object({
     */
     test321: z.lazy(() => test321Schema.array()).optional()
 });
+/** @UUID zod-testDto */
+export type TestDtoModel = z.infer<typeof testDtoSchema>;
 
 import { apiResponseSchema } from "./apiResponse.schema";
 import { z } from "zod";
@@ -786,6 +854,8 @@ export const refListSchema = z.object({
     */
     type: z.string().optional()
 });
+/** @UUID zod-refList */
+export type RefListModel = z.infer<typeof refListSchema>;
 
 import { z } from "zod";
 /** @UUID zod-apiResponse */
@@ -794,6 +864,8 @@ export const apiResponseSchema = z.object({
     type: z.string().optional(),
     message: z.string().optional()
 });
+/** @UUID zod-apiResponse */
+export type ApiResponseModel = z.infer<typeof apiResponseSchema>;
 
 import { z } from "zod";
 /** @UUID zod-category */
@@ -801,6 +873,8 @@ export const categorySchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
+/** @UUID zod-category */
+export type CategoryModel = z.infer<typeof categorySchema>;
 
 import { categorySchema } from "./category.schema";
 import { tagSchema } from "./tag.schema";
@@ -842,8 +916,10 @@ export const newPetZod = z.object({
     /**
     *@description:pet status in the store
     */
-    status: PetStatusEnum.optional()
+    status: z.nativeEnum(PetStatusEnum).optional()
 });
+/** @UUID zod-pet */
+export type PetModel = z.infer<typeof petSchema>;
 
 import { z } from "zod";
 /** @UUID zod-tag */
@@ -851,6 +927,8 @@ export const tagSchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
+/** @UUID zod-tag */
+export type TagModel = z.infer<typeof tagSchema>;
 
 /**
  * @description Order Status
@@ -889,9 +967,11 @@ export const orderSchema = z.object({
     /**
     *@description:Order Status
     */
-    status: OrderStatusEnum.optional(),
+    status: z.nativeEnum(OrderStatusEnum).optional(),
     complete: z.boolean().optional()
 });
+/** @UUID zod-order */
+export type OrderModel = z.infer<typeof orderSchema>;
 
 import { z } from "zod";
 /** @UUID zod-user */
@@ -908,11 +988,10 @@ export const userZod = z.object({
     */
     userStatus: z.number().optional()
 });
+/** @UUID zod-user */
+export type UserModel = z.infer<typeof userSchema>;
 
 export * from "./test32145.schema";
-export * from "./test3214ColumnTypeEnumLabel.schema";
-export * from "./test3214ColumnTypeEnum.schema";
-export * from "./test3214ColumnTypeEnumOption.schema";
 export * from "./test3214.schema";
 export * from "./testdata.schema";
 export * from "./sort.schema";
@@ -923,14 +1002,8 @@ export * from "./testDto.schema";
 export * from "./refList.schema";
 export * from "./apiResponse.schema";
 export * from "./category.schema";
-export * from "./petStatusEnumLabel.schema";
-export * from "./petStatusEnum.schema";
-export * from "./petStatusEnumOption.schema";
 export * from "./newPetZod.schema";
 export * from "./tag.schema";
-export * from "./orderStatusEnumLabel.schema";
-export * from "./orderStatusEnum.schema";
-export * from "./orderStatusEnumOption.schema";
 export * from "./order.schema";
 export * from "./userZod.schema";
 "
@@ -938,7 +1011,7 @@ export * from "./userZod.schema";
 
 exports[`zodGenerator > zodGenerator getFullText 1`] = `
 "import { z } from "zod";
-import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schema";
+import { testDto2Schema, test32145Schema, apiResponseSchema, petSchema } from "./zod-schemas";
 export const petFindByStatusGetQueryParamsStatusEnumLabel = {
     Available: '',
     Pending: '',
@@ -1010,6 +1083,30 @@ export const testIdGetPathParams = z.object({
  */
 const testIdGetQueryResponse = z.lazy(() => testDto2Schema);
 const testIdGetError = z.unknown();
+/**
+ * @description queryParams
+ */
+const uploadImageOctetStreamPostQueryParams = z.object({
+    /**
+    *@description:Additional Metadata
+    */
+    additionalMetadata: z.string().optional()
+});
+/**
+ * @description pathParams
+ */
+export const uploadImageOctetStreamPostPathParams = z.object({
+    /**
+    *@description:ID of pet to update
+    */
+    petId: z.number()
+});
+const uploadImageOctetStreamPostMutationRequest = z.instanceof(File);
+/**
+ * @description successful operation
+ */
+const uploadImageOctetStreamPostMutationResponse = z.lazy(() => apiResponseSchema);
+const uploadImageOctetStreamPostError = z.unknown();
 /**
  * @description pathParams
  */
@@ -1116,7 +1213,7 @@ const delByPetIdMutationResponse = z.unknown();
  * @tag pet
  * @description Everything about your Pets
  */
-export const petSchema = {
+export const petSchemas = {
     /**
     *@description:OK
     */
@@ -1146,6 +1243,20 @@ export const petSchema = {
     */
     testIdGetQueryResponse,
     testIdGetError,
+    /**
+    *@description:queryParams
+    */
+    uploadImageOctetStreamPostQueryParams,
+    /**
+    *@description:pathParams
+    */
+    uploadImageOctetStreamPostPathParams,
+    uploadImageOctetStreamPostMutationRequest,
+    /**
+    *@description:successful operation
+    */
+    uploadImageOctetStreamPostMutationResponse,
+    uploadImageOctetStreamPostError,
     /**
     *@description:pathParams
     */
@@ -1237,6 +1348,20 @@ export namespace Pet {
     export type TestIdGetQueryResponse = z.infer<typeof testIdGetQueryResponse>;
     export type TestIdGetError = z.infer<typeof testIdGetError>;
     /**
+     * @description queryParams
+     */
+    export type UploadImageOctetStreamPostQueryParams = z.infer<typeof uploadImageOctetStreamPostQueryParams>;
+    /**
+     * @description pathParams
+     */
+    export type UploadImageOctetStreamPostPathParams = z.infer<typeof uploadImageOctetStreamPostPathParams>;
+    export type UploadImageOctetStreamPostMutationRequest = z.infer<typeof uploadImageOctetStreamPostMutationRequest>;
+    /**
+     * @description successful operation
+     */
+    export type UploadImageOctetStreamPostMutationResponse = z.infer<typeof uploadImageOctetStreamPostMutationResponse>;
+    export type UploadImageOctetStreamPostError = z.infer<typeof uploadImageOctetStreamPostError>;
+    /**
      * @description pathParams
      */
     export type UploadImagePostPathParams = z.infer<typeof uploadImagePostPathParams>;
@@ -1293,7 +1418,7 @@ export namespace Pet {
 }
 
 import { z } from "zod";
-import { orderSchema } from "./zod-schema";
+import { orderSchema } from "./zod-schemas";
 const createMutationRequest = z.lazy(() => orderSchema);
 /**
  * @description successful operation
@@ -1334,7 +1459,7 @@ const inventoryGetError = z.unknown();
  * @tag store
  * @description Access to Petstore orders
  */
-export const storeSchema = {
+export const storeSchemas = {
     createMutationRequest,
     /**
     *@description:successful operation
@@ -1397,7 +1522,7 @@ export namespace Store {
 }
 
 import { z } from "zod";
-import { userSchema } from "./zod-schema";
+import { userSchema } from "./zod-schemas";
 const createWithArrayPostError = z.unknown();
 const createWithArrayPostMutationResponse = z.unknown();
 const createWithListPostError = z.unknown();
@@ -1466,7 +1591,7 @@ const createMutationResponse = z.unknown();
  * @tag user
  * @description Operations about user
  */
-export const userSchema = {
+export const userSchemas = {
     createWithArrayPostError,
     createWithArrayPostMutationResponse,
     createWithListPostError,
@@ -1565,6 +1690,7 @@ export const test32145Schema = z.object({
     code: z.number().optional(),
     meta: z.lazy(() => testdataSchema).optional()
 });
+export type Test32145Model = z.infer<typeof test32145Schema>;
 
 /**
  * @description description
@@ -1618,7 +1744,7 @@ export const test3214Schema = z.object({
     /**
     *@description:description
     */
-    columnType: Test3214ColumnTypeEnum.optional(),
+    columnType: z.nativeEnum(Test3214ColumnTypeEnum).optional(),
     /**
     *@description:description
     */
@@ -1633,6 +1759,7 @@ export const test3214Schema = z.object({
     */
     notNull: z.boolean().optional()
 });
+export type Test3214Model = z.infer<typeof test3214Schema>;
 
 import { z } from "zod";
 export const testdataSchema = z.object({
@@ -1653,6 +1780,7 @@ export const testdataSchema = z.object({
     */
     totalPages: z.number().optional()
 });
+export type TestdataModel = z.infer<typeof testdataSchema>;
 
 import { z } from "zod";
 export const sortSchema = z.object({
@@ -1660,12 +1788,14 @@ export const sortSchema = z.object({
     sorted: z.boolean().optional(),
     unsorted: z.boolean().optional()
 });
+export type SortModel = z.infer<typeof sortSchema>;
 
 import { test3214Schema } from "./test3214.schema";
 import { z } from "zod";
 export const testDto3Schema = z.object({
     test3214: z.lazy(() => test3214Schema.array()).optional()
 });
+export type TestDto3Model = z.infer<typeof testDto3Schema>;
 
 import { testDto3Schema } from "./testDto3.schema";
 import { testdataSchema } from "./testdata.schema";
@@ -1674,11 +1804,13 @@ export const testDto2Schema = z.object({
     content: z.lazy(() => testDto3Schema).optional(),
     meta: z.lazy(() => testdataSchema).optional()
 });
+export type TestDto2Model = z.infer<typeof testDto2Schema>;
 
 import { z } from "zod";
 export const test321Schema = z.object({
     id: z.number().optional()
 });
+export type Test321Model = z.infer<typeof test321Schema>;
 
 import { test321Schema } from "./test321.schema";
 import { z } from "zod";
@@ -1688,6 +1820,7 @@ export const testDtoSchema = z.object({
     */
     test321: z.lazy(() => test321Schema.array()).optional()
 });
+export type TestDtoModel = z.infer<typeof testDtoSchema>;
 
 import { apiResponseSchema } from "./apiResponse.schema";
 import { z } from "zod";
@@ -1707,6 +1840,7 @@ export const refListSchema = z.object({
     */
     type: z.string().optional()
 });
+export type RefListModel = z.infer<typeof refListSchema>;
 
 import { z } from "zod";
 export const apiResponseSchema = z.object({
@@ -1714,12 +1848,14 @@ export const apiResponseSchema = z.object({
     type: z.string().optional(),
     message: z.string().optional()
 });
+export type ApiResponseModel = z.infer<typeof apiResponseSchema>;
 
 import { z } from "zod";
 export const categorySchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
+export type CategoryModel = z.infer<typeof categorySchema>;
 
 import { categorySchema } from "./category.schema";
 import { tagSchema } from "./tag.schema";
@@ -1760,14 +1896,16 @@ export const petSchema = z.object({
     /**
     *@description:pet status in the store
     */
-    status: PetStatusEnum.optional()
+    status: z.nativeEnum(PetStatusEnum).optional()
 });
+export type PetModel = z.infer<typeof petSchema>;
 
 import { z } from "zod";
 export const tagSchema = z.object({
     id: z.number().optional(),
     name: z.string().optional()
 });
+export type TagModel = z.infer<typeof tagSchema>;
 
 /**
  * @description Order Status
@@ -1805,9 +1943,10 @@ export const orderSchema = z.object({
     /**
     *@description:Order Status
     */
-    status: OrderStatusEnum.optional(),
+    status: z.nativeEnum(OrderStatusEnum).optional(),
     complete: z.boolean().optional()
 });
+export type OrderModel = z.infer<typeof orderSchema>;
 
 import { z } from "zod";
 export const userSchema = z.object({
@@ -1823,11 +1962,9 @@ export const userSchema = z.object({
     */
     userStatus: z.number().optional()
 });
+export type UserModel = z.infer<typeof userSchema>;
 
 export * from "./test32145.schema";
-export * from "./test3214ColumnTypeEnumLabel.schema";
-export * from "./test3214ColumnTypeEnum.schema";
-export * from "./test3214ColumnTypeEnumOption.schema";
 export * from "./test3214.schema";
 export * from "./testdata.schema";
 export * from "./sort.schema";
@@ -1838,14 +1975,8 @@ export * from "./testDto.schema";
 export * from "./refList.schema";
 export * from "./apiResponse.schema";
 export * from "./category.schema";
-export * from "./petStatusEnumLabel.schema";
-export * from "./petStatusEnum.schema";
-export * from "./petStatusEnumOption.schema";
 export * from "./pet.schema";
 export * from "./tag.schema";
-export * from "./orderStatusEnumLabel.schema";
-export * from "./orderStatusEnum.schema";
-export * from "./orderStatusEnumOption.schema";
 export * from "./order.schema";
 export * from "./user.schema";
 "

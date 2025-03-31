@@ -123,13 +123,13 @@ export default defineConfig({
 ## createTSRequest
 
 
-| Name                                          | Description                          | Type    | Default |
-| --------------------------------------------- | ------------------------------------ | ------- |---------|
-| createZodDecorator                            | create zod decorator                 | boolean | false   |
-| compare                                       | Experimental features                | boolean | false   |
-| zodDecoratorImportDeclaration.moduleSpecifier | zod Ddecorator Import from           | string  | -       |
-| requestImportDeclaration.moduleSpecifier      | request Import from                  | string  | -       |
-| requestType                                   | axios,common,commonWithArrayResponse | enum    | axios   |
+| Name                                          | Description                | Type    | Default |
+| --------------------------------------------- |----------------------------| ------- |---------|
+| createZodDecorator                            | create zod decorator       | boolean | false   |
+| compare                                       | Experimental features      | boolean | false   |
+| zodDecoratorImportDeclaration.moduleSpecifier | zod Ddecorator Import from | string  | -       |
+| requestImportDeclaration.moduleSpecifier      | request Import from        | string  | -       |
+| requestType                                   | axios,common               | enum    | axios   |
 
 ### example
 
@@ -273,60 +273,133 @@ _.set(target, `_zodSchema.${propertyKey}.${index}`, zodSchema);
 <summary>ts request</summary>
 
 ```ts
-import type { Pet } from "./Pet";
-import { request } from "@/api/request";
+import type { Pet } from "./pet.schema";
+import type { AxiosResponse } from "axios";
+import { request } from "@/utils/request";
+import type { AxiosRequestConfig } from "axios";
 
 /**
- *
  * @tag pet
  * @description Everything about your Pets
- * @UUID API-pet
  */
-class PetAPI {
+class PetService {
   /**
-   *
-   * @summary summary
-   * @description
-   * @UUID operationId
-   */
-  testPost(bodyParams: Pet.TestPostBodyParams): Promise<[Pet.TestPostErrorResponse, Pet.TestPostResponse]> {
-    return request({
-      method: 'post',
-      url: `/pet/test`,
-      data: bodyParams
-    })
-  }
-
-  /**
-   *
-   * @summary Add a new pet to the store
-   * @description
-   * @UUID addPet
-   */
-  create(bodyParams: Pet.CreateBodyParams): Promise<[Pet.CreateErrorResponse, Pet.CreateResponse]> {
-    return request({
-      method: 'post',
-      url: `/pet`,
-      data: bodyParams
-    })
-  }
-
-  /**
-   *
    * @summary Update an existing pet
-   * @description
-   * @UUID updatePet
+   * @description Update an existing pet by Id
    */
-  update(bodyParams: Pet.UpdateBodyParams): Promise<[Pet.UpdateErrorResponse, Pet.UpdateResponse]> {
-    return request({
-      method: 'put',
+  async update(data: Pet.UpdateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.UpdateMutationRequest>>) {
+    const res = await request<Pet.UpdateMutationResponse, AxiosResponse<Pet.UpdateMutationResponse>, Pet.UpdateMutationRequest>({
+      method: 'PUT',
       url: `/pet`,
-      data: bodyParams
+      data,
+      ...requestConfig
     })
+    return res.data
+  }
+
+  /**
+   * @summary Add a new pet to the store
+   * @description Add a new pet to the store
+   */
+  async create(data: Pet.CreateMutationRequest, requestConfig?: Partial<AxiosRequestConfig<Pet.CreateMutationRequest>>) {
+    const res = await request<Pet.CreateMutationResponse, AxiosResponse<Pet.CreateMutationResponse>, Pet.CreateMutationRequest>({
+      method: 'POST',
+      url: `/pet`,
+      data,
+      ...requestConfig
+    })
+    return res.data
+  }
+
+  /**
+   * @summary Finds Pets by status
+   * @description Multiple status values can be provided with comma separated strings
+   */
+  async findByStatusGet(params?: Pet.FindByStatusGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
+    const res = await request<Pet.FindByStatusGetQueryResponse, AxiosResponse<Pet.FindByStatusGetQueryResponse>, unknown>({
+      method: 'GET',
+      url: `/pet/findByStatus`,
+      params,
+      ...requestConfig
+    })
+    return res.data
+  }
+
+  /**
+   * @summary Finds Pets by tags
+   * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+   */
+  async findByTagsGet(params?: Pet.FindByTagsGetQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
+    const res = await request<Pet.FindByTagsGetQueryResponse, AxiosResponse<Pet.FindByTagsGetQueryResponse>, unknown>({
+      method: 'GET',
+      url: `/pet/findByTags`,
+      params,
+      ...requestConfig,
+      paramsSerializer(params: Pet.FindByTagsGetQueryParams) {
+        return qs.stringify(params)
+      }
+    })
+    return res.data
+  }
+
+  /**
+   * @summary Find pet by ID
+   * @description Returns a single pet
+   */
+  async findByPetId(petId: Pet.FindByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
+    const res = await request<Pet.FindByPetIdQueryResponse, AxiosResponse<Pet.FindByPetIdQueryResponse>, unknown>({
+      method: 'GET',
+      url: `/pet/${petId}`,
+      ...requestConfig
+    })
+    return res.data
+  }
+
+  /**
+   * @summary Updates a pet in the store with form data
+   */
+  async petIdPost(petId: Pet.PetIdPostPathParams['petId'], params?: Pet.PetIdPostQueryParams, requestConfig?: Partial<AxiosRequestConfig>) {
+    const res = await request<Pet.PetIdPostMutationResponse, AxiosResponse<Pet.PetIdPostMutationResponse>, unknown>({
+      method: 'POST',
+      url: `/pet/${petId}`,
+      params,
+      ...requestConfig
+    })
+    return res.data
+  }
+
+  /**
+   * @summary Deletes a pet
+   * @description delete a pet
+   */
+  async delByPetId(petId: Pet.DelByPetIdPathParams['petId'], requestConfig?: Partial<AxiosRequestConfig>) {
+    const res = await request<Pet.DelByPetIdMutationResponse, AxiosResponse<Pet.DelByPetIdMutationResponse>, unknown>({
+      method: 'DELETE',
+      url: `/pet/${petId}`,
+      ...requestConfig
+    })
+    return res.data
+  }
+
+  /**
+   * @summary uploads an image
+   */
+  async uploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], data: Pet.UploadImagePostMutationRequest, params?: Pet.UploadImagePostQueryParams, requestConfig?: Partial<AxiosRequestConfig<Pet.UploadImagePostMutationRequest>>) {
+    const res = await request<Pet.UploadImagePostMutationResponse, AxiosResponse<Pet.UploadImagePostMutationResponse>, Pet.UploadImagePostMutationRequest>({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream'
+      },
+      url: `/pet/${petId}/uploadImage`,
+      params,
+      data,
+      ...requestConfig
+    })
+    return res.data
   }
 }
 
-export const petAPI = new PetAPI;
+export const petService = new PetService;
 
 ```
 

@@ -1,172 +1,139 @@
-import path from "node:path";
+import path from 'node:path'
 
-import { pluginEnum } from "@openapi-to/core";
-import { UUID_TAG_NAME } from "@openapi-to/core/utils";
-import { TYPE_SUFFIX } from "@openapi-to/plugin-ts-type/src/constants.ts";
-import { ZOD_SUFFIX } from "@openapi-to/plugin-zod/src/constants.ts";
+import { pluginEnum } from '@openapi-to/core'
+import { UUID_TAG_NAME } from '@openapi-to/core/utils'
+import { TYPE_NAME_SPACE_SUFFIX } from '@openapi-to/plugin-ts-type/src/constants.ts'
+import { ZOD_SUFFIX } from '@openapi-to/plugin-zod/src/constants.ts'
 
-import _ from "lodash";
-import { VariableDeclarationKind } from "ts-morph";
+import _ from 'lodash'
+import { VariableDeclarationKind } from 'ts-morph'
 
-import { Component } from "./Component.ts";
-import { MODEL_FOLDER_NAME } from "./constants.ts";
-import { FakerOldNode } from "./FakerOldNode.ts";
-import { Schema } from "./Schema.ts";
-import { classNameAddSuffix, fileAddSuffix, refAddSuffix } from "./utils.ts";
+import { Component } from './Component.ts'
+import { FakerOldNode } from './FakerOldNode.ts'
+import { Schema } from './Schema.ts'
+import { MODEL_FOLDER_NAME } from './constants.ts'
+import { formatClassName, formatFileName, formatRefName } from './utils.ts'
 
-import type { PluginContext } from "@openapi-to/core";
-import type { Operation } from "oas/operation";
-import type { SchemaObject } from "oas/types";
-import type { JSDocStructure } from "ts-morph";
-import type { ClassDeclarationStructure } from "ts-morph";
-import type {
-  ImportDeclarationStructure,
-  MethodDeclarationStructure,
-  OptionalKind,
-} from "ts-morph";
-import type { Config } from "./types.ts";
+import type { PluginContext } from '@openapi-to/core'
+import type { Operation } from 'oas/operation'
+import type { SchemaObject } from 'oas/types'
+import type { JSDocStructure } from 'ts-morph'
+import type { ClassDeclarationStructure } from 'ts-morph'
+import type { ImportDeclarationStructure, MethodDeclarationStructure, OptionalKind } from 'ts-morph'
+import type { Config } from './types.ts'
 
-type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, "kind">;
+type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, 'kind'>
 
 type ResponseObject = {
-  code: string;
+  code: string
   jsonSchema?: {
-    description?: string;
-    label: string;
-    schema: SchemaObject;
-    type: string | string[];
-  };
-};
+    description?: string
+    label: string
+    schema: SchemaObject
+    type: string | string[]
+  }
+}
 
 export class FakerGenerator {
-  private operation: Operation | undefined;
-  private oas: Config["oas"];
-  private readonly paramsZodSchema: string;
-  private readonly openapi: Config["openapi"];
-  private readonly ast: Config["ast"];
-  private readonly pluginConfig: Config["pluginConfig"];
-  private readonly openapiToSingleConfig: Config["openapiToSingleConfig"];
-  private importCache: Set<string> = new Set<string>();
-  private schema: Schema;
-  private component: Component;
-  oldNode: FakerOldNode;
+  private operation: Operation | undefined
+  private oas: Config['oas']
+  private readonly paramsZodSchema: string
+  private readonly openapi: Config['openapi']
+  private readonly ast: Config['ast']
+  private readonly pluginConfig: Config['pluginConfig']
+  private readonly openapiToSingleConfig: Config['openapiToSingleConfig']
+  private importCache: Set<string> = new Set<string>()
+  private schema: Schema
+  private component: Component
+  oldNode: FakerOldNode
   constructor(config: Config) {
-    this.oas = config.oas;
-    this.ast = config.ast;
-    this.pluginConfig = config.pluginConfig;
-    this.openapiToSingleConfig = config.openapiToSingleConfig;
-    this.openapi = config.openapi;
-    this.paramsZodSchema = "paramsZodSchema";
+    this.oas = config.oas
+    this.ast = config.ast
+    this.pluginConfig = config.pluginConfig
+    this.openapiToSingleConfig = config.openapiToSingleConfig
+    this.openapi = config.openapi
+    this.paramsZodSchema = 'paramsZodSchema'
 
-    this.component = new Component(config);
-    this.schema = new Schema(config);
-    this.oldNode = new FakerOldNode(
-      config.pluginConfig,
-      config.openapiToSingleConfig,
-    );
+    this.component = new Component(config)
+    this.schema = new Schema(config)
+    this.oldNode = new FakerOldNode(config.pluginConfig, config.openapiToSingleConfig)
   }
   get compare(): boolean {
-    return this.pluginConfig?.compare || false;
+    return this.pluginConfig?.compare || false
   }
   get classOperationIdPrefix(): string {
-    return "Faker-";
+    return 'Faker-'
   }
   get classOperationId(): string {
-    return this.classOperationIdPrefix + this.openapi.currentTagName;
+    return this.classOperationIdPrefix + this.openapi.currentTagName
   }
 
   get className() {
-    return (
-      this.oldNode.classDeclaration?.getName() ??
-      classNameAddSuffix(this.openapi.currentTagNameOfPinYin)
-    );
+    return this.oldNode.classDeclaration?.getName() ?? formatClassName(this.openapi.currentTagNameOfPinYin)
   }
 
   get lowerFirstClassName() {
-    return _.lowerFirst(this.className);
+    return _.lowerFirst(this.className)
   }
 
   get fileName(): string {
-    return (
-      this.oldNode.classDeclaration?.getName() ??
-      fileAddSuffix(this.openapi.currentTagNameOfPinYin)
-    );
+    return this.oldNode.classDeclaration?.getName() ?? formatFileName(this.openapi.currentTagNameOfPinYin)
   }
 
   get zodFileName(): string {
-    return `${this.openapi.currentTagNameOfPinYin}.${ZOD_SUFFIX}`;
+    return `${this.openapi.currentTagNameOfPinYin}.${ZOD_SUFFIX}`
   }
 
   //zod or type
   get namespaceTypeName(): string {
-    return (
-      this.oldNode.typeNamespace.namedImport ||
-      _.upperFirst(this.openapi.currentTagNameOfPinYin)
-    );
+    return this.oldNode.typeNamespace.namedImport || _.upperFirst(this.openapi.currentTagNameOfPinYin)
   }
 
   get upperFirstNamespaceTypeName(): string {
-    return (
-      this.oldNode.typeNamespace.namedImport ||
-      _.upperFirst(this.openapi.currentTagNameOfPinYin)
-    );
+    return this.oldNode.typeNamespace.namedImport || _.upperFirst(this.openapi.currentTagNameOfPinYin)
   }
 
   get lowerFirstTypeFileName(): string {
-    return (
-      this.oldNode.typeNamespace.namedImport ||
-      `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${TYPE_SUFFIX}`
-    );
+    return this.oldNode.typeNamespace.namedImport || `${_.lowerFirst(this.openapi.currentTagNameOfPinYin)}.${TYPE_NAME_SPACE_SUFFIX}`
   }
 
   get hasZodPlugin() {
-    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod);
+    return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod)
   }
 
   get methodOperationId(): string {
-    return this.operation?.getOperationId() || "";
+    return this.operation?.getOperationId() || ''
   }
 
   build(context: PluginContext): void {
     _.forEach(this.openapi.pathGroupByTag, (pathGroup, tag) => {
-      this.oldNode.setCurrentSourceFile(
-        this.classOperationIdPrefix + _.camelCase(tag),
-      );
+      this.oldNode.setCurrentSourceFile(this.classOperationIdPrefix + _.camelCase(tag))
 
       const methodsStatements = _.chain(pathGroup)
         .map(({ path, method, tag }) => {
-          this.operation = this.openapi.setCurrentOperation(path, method, tag);
-          this.oldNode.setCurrentMethod(this.methodOperationId);
+          this.operation = this.openapi.setCurrentOperation(path, method, tag)
+          this.oldNode.setCurrentMethod(this.methodOperationId)
           return {
-            sort: _.isNumber(this.oldNode.currentMethod?.sort)
-              ? this.oldNode.currentMethod.sort
-              : Number.MAX_SAFE_INTEGER,
+            sort: _.isNumber(this.oldNode.currentMethod?.sort) ? this.oldNode.currentMethod.sort : Number.MAX_SAFE_INTEGER,
             methodsStatements: this.generatorMethod(),
-          };
+          }
         })
         .sort((a, b) => a.sort - b.sort)
         .map((x) => x.methodsStatements)
-        .value();
+        .value()
 
-      const filePath = path.resolve(
-        this.openapiToSingleConfig.output.dir,
-        this.oldNode.baseName || `${this.fileName}.ts`,
-      );
+      const filePath = path.resolve(this.openapiToSingleConfig.output.dir, this.oldNode.baseName || `${this.fileName}.ts`)
 
-      const refKey = [...this.openapi.refCache.keys()];
+      const refKey = [...this.openapi.refCache.keys()]
       const sourceFile = this.ast.createSourceFile(filePath, {
-        statements: [
-          ...this.generateImport(refKey),
-          this.generatorClass(methodsStatements),
-          ...this.generatorExport(),
-        ],
-      });
-      this.openapi.resetRefCache();
-      return sourceFile;
-    });
+        statements: [...this.generateImport(refKey), this.generatorClass(methodsStatements), ...this.generatorExport()],
+      })
+      this.openapi.resetRefCache()
+      return sourceFile
+    })
 
-    this.component.generateComponentType();
-    this.component.generateModelIndex();
+    this.component.generateComponentType()
+    this.component.generateModelIndex()
   }
 
   /**
@@ -188,7 +155,7 @@ export class FakerGenerator {
         ],
         isExported: true,
       }),
-    ];
+    ]
   }
 
   /**
@@ -200,21 +167,19 @@ export class FakerGenerator {
    * import {list} from './fakerModels'
    * ```
    */
-  generateImport(
-    importModel: Array<string>,
-  ): Array<ImportDeclarationStructure> {
+  generateImport(importModel: Array<string>): Array<ImportDeclarationStructure> {
     const model = _.chain(importModel)
-      .map(($ref: string) => refAddSuffix(this.openapi.getRefAlias($ref)))
-      .value();
+      .map(($ref: string) => formatRefName(this.openapi.getRefAlias($ref)))
+      .value()
     const fakerModels: ImportStatementsOmitKind = {
       namedImports: [...model],
       moduleSpecifier: `./${MODEL_FOLDER_NAME}`,
-    };
+    }
 
     const faker: ImportStatementsOmitKind = {
-      namedImports: ["faker"],
-      moduleSpecifier: "@faker-js/faker",
-    };
+      namedImports: ['faker'],
+      moduleSpecifier: '@faker-js/faker',
+    }
 
     /*
     const typeModel: ImportStatementsOmitKind = {
@@ -229,29 +194,25 @@ export class FakerGenerator {
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.upperFirstNamespaceTypeName],
-      moduleSpecifier:
-        this.oldNode.typeNamespace.moduleSpecifier ??
-        `./${this.lowerFirstTypeFileName}`,
-    };
+      moduleSpecifier: this.oldNode.typeNamespace.moduleSpecifier ?? `./${this.lowerFirstTypeFileName}`,
+    }
 
     const zodTypeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.upperFirstNamespaceTypeName],
       moduleSpecifier: `./${this.zodFileName}`,
-    };
+    }
 
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
       .concat(faker)
       .concat(fakerModels)
       .concat(this.hasZodPlugin ? [zodTypeModel] : [typeModel])
-      .value();
+      .value()
 
-    return this.ast.generateImportStatements(statements);
+    return this.ast.generateImportStatements(statements)
   }
 
-  generatorClass(
-    methodsStatements: OptionalKind<MethodDeclarationStructure>[],
-  ): ClassDeclarationStructure {
+  generatorClass(methodsStatements: OptionalKind<MethodDeclarationStructure>[]): ClassDeclarationStructure {
     const statements = {
       name: this.className,
       docs: [
@@ -259,14 +220,12 @@ export class FakerGenerator {
           // description: "\n",
           tags: [
             {
-              tagName: "tag",
-              text:
-                this.openapi?.currentTagMetadata?.name,
+              tagName: 'tag',
+              text: this.openapi?.currentTagMetadata?.name,
             },
             {
-              tagName: "description",
-              text:
-                this.openapi?.currentTagMetadata?.description,
+              tagName: 'description',
+              text: this.openapi?.currentTagMetadata?.description,
             },
             ...(this.pluginConfig?.compare
               ? [
@@ -280,8 +239,8 @@ export class FakerGenerator {
         },
       ],
       methods: methodsStatements,
-    };
-    return this.ast.generateClassStatements(statements);
+    }
+    return this.ast.generateClassStatements(statements)
   }
 
   /**
@@ -291,7 +250,7 @@ export class FakerGenerator {
    * ```
    */
   generatorReturnType(): string {
-    return `NonNullable<${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstResponseName}>`;
+    return `NonNullable<${this.upperFirstNamespaceTypeName}.${this.openapi.upperFirstResponseName}>`
   }
 
   /**
@@ -307,11 +266,11 @@ export class FakerGenerator {
         // description: "\n",
         tags: [
           {
-            tagName: "summary",
+            tagName: 'summary',
             text: this.operation?.getSummary(),
           },
           {
-            tagName: "description",
+            tagName: 'description',
             text: this.operation?.getDescription(),
           },
           ...(this.pluginConfig?.compare
@@ -324,7 +283,7 @@ export class FakerGenerator {
             : []),
         ].filter((x) => x.text),
       },
-    ];
+    ]
   }
 
   /**
@@ -345,55 +304,47 @@ export class FakerGenerator {
    * ```
    */
   generatorMethodBody(): string {
-    const codes = this.openapi.response?.getResponseStatusCodes || [];
+    const codes = this.openapi.response?.getResponseStatusCodes || []
 
-    const successCode = (codes || []).filter((code) =>
-      /^(2[0-9][0-9]|300)$/.test(code),
-    );
+    const successCode = (codes || []).filter((code) => /^(2[0-9][0-9]|300)$/.test(code))
 
     const responseObject = _.chain([...successCode])
       .map((code) => {
         return {
           code,
-          jsonSchema:
-            _.head(this.openapi.response?.getResponseAsJSONSchema(code)) ||
-            null,
-        };
+          jsonSchema: _.head(this.openapi.response?.getResponseAsJSONSchema(code)) || null,
+        }
       })
       .filter((x) => !_.isNull(x.jsonSchema))
-      .value() as Array<ResponseObject>;
+      .value() as Array<ResponseObject>
 
-    return _.isEmpty(responseObject)
-      ? "return {}"
-      : this.generateFakerSingleSchema(
-          _.head(responseObject) as ResponseObject,
-        );
+    return _.isEmpty(responseObject) ? 'return {}' : this.generateFakerSingleSchema(_.head(responseObject) as ResponseObject)
   }
 
   generateFakerSingleSchema({ code, jsonSchema }: ResponseObject): string {
-    const schema = jsonSchema?.schema;
-    const description = jsonSchema?.description;
-    const isError = /^([3-5][0-9][0-9])$/.test(code);
-    const name = `${this.openapi.requestName}Response${isError ? code : ""}`;
+    const schema = jsonSchema?.schema
+    const description = jsonSchema?.description
+    const isError = /^([3-5][0-9][0-9])$/.test(code)
+    const name = `${this.openapi.requestName}Response${isError ? code : ''}`
 
     if (!schema) {
-      return "return {}";
+      return 'return {}'
     }
 
     if (this.openapi.isReference(schema)) {
-      return `return ${refAddSuffix(this.openapi.getRefAlias(schema.$ref))}()`;
+      return `return ${formatRefName(this.openapi.getRefAlias(schema.$ref))}()`
     }
 
-    if (schema.type === "array") {
+    if (schema.type === 'array') {
       //todo
-      return `return ${this.schema.formatterSchemaType(schema)}`;
+      return `return ${this.schema.formatterSchemaType(schema)}`
     }
     //todo
-    if ("additionalProperties" in schema) {
-      return 'return {}';
+    if ('additionalProperties' in schema) {
+      return 'return {}'
     }
 
-    return `return ${this.schema.getStatementsFromSchema(schema)}`;
+    return `return ${this.schema.getStatementsFromSchema(schema)}`
   }
 
   generatorMethod(): MethodDeclarationStructure {
@@ -404,7 +355,7 @@ export class FakerGenerator {
       returnType: this.generatorReturnType(),
       docs: this.generatorMethodDocs(),
       statements: this.generatorMethodBody(),
-    };
-    return this.ast.generateMethodStatements(statement);
+    }
+    return this.ast.generateMethodStatements(statement)
   }
 }

@@ -2,79 +2,79 @@
 
 exports[`MswGenerator > MswGenerator getFullText 1`] = `
 "import { HttpResponse, http, HttpHandler } from "msw";
-import { petFaker } from "./petFaker";
+import { PetFakerService } from "./pet-faker.service";
 /** */
 const handlers = [{
     name: 'testPost',
     start: false,
     msw: http.post('/pet/test', (req) => {
-        return HttpResponse.json(petFaker.testPost())
+        return HttpResponse.json(PetFakerService.testPost())
     })
 }, {
     name: 'testPut',
     start: false,
     msw: http.put('/pet/test', (req) => {
-        return HttpResponse.json(petFaker.testPut())
+        return HttpResponse.json(PetFakerService.testPut())
     })
 }, {
     name: 'delByTest',
     start: false,
     msw: http.delete('/pet/test', (req) => {
-        return HttpResponse.json(petFaker.delByTest())
+        return HttpResponse.json(PetFakerService.delByTest())
     })
 }, {
     name: 'testIdGet',
     start: false,
     msw: http.get('/pet/test/:testId', (req) => {
-        return HttpResponse.json(petFaker.testIdGet())
+        return HttpResponse.json(PetFakerService.testIdGet())
     })
 }, {
     name: 'uploadImagePost',
     start: false,
     msw: http.post('/pet/:petId/uploadImage', (req) => {
-        return HttpResponse.json(petFaker.uploadImagePost())
+        return HttpResponse.json(PetFakerService.uploadImagePost())
     })
 }, {
     name: 'create',
     start: false,
     msw: http.post('/pet', (req) => {
-        return HttpResponse.json(petFaker.create())
+        return HttpResponse.json(PetFakerService.create())
     })
 }, {
     name: 'update',
     start: false,
     msw: http.put('/pet', (req) => {
-        return HttpResponse.json(petFaker.update())
+        return HttpResponse.json(PetFakerService.update())
     })
 }, {
     name: 'findByStatusGet',
     start: false,
     msw: http.get('/pet/findByStatus', (req) => {
-        return HttpResponse.json(petFaker.findByStatusGet())
+        return HttpResponse.json(PetFakerService.findByStatusGet())
     })
 }, {
     name: 'findByTagsGet',
     start: false,
     msw: http.get('/pet/findByTags', (req) => {
-        return HttpResponse.json(petFaker.findByTagsGet())
+        return HttpResponse.json(PetFakerService.findByTagsGet())
     })
 }, {
     name: 'findByPetId',
     start: false,
     msw: http.get('/pet/:petId', (req) => {
-        return HttpResponse.json(petFaker.findByPetId())
+        return HttpResponse.json(PetFakerService.findByPetId())
     })
 }, {
     name: 'petIdPost',
     start: false,
     msw: http.post('/pet/:petId', (req) => {
-        return HttpResponse.json(petFaker.petIdPost())
+        return HttpResponse.json(PetFakerService.petIdPost())
     })
 }, {
     name: 'delByPetId',
     start: false,
     msw: http.delete('/pet/:petId', (req) => {
-        return HttpResponse.json(petFaker.delByPetId())
+        return HttpResponse.json(PetFakerService.delByPetId())
     })
 }];
 export const petHandler: Array<HttpHandler> = handlers
@@ -82,31 +82,31 @@ export const petHandler: Array<HttpHandler> = handlers
     .map(x => x.msw);
 
 import { HttpResponse, http, HttpHandler } from "msw";
-import { storeFaker } from "./storeFaker";
+import { StoreFakerService } from "./store-faker.service";
 /** */
 const handlers = [{
     name: 'create',
     start: false,
     msw: http.post('/store/order', (req) => {
-        return HttpResponse.json(storeFaker.create())
+        return HttpResponse.json(StoreFakerService.create())
     })
 }, {
     name: 'findByOrderId',
     start: false,
     msw: http.get('/store/order/:orderId', (req) => {
-        return HttpResponse.json(storeFaker.findByOrderId())
+        return HttpResponse.json(StoreFakerService.findByOrderId())
     })
 }, {
     name: 'delByOrderId',
     start: false,
     msw: http.delete('/store/order/:orderId', (req) => {
-        return HttpResponse.json(storeFaker.delByOrderId())
+        return HttpResponse.json(StoreFakerService.delByOrderId())
     })
 }, {
     name: 'inventoryGet',
     start: false,
     msw: http.get('/store/inventory', (req) => {
-        return HttpResponse.json(storeFaker.inventoryGet())
+        return HttpResponse.json(StoreFakerService.inventoryGet())
     })
 }];
 export const storeHandler: Array<HttpHandler> = handlers
@@ -114,55 +114,55 @@ export const storeHandler: Array<HttpHandler> = handlers
     .map(x => x.msw);
 
 import { HttpResponse, http, HttpHandler } from "msw";
-import { userFaker } from "./userFaker";
+import { UserFakerService } from "./user-faker.service";
 /** */
 const handlers = [{
     name: 'createWithArrayPost',
     start: false,
     msw: http.post('/user/createWithArray', (req) => {
-        return HttpResponse.json(userFaker.createWithArrayPost())
+        return HttpResponse.json(UserFakerService.createWithArrayPost())
     })
 }, {
     name: 'createWithListPost',
     start: false,
     msw: http.post('/user/createWithList', (req) => {
-        return HttpResponse.json(userFaker.createWithListPost())
+        return HttpResponse.json(UserFakerService.createWithListPost())
     })
 }, {
     name: 'findByUsername',
     start: false,
     msw: http.get('/user/:username', (req) => {
-        return HttpResponse.json(userFaker.findByUsername())
+        return HttpResponse.json(UserFakerService.findByUsername())
     })
 }, {
     name: 'usernamePut',
     start: false,
     msw: http.put('/user/:username', (req) => {
-        return HttpResponse.json(userFaker.usernamePut())
+        return HttpResponse.json(UserFakerService.usernamePut())
     })
 }, {
     name: 'delByUsername',
     start: false,
     msw: http.delete('/user/:username', (req) => {
-        return HttpResponse.json(userFaker.delByUsername())
+        return HttpResponse.json(UserFakerService.delByUsername())
     })
 }, {
     name: 'loginGet',
     start: false,
     msw: http.get('/user/login', (req) => {
-        return HttpResponse.json(userFaker.loginGet())
+        return HttpResponse.json(UserFakerService.loginGet())
     })
 }, {
     name: 'logoutGet',
     start: false,
     msw: http.get('/user/logout', (req) => {
-        return HttpResponse.json(userFaker.logoutGet())
+        return HttpResponse.json(UserFakerService.logoutGet())
     })
 }, {
     name: 'create',
     start: false,
     msw: http.post('/user', (req) => {
-        return HttpResponse.json(userFaker.create())
+        return HttpResponse.json(UserFakerService.create())
     })
 }];
 export const userHandler: Array<HttpHandler> = handlers

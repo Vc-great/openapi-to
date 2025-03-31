@@ -46,9 +46,7 @@
   "paths": {
     "/pet/test": {
       "post": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "operationId",
         "requestBody": {
@@ -80,17 +78,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "put": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "operationId",
         "requestBody": {
@@ -122,17 +116,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "delete": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "operationId",
         "requestBody": {
@@ -173,9 +163,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -183,9 +171,7 @@
     },
     "/pet/test/{test-id}": {
       "get": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "operationId",
         "parameters": [
@@ -265,12 +251,66 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
+      }
+    },
+    "/pet/{petId}/uploadImage-octet-stream": {
+      "post": {
+        "tags": ["pet"],
+        "summary": "uploads an image",
+        "description": "",
+        "operationId": "uploadFile",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "description": "ID of pet to update",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "additionalMetadata",
+            "in": "query",
+            "description": "Additional Metadata",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "petstore_auth": ["write:pets", "read:pets"]
+          }
+        ]
       }
     },
     "/pet/{petId}/uploadImage": {
@@ -1116,11 +1156,7 @@
           "columnType": {
             "type": "string",
             "description": "description",
-            "enum": [
-              "CHAR",
-              "CHAR2",
-              "CHAR3"
-            ]
+            "enum": ["CHAR", "CHAR2", "CHAR3"]
           },
           "delFlag": {
             "type": "boolean",
@@ -1209,8 +1245,7 @@
       },
       "test321": {
         "type": "object",
-        "required": [
-        ],
+        "required": [],
         "properties": {
           "id": {
             "type": "integer",
@@ -1221,9 +1256,7 @@
       },
       "testDto": {
         "type": "object",
-        "required": [
-          "formTable"
-        ],
+        "required": ["formTable"],
         "properties": {
           "test321": {
             "type": "array",
