@@ -1,6 +1,6 @@
 {
   "name": "@openapi-to/plugin-ts-type",
-  "version": "2.3.0",
+  "version": "2.4.0-alpha.0",
   "sideEffects": false,
   "type": "module",
   "description": "Generator ts",

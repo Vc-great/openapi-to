@@ -54,3 +54,4 @@ docs/.vitepress/dist/**
 .nx
 
 .gitignore
+.changeset

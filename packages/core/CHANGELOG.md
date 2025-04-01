@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 2.4.0-alpha.0
+
+### Minor Changes
+
+- update all
+
 ## 2.3.0
 
 ### Minor Changes
