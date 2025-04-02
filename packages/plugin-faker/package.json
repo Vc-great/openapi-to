@@ -1,13 +1,13 @@
 {
   "name": "@openapi-to/plugin-faker",
-  "version": "2.3.0",
+  "version": "2.4.0-alpha.0",
   "sideEffects": false,
   "type": "module",
   "description": "Generator faker",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require":  "./dist/index.cjs",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.cjs"
     },
     "./utils": {

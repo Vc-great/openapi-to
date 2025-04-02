@@ -1,5 +1,16 @@
 # @openapi-to/plugin-ts-type
 
+## 2.4.0-alpha.0
+
+### Minor Changes
+
+- update all
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/core@2.4.0-alpha.0
+
 ## 2.3.0
 
 ### Minor Changes
