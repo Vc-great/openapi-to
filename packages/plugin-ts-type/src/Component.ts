@@ -199,7 +199,7 @@ export class Component {
     const statements = [...importStatements, ...this.enumGenerator.generateEnum(), schemaStatements]
 
     this.createModelSourceFile(statements, `${_.lowerFirst(key)}.${TYPE_MODEL_SUFFIX}`)
-    this.setModelIndexStatements(statements)
+    this.setModelIndexStatements([...importStatements, schemaStatements])
   }
 
   /*  generateComponentObjectType(

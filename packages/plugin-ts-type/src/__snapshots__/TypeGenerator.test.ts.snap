@@ -627,7 +627,6 @@ export interface UserModel {
 }
 
 export * from "./test32145.model";
-export * from "./test3214ColumnTypeEnum";
 export * from "./test3214.model";
 export * from "./testdata.model";
 export * from "./sort.model";
@@ -638,10 +637,8 @@ export * from "./testDto.model";
 export * from "./refList.model";
 export * from "./apiResponse.model";
 export * from "./category.model";
-export * from "./petStatusEnum";
 export * from "./pet.model";
 export * from "./tag.model";
-export * from "./orderStatusEnum";
 export * from "./order.model";
 export * from "./user.model";
 "
@@ -1337,7 +1334,6 @@ export interface UserModel {
 }
 
 export * from "./test32145.model";
-export * from "./test3214ColumnTypeEnum";
 export * from "./test3214.model";
 export * from "./testdata.model";
 export * from "./sort.model";
@@ -1348,10 +1344,8 @@ export * from "./testDto.model";
 export * from "./refList.model";
 export * from "./apiResponse.model";
 export * from "./category.model";
-export * from "./petStatusEnum";
 export * from "./pet.model";
 export * from "./tag.model";
-export * from "./orderStatusEnum";
 export * from "./order.model";
 export * from "./user.model";
 "
