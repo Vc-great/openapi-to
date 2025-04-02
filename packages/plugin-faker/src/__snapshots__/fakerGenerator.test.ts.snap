@@ -116,7 +116,7 @@ class PetFaker {
     }
 }
 
-export const petFaker = new PetFaker;
+export const petFakerService = new PetFaker;
 
 import { faker } from "@faker-js/faker";
 import { orderFaker } from "./faker-models";
@@ -248,7 +248,7 @@ export const userFakerService = new UserFakerService;
 
 import { testdataFaker } from "./testdata-faker.model";
 import { faker } from "@faker-js/faker";
-import type { Test32145Model } from "../models/Test32145";
+import type { Test32145Model } from "../models";
 
 export function test32145Faker(): Test32145Model {
     return {
@@ -259,7 +259,7 @@ export function test32145Faker(): Test32145Model {
 }
 
 import { faker } from "@faker-js/faker";
-import type { Test3214Model } from "../models/Test3214";
+import type { Test3214Model } from "../models";
 
 export function test3214Faker(): Test3214Model {
     return {
@@ -286,7 +286,7 @@ export function test3214Faker(): Test3214Model {
 }
 
 import { faker } from "@faker-js/faker";
-import type { TestdataModel } from "../models/Testdata";
+import type { TestdataModel } from "../models";
 
 export function testdataFaker(): TestdataModel {
     return {
@@ -302,7 +302,7 @@ export function testdataFaker(): TestdataModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { SortModel } from "../models/Sort";
+import type { SortModel } from "../models";
 
 export function sortFaker(): SortModel {
     return {
@@ -314,7 +314,7 @@ export function sortFaker(): SortModel {
 
 import { test3214Faker } from "./test3214-faker.model";
 import { faker } from "@faker-js/faker";
-import type { TestDto3Model } from "../models/TestDto3";
+import type { TestDto3Model } from "../models";
 
 export function testDto3Faker(): TestDto3Model {
     return {
@@ -327,7 +327,7 @@ export function testDto3Faker(): TestDto3Model {
 import { testDto3Faker } from "./testDto3-faker.model";
 import { testdataFaker } from "./testdata-faker.model";
 import { faker } from "@faker-js/faker";
-import type { TestDto2Model } from "../models/TestDto2";
+import type { TestDto2Model } from "../models";
 
 export function testDto2Faker(): TestDto2Model {
     return {
@@ -337,7 +337,7 @@ export function testDto2Faker(): TestDto2Model {
 }
 
 import { faker } from "@faker-js/faker";
-import type { Test321Model } from "../models/Test321";
+import type { Test321Model } from "../models";
 
 export function test321Faker(): Test321Model {
     return {
@@ -347,7 +347,7 @@ export function test321Faker(): Test321Model {
 
 import { test321Faker } from "./test321-faker.model";
 import { faker } from "@faker-js/faker";
-import type { TestDtoModel } from "../models/TestDto";
+import type { TestDtoModel } from "../models";
 
 export function testDtoFaker(): TestDtoModel {
     return {
@@ -360,7 +360,7 @@ export function testDtoFaker(): TestDtoModel {
 
 import { apiResponseFaker } from "./apiResponse-faker.model";
 import { faker } from "@faker-js/faker";
-import type { RefListModel } from "../models/RefList";
+import type { RefListModel } from "../models";
 
 export function refListFaker(): RefListModel {
     return {
@@ -376,7 +376,7 @@ export function refListFaker(): RefListModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { ApiResponseModel } from "../models/ApiResponse";
+import type { ApiResponseModel } from "../models";
 
 export function apiResponseFaker(): ApiResponseModel {
     return {
@@ -387,7 +387,7 @@ export function apiResponseFaker(): ApiResponseModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { CategoryModel } from "../models/Category";
+import type { CategoryModel } from "../models";
 
 export function categoryFaker(): CategoryModel {
     return {
@@ -399,7 +399,7 @@ export function categoryFaker(): CategoryModel {
 import { categoryFaker } from "./category-faker.model";
 import { tagFaker } from "./tag-faker.model";
 import { faker } from "@faker-js/faker";
-import type { PetModel } from "../models/Pet";
+import type { PetModel } from "../models";
 
 export function petFaker(): PetModel {
     return {
@@ -418,7 +418,7 @@ export function petFaker(): PetModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { TagModel } from "../models/Tag";
+import type { TagModel } from "../models";
 
 export function tagFaker(): TagModel {
     return {
@@ -428,7 +428,7 @@ export function tagFaker(): TagModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { OrderModel } from "../models/Order";
+import type { OrderModel } from "../models";
 
 export function orderFaker(): OrderModel {
     return {
@@ -443,7 +443,7 @@ export function orderFaker(): OrderModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { UserModel } from "../models/User";
+import type { UserModel } from "../models";
 
 export function userFaker(): UserModel {
     return {
@@ -460,27 +460,20 @@ export function userFaker(): UserModel {
 }
 
 export * from "./testdata-faker.model";
-export * from "./test32145Model-faker.model";
-export * from "./test3214Model-faker.model";
-export * from "./testdataModel-faker.model";
-export * from "./sortModel-faker.model";
+export * from "./test32145-faker.model";
 export * from "./test3214-faker.model";
-export * from "./testDto3Model-faker.model";
+export * from "./sort-faker.model";
 export * from "./testDto3-faker.model";
-export * from "./testDto2Model-faker.model";
-export * from "./test321Model-faker.model";
+export * from "./testDto2-faker.model";
 export * from "./test321-faker.model";
-export * from "./testDtoModel-faker.model";
+export * from "./testDto-faker.model";
 export * from "./apiResponse-faker.model";
-export * from "./refListModel-faker.model";
-export * from "./apiResponseModel-faker.model";
-export * from "./categoryModel-faker.model";
+export * from "./refList-faker.model";
 export * from "./category-faker.model";
 export * from "./tag-faker.model";
-export * from "./petModel-faker.model";
-export * from "./tagModel-faker.model";
-export * from "./orderModel-faker.model";
-export * from "./userModel-faker.model";
+export * from "./pet-faker.model";
+export * from "./order-faker.model";
+export * from "./user-faker.model";
 "
 `;
 
@@ -677,7 +670,7 @@ export const userFakerService = new UserFakerService;
 
 import { testdataFaker } from "./testdata-faker.model";
 import { faker } from "@faker-js/faker";
-import type { Test32145Model } from "../models/Test32145";
+import type { Test32145Model } from "../models";
 
 export function test32145Faker(): Test32145Model {
     return {
@@ -688,7 +681,7 @@ export function test32145Faker(): Test32145Model {
 }
 
 import { faker } from "@faker-js/faker";
-import type { Test3214Model } from "../models/Test3214";
+import type { Test3214Model } from "../models";
 
 export function test3214Faker(): Test3214Model {
     return {
@@ -715,7 +708,7 @@ export function test3214Faker(): Test3214Model {
 }
 
 import { faker } from "@faker-js/faker";
-import type { TestdataModel } from "../models/Testdata";
+import type { TestdataModel } from "../models";
 
 export function testdataFaker(): TestdataModel {
     return {
@@ -731,7 +724,7 @@ export function testdataFaker(): TestdataModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { SortModel } from "../models/Sort";
+import type { SortModel } from "../models";
 
 export function sortFaker(): SortModel {
     return {
@@ -743,7 +736,7 @@ export function sortFaker(): SortModel {
 
 import { test3214Faker } from "./test3214-faker.model";
 import { faker } from "@faker-js/faker";
-import type { TestDto3Model } from "../models/TestDto3";
+import type { TestDto3Model } from "../models";
 
 export function testDto3Faker(): TestDto3Model {
     return {
@@ -756,7 +749,7 @@ export function testDto3Faker(): TestDto3Model {
 import { testDto3Faker } from "./testDto3-faker.model";
 import { testdataFaker } from "./testdata-faker.model";
 import { faker } from "@faker-js/faker";
-import type { TestDto2Model } from "../models/TestDto2";
+import type { TestDto2Model } from "../models";
 
 export function testDto2Faker(): TestDto2Model {
     return {
@@ -766,7 +759,7 @@ export function testDto2Faker(): TestDto2Model {
 }
 
 import { faker } from "@faker-js/faker";
-import type { Test321Model } from "../models/Test321";
+import type { Test321Model } from "../models";
 
 export function test321Faker(): Test321Model {
     return {
@@ -776,7 +769,7 @@ export function test321Faker(): Test321Model {
 
 import { test321Faker } from "./test321-faker.model";
 import { faker } from "@faker-js/faker";
-import type { TestDtoModel } from "../models/TestDto";
+import type { TestDtoModel } from "../models";
 
 export function testDtoFaker(): TestDtoModel {
     return {
@@ -789,7 +782,7 @@ export function testDtoFaker(): TestDtoModel {
 
 import { apiResponseFaker } from "./apiResponse-faker.model";
 import { faker } from "@faker-js/faker";
-import type { RefListModel } from "../models/RefList";
+import type { RefListModel } from "../models";
 
 export function refListFaker(): RefListModel {
     return {
@@ -805,7 +798,7 @@ export function refListFaker(): RefListModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { ApiResponseModel } from "../models/ApiResponse";
+import type { ApiResponseModel } from "../models";
 
 export function apiResponseFaker(): ApiResponseModel {
     return {
@@ -816,7 +809,7 @@ export function apiResponseFaker(): ApiResponseModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { CategoryModel } from "../models/Category";
+import type { CategoryModel } from "../models";
 
 export function categoryFaker(): CategoryModel {
     return {
@@ -828,7 +821,7 @@ export function categoryFaker(): CategoryModel {
 import { categoryFaker } from "./category-faker.model";
 import { tagFaker } from "./tag-faker.model";
 import { faker } from "@faker-js/faker";
-import type { PetModel } from "../models/Pet";
+import type { PetModel } from "../models";
 
 export function petFaker(): PetModel {
     return {
@@ -847,7 +840,7 @@ export function petFaker(): PetModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { TagModel } from "../models/Tag";
+import type { TagModel } from "../models";
 
 export function tagFaker(): TagModel {
     return {
@@ -857,7 +850,7 @@ export function tagFaker(): TagModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { OrderModel } from "../models/Order";
+import type { OrderModel } from "../models";
 
 export function orderFaker(): OrderModel {
     return {
@@ -872,7 +865,7 @@ export function orderFaker(): OrderModel {
 }
 
 import { faker } from "@faker-js/faker";
-import type { UserModel } from "../models/User";
+import type { UserModel } from "../models";
 
 export function userFaker(): UserModel {
     return {
@@ -889,26 +882,19 @@ export function userFaker(): UserModel {
 }
 
 export * from "./testdata-faker.model";
-export * from "./test32145Model-faker.model";
-export * from "./test3214Model-faker.model";
-export * from "./testdataModel-faker.model";
-export * from "./sortModel-faker.model";
+export * from "./test32145-faker.model";
 export * from "./test3214-faker.model";
-export * from "./testDto3Model-faker.model";
+export * from "./sort-faker.model";
 export * from "./testDto3-faker.model";
-export * from "./testDto2Model-faker.model";
-export * from "./test321Model-faker.model";
+export * from "./testDto2-faker.model";
 export * from "./test321-faker.model";
-export * from "./testDtoModel-faker.model";
+export * from "./testDto-faker.model";
 export * from "./apiResponse-faker.model";
-export * from "./refListModel-faker.model";
-export * from "./apiResponseModel-faker.model";
-export * from "./categoryModel-faker.model";
+export * from "./refList-faker.model";
 export * from "./category-faker.model";
 export * from "./tag-faker.model";
-export * from "./petModel-faker.model";
-export * from "./tagModel-faker.model";
-export * from "./orderModel-faker.model";
-export * from "./userModel-faker.model";
+export * from "./pet-faker.model";
+export * from "./order-faker.model";
+export * from "./user-faker.model";
 "
 `;

@@ -2,7 +2,7 @@ import { AST, createPlugin, OpenAPI, pluginEnum } from "@openapi-to/core";
 
 import Oas from "oas";
 
-import { MswGenerator } from "./MswGenerator.ts";
+import { MSWGenerator } from "./MSWGenerator.ts";
 
 import type { PluginConfig } from "./types.ts";
 
@@ -15,7 +15,7 @@ export const definePlugin = createPlugin<PluginConfig>(
       return {
         name: pluginEnum.MSW,
         buildStart(context) {
-          const mswGenerator = new MswGenerator({
+          const mswGenerator = new MSWGenerator({
             oas,
             ast,
             openapi,

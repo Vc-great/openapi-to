@@ -21,3 +21,7 @@ export function formatFileName(fileName: string): string {
 export function formatClassName(className: string): string {
   return `${_.upperFirst(className)}FakerService`
 }
+
+export function formatInstanceName(className: string): string {
+  return `${_.lowerFirst(className)}FakerService`
+}

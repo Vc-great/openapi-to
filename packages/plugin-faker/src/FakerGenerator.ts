@@ -3,7 +3,7 @@ import path from 'node:path'
 import { pluginEnum } from '@openapi-to/core'
 import { UUID_TAG_NAME } from '@openapi-to/core/utils'
 import { TYPE_NAME_SPACE_SUFFIX } from '@openapi-to/plugin-ts-type/src/constants.ts'
-import { ZOD_SUFFIX } from '@openapi-to/plugin-zod/src/constants.ts'
+import {ZOD_NAME_SPACE_SUFFIX} from '@openapi-to/plugin-zod/src/constants.ts'
 
 import _ from 'lodash'
 import { VariableDeclarationKind } from 'ts-morph'
@@ -12,7 +12,7 @@ import { Component } from './Component.ts'
 import { FakerOldNode } from './FakerOldNode.ts'
 import { Schema } from './Schema.ts'
 import { MODEL_FOLDER_NAME } from './constants.ts'
-import { formatClassName, formatFileName, formatRefName } from './utils.ts'
+import {formatClassName, formatFileName, formatInstanceName, formatRefName} from './utils.ts'
 
 import type { PluginContext } from '@openapi-to/core'
 import type { Operation } from 'oas/operation'
@@ -72,8 +72,8 @@ export class FakerGenerator {
     return this.oldNode.classDeclaration?.getName() ?? formatClassName(this.openapi.currentTagNameOfPinYin)
   }
 
-  get lowerFirstClassName() {
-    return _.lowerFirst(this.className)
+  get instanceName() {
+    return formatInstanceName(this.openapi.currentTagNameOfPinYin)
   }
 
   get fileName(): string {
@@ -81,7 +81,7 @@ export class FakerGenerator {
   }
 
   get zodFileName(): string {
-    return `${this.openapi.currentTagNameOfPinYin}.${ZOD_SUFFIX}`
+    return `${this.openapi.currentTagNameOfPinYin}.${ZOD_NAME_SPACE_SUFFIX}`
   }
 
   //zod or type
@@ -149,7 +149,7 @@ export class FakerGenerator {
         declarationKind: VariableDeclarationKind.Const,
         declarations: [
           {
-            name: this.lowerFirstClassName,
+            name: this.instanceName,
             initializer: `new ${this.className}`,
           },
         ],

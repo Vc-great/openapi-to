@@ -9,3 +9,7 @@ export function updateVersionNotifier() {
 export function version(): string {
   return packageJson.version || "";
 }
+
+export function validateVersion(version: string) {
+
+}

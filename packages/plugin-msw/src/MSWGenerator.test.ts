@@ -7,7 +7,7 @@ import _ from "lodash";
 import Oas from "oas";
 
 import petStore from "../mock/petstore.json";
-import { MswGenerator } from "./MswGenerator.ts";
+import { MSWGenerator } from "./MSWGenerator.ts";
 
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 const __filename = fileURLToPath(import.meta.url);
@@ -35,8 +35,8 @@ describe("MswGenerator", async () => {
   const oas = new Oas(petStore);
   const openapi = new OpenAPI({}, oas);
   const pluginConfig = {};
-  test("MswGenerator getFullText", () => {
-    const requestGenerator = new MswGenerator({
+  test("MSWGenerator getFullText", () => {
+    const requestGenerator = new MSWGenerator({
       oas,
       ast,
       openapi,

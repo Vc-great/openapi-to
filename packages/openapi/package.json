@@ -56,15 +56,16 @@
   "dependencies": {
     "@openapi-to/cli": "workspace:*",
     "@openapi-to/core": "workspace:*",
+    "@openapi-to/plugin-faker": "workspace:*",
+    "@openapi-to/plugin-msw": "workspace:*",
+    "@openapi-to/plugin-nestjs": "workspace:*",
+    "@openapi-to/plugin-swr": "workspace:*",
     "@openapi-to/plugin-ts-request": "workspace:*",
     "@openapi-to/plugin-ts-type": "workspace:*",
-    "@openapi-to/plugin-zod": "workspace:*",
-    "@openapi-to/plugin-msw": "workspace:*",
-    "@openapi-to/plugin-swr": "workspace:*",
     "@openapi-to/plugin-vue-query": "workspace:*",
-    "@openapi-to/plugin-faker": "workspace:*",
-    "@openapi-to/plugin-nestjs": "workspace:*",
+    "@openapi-to/plugin-zod": "workspace:*",
     "@types/update-notifier": "^6.0.8",
+    "semver": "^7.5.4",
     "update-notifier": "^7.0.0"
   },
   "engines": {

@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 import process from 'node:process'
-import { updateVersionNotifier } from '../dist/utils.js'
+import semver from 'semver'
 
-import('@openapi-to/cli').then(({ run }) => {
-  const currentNodeVersion = process.version.slice(1).split('.')[0]
 
-  if (currentNodeVersion < 16) {
-    const str = `ERROR: This version requires at least Node.js v16.0
-The current version of Node.js is ${process.version}
-`
-    console.log(str)
-    return
-  }
+const requiredVersion =  '>=20.0.0';
+if (!semver.satisfies(process.version, requiredVersion)) {
+  console.error(`Error: This tool requires Node.js ${requiredVersion}, but you are using ${process.version}`);
+  process.exit(1);
+}
 
+import('@openapi-to/cli').then(async({run}) => {
+  const {updateVersionNotifier} = await import('../dist/utils.js')
   updateVersionNotifier()
   run(process.argv)
 })

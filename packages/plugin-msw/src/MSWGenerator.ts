@@ -6,13 +6,15 @@ import _ from 'lodash'
 import { VariableDeclarationKind } from 'ts-morph'
 
 import type { HttpMethod, ObjectStructure, PluginContext } from '@openapi-to/core'
-import { formatClassName as formatFakerClassName, formatFileName as formatFakerNameSpaceFileName } from '@openapi-to/plugin-faker/utils'
+import { formatClassName as formatFakerClassName,formatInstanceName, formatFileName as formatFakerNameSpaceFileName } from '@openapi-to/plugin-faker/utils'
 import type { Operation } from 'oas/operation'
 import type { ImportDeclarationStructure, VariableStatementStructure } from 'ts-morph'
 import type { Config } from './types.ts'
+import {formatFileName} from "./utils.ts";
+import {HANDLER_SUFFIX} from "./constants.ts";
 type ImportStatementsOmitKind = Omit<ImportDeclarationStructure, 'kind'>
 
-export class MswGenerator {
+export class MSWGenerator {
   private operation: Operation | undefined
   private oas: Config['oas']
   private readonly openapi: Config['openapi']
@@ -30,18 +32,22 @@ export class MswGenerator {
   }
 
   get currentTagName() {
-    return _.camelCase(this.openapi.currentTagNameOfPinYin)
+    return this.openapi.currentTagNameOfPinYin
   }
   get handlersName(): string {
     return `${this.currentTagName}Handler`
   }
 
-  get fakerName(): string {
-    return formatFakerClassName(this.openapi.currentTagNameOfPinYin)
+  get fileName(): string {
+    return formatFileName(this.currentTagName)
+  }
+
+  get fakerInstanceName(): string {
+    return formatInstanceName(this.currentTagName)
   }
 
   get fakerNameSpaceFileName(): string {
-    return formatFakerNameSpaceFileName(this.openapi.currentTagNameOfPinYin)
+    return formatFakerNameSpaceFileName(this.currentTagName)
   }
 
   build(context: PluginContext): void {
@@ -51,7 +57,7 @@ export class MswGenerator {
         return this.generatorHandler(path, method)
       })
 
-      const filePath = path.resolve(this.openapiToSingleConfig.output.dir, `${this.handlersName}.ts`)
+      const filePath = path.resolve(this.openapiToSingleConfig.output.dir, `${this.fileName}.ts`)
       this.handlerCache.add(this.handlersName)
 
       this.ast.createSourceFile(filePath, {
@@ -73,10 +79,11 @@ export class MswGenerator {
   generateHandlers() {
     const importStatements: Array<ImportDeclarationStructure> = _.chain([...this.handlerCache.keys()])
       .map((handlerName) => {
+        const name = handlerName.replace(HANDLER_SUFFIX,'')
         return this.ast.generateImportStatements([
           {
-            namedImports: [handlerName],
-            moduleSpecifier: `./${handlerName}`,
+            namedImports: [name],
+            moduleSpecifier: `./${formatFileName(name)}`,
           },
         ])
       })
@@ -151,7 +158,7 @@ export class MswGenerator {
     }
 
     const faker: ImportStatementsOmitKind = {
-      namedImports: [this.fakerName],
+      namedImports: [this.fakerInstanceName],
       moduleSpecifier: `./${this.fakerNameSpaceFileName}`,
     }
 
@@ -190,7 +197,7 @@ export class MswGenerator {
       {
         key: 'msw',
         value: `http.${method}('${new URLPath(path).toURLPath}', (req) => {
-                return HttpResponse.json(${this.fakerName}.${this.openapi.requestName}())
+                return HttpResponse.json(${this.fakerInstanceName}.${this.openapi.requestName}())
             })`,
       },
     ]

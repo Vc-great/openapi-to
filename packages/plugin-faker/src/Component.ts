@@ -5,7 +5,6 @@ import { TYPE_MODEL_FOLDER_NAME } from '@openapi-to/core/utils'
 import { formatRefName as formatTypeRefName } from '@openapi-to/plugin-ts-type/src/utils.ts'
 import { ZOD_MODEL_FOLDER_NAME } from '@openapi-to/plugin-zod/src/constants.ts'
 import _ from 'lodash'
-import { StructureKind } from 'ts-morph'
 
 import { Faker } from './Faker'
 import { Schema } from './Schema.ts'
@@ -46,6 +45,12 @@ export class Component {
     return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod)
   }
 
+  get typeModuleSpecifier(){
+    return this.hasZodPlugin
+      ? `../${ZOD_MODEL_FOLDER_NAME}`
+      : `../${TYPE_MODEL_FOLDER_NAME}`
+  }
+
   build() {}
 
   generateComponentType(): void {
@@ -63,8 +68,8 @@ export class Component {
 
   generateCodeComponentRef(schema: OpenAPIV3.ReferenceObject, key: string): void {
     const name = formatModelMethodName(key)
-    this.createModelSourceFile(
-      [
+
+    const statements =  [
         ...this.ast.generateImportStatements([
           {
             namedImports: ['faker'],
@@ -79,9 +84,7 @@ export class Component {
           {
             namedImports: [formatTypeRefName(_.camelCase(name))],
             isTypeOnly: true,
-            moduleSpecifier: this.hasZodPlugin
-              ? `../${ZOD_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`
-              : `../${TYPE_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`,
+            moduleSpecifier: this.typeModuleSpecifier,
           },
         ]),
         this.ast.generateFunctionStatements({
@@ -91,9 +94,22 @@ export class Component {
           isExported: true,
           docs: [], // [{ description: "" }],
         }),
+      ]
+    this.createModelSourceFile(
+      [
+        ...statements,
+        ...this.ast.generateImportStatements([
+          {
+            namedImports: ['faker'],
+            isTypeOnly: false,
+            moduleSpecifier: '@faker-js/faker',
+          },
+        ])
       ],
       formatModelFileName(key),
     )
+
+    this.setModelIndexStatements(statements)
   }
 
   createModelSourceFile(statements: Array<StatementStructures>, fileName: string): void {
@@ -103,19 +119,16 @@ export class Component {
       //...(this.generateModelImport() || [])
       statements,
     })
-
-    //
-    this.setModelIndexStatements(statements)
   }
 
   setModelIndexStatements(statements: Array<StatementStructures>): void {
     //
-    const whiteKind = [StructureKind.ImportDeclaration]
+
 
     const names = _.chain(statements)
-      .filter((item) => whiteKind.includes(item.kind))
-      .filter((item) => 'moduleSpecifier' in item && item.moduleSpecifier !== '@faker-js/faker')
-      .map((item: ImportDeclarationStructure) => _.get(item, 'namedImports[0]', ''))
+      .map((item: ImportDeclarationStructure) => {
+        return _.get(item, 'namedImports[0]', '') || _.get(item, 'name', '')
+      })
       .map((item: string) => _.camelCase(item))
       .value() as unknown as string[]
 
@@ -135,6 +148,7 @@ export class Component {
       .value()
 
     this.createModelSourceFile(statements, 'index')
+    this.setModelIndexStatements(statements)
   }
 
   /**
@@ -180,12 +194,14 @@ export class Component {
       {
         namedImports: [formatTypeRefName(_.camelCase(key))],
         isTypeOnly: true,
-        moduleSpecifier: this.hasZodPlugin
-          ? `../${ZOD_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`
-          : `../${TYPE_MODEL_FOLDER_NAME}/${_.upperFirst(_.camelCase(key))}`,
+        moduleSpecifier: this.typeModuleSpecifier,
       },
     ])
 
     this.createModelSourceFile([...importStatements, ...fakerImport, schemaStatements], formatModelFileName(key))
+    this.setModelIndexStatements([
+      ...importStatements,
+      schemaStatements
+    ])
   }
 }
