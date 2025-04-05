@@ -211,7 +211,7 @@ export class Schema {
     /*   if (dateEnum.includes(type)) {
       return "Date";
     }*/
-    if (stringEnum.includes(type || '') && !_.isEmpty(schema.enum)) {
+    if (stringEnum.includes(type || '') &&schema.enum&& !_.isEmpty(schema.enum)) {
       return this.faker.helpers.arrayElement(schema.enum)
     }
 
