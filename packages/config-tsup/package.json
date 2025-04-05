@@ -38,10 +38,6 @@
   "devDependencies": {
     "@openapi-to/config-ts": "workspace:*"
   },
-  "engines": {
-    "node": ">=18",
-    "pnpm": ">=8.3.0"
-  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
