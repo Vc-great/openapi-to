@@ -274,7 +274,7 @@ export function test3214Faker(): Test3214Model {
         /**this is description*/
         columnScale: faker.number.int(),
         /**this is description*/
-        columnType: faker.string.alpha(),
+        columnType: faker.helpers.arrayElement<any>(['CHAR', 'CHAR2', 'CHAR3']),
         /**this is description*/
         delFlag: faker.datatype.boolean(),
         formId: faker.number.int(),
@@ -413,7 +413,7 @@ export function petFaker(): PetModel {
             count: 10,
         }),
         /**pet status in the store*/
-        status: faker.string.alpha()
+        status: faker.helpers.arrayElement<any>(['available', 'pending', 'sold'])
     }
 }
 
@@ -437,7 +437,7 @@ export function orderFaker(): OrderModel {
         quantity: faker.number.int(),
         shipDate: faker.string.alpha(),
         /**Order Status*/
-        status: faker.string.alpha(),
+        status: faker.helpers.arrayElement<any>(['placed', 'approved', 'delivered']),
         complete: faker.datatype.boolean()
     }
 }
@@ -696,7 +696,7 @@ export function test3214Faker(): Test3214Model {
         /**this is description*/
         columnScale: faker.number.int(),
         /**this is description*/
-        columnType: faker.string.alpha(),
+        columnType: faker.helpers.arrayElement<any>(['CHAR', 'CHAR2', 'CHAR3']),
         /**this is description*/
         delFlag: faker.datatype.boolean(),
         formId: faker.number.int(),
@@ -835,7 +835,7 @@ export function petFaker(): PetModel {
             count: 10,
         }),
         /**pet status in the store*/
-        status: faker.string.alpha()
+        status: faker.helpers.arrayElement<any>(['available', 'pending', 'sold'])
     }
 }
 
@@ -859,7 +859,7 @@ export function orderFaker(): OrderModel {
         quantity: faker.number.int(),
         shipDate: faker.string.alpha(),
         /**Order Status*/
-        status: faker.string.alpha(),
+        status: faker.helpers.arrayElement<any>(['placed', 'approved', 'delivered']),
         complete: faker.datatype.boolean()
     }
 }

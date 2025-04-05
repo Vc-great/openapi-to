@@ -188,7 +188,7 @@ export class Schema {
 
     return this.ast.generateObject$2(objectStructure)
   }
-
+  //faker.helpers.arrayElement<any>(['available', 'pending', 'sold'])
   formatterSchemaType(schema: SchemaObject | undefined): string {
     const numberEnum = ['int32', 'int64', 'float', 'double', 'integer', 'long', 'number', 'int']
 
@@ -211,6 +211,9 @@ export class Schema {
     /*   if (dateEnum.includes(type)) {
       return "Date";
     }*/
+    if (stringEnum.includes(type || '') && !_.isEmpty(schema.enum)) {
+      return this.faker.helpers.arrayElement(schema.enum)
+    }
 
     if (stringEnum.includes(type || '')) {
       return this.faker.string.alpha()
@@ -225,7 +228,14 @@ export class Schema {
     }
 
     if (type === 'array' && !this.openapi.isReference(schema.items) && !_.isBoolean(schema.items)) {
-      const arrayType = this.formatterSchemaType(schema.items as SchemaObject)
+      const items = schema.items as SchemaObject
+
+      if (items.enum && !_.isEmpty(items.enum)) {
+        return this.faker.helpers.arrayElement(items.enum)
+      }
+
+      const arrayType = this.formatterSchemaType(items)
+
       return this.faker.helpers.multiple(arrayType)
     }
 

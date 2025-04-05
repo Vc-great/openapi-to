@@ -23,7 +23,7 @@ OpenAPI Specifications are supported:
 # Quick Start
 ## Install
 ```shell [npm]
-npm i openapi-to
+npm i openapi-to --save-dev
 ```
 
 
@@ -43,7 +43,6 @@ npm i openapi-to
 }
 ```
 ## Example
-::: code-group
 ```typescript twoslash [single]
 import {
   defineConfig,
@@ -64,7 +63,7 @@ export default defineConfig({
       output:{
        dir:'server' //.OpenAPI/server
     }
-    },
+    }
   ],
   plugins: [
     createTSRequest(),
@@ -76,47 +75,7 @@ export default defineConfig({
   ]
 });
 ```
-```typescript twoslash [multiple]
-import {
-  defineConfig,
-  createTSRequest,
-  createTSType,
-  createZod,
-  createFaker,
-  createMSW,
-  createNestjs,
-} from "openapi-to";
 
-export default defineConfig({
-  servers: [
-    {
-      input: {
-        path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
-      },
-      output:{
-       dir:'server' //.OpenAPI/server
-    }
-    },
-    {
-      input: {
-        path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
-      },
-      output:{
-        dir:'server2' //.OpenAPI/server2
-      }
-    }
-  ],
-  plugins: [
-    createTSRequest(),
-    createTSType(),
-    createZod(),
-    createFaker(),
-    createMSW(),
-    createNestjs(),
-  ]
-});
-````
-:::
 # plugins
 ## createTSRequest
 
@@ -1667,5 +1626,223 @@ export const petSWRKey = {
 export const petSWR = {
     useUpdate, useCreate, useFindByStatusGet, useFindByTagsGet, useFindByPetId, usePetIdPost, useDelByPetId, useUploadImagePost
 };
+```
+</details>
+
+
+
+<details> 
+  <summary>vue query</summary>
+
+```TS
+import { petService } from "./pet.service";
+import type { Pet } from "./pet.schemas";
+import type { MaybeRef } from "vue";
+import { toValue } from "vue";
+import { queryOptions, useQuery } from "@tanstack/vue-query";
+import type { QueryKey, QueryObserverOptions, UseQueryReturnType, MutationObserverOptions } from "@tanstack/vue-query";
+import { useMutation } from "@tanstack/vue-query";
+
+export const updateMutationKey = () => [{ url: `/pet`, method: 'put' }] as const;
+
+export const createMutationKey = () => [{ url: `/pet`, method: 'post' }] as const;
+
+export const findByStatusGetQueryKey = (params?: MaybeRef<Pet.FindByStatusGetQueryParams>) => [{ url: `/pet/findByStatus`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+export const findByTagsGetQueryKey = (params?: MaybeRef<Pet.FindByTagsGetQueryParams>) => [{ url: `/pet/findByTags`, method: 'get' }, ...(params ? [params] : [])] as const;
+
+export const findByPetIdQueryKey = (petId: Pet.FindByPetIdPathParams['petId']) => [{ url: `/pet/${petId}`, method: 'get' }] as const;
+
+export const petIdPostMutationKey = (petId: Pet.PetIdPostPathParams['petId'], params?: MaybeRef<Pet.PetIdPostQueryParams>) => [{ url: `/pet/${petId}`, method: 'post' }, ...(params ? [params] : [])] as const;
+
+export const delByPetIdMutationKey = (petId: Pet.DelByPetIdPathParams['petId']) => [{ url: `/pet/${petId}`, method: 'delete' }] as const;
+
+export const uploadImagePostMutationKey = (petId: Pet.UploadImagePostPathParams['petId'], params?: MaybeRef<Pet.UploadImagePostQueryParams>) => [{ url: `/pet/${petId}/uploadImage`, method: 'post' }, ...(params ? [params] : [])] as const;
+type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+
+/**
+ * @summary Update an existing pet
+ * @description Update an existing pet by Id
+ */
+function useUpdate(options?: {
+    mutation?: MutationObserverOptions<Pet.UpdateMutationResponse, Pet.UpdateError, { data: MaybeRef<Pet.UpdateMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? updateMutationKey()
+
+    return useMutation<Pet.UpdateMutationResponse, Pet.UpdateError, { data: Pet.UpdateMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return petService.update(data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Add a new pet to the store
+ * @description Add a new pet to the store
+ */
+function useCreate(options?: {
+    mutation?: MutationObserverOptions<Pet.CreateMutationResponse, Pet.CreateError, { data: MaybeRef<Pet.CreateMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? createMutationKey()
+
+    return useMutation<Pet.CreateMutationResponse, Pet.CreateError, { data: Pet.CreateMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return petService.create(data);
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Finds Pets by status
+ * @description Multiple status values can be provided with comma separated strings
+ */
+function useFindByStatusGet<TData = Pet.FindByStatusGetQueryResponse, TQueryData = Pet.FindByStatusGetQueryResponse, TQueryKey extends QueryKey = FindByStatusGetQueryKey>(params?: MaybeRef<Pet.FindByStatusGetQueryParams>, options?: {
+    query?: Partial<QueryObserverOptions<Pet.FindByStatusGetQueryResponse, Pet.FindByStatusGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByStatusGetQueryKey(params)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petService.findByStatusGet(toValue(params), { signal });
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.FindByStatusGetError>
+
+}
+
+/**
+ * @summary Finds Pets by tags
+ * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+ */
+function useFindByTagsGet<TData = Pet.FindByTagsGetQueryResponse, TQueryData = Pet.FindByTagsGetQueryResponse, TQueryKey extends QueryKey = FindByTagsGetQueryKey>(params?: MaybeRef<Pet.FindByTagsGetQueryParams>, options?: {
+    query?: Partial<QueryObserverOptions<Pet.FindByTagsGetQueryResponse, Pet.FindByTagsGetError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByTagsGetQueryKey(params)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petService.findByTagsGet(toValue(params), { signal });
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.FindByTagsGetError>
+
+}
+
+/**
+ * @summary Find pet by ID
+ * @description Returns a single pet
+ */
+function useFindByPetId<TData = Pet.FindByPetIdQueryResponse, TQueryData = Pet.FindByPetIdQueryResponse, TQueryKey extends QueryKey = FindByPetIdQueryKey>(petId: Pet.FindByPetIdPathParams['petId'], options?: {
+    query?: Partial<QueryObserverOptions<Pet.FindByPetIdQueryResponse, Pet.FindByPetIdError, TData, TQueryData, TQueryKey>>
+}) {
+
+    const { query: queryOption } = options ?? {}
+    const queryKey = queryOption?.queryKey ?? findByPetIdQueryKey(petId)
+
+    return useQuery({
+        ...(queryOptions({
+            queryKey: queryKey as QueryKey,
+            queryFn: async ({ signal }) => {
+                return petService.findByPetId(toValue(petId), { signal });
+            }
+        }) as QueryObserverOptions),
+        ...(queryOption as unknown as Omit<QueryObserverOptions, 'queryKey'>)
+    }) as UseQueryReturnType<TData, Pet.FindByPetIdError>
+
+}
+
+/** @summary Updates a pet in the store with form data */
+function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], params?: MaybeRef<Pet.PetIdPostQueryParams>, options?: {
+    mutation?: MutationObserverOptions<Pet.PetIdPostMutationResponse, Pet.PetIdPostError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? petIdPostMutationKey(petId, params)
+
+    return useMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError>({
+        mutationFn: async () => {
+            return petService.petIdPost(toValue(petId), toValue(params));
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/**
+ * @summary Deletes a pet
+ * @description delete a pet
+ */
+function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options?: {
+    mutation?: MutationObserverOptions<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? delByPetIdMutationKey(petId)
+
+    return useMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError>({
+        mutationFn: async () => {
+            return petService.delByPetId(toValue(petId));
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+/** @summary uploads an image */
+function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], params?: MaybeRef<Pet.UploadImagePostQueryParams>, options?: {
+    mutation?: MutationObserverOptions<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, { data: MaybeRef<Pet.UploadImagePostMutationRequest> }>;
+}) {
+
+    const { mutation: mutationOptions } = options ?? {}
+    const mutationKey = mutationOptions?.mutationKey ?? uploadImagePostMutationKey(petId, params)
+
+    return useMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, { data: Pet.UploadImagePostMutationRequest }>({
+        mutationFn: async ({ data }) => {
+            return petService.uploadImagePost(toValue(petId), data, toValue(params));
+        },
+        mutationKey,
+        ...mutationOptions
+    })
+}
+
+export const petQuery = {
+    updateMutationKey, createMutationKey, findByStatusGetQueryKey, findByTagsGetQueryKey, findByPetIdQueryKey, petIdPostMutationKey, delByPetIdMutationKey, uploadImagePostMutationKey, useUpdate, useCreate, useFindByStatusGet, useFindByTagsGet, useFindByPetId, usePetIdPost, useDelByPetId, useUploadImagePost
+};
+
+export namespace PetQuery {
+    export type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+    export type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+    export type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+    export type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+    export type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+    export type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+    export type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+}
 ```
 </details>
