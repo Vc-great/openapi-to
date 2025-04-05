@@ -1,6 +1,6 @@
 {
   "name": "@openapi-to/plugin-faker",
-  "version": "2.4.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "sideEffects": false,
   "type": "module",
   "description": "Generator faker",

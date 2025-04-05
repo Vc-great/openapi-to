@@ -1,5 +1,16 @@
 # @openapi-to/plugin-ts-request
 
+## 3.0.0-alpha.2
+
+### Major Changes
+
+- fix
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/core@3.0.0-alpha.2
+
 ## 2.4.0-alpha.1
 
 ### Patch Changes

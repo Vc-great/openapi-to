@@ -1,5 +1,25 @@
 # openapi-to
 
+## 3.0.0-alpha.2
+
+### Major Changes
+
+- fix
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @openapi-to/cli@3.0.0-alpha.2
+  - @openapi-to/core@3.0.0-alpha.2
+  - @openapi-to/plugin-faker@3.0.0-alpha.2
+  - @openapi-to/plugin-msw@3.0.0-alpha.2
+  - @openapi-to/plugin-nestjs@3.0.0-alpha.2
+  - @openapi-to/plugin-swr@3.0.0-alpha.2
+  - @openapi-to/plugin-ts-request@3.0.0-alpha.2
+  - @openapi-to/plugin-ts-type@3.0.0-alpha.2
+  - @openapi-to/plugin-vue-query@3.0.0-alpha.2
+  - @openapi-to/plugin-zod@3.0.0-alpha.2
+
 ## 2.4.0-alpha.1
 
 ### Patch Changes

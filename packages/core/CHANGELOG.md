@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 3.0.0-alpha.2
+
+### Major Changes
+
+- fix
+
 ## 2.4.0-alpha.1
 
 ### Patch Changes
