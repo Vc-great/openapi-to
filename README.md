@@ -1,8 +1,7 @@
 [![codecov](https://codecov.io/github/Vc-great/openapi-to/branch/V2/graph/badge.svg?token=5UB04YYCEB)](https://codecov.io/github/Vc-great/openapi-to)
 
 # At Glance
-Generate SDKs,OpenAPI to:
-
+openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specification into various client libraries, including:
 + [x] ts request
 + [x] ts type
 + [x] zod
@@ -13,9 +12,9 @@ Generate SDKs,OpenAPI to:
 + [x] vue-Query
 + [ ] react-Query
 
-OpenAPI Specifications are supported:
-- swagger 2.0
-- openapi 3.0
+# Features
+- Works with Node.js 20+.
+- Supports Swagger 2.0, OpenAPI 3.0, and OpenAPI 3.1.
 
 # Quick Start
 ## Install
@@ -41,15 +40,15 @@ npm i openapi-to --save-dev
 ```
 ## Example
 ```typescript twoslash [single]
-import {
-  defineConfig,
-  createTSRequest,
-  createTSType,
-  createZod,
-  createFaker,
-  createMSW,
-  createNestjs,
-} from "openapi-to";
+import { createFaker, 
+        createMSW,
+        createNestjs,
+        createSWR,
+        createTSRequest,
+        createTSType,
+        createVueQuery,
+        createZod,
+        defineConfig } from 'openapi-to'
 
 export default defineConfig({
   servers: [
@@ -69,6 +68,8 @@ export default defineConfig({
     createFaker(),
     createMSW(),
     createNestjs(),
+    createVueQuery(),
+    createSWR()
   ]
 });
 ```
