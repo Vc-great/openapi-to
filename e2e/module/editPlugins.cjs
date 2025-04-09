@@ -29,7 +29,7 @@ export default defineConfig({
     createTSRequest({
       createZodDecorator: true,
       compare: true,
-       requestType:'axios',
+       requestClient:'axios',
             zodDecoratorImportDeclaration: {
         moduleSpecifier: "./test/zod",
       },
