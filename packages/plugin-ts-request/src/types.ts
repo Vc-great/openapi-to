@@ -6,7 +6,7 @@ export enum RequestTypeEnum {
   COMMON = 'common',
 }
 
-export type RequestType = 'axios' | 'common'
+export type RequestClient = 'axios' | 'common'
 
 export type PluginConfig = {
   createZodDecorator?: boolean
@@ -21,7 +21,7 @@ export type PluginConfig = {
     namedImports: Array<string>
     moduleSpecifier: string
   }
-  requestType?: RequestType
+  requestClient?: RequestClient
 }
 
 export type Config = {

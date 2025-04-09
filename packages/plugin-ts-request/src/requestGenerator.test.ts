@@ -103,7 +103,7 @@ describe('RequestGenerator', async () => {
     const oas = new Oas(petStore)
     const openapi = new OpenAPI({}, oas)
     const pluginConfig: PluginConfig = {
-      requestType: RequestTypeEnum.COMMON,
+      requestClient: RequestTypeEnum.COMMON,
     }
 
     const requestGenerator = new RequestGenerator({

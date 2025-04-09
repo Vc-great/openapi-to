@@ -33,7 +33,7 @@ export class RequestGenerator {
   private readonly parametersSchema: string = 'parametersSchema'
   private readonly openapi: Config['openapi']
   private readonly ast: Config['ast']
-  private readonly pluginConfig: Required<PluginConfig, 'createZodDecorator' | 'requestType' | 'compare'>
+  private readonly pluginConfig: Required<PluginConfig, 'createZodDecorator' | 'requestClient'>
   private readonly openapiToSingleConfig: Config['openapiToSingleConfig']
   private oldNode: RequestOldNode
 
@@ -43,7 +43,7 @@ export class RequestGenerator {
     this.pluginConfig = _.merge(
       {
         createZodDecorator: false,
-        requestType: RequestTypeEnum.AXIOS,
+        requestClient: RequestTypeEnum.AXIOS,
         compare: false,
       },
       pluginConfig,
@@ -105,12 +105,12 @@ export class RequestGenerator {
   }
 
   get isAxiosRequestType(): boolean {
-    const requestType = this.pluginConfig.requestType
+    const requestType = this.pluginConfig.requestClient
     return requestType === RequestTypeEnum.AXIOS
   }
 
   get isCommonRequestType(): boolean {
-    const requestType = this.pluginConfig.requestType
+    const requestType = this.pluginConfig.requestClient
     return requestType === RequestTypeEnum.COMMON
   }
 
