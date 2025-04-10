@@ -53,6 +53,7 @@ describe('RequestGenerator', async () => {
         namedImports: ['CustomRequestConfig'],
         moduleSpecifier: 'custom-request',
       },
+      requestClient: RequestTypeEnum.AXIOS,
     }
 
     const requestGenerator = new RequestGenerator({
@@ -104,6 +105,34 @@ describe('RequestGenerator', async () => {
     const openapi = new OpenAPI({}, oas)
     const pluginConfig: PluginConfig = {
       requestClient: RequestTypeEnum.COMMON,
+    }
+
+    const requestGenerator = new RequestGenerator({
+      oas,
+      ast,
+      openapi,
+      pluginConfig,
+      openapiToSingleConfig,
+    })
+    requestGenerator.build(context)
+    const text = _.chain(ast.sourceFile)
+      .map((sourceFile) => sourceFile.getFullText())
+      .join('\n')
+      .value()
+    expect(text).toMatchSnapshot()
+  })
+
+  test('requestType common and has requestConfigTypeImportDeclaration  getFullText', () => {
+    const ast = new AST()
+    // @ts-expect-error Not a canonical document
+    const oas = new Oas(petStore)
+    const openapi = new OpenAPI({}, oas)
+    const pluginConfig: PluginConfig = {
+      requestClient: RequestTypeEnum.COMMON,
+      requestConfigTypeImportDeclaration:{
+        namedImports: ['CustomRequestConfig'],
+        moduleSpecifier: 'custom-request',
+      }
     }
 
     const requestGenerator = new RequestGenerator({

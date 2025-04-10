@@ -104,12 +104,12 @@ export class RequestGenerator {
     return this.pluginConfig.createZodDecorator
   }
 
-  get isAxiosRequestType(): boolean {
+  get isAxiosRequestClient(): boolean {
     const requestType = this.pluginConfig.requestClient
     return requestType === RequestTypeEnum.AXIOS
   }
 
-  get isCommonRequestType(): boolean {
+  get isCommonRequestClient(): boolean {
     const requestType = this.pluginConfig.requestClient
     return requestType === RequestTypeEnum.COMMON
   }
@@ -230,7 +230,7 @@ export class RequestGenerator {
     const statements = _.chain([] as Array<ImportStatementsOmitKind>)
       .concat(this.isCreateZodDecorator ? [zodModel, zodDecorator] : [])
       .concat(this.hasZodPlugin || this.isCreateZodDecorator ? [zodTypeModel] : [typeModel])
-      .concat(this.isAxiosRequestType ? [axiosType] : [])
+      .concat(this.isAxiosRequestClient ? [axiosType] : [])
       .push(request)
       .push(requestConfig)
       .filter(Boolean)
@@ -342,13 +342,17 @@ export class RequestGenerator {
         }
       })
       .value()
-    //<AddPetMutationRequest>
+
     const axiosRequestConfigType = `Partial<AxiosRequestConfig${this.openapi.requestBody?.hasRequestBody ? `<${this.requestDataType}>` : ''}>`
     const requestConfigNamedImports = _.head(this.requestConfigImportDeclaration?.namedImports)
+
+    const commonRequestConfigType = requestConfigNamedImports?`Partial<${requestConfigNamedImports}>`:'unknown'
+
+
     const requestConfig = {
       name: 'requestConfig',
       hasQuestionToken: true,
-      type: requestConfigNamedImports ? `Partial<${requestConfigNamedImports}>` : axiosRequestConfigType,
+      type: this.isAxiosRequestClient ?axiosRequestConfigType:commonRequestConfigType
     }
 
     return _.chain([] as any[])
@@ -450,7 +454,7 @@ export class RequestGenerator {
       .join(',\n')
       .value()
 
-    if (this.isCommonRequestType) {
+    if (this.isCommonRequestClient) {
       return `const res = await request<${this.responseDataType}>({
                  ${requestFuncContent}
     })
