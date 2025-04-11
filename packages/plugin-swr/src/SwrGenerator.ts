@@ -1,4 +1,4 @@
-import path from 'node:path'
+import nodePath  from 'node:path'
 
 import { pluginEnum } from '@openapi-to/core'
 import { URLPath } from '@openapi-to/core/utils'
@@ -38,6 +38,10 @@ export class SwrGenerator {
     this.openapi = openapi
   }
 
+  get folderName(){
+    return _.lowerFirst(`${this.openapi.currentTagNameOfPinYin}-${SWR_SUFFIX}`)
+  }
+
   get lowerFirstFileName(): string {
     return _.lowerFirst(`${this.openapi.currentTagNameOfPinYin}.${SWR_SUFFIX}`)
   }
@@ -53,6 +57,9 @@ export class SwrGenerator {
     return _.upperFirst(`${this.openapi.currentTagNameOfPinYin}Key`)
   }
 
+  get hookMethodName(){
+    return `use${this.openapi.upperFirstRequestName}`
+  }
   get upperFirstNamespaceTypeName(): string {
     return this.openapiToSingleConfig.pluginNames.includes(pluginEnum.Zod)
       ? _.upperFirst(this.openapi.currentTagNameOfPinYin)
@@ -104,10 +111,8 @@ export class SwrGenerator {
   }
   //
   get upperFirstQueryKeyNameOfNameSpace(): string {
-    return `${this.swrNamespaceTypeName}.${_.upperFirst(this.keyName)}`
+    return `${_.upperFirst(this.keyName)}`
   }
-
-  //upperFirstQueryKeyNameOfNameSpace
 
   get serviceName(): string {
     return `${this.openapi.currentTagNameOfPinYin}${_.upperFirst(REQUEST_SUFFIX)}`
@@ -124,97 +129,85 @@ export class SwrGenerator {
 
   build(context: PluginContext): void {
     _.forEach(this.openapi.pathGroupByTag, (pathGroup, _tag) => {
-      const { methodsStatements, swrKey, swrKeyType } = _.chain(pathGroup)
-        .map(({ path, method, tag }) => {
+      const statements = _.chain(pathGroup)
+        .map(({path, method, tag}) => {
           this.operation = this.openapi.setCurrentOperation(path, method, tag)
 
           this.methodSet.add(this.operation.method)
 
+
+          const methodsStatements = this.generatorMethodsStatements()
+          const swrKey = this.generatorSWRKey()
+          const swrKeyType = this.generatorSWRKeyType()
+
+
+          const filePath = nodePath.resolve(this.openapiToSingleConfig.output.dir,this.folderName, `${this.hookMethodName}.ts`)
+
+          this.ast.createSourceFile(filePath, {
+            statements: [
+              ...this.generateImport(),
+              swrKey,
+              swrKeyType,
+              methodsStatements
+            ],
+          })
+
           return {
-            sort: Number.MAX_SAFE_INTEGER,
-            methodsStatements: this.generatorMethodsStatements(),
-            swrKey: this.generatorSWRKey(),
-            swrKeyType: this.generatorSWRKeyType(),
+            methodsStatements,
+            swrKey,
+            swrKeyType
           }
         })
-        .sort((a, b) => a.sort - b.sort)
-        .reduce(
-          (result, item) => {
-            return {
-              methodsStatements: [...result.methodsStatements, item.methodsStatements],
-              swrKey: [...result.swrKey, item.swrKey],
-              swrKeyType: [...result.swrKeyType, item.swrKeyType],
-            }
-          },
-          {
-            methodsStatements: [],
-            swrKeyType: [],
-            swrKey: [],
-          } as {
-            methodsStatements: Array<FunctionDeclarationStructure>
-            swrKey: Array<VariableStatementStructure>
-            swrKeyType: Array<TypeAliasDeclarationStructure>
-          },
-        )
         .value()
 
-      const filePath = path.resolve(this.openapiToSingleConfig.output.dir, `${this.lowerFirstFileName}.ts`)
+      const filePath = nodePath.resolve(this.openapiToSingleConfig.output.dir,this.folderName, `index.ts`)
 
       this.ast.createSourceFile(filePath, {
-        statements: [
-          ...this.generateImport(),
-          ...swrKey,
-          this.generatorExportType(swrKeyType),
-          ...methodsStatements,
-          ...this.generatorSWRKeyExport(swrKey),
-          ...this.generatorSWRExport(methodsStatements),
-        ],
+        statements: this.generatorIndexCode(statements)
       })
     })
   }
+  generatorIndexCode(statements:{
+    methodsStatements: FunctionDeclarationStructure,
+    swrKey:VariableStatementStructure,
+    swrKeyType:TypeAliasDeclarationStructure
+  }[]){
+    const  methodsStatements = statements.map(item=>item.methodsStatements)
+    const  swrKey = statements.map(item=>item.swrKey)
+    const  swrKeyType = statements.map(item=>item.swrKeyType)
 
-  generatorSWRExport(methodsStatements: FunctionDeclarationStructure[]): Array<VariableStatementStructure> {
-    return [
-      this.ast.generateVariableStatements({
-        declarationKind: VariableDeclarationKind.Const,
-        declarations: [
-          {
-            name: this.lowerFirstSWRName,
-            initializer: `{
+
+    const getImports =({hookName,fileName,keyName}:{
+      hookName:string,
+      fileName:string,
+      keyName:string,
+    })=>this.ast.generateImportStatements([
+      {
+        namedImports:[hookName,keyName],
+        moduleSpecifier: `./${fileName}`,
+      }
+    ]as ImportStatementsOmitKind[])
+
+
+    const exportHooks =  this.ast.generateVariableStatements({
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: this.lowerFirstSWRName,
+          initializer: `{
             ${methodsStatements
-              .map((item) => item.name)
-              .filter(Boolean)
-              .join()}
+            .map((item) => item.name)
+            .filter(Boolean)
+            .join()}
             }`,
-          },
-        ],
-        isExported: true,
-      }),
-    ]
-  }
+        },
+      ],
+      isExported: true,
+    })
 
-  generatorSWRKeyExport(swrKey: VariableStatementStructure[]): Array<VariableStatementStructure> {
-    return [
-      this.ast.generateVariableStatements({
-        declarationKind: VariableDeclarationKind.Const,
-        declarations: [
-          {
-            name: this.lowerFirsSWRKeyName,
-            initializer: `{
-            ${swrKey
-              .map((item) => item.declarations[0]?.name)
-              .filter(Boolean)
-              .join()}
-            }`,
-          },
-        ],
-        isExported: true,
-      }),
-    ]
-  }
 
-  generatorExportType(swrKeyType: TypeAliasDeclarationStructure[]): ModuleDeclarationStructure {
-    return this.ast.generateModuleStatements({
+
+    const exportType = this.ast.generateModuleStatements({
       docs: [],
       isExported: true,
       name: this.swrNamespaceTypeName,
@@ -225,6 +218,33 @@ export class SwrGenerator {
         }
       }),
     })
+
+    const exportKeys = this.ast.generateVariableStatements({
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: this.lowerFirsSWRKeyName,
+          initializer: `{
+            ${swrKey
+            .map((item) => item.declarations[0]?.name)
+            .filter(Boolean)
+            .join()}
+            }`,
+        },
+      ],
+      isExported: true,
+    })
+
+    return [
+      ...statements.map(item => getImports({
+        hookName:item.methodsStatements.name!,
+        fileName:item.methodsStatements.name!,
+        keyName:item.swrKey.declarations[0]?.name!
+      })).flat(),
+      exportType,
+      exportKeys,
+      exportHooks
+    ]
   }
 
   /**
@@ -241,13 +261,13 @@ export class SwrGenerator {
   generateImport(): Array<ImportDeclarationStructure> {
     const API: ImportStatementsOmitKind = {
       namedImports: [this.serviceName],
-      moduleSpecifier: `./${this.serviceFileName}`,
+      moduleSpecifier: `../${this.serviceFileName}`,
     }
 
     const typeModel: ImportStatementsOmitKind = {
       isTypeOnly: true,
       namedImports: [this.upperFirstNamespaceTypeName],
-      moduleSpecifier: `./${this.lowerFirstNamespaceTypeName}`,
+      moduleSpecifier: `../${this.lowerFirstNamespaceTypeName}`,
     }
 
     const mutationType: ImportStatementsOmitKind = {
@@ -326,7 +346,7 @@ export class SwrGenerator {
           //   docs: [{ description: "" }],
         },
       ],
-      isExported: false,
+      isExported: true,
     }
   }
 
@@ -483,8 +503,9 @@ export class SwrGenerator {
 
   generatorMethodsStatements(): FunctionDeclarationStructure {
     const statement = {
+      isExported: true,
       isAsync: false,
-      name: `use${this.openapi.upperFirstRequestName}`,
+      name: this.hookMethodName,
       decorators: [],
       parameters: [...this.generatorMethodParameters(), this.generateSWROption()],
       returnType: '',

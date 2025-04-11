@@ -169,9 +169,9 @@ export const userHandler: Array<HttpHandler> = handlers
     .filter(x => x.start)
     .map(x => x.msw);
 
-import { petHandler } from "./petHandler.handler";
-import { storeHandler } from "./storeHandler.handler";
-import { userHandler } from "./userHandler.handler";
+import { petHandler } from "./pet.handler";
+import { storeHandler } from "./store.handler";
+import { userHandler } from "./user.handler";
 import { HttpHandler } from "msw";
 export const handlers: Array<HttpHandler> = [...petHandler, ...storeHandler, ...userHandler];
 "

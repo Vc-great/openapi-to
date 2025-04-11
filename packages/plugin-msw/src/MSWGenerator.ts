@@ -79,10 +79,10 @@ export class MSWGenerator {
   generateHandlers() {
     const importStatements: Array<ImportDeclarationStructure> = _.chain([...this.handlerCache.keys()])
       .map((handlerName) => {
-        const name = handlerName.replace(HANDLER_SUFFIX,'')
+        const name = handlerName.replace(_.upperFirst(HANDLER_SUFFIX),'')
         return this.ast.generateImportStatements([
           {
-            namedImports: [name],
+            namedImports: [handlerName],
             moduleSpecifier: `./${formatFileName(name)}`,
           },
         ])
