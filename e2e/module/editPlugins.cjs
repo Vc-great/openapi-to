@@ -1,18 +1,10 @@
-const fs = require("fs-extra");
-const path = require("path");
+const fs = require('fs-extra')
+const path = require('path')
 
-const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.ts");
+const filePath = path.resolve(__dirname, './.OpenAPI/openapi.config.ts')
 
-const config = `import {
-  defineConfig,
-  createTSRequest,
-  createTSType,
-  createZod,
-  createFaker,
-  createMSW,
-  createNestjs,
-  createSWR
-   } from'openapi-to'
+const config = `import { defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod } from 'openapi-to'
+
 
 export default defineConfig({
   servers:[
@@ -26,28 +18,21 @@ export default defineConfig({
     }
   ],
   plugins: [
-    createTSRequest({
-      createZodDecorator: true,
-      compare: true,
-       requestClient:'axios',
-            zodDecoratorImportDeclaration: {
-        moduleSpecifier: "./test/zod",
-      },
+    pluginSWR(),
+    pluginZod(),
+    pluginTSType(),
+    pluginTSRequest({
+      parser: 'zod',
+      requestClient: 'common',
       requestImportDeclaration: {
-        moduleSpecifier: "./test/request",
+        moduleSpecifier: '../../request',
       },
-    }),
-    createTSType({
-     compare: true
-    }),
-    createZod(),
-    createFaker({
-      compare: true
-    }),
-    createMSW(),
-    createNestjs(),
-      createSWR(),
+      requestConfigTypeImportDeclaration: {
+        namedImports: ['AxiosRequestConfig'],
+        moduleSpecifier: 'axios',
+      }
+          })
   ]
-})`;
+})`
 
-fs.writeFileSync(filePath, config, { encoding: "utf8" });
+fs.writeFileSync(filePath, config, { encoding: 'utf8' })

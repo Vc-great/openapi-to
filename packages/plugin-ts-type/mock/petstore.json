@@ -48,7 +48,7 @@
       "post": {
         "tags": ["pet"],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "findTest",
         "requestBody": {
           "$ref": "#/components/requestBodies/testDto"
         },
@@ -86,7 +86,7 @@
       "put": {
         "tags": ["pet"],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "updateTest",
         "requestBody": {
           "$ref": "#/components/requestBodies/testDto"
         },
@@ -124,7 +124,7 @@
       "delete": {
         "tags": ["pet"],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "removeTest",
         "requestBody": {
           "content": {
             "application/json": {
@@ -173,8 +173,14 @@
       "get": {
         "tags": ["pet"],
         "summary": "summary",
-        "operationId": "operationId",
+        "operationId": "findTestById",
         "parameters": [
+          {
+            "$ref": "#/components/parameters/pageNo"
+          },
+          {
+            "$ref": "#/components/parameters/pageSize"
+          },
           {
             "name": "fields",
             "in": "query",
@@ -318,7 +324,7 @@
         "tags": ["pet"],
         "summary": "uploads an image",
         "description": "pet",
-        "operationId": "uploadFile",
+        "operationId": "uploadImage",
         "parameters": [
           {
             "name": "petId",
@@ -375,7 +381,7 @@
         "tags": ["pet"],
         "summary": "Add a new pet to the store",
         "description": "",
-        "operationId": "addPet",
+        "operationId": "createPet",
         "requestBody": {
           "$ref": "#/components/requestBodies/Pet"
         },
@@ -532,7 +538,7 @@
         "tags": ["pet"],
         "summary": "Find pet by ID",
         "description": "Returns a single pet",
-        "operationId": "getPetById",
+        "operationId": "findPetById",
         "parameters": [
           {
             "name": "petId",
@@ -625,7 +631,7 @@
         "tags": ["pet"],
         "summary": "Deletes a pet",
         "description": "",
-        "operationId": "deletePet",
+        "operationId": "removePetById",
         "parameters": [
           {
             "name": "api_key",
@@ -1051,6 +1057,43 @@
     }
   ],
   "components": {
+    "parameters": {
+      "pageNo": {
+        "schema": {
+          "type": "number",
+          "exclusiveMinimum": true,
+          "minimum": 1,
+          "default": 1
+        },
+        "in": "query",
+        "name": "pageNo",
+        "description": "当前页"
+      },
+      "pageSize": {
+        "schema": {
+          "type": "number",
+          "format": "float"
+        },
+        "in": "query",
+        "name": "pageSize",
+        "description": "数据条数"
+      }
+    },
+    "responses": {
+      "TestResponse": {
+        "$ref": "#/components/schemas/testDto"
+      },
+      "TestResponse2": {
+        "description": "description",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/testDto"
+            }
+          }
+        }
+      }
+    },
     "requestBodies": {
       "testDto": {
         "content": {
@@ -1126,7 +1169,8 @@
             "$ref": "#/components/schemas/testdata"
           }
         },
-        "title": "Response«Void»"
+        "title": "Response«Void»",
+        "description": "test32145 description"
       },
       "test3214": {
         "type": "object",

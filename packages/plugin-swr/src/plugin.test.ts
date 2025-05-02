@@ -1,29 +1,29 @@
-import { describe, expect } from "vitest";
+import { describe, expect } from 'vitest'
 
-import petStore from "../mock/petstore.json";
-import { definePlugin } from "./plugin.ts";
+import petStore from '../mock/petstore.json'
+import { definePlugin } from './plugin.ts'
 
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
-describe("ts request plugin", () => {
+import type { OpenapiToSingleConfig } from '@openapi-to/core'
+describe('ts request plugin', () => {
   const openapiToSingleConfig: OpenapiToSingleConfig = {
-    name: "",
-    root: "",
+    name: '',
+    root: '',
     input: {
-      path: "",
+      path: '',
     },
     output: {
-      dir: "",
+      dir: '',
     },
     plugins: [],
     pluginNames: [],
-  };
+  }
 
-  test("plugin", () => {
-    const lifeCycle = definePlugin()({
+  test('plugin', () => {
+    const lifeCycle = definePlugin({
       // @ts-expect-error Not a canonical document
       openapiDocument: petStore,
       openapiToSingleConfig: openapiToSingleConfig,
-    });
-    expect(lifeCycle).toBeTypeOf("object");
-  });
-});
+    })
+    expect(lifeCycle).toBeTypeOf('object')
+  })
+})

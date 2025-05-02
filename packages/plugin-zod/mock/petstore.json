@@ -377,7 +377,7 @@
         "description": "",
         "operationId": "addPet",
         "requestBody": {
-          "$ref": "#/components/requestBodies/Pet"
+          "$ref": "#/components/requestBodies/PetRequest"
         },
         "responses": {
           "405": {
@@ -396,7 +396,7 @@
         "description": "",
         "operationId": "updatePet",
         "requestBody": {
-          "$ref": "#/components/requestBodies/Pet"
+          "$ref": "#/components/requestBodies/PetRequest"
         },
         "responses": {
           "400": {
@@ -1077,7 +1077,7 @@
         "description": "List of user object",
         "required": true
       },
-      "Pet": {
+      "PetRequest": {
         "content": {
           "application/json": {
             "schema": {

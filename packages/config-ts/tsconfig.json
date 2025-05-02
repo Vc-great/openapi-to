@@ -12,13 +12,7 @@
       "path": "../plugin-ts-request"
     },
     {
-      "path": "../plugin-nestjs"
-    },
-    {
       "path": "../plugin-ts-type"
-    },
-    {
-      "path": "../plugin-msw"
     }
   ]
 }

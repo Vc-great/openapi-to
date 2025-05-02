@@ -1,16 +1,10 @@
-const fs = require("fs-extra");
-const path = require("path");
+const fs = require('fs-extra')
+const path = require('path')
 
-const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.js");
+const filePath = path.resolve(__dirname, './.OpenAPI/openapi.config.js')
 
 const config = `const {
-  defineConfig,
-  createTSRequest,
-  createTSType,
-  createZod,
-  createFaker,
-  createMSW,
-  createNestjs
+defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod
    }= require('openapi-to')
 
 module.exports = defineConfig({
@@ -19,33 +13,27 @@ module.exports = defineConfig({
     input: {
       path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
     },
-            output:{
+        output:{
        dir:'server'
     }
     }
   ],
-  plugins:[
-    createTSRequest({
-      createZodDecorator: true,
-       compare: true,
-      requestClient:'axios',
-            zodDecoratorImportDeclaration: {
-        moduleSpecifier: "./test/zod",
-      },
+  plugins: [
+    pluginSWR(),
+    pluginZod(),
+    pluginTSType(),
+    pluginTSRequest({
+      parser: 'zod',
+      requestClient: 'common',
       requestImportDeclaration: {
-        moduleSpecifier: "./test/request",
+        moduleSpecifier: '../../request',
       },
-    }),
-    createTSType({
-     compare: true
-    }),
-    createZod(),
-    createFaker({
-      compare: true
-    }),
-    createMSW(),
-    createNestjs()
+      requestConfigTypeImportDeclaration: {
+        namedImports: ['AxiosRequestConfig'],
+        moduleSpecifier: 'axios',
+      }
+          })
   ]
-})`;
+})`
 
-fs.writeFileSync(filePath, config, { encoding: "utf8" });
+fs.writeFileSync(filePath, config, { encoding: 'utf8' })

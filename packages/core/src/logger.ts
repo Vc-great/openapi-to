@@ -1,60 +1,54 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path'
+import { colors } from 'consola/utils'
 
-import { createConsola } from "consola";
-import c, { createColors } from "picocolors";
-import seedrandom from "seedrandom";
+import seedrandom from 'seedrandom'
 
-import { EventEmitter } from "./utils/EventEmitter.ts";
-import { write } from "./fs";
+import { type ConsolaInstance, type LogLevel, createConsola } from 'consola'
+import { write } from './fs'
+import { EventEmitter } from './utils/EventEmitter.ts'
 
-import type { ConsolaInstance, LogLevel } from "consola";
-
-type DebugEvent = { date: Date; logs: string[]; fileName?: string };
+type DebugEvent = { date: Date; logs: string[]; fileName?: string }
 
 type Events = {
-  start: [message: string];
-  success: [message: string];
-  error: [message: string, cause: Error];
-  warning: [message: string];
-  debug: [DebugEvent];
-  info: [message: string];
-  progress_start: [{ id: string; size: number; message?: string }];
-  progressed: [{ id: string; message?: string }];
-  progress_stop: [{ id: string }];
-};
+  start: [message: string]
+  success: [message: string]
+  error: [message: string, cause: Error]
+  warning: [message: string]
+  debug: [DebugEvent]
+  info: [message: string]
+  progress_start: [{ id: string; size: number; message?: string }]
+  progressed: [{ id: string; message?: string }]
+  progress_stop: [{ id: string }]
+}
 
 export const LogMapper = {
   silent: Number.NEGATIVE_INFINITY,
   info: 3,
   debug: 4,
-} as const;
+} as const
 
 export type Logger = {
   /**
    * Optional config name to show in CLI output
    */
-  name?: string;
-  logLevel: LogLevel;
-  consola?: ConsolaInstance;
-  on: EventEmitter<Events>["on"];
-  emit: EventEmitter<Events>["emit"];
-  writeLogs: () => Promise<string[]>;
-};
+  name?: string
+  logLevel: LogLevel
+  consola?: ConsolaInstance
+  on: EventEmitter<Events>['on']
+  emit: EventEmitter<Events>['emit']
+  writeLogs: () => Promise<string[]>
+}
 
 type Props = {
-  name?: string;
-  logLevel?: LogLevel;
-  consola?: ConsolaInstance;
-};
+  name?: string
+  logLevel?: LogLevel
+  consola?: ConsolaInstance
+}
 
-export function createLogger({
-  logLevel = 3,
-  name,
-  consola: _consola,
-}: Props = {}): Logger {
-  const events = new EventEmitter<Events>();
-  const startDate = Date.now();
-  const cachedLogs = new Set<DebugEvent>();
+export function createLogger({ logLevel = 3, name, consola: _consola }: Props = {}): Logger {
+  const events = new EventEmitter<Events>()
+  const startDate = Date.now()
+  const cachedLogs = new Set<DebugEvent>()
 
   const consola =
     _consola ||
@@ -66,46 +60,43 @@ export function createLogger({
         columns: 80,
         compact: logLevel !== LogMapper.debug,
       },
-    }).withTag(name ? randomCliColour(name) : "");
+    }).withTag(name ? randomCliColour(name) : '')
 
-  consola?.wrapConsole();
+  consola?.wrapConsole()
 
-  events.on("start", (message) => {
-    consola.start(message);
-  });
+  events.on('start', (message) => {
+    consola.start(message)
+  })
 
-  events.on("success", (message) => {
-    consola.success(message);
-  });
+  events.on('success', (message) => {
+    consola.success(message)
+  })
 
-  events.on("warning", (message) => {
-    consola.warn(c.yellow(message));
-  });
+  events.on('warning', (message) => {
+    consola.warn(colors.yellow(message))
+  })
 
-  events.on("info", (message) => {
-    consola.info(c.yellow(message));
-  });
+  events.on('info', (message) => {
+    consola.info(colors.yellow(message))
+  })
 
-  events.on("debug", (message) => {
-    if (
-      message.logs.join("\n\n").length <= 100 &&
-      logLevel === LogMapper.debug
-    ) {
-      console.log(message.logs.join("\n\n"));
+  events.on('debug', (message) => {
+    if (message.logs.join('\n\n').length <= 100 && logLevel === LogMapper.debug) {
+      console.log(message.logs.join('\n\n'))
     }
 
-    cachedLogs.add(message);
-  });
+    cachedLogs.add(message)
+  })
 
-  events.on("error", (message, cause) => {
-    const error = new Error(message || "Something went wrong");
-    error.cause = cause;
+  events.on('error', (message, cause) => {
+    const error = new Error(message || 'Something went wrong')
+    error.cause = cause
 
-    throw error;
-  });
+    throw error
+  })
 
   if (consola) {
-    consola.level = logLevel;
+    consola.level = logLevel
   }
 
   const logger: Logger = {
@@ -113,85 +104,55 @@ export function createLogger({
     logLevel,
     consola,
     on(...args) {
-      return events.on(...args);
+      return events.on(...args)
     },
     emit(...args) {
-      return events.emit(...args);
+      return events.emit(...args)
     },
     async writeLogs() {
-      const files: Record<string, string[]> = {};
+      const files: Record<string, string[]> = {}
 
       cachedLogs.forEach((log) => {
-        const fileName = resolve(
-          process.cwd(),
-          ".kubb",
-          log.fileName || `kubb-${startDate}.log`,
-        );
+        const fileName = resolve(process.cwd(), '.openapi', log.fileName || `openapi-${startDate}.log`)
 
         if (!files[fileName]) {
-          files[fileName] = [];
+          files[fileName] = []
         }
 
-        files[fileName] = [
-          ...files[fileName],
-          `[${log.date.toLocaleString()}]: ${log.logs.join("\n\n")}`,
-        ];
-      });
+        files[fileName] = [...files[fileName], `[${log.date.toLocaleString()}]: ${log.logs.join('\n\n')}`]
+      })
       await Promise.all(
         Object.entries(files).map(async ([fileName, logs]) => {
-          return write(fileName, logs.join("\n"));
+          return write(fileName, logs.join('\n'))
         }),
-      );
+      )
 
-      return Object.keys(files);
+      return Object.keys(files)
     },
-  };
+  }
 
-  return logger;
+  return logger
 }
 
-const defaultColours = [
-  "black",
-  "blue",
-  "darkBlue",
-  "cyan",
-  "gray",
-  "green",
-  "darkGreen",
-  "magenta",
-  "red",
-  "darkRed",
-  "yellow",
-  "darkYellow",
-] as const;
-
-export function randomColour(text?: string, colours = defaultColours): string {
+export function randomColour(text?: string): keyof typeof colors {
   if (!text) {
-    return "white";
+    return 'white'
   }
 
-  const random = seedrandom(text);
-  const colour = colours.at(Math.floor(random() * colours.length)) || "white";
+  const defaultColours = ['black', 'red', 'green', 'yellow', 'blue', 'red', 'green', 'magenta', 'cyan', 'gray'] as const
 
-  return colour;
+  const random = seedrandom(text)
+  const colour = defaultColours.at(Math.floor(random() * defaultColours.length)) || 'white'
+
+  return colour
 }
 
-export function randomCliColour(
-  text?: string,
-  colors = defaultColours,
-): string {
-  const colours = createColors(true);
-
+export function randomCliColour(text?: string): string {
   if (!text) {
-    return colours.white(text);
+    return ''
   }
 
-  const colour = randomColour(text, colors);
-  const isDark = colour.includes("dark");
+  const colour = randomColour(text)
 
-  if (isDark) {
-    return c.bold(text);
-  }
-
-  return text;
+  return colors[colour]?.(text)
 }

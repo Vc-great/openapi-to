@@ -4,6 +4,17 @@
     "baseUrl": ".",
     "types": ["vitest/globals", "bun-types", "@openapi-to/config-ts"]
   },
-  "include": ["./package.json", "./tsup.config.ts", "./vitest.config.ts", "./eslint.config.js"],
+  "references": [
+    { "path": "./packages/cli" },
+    { "path": "./packages/core" },
+    { "path": "./packages/openapi" },
+    { "path": "./packages/config-biome" },
+    { "path": "./packages/config-ts" },
+    { "path": "./packages/config-tsup" },
+    { "path": "./packages/plugin-ts-type" },
+    { "path": "./packages/plugin-ts-request" },
+    { "path": "./packages/plugin-zod" },
+    { "path": "./packages/plugin-swr" },
+  ],
   "exclude": ["**/node_modules/**"]
 }

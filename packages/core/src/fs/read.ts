@@ -15,7 +15,7 @@ function slash(path: string, platform: 'windows' | 'mac' | 'linux' = 'linux') {
   return path.replaceAll(/\\/g, '/').replace('../', '').trimEnd()
 }
 
-export function getRelativePath(rootDir?: string | null, filePath?: string | null, platform: 'windows' | 'mac' | 'linux' = 'linux'): string {
+/*export function getRelativePath(rootDir?: string | null, filePath?: string | null, platform: 'windows' | 'mac' | 'linux' = 'linux'): string {
   if (!rootDir || !filePath) {
     throw new Error(`Root and file should be filled in when retrieving the relativePath, ${rootDir || ''} ${filePath || ''}`)
   }
@@ -31,7 +31,7 @@ export function getRelativePath(rootDir?: string | null, filePath?: string | nul
   }
 
   return `./${slashedPath.replace(basename(slashedPath), basename(slashedPath, extname(filePath)))}`
-}
+}*/
 
 const reader = switcher(
   {

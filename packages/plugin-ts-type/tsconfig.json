@@ -1,11 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": [
-    "src/**/*",
-    "./package.json",
-    "./tsup.config.ts",
-    "./vitest.config.ts"
-  ]
+  "include": ["src/**/*", "./package.json", "./tsup.config.ts", "./vitest.config.ts"]
 }

@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Ts Request Plugin Integration > 应该生成默认的服务类文件 1`] = `
+"import type { AddPetMutationRequest, AddPetMutationResponse } from "./addPet.types.ts";
+import { request } from "@/utils/request";
+
+/**
+ * @summary Add a new pet to the store
+ */
+export async function addPetService(data: AddPetMutationRequest, requestConfig?: Partial<AxiosRequestConfig<AddPetMutationRequest>>) {
+  const res = await request<AddPetMutationResponse, AxiosResponse<AddPetMutationResponse, AddPetMutationRequest>, AddPetMutationRequest>({
+    method: 'POST',
+    url: '/pet',
+    data,
+    ...requestConfig
+  });
+  return res.data;
+}
+"
+`;

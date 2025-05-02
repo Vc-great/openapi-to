@@ -1,39 +1,52 @@
-import { AST, createPlugin, OpenAPI, pluginEnum } from "@openapi-to/core";
+import { createPlugin, pluginEnum } from '@openapi-to/core'
 
-import Oas from "oas";
+import path from 'node:path'
+import { upperFirst } from 'lodash-es'
+import { Project, StructureKind } from 'ts-morph'
+import { buildImports } from './builders/buildImports.ts'
+import { buildMethodBody } from './builders/buildMethodBody.ts'
+import { buildMethodParameters } from './builders/buildMethodParameters.ts'
+import { buildQueryKey, buildQueryKeyType } from './builders/buildQueryKey.ts'
+import { jsDocTemplateFromMethod } from './templates/jsDocTemplateFromMethod.ts'
+import type { PluginConfig } from './types.ts'
 
-import { SwrGenerator } from "./SwrGenerator.ts";
+export const definePlugin = createPlugin<PluginConfig>((pluginConfig) => {
+  const project = new Project()
+  return {
+    name: pluginEnum.SWR,
+    dependencies: [pluginEnum.TsType, pluginEnum.Request],
+    hooks: {
+      buildStart: async (ctx) => {
+        // 可注入日志、校验 pluginConfig
+        // ctx.logger.info('Request 插件启动', pluginConfig)
+      },
+      operation: async (operation, ctx) => {
+        const hookName = `use${upperFirst(operation.accessor.operationName)}`
+        const folderName = operation.accessor.getFirstTagName ?? ''
 
-import type { PluginConfig } from "./types.ts";
+        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, folderName, `${hookName}.ts`)
+        const operationSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
 
-export const definePlugin = createPlugin<PluginConfig>(
-  (pluginConfig) =>
-    ({ openapiDocument, openapiToSingleConfig }) => {
-      const ast = new AST();
-      const oas = new Oas({ ...openapiDocument });
+        operationSourceFile.addStatements(buildImports(filePath, operation, pluginConfig))
 
-      return {
-        name: pluginEnum.SWR,
-        buildStart(context) {
-          const openapi = new OpenAPI({}, oas);
-          const requestGenerator = new SwrGenerator({
-            oas,
-            ast,
-            openapi,
-            pluginConfig,
-            openapiToSingleConfig,
-          });
-          requestGenerator.build(context);
-        },
-        writeFile() {
-          return ast.sourceFile.map((item) => {
-            return {
-              filePath: item.getFilePath(),
-              fileText: item.getFullText(),
-            };
-          });
-        },
-        buildEnd() {},
-      };
+        //key
+        operationSourceFile.addStatements([buildQueryKey(operation), buildQueryKeyType(operation)])
+
+        operationSourceFile.addFunction({
+          kind: StructureKind.Function,
+          isAsync: true,
+          name: hookName,
+          parameters: buildMethodParameters(operation, pluginConfig),
+          returnType: undefined,
+          isExported: true,
+          docs: jsDocTemplateFromMethod(operation),
+          statements: buildMethodBody(operation, pluginConfig),
+        })
+
+        ctx.setSourceFiles([pluginEnum.SWR, operation.accessor.operationName], operationSourceFile)
+      },
+      tagEnd: async (tagData, ctx) => {},
+      buildEnd() {},
     },
-);
+  }
+})

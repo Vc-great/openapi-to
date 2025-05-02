@@ -1,23 +1,23 @@
-import _ from "lodash";
+import { camelCase } from 'lodash-es'
 export class URLPath {
-  path: string;
+  path: string
 
   constructor(path: string) {
-    this.path = path;
+    this.path = path
 
-    return this;
+    return this
   }
 
   get isURL(): boolean {
     try {
-      const url = new URL(this.path);
+      const url = new URL(this.path)
       if (url?.href) {
-        return true;
+        return true
       }
     } catch (error) {
-      return false;
+      return false
     }
-    return false;
+    return false
   }
 
   /**
@@ -27,13 +27,10 @@ export class URLPath {
    * @example /account/userID => `/account/${userId}`
    */
   get requestPath(): string {
-    const str = this.path.replace(
-      /{([\w-]+)}/g,
-      (matchData, params: string) => {
-        return `\${${_.camelCase(params)}}`;
-      },
-    );
-    return `\`${str}\``;
+    const str = this.path.replace(/{([\w-]+)}/g, (matchData, params: string) => {
+      return `\${${camelCase(params)}}`
+    })
+    return str.includes('$') ? `\`${str}\`` : `'${str}'`
   }
 
   /**
@@ -42,8 +39,8 @@ export class URLPath {
    */
   get toURLPath(): string {
     return this.path.replace(/{([\w-]+)}/g, (matchData, params: string) => {
-      return `:${_.camelCase(params)}`;
-    });
+      return `:${camelCase(params)}`
+    })
     // return this.path.replaceAll("{", ":").replaceAll("}", "");
   }
 }

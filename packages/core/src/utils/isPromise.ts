@@ -1,4 +1,4 @@
-import type { PossiblePromise } from '../types.ts'
+export type PossiblePromise<T> = Promise<T> | T
 
 export function isPromise<T>(result: PossiblePromise<T>): result is Promise<T> {
   return typeof (result as Promise<unknown>)?.then === 'function'

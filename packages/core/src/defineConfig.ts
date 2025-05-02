@@ -1,4 +1,4 @@
-import type { OpenapiToConfig } from './types.ts'
+import type { OpenapiToConfig } from './types'
 
 /**
  * Type helper to make it easier to use openapi.config.js

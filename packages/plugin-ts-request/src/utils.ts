@@ -1,7 +1,6 @@
+import { TYPE_NAME_SPACE_SUFFIX } from '@openapi-to/plugin-ts-type/src/constants.ts'
+import { ZOD_NAME_SPACE_SUFFIX } from '@openapi-to/plugin-zod/src/constants.ts'
 import _ from 'lodash'
-
-import { TYPE_NAME_SPACE_SUFFIX, TYPE_SUFFIX } from '@openapi-to/plugin-ts-type/src/constants.ts'
-import { ZOD_NAME_SPACE_SUFFIX, ZOD_SUFFIX } from '@openapi-to/plugin-zod/src/constants.ts'
 import { REQUEST_SUFFIX } from './constants.ts'
 
 export function formatRefName(ref: string): string {

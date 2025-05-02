@@ -1,7 +1,6 @@
-import type { AST, OpenAPI, OpenapiToSingleConfig } from '@openapi-to/core'
-import type Oas from 'oas'
+import type { InterfaceDeclarationStructure, StatementStructures, TypeAliasDeclarationStructure } from 'ts-morph'
 
-export enum RequestTypeEnum {
+export enum RequestClientEnum {
   AXIOS = 'axios',
   COMMON = 'common',
 }
@@ -9,11 +8,6 @@ export enum RequestTypeEnum {
 export type RequestClient = 'axios' | 'common'
 
 export type PluginConfig = {
-  createZodDecorator?: boolean
-  compare?: boolean
-  zodDecoratorImportDeclaration?: {
-    moduleSpecifier: string
-  }
   requestImportDeclaration?: {
     moduleSpecifier: string
   }
@@ -22,12 +16,10 @@ export type PluginConfig = {
     moduleSpecifier: string
   }
   requestClient?: RequestClient
+  parser?: 'zod'
 }
 
-export type Config = {
-  oas: Oas
-  openapi: OpenAPI
-  ast: AST
-  pluginConfig: PluginConfig | undefined
-  openapiToSingleConfig: OpenapiToSingleConfig
+export type OperationTypeOfTag = {
+  namedImports: string[]
+  moduleSpecifier: string
 }
