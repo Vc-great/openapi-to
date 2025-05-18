@@ -1,5 +1,11 @@
 # @openapi-to/config-tsup
 
+## 3.0.0-alpha.3
+
+### Major Changes
+
+- refactor
+
 ## 3.0.0-alpha.2
 
 ### Major Changes

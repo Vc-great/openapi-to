@@ -1,5 +1,21 @@
 # openapi-to
 
+## 3.0.0-alpha.3
+
+### Major Changes
+
+- refactor
+
+### Patch Changes
+
+- Updated dependencies
+  - @openapi-to/cli@3.0.0-alpha.3
+  - @openapi-to/core@3.0.0-alpha.3
+  - @openapi-to/plugin-swr@3.0.0-alpha.3
+  - @openapi-to/plugin-ts-request@3.0.0-alpha.3
+  - @openapi-to/plugin-ts-type@3.0.0-alpha.3
+  - @openapi-to/plugin-zod@3.0.0-alpha.3
+
 ## 3.0.0-alpha.2
 
 ### Major Changes

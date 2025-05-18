@@ -1,5 +1,9 @@
 [![codecov](https://codecov.io/github/Vc-great/openapi-to/branch/V2/graph/badge.svg?token=5UB04YYCEB)](https://codecov.io/github/Vc-great/openapi-to)
 
+The current version is not compatible with V2.[V2 document](https://github.com/Vc-great/openapi-to/tree/v2)
+
+
+
 # At Glance
 openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specification into various client libraries, including:
 + [x] ts request

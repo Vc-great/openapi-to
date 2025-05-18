@@ -1,5 +1,16 @@
 # @openapi-to/plugin-ts-type
 
+## 3.0.0-alpha.3
+
+### Major Changes
+
+- refactor
+
+### Patch Changes
+
+- Updated dependencies
+  - @openapi-to/core@3.0.0-alpha.3
+
 ## 3.0.0-alpha.2
 
 ### Major Changes
