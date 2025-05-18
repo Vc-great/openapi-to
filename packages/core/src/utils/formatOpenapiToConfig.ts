@@ -1,6 +1,6 @@
 import { folderName } from '../folderName.ts'
 
-import type { OpenapiToConfig, OpenapiToConfigServer, OpenapiToSingleConfig } from '../types'
+import type { OpenapiToConfig, OpenapiToConfigServer, OpenapiToSingleConfig } from '../types/index.ts'
 
 /**
  * openapiToConfig to openapiToSingleConfig
