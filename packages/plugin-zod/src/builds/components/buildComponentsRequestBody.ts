@@ -4,6 +4,7 @@ import { requestBodyTemplate } from '@/templates/requestBodyTemplate.ts'
 import { getlowerFirstRefAlias } from '@/utils/getlowerFirstRefAlias.ts'
 import type { ReferenceObject, RequestBodyObject } from '@openapi-to/core'
 import { head, lowerFirst, values } from 'lodash-es'
+import type { VariableStatementStructure } from 'ts-morph'
 
 export function buildComponentsRequestBody(requestName: string, requestBody: ReferenceObject | RequestBodyObject): VariableStatementStructure | undefined {
   const name = `${lowerFirst(requestName)}Schema`

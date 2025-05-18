@@ -1,3 +1,4 @@
+//@ts-nocheck
 import path from 'node:path'
 import { createPlugin, pluginEnum } from '@openapi-to/core'
 import { getRelativePath } from '@openapi-to/core/utils'

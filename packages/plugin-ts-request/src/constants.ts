@@ -1,4 +1,1 @@
-export const REQUEST_SUFFIX = "service";
-
-
-export
+export const REQUEST_SUFFIX = 'service'

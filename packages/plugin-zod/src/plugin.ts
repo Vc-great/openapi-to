@@ -124,7 +124,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
           const requestBodySourceFile = project.createSourceFile(filePath, '', {
             overwrite: true,
           })
-          const statements: SchemaDeclarationStructure | undefined = buildComponentsRequestBody(formatterName, requestObject)
+          const statements = buildComponentsRequestBody(formatterName, requestObject)
           if (!statements) {
             return
           }

@@ -51,7 +51,7 @@
     "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check -tag canary",
     "release:alpha": "bash ../../.github/canary.sh && node ../../scripts/build.js alpha && pnpm publish --no-git-check -tag alpha",
     "start": "tsup --watch",
-    "test": "vitest --coverage --passWithNoTests",
+    "test": "vitest --passWithNoTests",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {

@@ -176,7 +176,7 @@ describe('definePlugin', () => {
       // 验证组件文件夹路径是否正确设置
       await plugin.hooks.buildEnd(mockCtx)
       const tsMorph = await import('ts-morph')
-      expect(tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'types', 'enum.model.ts'), '', { overwrite: true })
+      expect(new tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'types', 'enum.model.ts'), '', { overwrite: true })
     })
   })
 
@@ -210,7 +210,7 @@ describe('definePlugin', () => {
 
       // 验证文件创建
       const tsMorph = await import('ts-morph')
-      expect(tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'users', 'getUsers.types.ts'), '', { overwrite: true })
+      expect(new tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'users', 'getUsers.types.ts'), '', { overwrite: true })
 
       // 验证设置 TS 类型
       expect(mockOperation.accessor.setOperationTSType).toHaveBeenCalled()
@@ -249,7 +249,7 @@ describe('definePlugin', () => {
 
       // 验证文件创建
       const tsMorph = await import('ts-morph')
-      expect(tsMorph.Project().createSourceFile).toHaveBeenCalledTimes(2)
+      expect(new tsMorph.Project().createSourceFile).toHaveBeenCalledTimes(2)
 
       // 验证 sourceFile 设置
       expect(mockCtx.setSourceFiles).toHaveBeenCalledWith([pluginEnum.TsType, 'componentsSchemas', 'User'], expect.anything())
@@ -352,7 +352,7 @@ describe('definePlugin', () => {
 
       // 验证创建了枚举源文件
       const tsMorph = await import('ts-morph')
-      expect(tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'types', 'enum.model.ts'), '', { overwrite: true })
+      expect(new tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'types', 'enum.model.ts'), '', { overwrite: true })
 
       // 验证 sourceFile 设置
       expect(mockCtx.setSourceFiles).toHaveBeenCalledWith([pluginEnum.TsType, 'enum.model'], expect.anything())

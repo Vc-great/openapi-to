@@ -54,6 +54,6 @@ describe('buildQueryParamsSchemas', () => {
     expect(result).toBeDefined()
 
     // 注意函数使用 upperFirst 而不是 camelCase
-    expect(result?.declarations[0].name).toEqual('listUsersQueryParamsSchema')
+    expect(result?.declarations[0]?.name).toEqual('listUsersQueryParamsSchema')
   })
 })

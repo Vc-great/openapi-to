@@ -63,7 +63,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
         const operationSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
 
-        const imports = collectRefsFromOperation(operation).map((ref) => {
+        const imports = collectRefsFromOperation(operation).flatMap((ref) => {
           return buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)))
         })
         operationSourceFile.addStatements(imports)
@@ -110,7 +110,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
           const statements: SchemaDeclarationStructure[] = buildSchemas(formatterSchemaName, schema)
           const refs = collectRefsFromSchema(schema)
 
-          const imports = refs.map((ref) => {
+          const imports = refs.flatMap((ref) => {
             return buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)))
           })
 
