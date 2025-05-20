@@ -11,28 +11,31 @@ import { formatterQueryKeyName, formatterQueryKeyTypeName } from '../utils/forma
  */
 export function buildMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig): string {
   if (operation.accessor.queryParameters.some((x) => x.name === pluginConfig?.infinite?.pageNumParam)) {
-    return infiniteMethodBody(operation)
+    return infiniteMethodBody(operation, pluginConfig)
   }
 
   if (operation.method === OpenAPIV3.HttpMethods.GET) {
-    return queryMethodBody(operation)
+    return queryMethodBody(operation, pluginConfig)
   }
 
-  return mutationMethodBody(operation)
+  return mutationMethodBody(operation, pluginConfig)
 }
 
 /**
 
  * @param operation
+ * @param pluginConfig
  */
-function infiniteMethodBody(operation: OperationWrapper) {
+function infiniteMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
   return `const { query: queryOptions, shouldFetch = true } = options ?? {}
   const queryKey = ${formatterQueryKeyName(operation)}(${operation.accessor.hasQueryParameters ? 'params' : ''})
 
-  return useSWRInfinite<${operation.accessor.operationTSType?.responseSuccess}, ${operation.accessor.operationTSType?.responseError}, ${formatterQueryKeyTypeName(operation)}>(
-    shouldFetch ? queryKey : null,
+  return useSWRInfinite<
+${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data'],
+${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, ${formatterQueryKeyTypeName(operation)}>(
+    shouldFetch ? queryKey : ()=>null,
     {
-      fetcher: (dynamicParams: ${operation.accessor.operationTSType?.queryParams}) => {
+      fetcher: async (dynamicParams: ${operation.accessor.operationTSType?.queryParams}) => {
         return ${operation.accessor.operationRequest?.requestName}(dynamicParams)
       },
       ...queryOptions
@@ -43,12 +46,13 @@ function infiniteMethodBody(operation: OperationWrapper) {
 /**
  * 构建查询方法体
  * @param operation - 操作包装器
+ * @param pluginConfig
  * @returns 生成的查询方法体字符串
  */
-function queryMethodBody(operation: OperationWrapper) {
-  const pathParameters = operation.method === OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name).join(',') : ''
+function queryMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
+  const pathParameters = operation.method === OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name) : ''
 
-  const params = [pathParameters, operation.accessor.hasQueryParameters ? 'params' : '', operation.accessor.hasRequestBody ? ', data' : '']
+  const params = [...pathParameters, operation.accessor.hasQueryParameters ? 'params' : '', operation.accessor.hasRequestBody ? 'data' : '']
     .filter(Boolean)
     .join(',')
 
@@ -56,34 +60,34 @@ function queryMethodBody(operation: OperationWrapper) {
     const { query: queryOptions, shouldFetch = true } = options ?? {}
     const queryKey = ${formatterQueryKeyName(operation)}(${[pathParameters, operation.accessor.hasQueryParameters ? 'params' : ''].filter(Boolean).join(',')})
 
-    return useSWR<${operation.accessor.operationTSType?.responseSuccess}, ${operation.accessor.operationTSType?.responseError}, ${formatterQueryKeyTypeName(operation)} | null>(shouldFetch ? queryKey : null, {
+    return useSWR<
+${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data'],
+ ${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, ${formatterQueryKeyTypeName(operation)} | null>(shouldFetch ? queryKey : null, {
         ...queryOptions,
-        fetcher: async (${operation.method !== OpenAPIV3.HttpMethods.GET ? '' : '_url, { arg: data }'}) => {
+        fetcher: async (${operation.method !== OpenAPIV3.HttpMethods.GET ? '' : `_url${operation.accessor.hasRequestBody ? ', { arg: data }' : ''}`}) => {
             return ${operation.accessor.operationRequest?.requestName}(${params});
         }
     })`
 }
 
-function mutationMethodBody(operation: OperationWrapper) {
-  const pathParameters = operation.method !== OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.join(',') : ''
+function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
+  const pathParameters = operation.method !== OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name) : ''
 
-  const params = [pathParameters, operation.accessor.hasQueryParameters ? 'params' : '', operation.accessor.hasRequestBody ? ', data' : '']
-    .filter(Boolean)
-    .join(',')
+  const params = [...pathParameters, operation.accessor.hasRequestBody ? 'data' : ''].filter(Boolean).join(',')
 
   return `
     const { mutation: mutationOptions, shouldFetch = true } = options ?? {}
     const mutationKey = ${formatterQueryKeyName(operation)}()
 
     return useSWRMutation<
-${operation.accessor.operationTSType?.responseSuccess}, 
-${operation.accessor.operationTSType?.responseError}, 
+${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data'], 
+${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, 
 ${formatterQueryKeyTypeName(operation)} | null,
 ${operation.accessor.operationTSType?.body}
 >(
   shouldFetch ? mutationKey : null,
   async (_url, { arg: data }) => {
-    return ${operation.accessor.operationRequest?.requestName}(data)
+    return ${operation.accessor.operationRequest?.requestName}(${params})
   },
   mutationOptions
 )`

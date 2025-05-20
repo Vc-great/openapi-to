@@ -1,5 +1,8 @@
 import path from 'node:path'
 import { createPlugin, pluginEnum } from '@openapi-to/core'
+import { formatterModuleSpecifier } from '@openapi-to/core/utils'
+import { kebabCase } from 'lodash-es'
+
 import { getRelativePath } from '@openapi-to/core/utils'
 import { type FunctionDeclarationStructure, type ImportDeclarationStructure, Project, StructureKind } from 'ts-morph'
 import { buildImports } from './builds/buildImports.ts'
@@ -33,7 +36,7 @@ export const definePlugin = createPlugin<PluginConfig>((pluginConfig) => {
           statements: buildMethodBody(operation, pluginConfig),
         }
         const serviceFolderName = operation.accessor.getFirstTagName ?? ''
-        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, serviceFolderName, `${operation.accessor.operationName}.service.ts`)
+        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, serviceFolderName, `${kebabCase(operation.accessor.operationName)}.service.ts`)
 
         operation.accessor.setOperationRequest({
           filePath,
@@ -51,14 +54,17 @@ export const definePlugin = createPlugin<PluginConfig>((pluginConfig) => {
                 kind: StructureKind.ImportDeclaration,
                 isTypeOnly: true,
                 namedImports: [operationType?.pathParams, operationType?.queryParams, operationType?.body, operationType?.responseSuccess].filter(Boolean),
-                moduleSpecifier: getRelativePath(filePath, operationType?.filePath || ''),
+                moduleSpecifier: formatterModuleSpecifier(getRelativePath(filePath, operationType?.filePath || ''), pluginConfig?.importWithExtension),
               },
               ...((pluginConfig?.parser === 'zod'
                 ? [
                     {
                       kind: StructureKind.ImportDeclaration,
                       namedImports: [operationZodSchema?.body, operationZodSchema?.responseSuccess].filter(Boolean),
-                      moduleSpecifier: getRelativePath(filePath, operationZodSchema?.filePath || ''),
+                      moduleSpecifier: formatterModuleSpecifier(
+                        getRelativePath(filePath, operationZodSchema?.filePath || ''),
+                        pluginConfig?.importWithExtension,
+                      ),
                     },
                   ]
                 : []) as Array<ImportDeclarationStructure>),

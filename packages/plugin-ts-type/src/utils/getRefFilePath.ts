@@ -1,8 +1,9 @@
 import { getRefAlias } from '@openapi-to/core/utils'
+import { kebabCase } from 'lodash-es'
 
 export function getRefFilePath(ref: string, dir: string) {
   const str = ref.split('/')[2]
-  const fileName = getRefAlias(ref)
+  const fileName = kebabCase(getRefAlias(ref))
 
   switch (str) {
     case 'parameters':

@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Ts Request Plugin Integration > 应该生成默认的服务类文件 1`] = `
-"import type { AddPetMutationRequest, AddPetMutationResponse } from "./addPet.types.ts";
+"import type { AddPetMutationRequest, AddPetMutationResponse } from "./add-pet.types.ts";
 import { request } from "@/utils/request";
 
 /**

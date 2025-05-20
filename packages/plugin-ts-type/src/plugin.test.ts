@@ -9,7 +9,6 @@ vi.mock('ts-morph', async () => {
     addStatements: vi.fn(),
     addModule: vi.fn(),
   }
-
   const mockProject = {
     createSourceFile: vi.fn(() => mockSourceFile),
   }
@@ -125,6 +124,7 @@ vi.mock('@/utils/getUpperFirstRefAlias.ts', () => ({
 
 vi.mock('@openapi-to/core/utils', () => ({
   getRelativePath: vi.fn(() => '../relative/path'),
+  formatterModuleSpecifier: vi.fn((specifier, withExt) => specifier + (withExt ? '.ts' : '')),
 }))
 
 describe('definePlugin', () => {
@@ -210,7 +210,7 @@ describe('definePlugin', () => {
 
       // 验证文件创建
       const tsMorph = await import('ts-morph')
-      expect(new tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'users', 'getUsers.types.ts'), '', { overwrite: true })
+      expect(new tsMorph.Project().createSourceFile).toHaveBeenCalledWith(path.join('/test/output', 'users', 'get-users.types.ts'), '', { overwrite: true })
 
       // 验证设置 TS 类型
       expect(mockOperation.accessor.setOperationTSType).toHaveBeenCalled()

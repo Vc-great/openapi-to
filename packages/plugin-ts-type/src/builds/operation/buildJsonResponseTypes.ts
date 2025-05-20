@@ -2,10 +2,9 @@ import { buildDefaultSuccessType, buildResponseErrorType, operationResponseTempl
 import { getResponseSuccessName } from '@/templates/operationTypeNameTemplate.ts'
 import type { JsonResponseObject } from '@/types.ts'
 import type { OperationWrapper } from '@openapi-to/core'
-import { camelCase } from 'lodash-es'
+
 import { OpenAPIV3 } from 'openapi-types'
 import type { StatementStructures } from 'ts-morph'
-import HttpMethods = OpenAPIV3.HttpMethods
 
 export function buildJsonResponseTypes(operation: OperationWrapper): StatementStructures[] {
   const responseName = getResponseSuccessName(operation)
@@ -23,9 +22,7 @@ export function buildJsonResponseTypes(operation: OperationWrapper): StatementSt
 
   const responseTypes = responseObjects.map((res) => operationResponseTemplate(res, responseName))
 
-  if (errorCodes.length > 0) {
-    responseTypes.push(buildResponseErrorType(errorCodes, operation.accessor.operationName, responseObjects))
-  }
+  responseTypes.push(buildResponseErrorType(errorCodes, operation.accessor.operationName, responseObjects))
 
   if (successCodes.length === 0 || responseObjects.length === 0) {
     responseTypes.push(buildDefaultSuccessType(responseName))

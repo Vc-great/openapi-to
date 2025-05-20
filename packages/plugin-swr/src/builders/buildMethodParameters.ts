@@ -38,7 +38,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
   const infiniteOptions: OptionalKind<ParameterDeclarationStructure> = {
     name: 'options?',
     type: `{
-      query?: Parameters<typeof useSWRInfinite<${operation.accessor.operationTSType?.responseSuccess},${operation.accessor.operationTSType?.responseError}, ${formatterQueryKeyTypeName(operation)} | null, any>>[2]
+      query?: Parameters<typeof useSWRInfinite<${operation.accessor.operationTSType?.responseSuccess},${operation.accessor.operationTSType?.responseError}, ${formatterQueryKeyTypeName(operation)} | null>>[2]
       shouldFetch?: boolean
     }`,
   }

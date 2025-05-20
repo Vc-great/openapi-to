@@ -3,7 +3,7 @@ import { buildSchemaImports } from '@/builds/buildSchemaImports.ts'
 import { buildComponentParameters } from '@/builds/components/buildComponentParameters.ts'
 import { buildComponentsRequestBody } from '@/builds/components/buildComponentsRequestBody.ts'
 import { buildComponentsResponse } from '@/builds/components/buildComponentsResponse.ts'
-import type { SchemaDeclarationStructure } from '@/builds/components/buildSchemas.ts'
+
 import { buildSchemas } from '@/builds/components/buildSchemas.ts'
 
 import { collectRefsFromComponentParameters, collectRefsFromComponentRequestBody, collectRefsFromComponentResponse } from '@/collect/collectRefsFromDocument.ts'
@@ -15,8 +15,9 @@ import { getlowerFirstRefAlias } from '@/utils/getlowerFirstRefAlias.ts'
 
 import { getRefFilePath } from '@/utils/getRefFilePath.ts'
 import { createPlugin, pluginEnum } from '@openapi-to/core'
+import { formatterModuleSpecifier } from '@openapi-to/core/utils'
 import { getRelativePath } from '@openapi-to/core/utils'
-import { forEach, lowerFirst, upperFirst } from 'lodash-es'
+import { forEach, kebabCase, upperFirst } from 'lodash-es'
 
 import path from 'node:path'
 import { Project } from 'ts-morph'
@@ -40,7 +41,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         operationFileNameOfTag.clear()
       },
       operation: async (operation, ctx) => {
-        const fileName = `${operation.accessor.operationName}.schema.ts`
+        const fileName = `${kebabCase(operation.accessor.operationName)}.schema.ts`
         const filePath = path.join(ctx.openapiToSingleConfig.output.dir, operation.tagName, fileName)
         operationFileNameOfTag.add(fileName)
 
@@ -55,7 +56,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         const operationSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
 
         const imports = collectRefsFromOperation(operation).flatMap((ref) => {
-          return buildSchemaImports([getlowerFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentOutputDir)))
+          return buildSchemaImports(
+            [getlowerFirstRefAlias(ref)],
+            formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentOutputDir)), pluginConfig?.importWithExtension),
+          )
         })
 
         operationSourceFile.addStatements([...imports, importZodTemplate, ...operationStatements])
@@ -68,7 +72,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           const formatterSchemaName = ctx.openapiHelper.formatterName(schemaName)
 
-          const fileName = `${lowerFirst(formatterSchemaName)}.schema.ts`
+          const fileName = `${kebabCase(formatterSchemaName)}.schema.ts`
 
           const filePath = path.join(componentOutputDir, 'models', fileName)
 
@@ -77,7 +81,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
           const refs = collectRefsFromSchema(schema)
 
           const imports = refs.flatMap((ref) =>
-            buildSchemaImports([getlowerFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentOutputDir))),
+            buildSchemaImports(
+              [getlowerFirstRefAlias(ref)],
+              formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentOutputDir)), pluginConfig?.importWithExtension),
+            ),
           )
 
           statements && schemaSourceFile.addStatements([...imports, importZodTemplate, ...(statements ? [statements] : [])])
@@ -91,7 +98,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         forEach(parameters, (parameter, parameterName) => {
           const formatterParameterName = ctx.openapiHelper.formatterName(parameterName)
 
-          const fileName = `${lowerFirst(formatterParameterName)}.schema.ts`
+          const fileName = `${kebabCase(formatterParameterName)}.schema.ts`
 
           const filePath = path.join(componentOutputDir, 'parameters', fileName)
           const parameterSourceFile = project.createSourceFile(filePath, '', {
@@ -102,7 +109,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
             return
           }
           const imports = refs.flatMap((ref) =>
-            buildSchemaImports([getlowerFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentOutputDir))),
+            buildSchemaImports(
+              [getlowerFirstRefAlias(ref)],
+              formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentOutputDir)), pluginConfig?.importWithExtension),
+            ),
           )
 
           parameterSourceFile.addStatements([...imports, importZodTemplate, statements])
@@ -117,9 +127,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           const refs = collectRefsFromComponentRequestBody(requestObject)
 
-          const fileName = `${lowerFirst(formatterName)}.schema.ts`
+          const fileName = `${kebabCase(formatterName)}.schema.ts`
 
-          //
           const filePath = path.join(componentOutputDir, 'requestBodies', fileName)
           const requestBodySourceFile = project.createSourceFile(filePath, '', {
             overwrite: true,
@@ -129,7 +138,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
             return
           }
           const imports = refs.flatMap((ref) =>
-            buildSchemaImports([getlowerFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentOutputDir))),
+            buildSchemaImports(
+              [getlowerFirstRefAlias(ref)],
+              formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentOutputDir)), pluginConfig?.importWithExtension),
+            ),
           )
 
           requestBodySourceFile.addStatements([...imports, importZodTemplate, statements])
@@ -147,7 +159,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           const refs = collectRefsFromComponentResponse(response)
 
-          const fileName = `${lowerFirst(formatterResponse)}.schema.ts`
+          const fileName = `${kebabCase(formatterResponse)}.schema.ts`
 
           const filePath = path.join(componentOutputDir, 'responses', fileName)
 
@@ -159,7 +171,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
             return
           }
           const imports = refs.flatMap((ref) =>
-            buildSchemaImports([getlowerFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentOutputDir))),
+            buildSchemaImports(
+              [getlowerFirstRefAlias(ref)],
+              formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentOutputDir)), pluginConfig?.importWithExtension),
+            ),
           )
 
           responseSourceFile.addStatements([...imports, importZodTemplate, statements])

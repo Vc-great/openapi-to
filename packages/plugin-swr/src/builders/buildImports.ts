@@ -1,4 +1,5 @@
 import type { OperationWrapper } from '@openapi-to/core'
+import { formatterModuleSpecifier } from '@openapi-to/core/utils'
 import { getRelativePath } from '@openapi-to/core/utils'
 import { OpenAPIV3 } from 'openapi-types'
 import { type ImportDeclarationStructure, StructureKind } from 'ts-morph'
@@ -50,12 +51,24 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
           operationType?.responseSuccess,
           operationType?.responseError,
         ].filter(Boolean),
-        moduleSpecifier: getRelativePath(filePath, operationType?.filePath || ''),
+        moduleSpecifier: formatterModuleSpecifier(getRelativePath(filePath, operationType?.filePath || ''), pluginConfig?.importWithExtension),
       },
       {
         kind: StructureKind.ImportDeclaration,
         namedImports: [request?.requestName || ''],
-        moduleSpecifier: getRelativePath(filePath, request?.filePath || ''),
+        moduleSpecifier: formatterModuleSpecifier(getRelativePath(filePath, request?.filePath || ''), pluginConfig?.importWithExtension),
+      },
+      {
+        kind: StructureKind.ImportDeclaration,
+        namedImports: pluginConfig?.responseConfigTypeImportDeclaration?.namedImports,
+        isTypeOnly: true,
+        moduleSpecifier: pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier || '',
+      },
+      {
+        kind: StructureKind.ImportDeclaration,
+        namedImports: pluginConfig?.responseErrorTypeImportDeclaration?.namedImports,
+        isTypeOnly: true,
+        moduleSpecifier: pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier || '',
       },
     ],
   ] as Array<ImportDeclarationStructure>

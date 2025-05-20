@@ -16,6 +16,7 @@ import { collectRefsFromComponentParameters, collectRefsFromComponentRequestBody
 import { collectRefsFromOperation } from '@/collect/collectRefsFromOperation.ts'
 import { collectRefsFromSchema } from '@/collect/collectRefsFromSchemas.ts'
 import { getOperationTSTypeName } from '@/templates/operationTypeNameTemplate.ts'
+import { formatterModuleSpecifier } from '@openapi-to/core/utils'
 
 import path from 'node:path'
 import { enumRegistry } from '@/EnumRegistry.ts'
@@ -23,8 +24,8 @@ import { getRefFilePath } from '@/utils/getRefFilePath.ts'
 import { getUpperFirstRefAlias } from '@/utils/getUpperFirstRefAlias.ts'
 import { createPlugin, pluginEnum } from '@openapi-to/core'
 import { getRelativePath } from '@openapi-to/core/utils'
-import { forEach, lowerFirst, upperFirst } from 'lodash-es'
-import { Project, StructureKind } from 'ts-morph'
+import { forEach, kebabCase, upperFirst } from 'lodash-es'
+import { Project } from 'ts-morph'
 import { buildOperationTypes } from './builds/buildOperationTypes.ts'
 import type { PluginConfig } from './types.ts'
 
@@ -43,7 +44,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         operationFileNameOfTag.clear()
       },
       operation: async (operation, ctx) => {
-        const fileName = `${operation.accessor.operationName}.types.ts`
+        const fileName = `${kebabCase(operation.accessor.operationName)}.types.ts`
         const filePath = path.join(ctx.openapiToSingleConfig.output.dir, operation.tagName, fileName)
         //`${ctx.openapiToSingleConfig.output.dir}${pluginConfig?.output.dir}/${lowerFirst(operation.formattedTagName)}/${fileName}.ts`
         operationFileNameOfTag.add(fileName)
@@ -55,7 +56,6 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         const operationStatements = buildOperationTypes(operation)
 
         //保存类型名
-        //
         operation.accessor.setOperationTSType({
           ...getOperationTSTypeName(operation),
           filePath,
@@ -64,7 +64,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         const operationSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
 
         const imports = collectRefsFromOperation(operation).flatMap((ref) => {
-          return buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)))
+          return buildTypeImports(
+            [getUpperFirstRefAlias(ref)],
+            formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)), pluginConfig?.importWithExtension),
+          )
         })
         operationSourceFile.addStatements(imports)
 
@@ -96,7 +99,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           const formatterSchemaName = ctx.openapiHelper.formatterName(schemaName)
 
-          const fileName = `${lowerFirst(formatterSchemaName)}.model.ts`
+          const fileName = `${kebabCase(formatterSchemaName)}.model.ts`
 
           const filePath = path.join(ctx.openapiToSingleConfig.output.dir, 'types', 'models', fileName)
 
@@ -111,7 +114,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
           const refs = collectRefsFromSchema(schema)
 
           const imports = refs.flatMap((ref) => {
-            return buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)))
+            return buildTypeImports(
+              [getUpperFirstRefAlias(ref)],
+              formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)), pluginConfig?.importWithExtension),
+            )
           })
 
           schemaSourceFile.addStatements(imports)
@@ -130,7 +136,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         forEach(parameters, (parameter, parameterName) => {
           const formatterParameterName = ctx.openapiHelper.formatterName(parameterName)
 
-          const fileName = `${lowerFirst(formatterParameterName)}.model.ts`
+          const fileName = `${kebabCase(formatterParameterName)}.model.ts`
 
           const filePath = path.join(componentFolderPath, 'parameters', fileName)
           const parameterSourceFile = project.createSourceFile(filePath, '', {
@@ -139,7 +145,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
           const statements: SchemaDeclarationStructure | undefined = buildComponentParameters(parameter, formatterParameterName)
           if (statements) {
             const imports = refs.flatMap((ref) =>
-              buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath))),
+              buildTypeImports(
+                [getUpperFirstRefAlias(ref)],
+                formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)), pluginConfig?.importWithExtension),
+              ),
             )
 
             parameterSourceFile.addStatements(imports)
@@ -158,7 +167,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           const refs = collectRefsFromComponentRequestBody(requestObject)
 
-          const fileName = `${lowerFirst(formatterName)}.model.ts`
+          const fileName = `${kebabCase(formatterName)}.model.ts`
 
           //
           const filePath = path.join(componentFolderPath, 'requestBodies', fileName)
@@ -168,7 +177,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
           const statements: SchemaDeclarationStructure | undefined = buildComponentsRequestBody(formatterName, requestObject)
           if (statements) {
             const imports = refs.flatMap((ref) =>
-              buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath))),
+              buildTypeImports(
+                [getUpperFirstRefAlias(ref)],
+                formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)), pluginConfig?.importWithExtension),
+              ),
             )
 
             requestBodySourceFile.addStatements(imports)
@@ -191,7 +203,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           const refs = collectRefsFromComponentResponse(response)
 
-          const fileName = `${lowerFirst(formatterResponse)}.model.ts`
+          const fileName = `${kebabCase(formatterResponse)}.model.ts`
 
           const filePath = path.join(componentFolderPath, 'responses', fileName)
 
@@ -201,7 +213,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 
           if (statements) {
             const imports = refs.flatMap((ref) =>
-              buildTypeImports([getUpperFirstRefAlias(ref)], getRelativePath(filePath, getRefFilePath(ref, componentFolderPath))),
+              buildTypeImports(
+                [getUpperFirstRefAlias(ref)],
+                formatterModuleSpecifier(getRelativePath(filePath, getRefFilePath(ref, componentFolderPath)), pluginConfig?.importWithExtension),
+              ),
             )
 
             responseSourceFile.addStatements(imports)
@@ -212,7 +227,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
       },
       buildEnd: async (ctx) => {
         const enumVariableStatements = buildEnum(enumRegistry.getAll())
-        const filePath = path.join(componentFolderPath, 'enum.model.ts')
+        const filePath = path.join(componentFolderPath, formatterModuleSpecifier('enum.model.ts', pluginConfig?.importWithExtension))
         const enumSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
         enumSourceFile.addStatements(enumVariableStatements)
         ctx.setSourceFiles([pluginEnum.TsType, 'enum.model'], enumSourceFile)

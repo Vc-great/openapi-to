@@ -45,10 +45,27 @@
   ],
   "paths": {
     "/pet/test": {
+      "get": {
+        "tags": ["pet"],
+        "summary": "下载文件",
+        "description": "下载文件接口",
+        "operationId": "downloadFile",
+        "responses": {
+          "200": {
+            "description": "文件下载成功",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "test",
         "requestBody": {
@@ -80,17 +97,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "put": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "testput",
         "requestBody": {
@@ -122,17 +135,13 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
       },
       "delete": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "testdelete",
         "requestBody": {
@@ -173,9 +182,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -183,9 +190,7 @@
     },
     "/pet/test/{test-id}": {
       "get": {
-        "tags": [
-          "pet"
-        ],
+        "tags": ["pet"],
         "summary": "summary",
         "operationId": "test-idget",
         "parameters": [
@@ -236,9 +241,7 @@
         },
         "security": [
           {
-            "Authorization": [
-              "global"
-            ]
+            "Authorization": ["global"]
           }
         ],
         "deprecated": false
@@ -1087,9 +1090,7 @@
           "columnType": {
             "type": "string",
             "description": "description",
-            "enum": [
-              "CHAR"
-            ]
+            "enum": ["CHAR"]
           },
           "delFlag": {
             "type": "boolean",
@@ -1178,8 +1179,7 @@
       },
       "test321": {
         "type": "object",
-        "required": [
-        ],
+        "required": [],
         "properties": {
           "id": {
             "type": "integer",
@@ -1190,9 +1190,7 @@
       },
       "testDto": {
         "type": "object",
-        "required": [
-          "formTable"
-        ],
+        "required": ["formTable"],
         "properties": {
           "test321": {
             "type": "array",

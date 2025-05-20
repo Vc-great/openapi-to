@@ -1,8 +1,6 @@
 //@ts-nocheck
 import path from 'node:path'
-import { createPlugin, pluginEnum } from '@openapi-to/core'
-import { getRelativePath } from '@openapi-to/core/utils'
-import { Project, StructureKind } from 'ts-morph'
+import { pluginEnum } from '@openapi-to/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildImports } from './builds/buildImports.ts'
 import { buildMethodBody } from './builds/buildMethodBody.ts'
@@ -48,6 +46,7 @@ vi.mock('../src/template/jsDocTemplateFromMethod.ts', () => ({
 
 vi.mock('@openapi-to/core/utils', () => ({
   getRelativePath: vi.fn(() => '../types'),
+  formatterModuleSpecifier: vi.fn((specifier, withExt) => specifier + (withExt ? '.ts' : '')),
 }))
 
 describe('definePlugin', () => {
@@ -175,13 +174,13 @@ describe('definePlugin', () => {
     await plugin.hooks.operation(mockOperation, mockContext)
     // 验证是否设置了操作请求信息
     expect(mockOperation.accessor.setOperationRequest).toHaveBeenCalledWith({
-      filePath: path.join('/output', 'testTag', 'testOperation.service.ts'),
+      filePath: path.join('/output', 'testTag', 'test-operation.service.ts'),
       requestName: 'testOperationService',
     })
 
     // 验证是否创建了源文件
     expect(mockCreateSourceFile).toHaveBeenCalled()
-    expect(mockCreateSourceFile).toHaveBeenCalledWith(path.join('/output', 'testTag', 'testOperation.service.ts'), '', { overwrite: true })
+    expect(mockCreateSourceFile).toHaveBeenCalledWith(path.join('/output', 'testTag', 'test-operation.service.ts'), '', { overwrite: true })
 
     // 验证是否调用了必要的生成函数
     expect(buildMethodParameters).toHaveBeenCalledWith(mockOperation, {})

@@ -10,26 +10,37 @@ servers:[
   }
 ],
   plugins:[
-    createTSRequest({
-      createZodDecorator: false,
-      requestType:'axios'
-    }),
-    createTSType()
+    pluginSWR(),
+    pluginZod(),
+    pluginTSType(),
+    pluginTSRequest({
+      requestImportDeclaration: {
+        moduleSpecifier: '@/utils/request',
+      },
+      requestConfigTypeImportDeclaration: {
+        namedImports: ['AxiosRequestConfig'],
+        moduleSpecifier: 'axios',
+      },
+    })
   ]
-}`;
+}`
 
 export const commonPresetMeta = `const {
-  defineConfig,
-  createTSRequest,
-  createTSType
+defineConfig, 
+pluginSWR,
+pluginTSRequest,
+pluginTSType, 
+pluginZod 
    }= require('openapi-to')
 
-module.exports = defineConfig(${config})`;
+module.exports = defineConfig(${config})`
 
 export const modulePresetMeta = `import {
-  defineConfig,
-  createTSRequest,
-  createTSType
+defineConfig,
+pluginSWR, 
+pluginTSRequest,
+pluginTSType, 
+pluginZod 
    } from'openapi-to'
 
-export default  defineConfig(${config})`;
+export default  defineConfig(${config})`

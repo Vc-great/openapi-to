@@ -8,10 +8,10 @@ import type { PluginConfig } from '../types.ts'
 import { formatterQueryKeyName, formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
 
 export function buildQueryKey(operation: OperationWrapper, pluginConfig?: PluginConfig): VariableStatementStructure {
-  const url = operation.method === OpenAPIV3.HttpMethods.GET ? new URLPath(<string>operation.accessor.operation.path).requestPath : operation.path
+  const url = operation.method === OpenAPIV3.HttpMethods.GET ? new URLPath(<string>operation.accessor.operation.path).requestPath : `'${operation.path}'`
   const queryKeyName = formatterQueryKeyName(operation)
 
-  const queryParameters = operation.accessor.hasQueryParameters ? `params:${operation.accessor.operationTSType?.queryParams}` : ''
+  const queryParameters = operation.accessor.hasQueryParameters ? `params?:${operation.accessor.operationTSType?.queryParams}` : ''
   const pathParameters = operation.accessor.parameters
     .filter((x) => x.in === 'path')
     .map((item: OpenAPIV3.ParameterObject) => {
@@ -22,7 +22,7 @@ export function buildQueryKey(operation: OperationWrapper, pluginConfig?: Plugin
 
   const parameters = [...(operation.method === OpenAPIV3.HttpMethods.GET ? pathParameters : []), queryParameters].filter(Boolean)
 
-  if (operation.accessor.queryParameters.some((x) => x.name === pluginConfig?.infinite)) {
+  if (operation.accessor.queryParameters.some((x) => x.name === pluginConfig?.infinite?.pageNumParam)) {
     return {
       kind: StructureKind.VariableStatement,
       declarationKind: VariableDeclarationKind.Const,
@@ -31,7 +31,7 @@ export function buildQueryKey(operation: OperationWrapper, pluginConfig?: Plugin
         {
           name: queryKeyName,
           type: '',
-          initializer: `(params: ${operation.accessor.operationTSType?.queryParams}) => (pageIndex: number, previousPageData) => {
+          initializer: `(params?: ${operation.accessor.operationTSType?.queryParams}) => (pageIndex: number, previousPageData:${operation.accessor.operationTSType?.responseSuccess}) => {
   if (previousPageData && !previousPageData.length) return null
 
   return {
@@ -53,7 +53,7 @@ export function buildQueryKey(operation: OperationWrapper, pluginConfig?: Plugin
       {
         name: queryKeyName,
         type: '',
-        initializer: `( ${parameters}) => [{ url:'${url}', method: '${operation.method}' }] as const`,
+        initializer: `( ${parameters}) => [{ url:${url}, method: '${operation.method}'${operation.accessor.hasQueryParameters ? ',...(params ? [params] : [])' : ''} }] as const`,
       },
     ],
     isExported: true,

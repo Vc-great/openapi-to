@@ -3,6 +3,18 @@ export interface PluginConfig {
     // 根据关键字判断是否生成 useSWRInfinite 代码
     pageNumParam?: string
   }
+  responseConfigTypeImportDeclaration?: {
+    namedImports: Array<string>
+    moduleSpecifier: string
+  }
+  responseErrorTypeImportDeclaration?: {
+    namedImports: Array<string>
+    moduleSpecifier: string
+  }
+  /**
+   * 是否在 import 路径中添加扩展名（如 .ts）
+   */
+  importWithExtension?: boolean
 }
 
 export interface Operation {
