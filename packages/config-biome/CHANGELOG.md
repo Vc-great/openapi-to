@@ -1,5 +1,11 @@
 # @openapi-to/config-biome
 
+## 3.0.0-alpha.4
+
+### Major Changes
+
+- fix bug
+
 ## 3.0.0-alpha.3
 
 ### Major Changes

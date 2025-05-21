@@ -71,7 +71,7 @@ export default defineConfig({
       requestConfigTypeImportDeclaration: {
         namedImports: ['AxiosRequestConfig'],
         moduleSpecifier: 'axios',
-      },
+      }
   ]
 })
 ```
@@ -169,6 +169,15 @@ Request Configuration Type module
   }
 ```
 
+**importWithExtension**
+
+Whether to add an extension (such as .ts) in the import path
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | true   |
+
 **Example**
 
 ```ts
@@ -182,6 +191,7 @@ pluginTSRequest({
     namedImports: ['AxiosRequestConfig'],
     moduleSpecifier: 'axios',
   },
+   importWithExtension:false
 })
 ```
 
@@ -191,11 +201,27 @@ pluginTSRequest({
 
 With the TypeScript plugin you can create [TypeScript](https://www.typescriptlang.org/) types.
 
+**importWithExtension**
 
+Whether to add an extension (such as .ts) in the import path
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | true   |
 
 
 ## pluginZod
 With the Zod plugin you can use [Zod](https://zod.dev/) to validate your schemas.
+
+**importWithExtension**
+
+Whether to add an extension (such as .ts) in the import path
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | true   |
 
 ## pluginSWR
 
@@ -216,13 +242,25 @@ Generate useSWRInfinite based on pageNumParam
 | Required | false  |
 | Default  |        |
 
+**importWithExtension**
+
+Whether to add an extension (such as .ts) in the import path
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | true   |
+
+
+
 **Example**
 
 ```ts
     pluginSWR({
       infinite: {
         pageNumParam: 'pageNum'
-      }
+      },
+      importWithExtension:false
     })
 ```
 
