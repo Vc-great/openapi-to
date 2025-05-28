@@ -1,6 +1,7 @@
 import type { OperationWrapper } from '@openapi-to/core'
 import { formatterModuleSpecifier } from '@openapi-to/core/utils'
 import { getRelativePath } from '@openapi-to/core/utils'
+import { compact, isEmpty, union } from 'lodash-es'
 import { OpenAPIV3 } from 'openapi-types'
 import { type ImportDeclarationStructure, StructureKind } from 'ts-morph'
 import type { PluginConfig } from '../types.ts'
@@ -36,6 +37,24 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
     isTypeOnly: true,
     moduleSpecifier: 'swr/mutation',
   }
+  // response 和error 的moduleSpecifier是否相等
+  const moduleSpecifierIsEqual =
+    pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier === pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier
+
+  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
+  const responseConfig = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: pluginConfig?.responseConfigTypeImportDeclaration?.namedImports,
+    isTypeOnly: true,
+    moduleSpecifier: pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier || '',
+  }
+  const hasErrorConfig = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
+  const errorConfig = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: pluginConfig?.responseErrorTypeImportDeclaration?.namedImports,
+    isTypeOnly: true,
+    moduleSpecifier: pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier || '',
+  }
 
   return [
     ...(isMutation ? [useSWRMutation, SWRMutationConfiguration] : isInfinite ? [useSWRInfinite] : [swr]),
@@ -58,18 +77,18 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
         namedImports: [request?.requestName || ''],
         moduleSpecifier: formatterModuleSpecifier(getRelativePath(filePath, request?.filePath || ''), pluginConfig?.importWithExtension),
       },
-      {
-        kind: StructureKind.ImportDeclaration,
-        namedImports: pluginConfig?.responseConfigTypeImportDeclaration?.namedImports,
-        isTypeOnly: true,
-        moduleSpecifier: pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier || '',
-      },
-      {
-        kind: StructureKind.ImportDeclaration,
-        namedImports: pluginConfig?.responseErrorTypeImportDeclaration?.namedImports,
-        isTypeOnly: true,
-        moduleSpecifier: pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier || '',
-      },
     ],
+    ...(moduleSpecifierIsEqual
+      ? [
+          {
+            kind: StructureKind.ImportDeclaration,
+            namedImports: compact(
+              union(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports, pluginConfig?.responseErrorTypeImportDeclaration?.namedImports),
+            ),
+            isTypeOnly: true,
+            moduleSpecifier: pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier || '',
+          },
+        ]
+      : [hasResponseConfig ? responseConfig : undefined, hasErrorConfig ? errorConfig : undefined]),
   ] as Array<ImportDeclarationStructure>
 }

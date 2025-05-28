@@ -1,6 +1,6 @@
 {
   "name": "@openapi-to/config-biome",
-  "version": "3.0.0-alpha.4",
+  "version": "3.0.0-alpha.5",
   "private": true,
   "type": "module",
   "exports": {

@@ -1,4 +1,5 @@
 import type { OperationWrapper } from '@openapi-to/core'
+import { isEmpty } from 'lodash-es'
 import { OpenAPIV3 } from 'openapi-types'
 import type { PluginConfig } from '../types.ts'
 import { formatterQueryKeyName, formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
@@ -27,12 +28,24 @@ export function buildMethodBody(operation: OperationWrapper, pluginConfig?: Plug
  * @param pluginConfig
  */
 function infiniteMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
+  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
+  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
+  const responseConfigType = hasResponseConfig
+    ? `${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data']`
+    : operation.accessor.operationTSType?.responseSuccess
+
+  const responseErrorType = hasResponseError
+    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
+    : operation.accessor.operationTSType?.responseError
+
   return `const { query: queryOptions, shouldFetch = true } = options ?? {}
   const queryKey = ${formatterQueryKeyName(operation)}(${operation.accessor.hasQueryParameters ? 'params' : ''})
 
   return useSWRInfinite<
-${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data'],
-${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, ${formatterQueryKeyTypeName(operation)}>(
+  ${responseConfigType},
+  ${responseErrorType}, 
+  ${formatterQueryKeyTypeName(operation)}
+>(
     shouldFetch ? queryKey : ()=>null,
     {
       fetcher: async (dynamicParams: ${operation.accessor.operationTSType?.queryParams}) => {
@@ -50,6 +63,16 @@ ${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation
  * @returns 生成的查询方法体字符串
  */
 function queryMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
+  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
+  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
+  const responseConfigType = hasResponseConfig
+    ? `${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data']`
+    : operation.accessor.operationTSType?.responseSuccess
+
+  const responseErrorType = hasResponseError
+    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
+    : operation.accessor.operationTSType?.responseError
+
   const pathParameters = operation.method === OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name) : ''
 
   const params = [...pathParameters, operation.accessor.hasQueryParameters ? 'params' : '', operation.accessor.hasRequestBody ? 'data' : '']
@@ -61,8 +84,10 @@ function queryMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfi
     const queryKey = ${formatterQueryKeyName(operation)}(${[pathParameters, operation.accessor.hasQueryParameters ? 'params' : ''].filter(Boolean).join(',')})
 
     return useSWR<
-${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data'],
- ${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, ${formatterQueryKeyTypeName(operation)} | null>(shouldFetch ? queryKey : null, {
+  ${responseConfigType},
+  ${responseErrorType}, 
+  ${formatterQueryKeyTypeName(operation)} | null
+ >(shouldFetch ? queryKey : null, {
         ...queryOptions,
         fetcher: async (${operation.method !== OpenAPIV3.HttpMethods.GET ? '' : `_url${operation.accessor.hasRequestBody ? ', { arg: data }' : ''}`}) => {
             return ${operation.accessor.operationRequest?.requestName}(${params});
@@ -71,6 +96,16 @@ ${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operatio
 }
 
 function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
+  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
+  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
+  const responseConfigType = hasResponseConfig
+    ? `${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data']`
+    : operation.accessor.operationTSType?.responseSuccess
+
+  const responseErrorType = hasResponseError
+    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
+    : operation.accessor.operationTSType?.responseError
+
   const pathParameters = operation.method !== OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name) : ''
 
   const params = [...pathParameters, operation.accessor.hasRequestBody ? 'data' : ''].filter(Boolean).join(',')
@@ -80,8 +115,8 @@ function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginCo
     const mutationKey = ${formatterQueryKeyName(operation)}()
 
     return useSWRMutation<
-${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data'], 
-${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, 
+  ${responseConfigType},
+  ${responseErrorType}, 
 ${formatterQueryKeyTypeName(operation)} | null,
 ${operation.accessor.operationTSType?.body}
 >(

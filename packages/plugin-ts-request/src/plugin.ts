@@ -35,8 +35,12 @@ export const definePlugin = createPlugin<PluginConfig>((pluginConfig) => {
           docs: jsDocTemplateFromMethod(operation),
           statements: buildMethodBody(operation, pluginConfig),
         }
-        const serviceFolderName = operation.accessor.getFirstTagName ?? ''
-        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, serviceFolderName, `${kebabCase(operation.accessor.operationName)}.service.ts`)
+
+        const filePath = path.join(
+          ctx.openapiToSingleConfig.output.dir,
+          kebabCase(operation.tagName),
+          `${kebabCase(operation.accessor.operationName)}.service.ts`,
+        )
 
         operation.accessor.setOperationRequest({
           filePath,

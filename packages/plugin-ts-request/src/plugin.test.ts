@@ -51,9 +51,9 @@ vi.mock('@openapi-to/core/utils', () => ({
 
 describe('definePlugin', () => {
   type MockOperation = {
+    tagName: 'test-tag'
     accessor: {
       operationName: string
-      getFirstTagName: string
       setOperationRequest: ReturnType<typeof vi.fn>
       operationTSType: {
         pathParams: string
@@ -99,9 +99,9 @@ describe('definePlugin', () => {
 
     // 准备测试数据
     mockOperation = {
+      tagName: 'test-tag',
       accessor: {
         operationName: 'testOperation',
-        getFirstTagName: 'testTag',
         setOperationRequest: vi.fn(),
         operationTSType: {
           pathParams: 'PathParams',
@@ -173,14 +173,15 @@ describe('definePlugin', () => {
     // 先调用operation钩子
     await plugin.hooks.operation(mockOperation, mockContext)
     // 验证是否设置了操作请求信息
+
     expect(mockOperation.accessor.setOperationRequest).toHaveBeenCalledWith({
-      filePath: path.join('/output', 'testTag', 'test-operation.service.ts'),
+      filePath: path.join('/output', 'test-tag', 'test-operation.service.ts'),
       requestName: 'testOperationService',
     })
 
     // 验证是否创建了源文件
     expect(mockCreateSourceFile).toHaveBeenCalled()
-    expect(mockCreateSourceFile).toHaveBeenCalledWith(path.join('/output', 'testTag', 'test-operation.service.ts'), '', { overwrite: true })
+    expect(mockCreateSourceFile).toHaveBeenCalledWith(path.join('/output', 'test-tag', 'test-operation.service.ts'), '', { overwrite: true })
 
     // 验证是否调用了必要的生成函数
     expect(buildMethodParameters).toHaveBeenCalledWith(mockOperation, {})

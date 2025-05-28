@@ -15,12 +15,12 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
   const pluginConfig: PluginConfig = {
     ..._pluginConfig,
     responseConfigTypeImportDeclaration: {
-      namedImports: _pluginConfig?.responseConfigTypeImportDeclaration?.namedImports ?? ['AxiosResponse'],
-      moduleSpecifier: _pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier ?? 'axios',
+      namedImports: _pluginConfig?.responseConfigTypeImportDeclaration?.namedImports ?? [],
+      moduleSpecifier: _pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier ?? '',
     },
     responseErrorTypeImportDeclaration: {
-      namedImports: _pluginConfig?.responseErrorTypeImportDeclaration?.namedImports ?? ['AxiosError'],
-      moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? 'axios',
+      namedImports: _pluginConfig?.responseErrorTypeImportDeclaration?.namedImports ?? [],
+      moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? '',
     },
     importWithExtension: _pluginConfig?.importWithExtension ?? true,
   }
@@ -34,9 +34,8 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
       },
       operation: async (operation, ctx) => {
         const hookName = `use${upperFirst(operation.accessor.operationName)}`
-        const folderName = operation.accessor.getFirstTagName ?? ''
 
-        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, folderName, `${kebabCase(hookName)}.swr.ts`)
+        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, kebabCase(operation.tagName), `${kebabCase(hookName)}.swr.ts`)
         const operationSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
 
         operationSourceFile.addStatements(buildImports(filePath, operation, pluginConfig))

@@ -45,7 +45,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
       },
       operation: async (operation, ctx) => {
         const fileName = `${kebabCase(operation.accessor.operationName)}.types.ts`
-        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, operation.tagName, fileName)
+        const filePath = path.join(ctx.openapiToSingleConfig.output.dir, kebabCase(operation.tagName), fileName)
         //`${ctx.openapiToSingleConfig.output.dir}${pluginConfig?.output.dir}/${lowerFirst(operation.formattedTagName)}/${fileName}.ts`
         operationFileNameOfTag.add(fileName)
 

@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 3.0.0-alpha.5
+
+### Major Changes
+
+- fix: bug
+
 ## 3.0.0-alpha.4
 
 ### Major Changes
