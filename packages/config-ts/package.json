@@ -1,6 +1,6 @@
 {
   "name": "@openapi-to/config-ts",
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0",
   "private": true,
   "types": "./reset.d.ts",
   "files": [

@@ -1,5 +1,22 @@
 # @openapi-to/cli
 
+## 3.0.0
+
+### Major Changes
+
+- fix bug
+- fix: bug
+- update
+- refactor
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @openapi-to/core@3.0.0
+
 ## 3.0.0-alpha.5
 
 ### Major Changes

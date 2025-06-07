@@ -1,5 +1,14 @@
 # @openapi-to/config-tsup
 
+## 3.0.0
+
+### Major Changes
+
+- fix bug
+- fix: bug
+- update
+- refactor
+
 ## 3.0.0-alpha.5
 
 ### Major Changes
