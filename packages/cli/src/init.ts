@@ -45,7 +45,7 @@ async function createGitignore() {
     const hasOpenAPI = fileContent
       .split("\n")
       .some((item) => item.includes(".OpenAPI") && !item.includes("#"));
-    !hasOpenAPI && (await write(`${fileContent}\n${content}`, path));
+    !hasOpenAPI && (await write(path,`${fileContent}\n${content}`));
   } else {
     await write(path, content);
   }
