@@ -1,6 +1,6 @@
 {
   "name": "openapi-to",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "OpenAPI to TypeScript,Axios,request,zod,type,MSW,Faker,nestjs.",
   "keywords": [
     "openapi",
