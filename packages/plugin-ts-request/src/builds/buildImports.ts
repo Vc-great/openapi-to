@@ -10,7 +10,7 @@ export function buildImports(imports: ImportDeclarationStructure[], pluginConfig
   }
 
   const requestConfig: ImportDeclarationStructure | undefined =
-    !isEmpty(pluginConfig?.requestConfigTypeImportDeclaration) && pluginConfig?.requestConfigTypeImportDeclaration?.moduleSpecifier !== 'axios'
+    pluginConfig?.requestConfigTypeImportDeclaration?.moduleSpecifier && pluginConfig?.requestConfigTypeImportDeclaration?.moduleSpecifier !== 'axios'
       ? {
           kind: StructureKind.ImportDeclaration,
           isTypeOnly: true,

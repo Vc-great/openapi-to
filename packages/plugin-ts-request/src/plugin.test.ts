@@ -184,8 +184,30 @@ describe('definePlugin', () => {
     expect(mockCreateSourceFile).toHaveBeenCalledWith(path.join('/output', 'test-tag', 'test-operation.service.ts'), '', { overwrite: true })
 
     // 验证是否调用了必要的生成函数
-    expect(buildMethodParameters).toHaveBeenCalledWith(mockOperation, {})
-    expect(buildMethodBody).toHaveBeenCalledWith(mockOperation, {})
+    expect(buildMethodParameters).toHaveBeenCalledWith(mockOperation, {
+      requestImportDeclaration: {
+        moduleSpecifier: '@/utils/request',
+      },
+      requestConfigTypeImportDeclaration: {
+        namedImports:  [],
+        moduleSpecifier:  '',
+      },
+      requestClient:'axios',
+      parser: undefined,
+      importWithExtension: true,
+    })
+    expect(buildMethodBody).toHaveBeenCalledWith(mockOperation, {
+      requestImportDeclaration: {
+        moduleSpecifier: '@/utils/request',
+      },
+      requestConfigTypeImportDeclaration: {
+        namedImports:  [],
+        moduleSpecifier:  '',
+      },
+      requestClient:'axios',
+      parser: undefined,
+      importWithExtension: true,
+    })
     expect(jsDocTemplateFromMethod).toHaveBeenCalledWith(mockOperation)
 
     // 验证是否设置了源文件
@@ -196,19 +218,34 @@ describe('definePlugin', () => {
     const plugin = definePlugin({ parser: 'zod' })
 
     await plugin.hooks.operation(mockOperation, mockContext)
-
+    const a = buildImports
     // 验证 buildImports 是否用正确的参数调用
     expect(buildImports).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
+      [
+        {
+          kind: "ImportDeclaration",
           isTypeOnly: true,
-          namedImports: expect.any(Array),
-        }),
-        expect.objectContaining({
-          namedImports: expect.any(Array),
-        }),
-      ]),
-      { parser: 'zod' },
+          moduleSpecifier: "../types.ts",
+          namedImports: ["PathParams", "QueryParams", "RequestBody", "ResponseSuccess"],
+        },
+        {
+          kind: "ImportDeclaration",
+          moduleSpecifier: "../types.ts",
+          namedImports: ["requestBodySchema", "responseSuccessSchema"],
+        },
+      ],
+      {
+        parser: 'zod',
+        requestClient: 'axios',
+        importWithExtension: true,
+        requestImportDeclaration: {
+          moduleSpecifier: '@/utils/request',
+        },
+        requestConfigTypeImportDeclaration: {
+          moduleSpecifier: '',
+          namedImports: [],
+        },
+      }
     )
   })
 

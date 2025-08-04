@@ -2,15 +2,16 @@
 import { LogMapper } from '@openapi-to/core'
 
 import { generate } from './generate.ts'
-
+import path from 'node:path'
 import type { CLIOptions, OpenapiToSingleConfig } from '@openapi-to/core'
 
 describe('generate', () => {
+
   const openapiToSingleConfig1: OpenapiToSingleConfig = {
     name: 'server1',
     root: '',
     input: {
-      path: 'https://petstore.swagger.io/v2/swagger.json',
+      path: path.resolve(__dirname,'../mock','swagger.json'),
     },
     output: {
       dir: '',
@@ -55,7 +56,7 @@ describe('generate', () => {
     name: 'server2',
     root: '',
     input: {
-      path: 'https://petstore.swagger.io/v2/swagger.json',
+      path: path.resolve(__dirname,'../mock','swagger.json'),
     },
     output: {
       dir: '',

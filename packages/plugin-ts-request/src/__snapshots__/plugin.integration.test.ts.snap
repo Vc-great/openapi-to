@@ -2,6 +2,7 @@
 
 exports[`Ts Request Plugin Integration > 应该生成默认的服务类文件 1`] = `
 "import type { AddPetMutationRequest, AddPetMutationResponse } from "./add-pet.types.ts";
+import type { AxiosResponse, AxiosRequestConfig } from "axios";
 import { request } from "@/utils/request";
 
 /**

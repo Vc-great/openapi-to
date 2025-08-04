@@ -14,6 +14,25 @@ import type { PluginConfig } from './types.ts'
 export const definePlugin = createPlugin<PluginConfig>((pluginConfig) => {
   const project = new Project()
   const dependencies = [...(pluginConfig?.parser === 'zod' ? [pluginEnum.Zod] : []), pluginEnum.TsType]
+
+
+
+   pluginConfig = {
+    requestImportDeclaration: {
+      moduleSpecifier: pluginConfig?.requestImportDeclaration?.moduleSpecifier || '@/utils/request',
+    },
+    requestConfigTypeImportDeclaration: {
+      namedImports: pluginConfig?.requestConfigTypeImportDeclaration?.namedImports || [],
+      moduleSpecifier: pluginConfig?.requestConfigTypeImportDeclaration?.moduleSpecifier || '',
+    },
+    requestClient: pluginConfig?.requestClient || 'axios',
+    parser: pluginConfig?.parser,
+    importWithExtension: pluginConfig?.importWithExtension ?? true,
+  }
+
+
+
+
   return {
     dependencies: dependencies,
     name: pluginEnum.Request,
