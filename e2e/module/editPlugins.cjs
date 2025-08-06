@@ -3,7 +3,7 @@ const path = require('path')
 
 const filePath = path.resolve(__dirname, './.OpenAPI/openapi.config.ts')
 
-const config = `import { defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod } from 'openapi-to'
+const config = `import { defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod,pluginVueQuery } from 'openapi-to'
 
 
 export default defineConfig({
@@ -19,6 +19,7 @@ export default defineConfig({
   ],
   plugins: [
     pluginSWR(),
+    pluginVueQuery(),
     pluginZod(),
     pluginTSType(),
     pluginTSRequest({

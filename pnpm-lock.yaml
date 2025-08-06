@@ -328,6 +328,9 @@ importers:
       '@openapi-to/plugin-ts-type':
         specifier: workspace:*
         version: link:../plugin-ts-type
+      '@openapi-to/plugin-vue-query':
+        specifier: workspace:*
+        version: link:../plugin-vue-query
       '@openapi-to/plugin-zod':
         specifier: workspace:*
         version: link:../plugin-zod
@@ -440,6 +443,37 @@ importers:
       '@types/lodash':
         specifier: ^4.17.9
         version: 4.17.16
+
+  packages/plugin-vue-query:
+    dependencies:
+      '@openapi-to/core':
+        specifier: workspace:*
+        version: link:../core
+      oas:
+        specifier: ^24.9.0
+        version: 24.9.0
+      ts-morph:
+        specifier: ^23.0.0
+        version: 23.0.0
+    devDependencies:
+      '@openapi-to/config-ts':
+        specifier: workspace:*
+        version: link:../config-ts
+      '@openapi-to/config-tsup':
+        specifier: workspace:*
+        version: link:../config-tsup
+      '@openapi-to/plugin-ts-request':
+        specifier: workspace:*
+        version: link:../plugin-ts-request
+      '@openapi-to/plugin-ts-type':
+        specifier: workspace:*
+        version: link:../plugin-ts-type
+      '@openapi-to/plugin-zod':
+        specifier: workspace:*
+        version: link:../plugin-zod
+      utility-types:
+        specifier: ^3.11.0
+        version: 3.11.0
 
   packages/plugin-zod:
     dependencies:

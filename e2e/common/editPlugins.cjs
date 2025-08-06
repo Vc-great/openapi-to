@@ -4,7 +4,7 @@ const path = require('path')
 const filePath = path.resolve(__dirname, './.OpenAPI/openapi.config.js')
 
 const config = `const {
-defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod
+defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod,pluginVueQuery
    }= require('openapi-to')
 
 module.exports = defineConfig({
@@ -20,6 +20,7 @@ module.exports = defineConfig({
   ],
   plugins: [
     pluginSWR(),
+    pluginVueQuery(),
     pluginZod(),
     pluginTSType(),
     pluginTSRequest({

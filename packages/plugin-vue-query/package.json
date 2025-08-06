@@ -1,0 +1,56 @@
+{
+  "name": "@openapi-to/plugin-vue-query",
+  "version": "3.0.1",
+  "sideEffects": false,
+  "type": "module",
+  "description": "generator vue query",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json",
+    "./*": "./*"
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "!/**/**.test.**",
+    "!/**/__tests__/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "npx rimraf ./dist",
+    "lint": "bun biome lint .",
+    "lint:fix": "bun biome lint --write --unsafe .",
+    "release": "pnpm publish --no-git-check",
+    "release:canary": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag canary",
+    "release:alpha": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag alpha",
+    "start": "tsup --watch",
+    "test": "vitest --passWithNoTests",
+    "test:watch": "vitest --passWithNoTests --watch",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+  },
+  "devDependencies": {
+    "@openapi-to/config-ts": "workspace:*",
+    "@openapi-to/config-tsup": "workspace:*",
+    "@openapi-to/plugin-zod": "workspace:*",
+    "@openapi-to/plugin-ts-type": "workspace:*",
+    "@openapi-to/plugin-ts-request": "workspace:*",
+    "utility-types": "^3.11.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@openapi-to/core": "workspace:*",
+    "oas": "^24.9.0",
+    "ts-morph": "^23.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

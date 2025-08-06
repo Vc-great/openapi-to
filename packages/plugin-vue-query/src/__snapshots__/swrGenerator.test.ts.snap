@@ -1,0 +1,691 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`swr > swr getFullText 1`] = `
+"import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const testPostMutationKey = () => [{ url: \`/pet/test\`, method: 'post' }] as const;
+type TestPostMutationKey = ReturnType<typeof testPostMutationKey>;
+
+/** @summary summary */
+export function useTestPost(options?: {
+    swr?: SWRMutationConfiguration<Pet.TestPostMutationResponse, Pet.TestPostError, TestPostMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = testPostMutationKey()
+
+    return useSWRMutation<Pet.TestPostMutationResponse, Pet.TestPostError, TestPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.testPost();
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const testPutMutationKey = () => [{ url: \`/pet/test\`, method: 'put' }] as const;
+type TestPutMutationKey = ReturnType<typeof testPutMutationKey>;
+
+/** @summary summary */
+export function useTestPut(options?: {
+    swr?: SWRMutationConfiguration<Pet.TestPutMutationResponse, Pet.TestPutError, TestPutMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = testPutMutationKey()
+
+    return useSWRMutation<Pet.TestPutMutationResponse, Pet.TestPutError, TestPutMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.testPut();
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const delByTestMutationKey = () => [{ url: \`/pet/test\`, method: 'delete' }] as const;
+type DelByTestMutationKey = ReturnType<typeof delByTestMutationKey>;
+
+/** @summary summary */
+export function useDelByTest(options?: {
+    swr?: SWRMutationConfiguration<Pet.DelByTestMutationResponse, Pet.DelByTestError, DelByTestMutationKey | null, Pet.DelByTestMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = delByTestMutationKey()
+
+    return useSWRMutation<Pet.DelByTestMutationResponse, Pet.DelByTestError, DelByTestMutationKey | null, Pet.DelByTestMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.delByTest(data);
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const testIdGetQueryKey = (testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams) => [{ url: \`/pet/test/\${testId}\`, method: 'get' }, ...(params ? [params] : [])] as const;
+type TestIdGetQueryKey = ReturnType<typeof testIdGetQueryKey>;
+
+/** @summary summary */
+export function useTestIdGet(testId: Pet.TestIdGetPathParams['testId'], params?: Pet.TestIdGetQueryParams, options?: {
+    swr?: Parameters<typeof useSWR<Pet.TestIdGetQueryResponse, TestIdGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = testIdGetQueryKey(testId, params)
+
+    return useSWR<Pet.TestIdGetQueryResponse, Pet.TestIdGetError, TestIdGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petService.testIdGet(testId, params);
+        }
+    })
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const uploadImagePostMutationKey = (petId: Pet.UploadImagePostPathParams['petId']) => [{ url: \`/pet/\${petId}/uploadImage\`, method: 'post' }] as const;
+type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+
+/**
+ * @summary uploads an image
+ * @description pet
+ */
+export function useUploadImagePost(petId: Pet.UploadImagePostPathParams['petId'], options?: {
+    swr?: SWRMutationConfiguration<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = uploadImagePostMutationKey(petId)
+
+    return useSWRMutation<Pet.UploadImagePostMutationResponse, Pet.UploadImagePostError, UploadImagePostMutationKey | null, Pet.UploadImagePostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.uploadImagePost(petId, data);
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const createMutationKey = () => [{ url: \`/pet\`, method: 'post' }] as const;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+
+/** @summary Add a new pet to the store */
+export function useCreate(options?: {
+    swr?: SWRMutationConfiguration<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = createMutationKey()
+
+    return useSWRMutation<Pet.CreateMutationResponse, Pet.CreateError, CreateMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.create();
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const updateMutationKey = () => [{ url: \`/pet\`, method: 'put' }] as const;
+type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+
+/** @summary Update an existing pet */
+export function useUpdate(options?: {
+    swr?: SWRMutationConfiguration<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = updateMutationKey()
+
+    return useSWRMutation<Pet.UpdateMutationResponse, Pet.UpdateError, UpdateMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.update();
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const findByStatusGetQueryKey = (params: Pet.FindByStatusGetQueryParams) => [{ url: \`/pet/findByStatus\`, method: 'get' }, ...(params ? [params] : [])] as const;
+type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+
+/**
+ * @summary Finds Pets by status
+ * @description Multiple status values can be provided with comma separated strings
+ */
+export function useFindByStatusGet(params: Pet.FindByStatusGetQueryParams, options?: {
+    swr?: Parameters<typeof useSWR<Pet.FindByStatusGetQueryResponse, FindByStatusGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByStatusGetQueryKey(params)
+
+    return useSWR<Pet.FindByStatusGetQueryResponse, Pet.FindByStatusGetError, FindByStatusGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petService.findByStatusGet(params);
+        }
+    })
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const findByTagsGetQueryKey = (params: Pet.FindByTagsGetQueryParams) => [{ url: \`/pet/findByTags\`, method: 'get' }, ...(params ? [params] : [])] as const;
+type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+
+/**
+ * @summary Finds Pets by tags
+ * @description Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+ */
+export function useFindByTagsGet(params: Pet.FindByTagsGetQueryParams, options?: {
+    swr?: Parameters<typeof useSWR<Pet.FindByTagsGetQueryResponse, FindByTagsGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByTagsGetQueryKey(params)
+
+    return useSWR<Pet.FindByTagsGetQueryResponse, Pet.FindByTagsGetError, FindByTagsGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petService.findByTagsGet(params);
+        }
+    })
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const findByPetIdQueryKey = (petId: Pet.FindByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'get' }] as const;
+type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+
+/**
+ * @summary Find pet by ID
+ * @description Returns a single pet
+ */
+export function useFindByPetId(petId: Pet.FindByPetIdPathParams['petId'], options?: {
+    swr?: Parameters<typeof useSWR<Pet.FindByPetIdQueryResponse, FindByPetIdQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByPetIdQueryKey(petId)
+
+    return useSWR<Pet.FindByPetIdQueryResponse, Pet.FindByPetIdError, FindByPetIdQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return petService.findByPetId(petId);
+        }
+    })
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const petIdPostMutationKey = (petId: Pet.PetIdPostPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'post' }] as const;
+type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+
+/** @summary Updates a pet in the store with form data */
+export function usePetIdPost(petId: Pet.PetIdPostPathParams['petId'], options?: {
+    swr?: SWRMutationConfiguration<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = petIdPostMutationKey(petId)
+
+    return useSWRMutation<Pet.PetIdPostMutationResponse, Pet.PetIdPostError, PetIdPostMutationKey | null, Pet.PetIdPostMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.petIdPost(petId, data);
+    }, mutationOptions);
+}
+
+import { petService } from "../pet.service";
+import type { Pet } from "../pet.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const delByPetIdMutationKey = (petId: Pet.DelByPetIdPathParams['petId']) => [{ url: \`/pet/\${petId}\`, method: 'delete' }] as const;
+type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+
+/** @summary Deletes a pet */
+export function useDelByPetId(petId: Pet.DelByPetIdPathParams['petId'], options?: {
+    swr?: SWRMutationConfiguration<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = delByPetIdMutationKey(petId)
+
+    return useSWRMutation<Pet.DelByPetIdMutationResponse, Pet.DelByPetIdError, DelByPetIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return petService.delByPetId(petId);
+    }, mutationOptions);
+}
+
+import { useTestPost, testPostMutationKey } from "./useTestPost";
+import { useTestPut, testPutMutationKey } from "./useTestPut";
+import { useDelByTest, delByTestMutationKey } from "./useDelByTest";
+import { useTestIdGet, testIdGetQueryKey } from "./useTestIdGet";
+import { useUploadImagePost, uploadImagePostMutationKey } from "./useUploadImagePost";
+import { useCreate, createMutationKey } from "./useCreate";
+import { useUpdate, updateMutationKey } from "./useUpdate";
+import { useFindByStatusGet, findByStatusGetQueryKey } from "./useFindByStatusGet";
+import { useFindByTagsGet, findByTagsGetQueryKey } from "./useFindByTagsGet";
+import { useFindByPetId, findByPetIdQueryKey } from "./useFindByPetId";
+import { usePetIdPost, petIdPostMutationKey } from "./usePetIdPost";
+import { useDelByPetId, delByPetIdMutationKey } from "./useDelByPetId";
+
+export namespace PetKey {
+    export type TestPostMutationKey = ReturnType<typeof testPostMutationKey>;
+    export type TestPutMutationKey = ReturnType<typeof testPutMutationKey>;
+    export type DelByTestMutationKey = ReturnType<typeof delByTestMutationKey>;
+    export type TestIdGetQueryKey = ReturnType<typeof testIdGetQueryKey>;
+    export type UploadImagePostMutationKey = ReturnType<typeof uploadImagePostMutationKey>;
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+    export type UpdateMutationKey = ReturnType<typeof updateMutationKey>;
+    export type FindByStatusGetQueryKey = ReturnType<typeof findByStatusGetQueryKey>;
+    export type FindByTagsGetQueryKey = ReturnType<typeof findByTagsGetQueryKey>;
+    export type FindByPetIdQueryKey = ReturnType<typeof findByPetIdQueryKey>;
+    export type PetIdPostMutationKey = ReturnType<typeof petIdPostMutationKey>;
+    export type DelByPetIdMutationKey = ReturnType<typeof delByPetIdMutationKey>;
+}
+
+export const petSWRKey = {
+    testPostMutationKey, testPutMutationKey, delByTestMutationKey, testIdGetQueryKey, uploadImagePostMutationKey, createMutationKey, updateMutationKey, findByStatusGetQueryKey, findByTagsGetQueryKey, findByPetIdQueryKey, petIdPostMutationKey, delByPetIdMutationKey
+};
+export const petSWR = {
+    useTestPost, useTestPut, useDelByTest, useTestIdGet, useUploadImagePost, useCreate, useUpdate, useFindByStatusGet, useFindByTagsGet, useFindByPetId, usePetIdPost, useDelByPetId
+};
+
+import { storeService } from "../store.service";
+import type { Store } from "../store.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const createMutationKey = () => [{ url: \`/store/order\`, method: 'post' }] as const;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+
+/** @summary Place an order for a pet */
+export function useCreate(options?: {
+    swr?: SWRMutationConfiguration<Store.CreateMutationResponse, Store.CreateError, CreateMutationKey | null, Store.CreateMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = createMutationKey()
+
+    return useSWRMutation<Store.CreateMutationResponse, Store.CreateError, CreateMutationKey | null, Store.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return storeService.create(data);
+    }, mutationOptions);
+}
+
+import { storeService } from "../store.service";
+import type { Store } from "../store.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const findByOrderIdQueryKey = (orderId: Store.FindByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\`, method: 'get' }] as const;
+type FindByOrderIdQueryKey = ReturnType<typeof findByOrderIdQueryKey>;
+
+/**
+ * @summary Find purchase order by ID
+ * @description For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
+ */
+export function useFindByOrderId(orderId: Store.FindByOrderIdPathParams['orderId'], options?: {
+    swr?: Parameters<typeof useSWR<Store.FindByOrderIdQueryResponse, FindByOrderIdQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByOrderIdQueryKey(orderId)
+
+    return useSWR<Store.FindByOrderIdQueryResponse, Store.FindByOrderIdError, FindByOrderIdQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return storeService.findByOrderId(orderId);
+        }
+    })
+}
+
+import { storeService } from "../store.service";
+import type { Store } from "../store.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const delByOrderIdMutationKey = (orderId: Store.DelByOrderIdPathParams['orderId']) => [{ url: \`/store/order/\${orderId}\`, method: 'delete' }] as const;
+type DelByOrderIdMutationKey = ReturnType<typeof delByOrderIdMutationKey>;
+
+/**
+ * @summary Delete purchase order by ID
+ * @description For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
+ */
+export function useDelByOrderId(orderId: Store.DelByOrderIdPathParams['orderId'], options?: {
+    swr?: SWRMutationConfiguration<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError, DelByOrderIdMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = delByOrderIdMutationKey(orderId)
+
+    return useSWRMutation<Store.DelByOrderIdMutationResponse, Store.DelByOrderIdError, DelByOrderIdMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return storeService.delByOrderId(orderId);
+    }, mutationOptions);
+}
+
+import { storeService } from "../store.service";
+import type { Store } from "../store.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const inventoryGetQueryKey = () => [{ url: \`/store/inventory\`, method: 'get' }] as const;
+type InventoryGetQueryKey = ReturnType<typeof inventoryGetQueryKey>;
+
+/**
+ * @summary Returns pet inventories by status
+ * @description Returns a map of status codes to quantities
+ */
+export function useInventoryGet(options?: {
+    swr?: Parameters<typeof useSWR<Store.InventoryGetQueryResponse, InventoryGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = inventoryGetQueryKey()
+
+    return useSWR<Store.InventoryGetQueryResponse, Store.InventoryGetError, InventoryGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return storeService.inventoryGet();
+        }
+    })
+}
+
+import { useCreate, createMutationKey } from "./useCreate";
+import { useFindByOrderId, findByOrderIdQueryKey } from "./useFindByOrderId";
+import { useDelByOrderId, delByOrderIdMutationKey } from "./useDelByOrderId";
+import { useInventoryGet, inventoryGetQueryKey } from "./useInventoryGet";
+
+export namespace StoreKey {
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+    export type FindByOrderIdQueryKey = ReturnType<typeof findByOrderIdQueryKey>;
+    export type DelByOrderIdMutationKey = ReturnType<typeof delByOrderIdMutationKey>;
+    export type InventoryGetQueryKey = ReturnType<typeof inventoryGetQueryKey>;
+}
+
+export const storeSWRKey = {
+    createMutationKey, findByOrderIdQueryKey, delByOrderIdMutationKey, inventoryGetQueryKey
+};
+export const storeSWR = {
+    useCreate, useFindByOrderId, useDelByOrderId, useInventoryGet
+};
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const createWithArrayPostMutationKey = () => [{ url: \`/user/createWithArray\`, method: 'post' }] as const;
+type CreateWithArrayPostMutationKey = ReturnType<typeof createWithArrayPostMutationKey>;
+
+/** @summary Creates list of users with given input array */
+export function useCreateWithArrayPost(options?: {
+    swr?: SWRMutationConfiguration<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError, CreateWithArrayPostMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = createWithArrayPostMutationKey()
+
+    return useSWRMutation<User.CreateWithArrayPostMutationResponse, User.CreateWithArrayPostError, CreateWithArrayPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return userService.createWithArrayPost();
+    }, mutationOptions);
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const createWithListPostMutationKey = () => [{ url: \`/user/createWithList\`, method: 'post' }] as const;
+type CreateWithListPostMutationKey = ReturnType<typeof createWithListPostMutationKey>;
+
+/** @summary Creates list of users with given input array */
+export function useCreateWithListPost(options?: {
+    swr?: SWRMutationConfiguration<User.CreateWithListPostMutationResponse, User.CreateWithListPostError, CreateWithListPostMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = createWithListPostMutationKey()
+
+    return useSWRMutation<User.CreateWithListPostMutationResponse, User.CreateWithListPostError, CreateWithListPostMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return userService.createWithListPost();
+    }, mutationOptions);
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const findByUsernameQueryKey = (username: User.FindByUsernamePathParams['username']) => [{ url: \`/user/\${username}\`, method: 'get' }] as const;
+type FindByUsernameQueryKey = ReturnType<typeof findByUsernameQueryKey>;
+
+/** @summary Get user by user name */
+export function useFindByUsername(username: User.FindByUsernamePathParams['username'], options?: {
+    swr?: Parameters<typeof useSWR<User.FindByUsernameQueryResponse, FindByUsernameQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = findByUsernameQueryKey(username)
+
+    return useSWR<User.FindByUsernameQueryResponse, User.FindByUsernameError, FindByUsernameQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return userService.findByUsername(username);
+        }
+    })
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const usernamePutMutationKey = (username: User.UsernamePutPathParams['username']) => [{ url: \`/user/\${username}\`, method: 'put' }] as const;
+type UsernamePutMutationKey = ReturnType<typeof usernamePutMutationKey>;
+
+/**
+ * @summary Updated user
+ * @description This can only be done by the logged in user.
+ */
+export function useUsernamePut(username: User.UsernamePutPathParams['username'], options?: {
+    swr?: SWRMutationConfiguration<User.UsernamePutMutationResponse, User.UsernamePutError, UsernamePutMutationKey | null, User.UsernamePutMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = usernamePutMutationKey(username)
+
+    return useSWRMutation<User.UsernamePutMutationResponse, User.UsernamePutError, UsernamePutMutationKey | null, User.UsernamePutMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return userService.usernamePut(username, data);
+    }, mutationOptions);
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const delByUsernameMutationKey = (username: User.DelByUsernamePathParams['username']) => [{ url: \`/user/\${username}\`, method: 'delete' }] as const;
+type DelByUsernameMutationKey = ReturnType<typeof delByUsernameMutationKey>;
+
+/**
+ * @summary Delete user
+ * @description This can only be done by the logged in user.
+ */
+export function useDelByUsername(username: User.DelByUsernamePathParams['username'], options?: {
+    swr?: SWRMutationConfiguration<User.DelByUsernameMutationResponse, User.DelByUsernameError, DelByUsernameMutationKey | null, never>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = delByUsernameMutationKey(username)
+
+    return useSWRMutation<User.DelByUsernameMutationResponse, User.DelByUsernameError, DelByUsernameMutationKey | null, never>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return userService.delByUsername(username);
+    }, mutationOptions);
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const loginGetQueryKey = (params: User.LoginGetQueryParams) => [{ url: \`/user/login\`, method: 'get' }, ...(params ? [params] : [])] as const;
+type LoginGetQueryKey = ReturnType<typeof loginGetQueryKey>;
+
+/** @summary Logs user into the system */
+export function useLoginGet(params: User.LoginGetQueryParams, options?: {
+    swr?: Parameters<typeof useSWR<User.LoginGetQueryResponse, LoginGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = loginGetQueryKey(params)
+
+    return useSWR<User.LoginGetQueryResponse, User.LoginGetError, LoginGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return userService.loginGet(params);
+        }
+    })
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const logoutGetQueryKey = () => [{ url: \`/user/logout\`, method: 'get' }] as const;
+type LogoutGetQueryKey = ReturnType<typeof logoutGetQueryKey>;
+
+/** @summary Logs out current logged in user session */
+export function useLogoutGet(options?: {
+    swr?: Parameters<typeof useSWR<User.LogoutGetQueryResponse, LogoutGetQueryKey | null, any>>[2]
+    shouldFetch?: boolean
+}) {
+
+    const { swr: queryOptions, shouldFetch = true } = options ?? {}
+    const queryKey = logoutGetQueryKey()
+
+    return useSWR<User.LogoutGetQueryResponse, User.LogoutGetError, LogoutGetQueryKey | null>(shouldFetch ? queryKey : null, {
+        ...queryOptions,
+        fetcher: async () => {
+            return userService.logoutGet();
+        }
+    })
+}
+
+import { userService } from "../user.service";
+import type { User } from "../user.types";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+
+export const createMutationKey = () => [{ url: \`/user\`, method: 'post' }] as const;
+type CreateMutationKey = ReturnType<typeof createMutationKey>;
+
+/**
+ * @summary Create user
+ * @description This can only be done by the logged in user.
+ */
+export function useCreate(options?: {
+    swr?: SWRMutationConfiguration<User.CreateMutationResponse, User.CreateError, CreateMutationKey | null, User.CreateMutationRequest>;
+    shouldFetch?: boolean;
+}) {
+
+    const { swr: mutationOptions, shouldFetch = true } = options ?? {}
+    const mutationKey = createMutationKey()
+
+    return useSWRMutation<User.CreateMutationResponse, User.CreateError, CreateMutationKey | null, User.CreateMutationRequest>(shouldFetch ? mutationKey : null, async (_url, { arg: data }) => {
+        return userService.create(data);
+    }, mutationOptions);
+}
+
+import { useCreateWithArrayPost, createWithArrayPostMutationKey } from "./useCreateWithArrayPost";
+import { useCreateWithListPost, createWithListPostMutationKey } from "./useCreateWithListPost";
+import { useFindByUsername, findByUsernameQueryKey } from "./useFindByUsername";
+import { useUsernamePut, usernamePutMutationKey } from "./useUsernamePut";
+import { useDelByUsername, delByUsernameMutationKey } from "./useDelByUsername";
+import { useLoginGet, loginGetQueryKey } from "./useLoginGet";
+import { useLogoutGet, logoutGetQueryKey } from "./useLogoutGet";
+import { useCreate, createMutationKey } from "./useCreate";
+
+export namespace UserKey {
+    export type CreateWithArrayPostMutationKey = ReturnType<typeof createWithArrayPostMutationKey>;
+    export type CreateWithListPostMutationKey = ReturnType<typeof createWithListPostMutationKey>;
+    export type FindByUsernameQueryKey = ReturnType<typeof findByUsernameQueryKey>;
+    export type UsernamePutMutationKey = ReturnType<typeof usernamePutMutationKey>;
+    export type DelByUsernameMutationKey = ReturnType<typeof delByUsernameMutationKey>;
+    export type LoginGetQueryKey = ReturnType<typeof loginGetQueryKey>;
+    export type LogoutGetQueryKey = ReturnType<typeof logoutGetQueryKey>;
+    export type CreateMutationKey = ReturnType<typeof createMutationKey>;
+}
+
+export const userSWRKey = {
+    createWithArrayPostMutationKey, createWithListPostMutationKey, findByUsernameQueryKey, usernamePutMutationKey, delByUsernameMutationKey, loginGetQueryKey, logoutGetQueryKey, createMutationKey
+};
+export const userSWR = {
+    useCreateWithArrayPost, useCreateWithListPost, useFindByUsername, useUsernamePut, useDelByUsername, useLoginGet, useLogoutGet, useCreate
+};
+"
+`;
