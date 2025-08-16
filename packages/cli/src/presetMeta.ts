@@ -11,6 +11,7 @@ servers:[
 ],
   plugins:[
     pluginSWR(),
+    pluginVueQuery(),
     pluginZod(),
     pluginTSType(),
     pluginTSRequest({
@@ -30,7 +31,8 @@ defineConfig,
 pluginSWR,
 pluginTSRequest,
 pluginTSType, 
-pluginZod 
+pluginZod,
+pluginVueQuery 
    }= require('openapi-to')
 
 module.exports = defineConfig(${config})`
@@ -40,7 +42,8 @@ defineConfig,
 pluginSWR, 
 pluginTSRequest,
 pluginTSType, 
-pluginZod 
+pluginZod,
+pluginVueQuery 
    } from'openapi-to'
 
 export default  defineConfig(${config})`

@@ -165,7 +165,7 @@ export class OperationAccessor {
    * @returns OperationAccessor 实例
    */
   public static getInstance(operation: Operation): OperationAccessor {
-    const operationId = operation.getOperationId() || `${operation.path}-${operation.method}`
+    const operationId = `${operation.path}-${operation.method}`
 
     if (!OperationAccessor._instances.has(operationId)) {
       OperationAccessor._instances.set(operationId, new OperationAccessor(operation))
