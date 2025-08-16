@@ -38,7 +38,7 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
     moduleSpecifier: 'swr/mutation',
   }
   // response 和error 的moduleSpecifier是否相等
-  const moduleSpecifierIsEqual =
+  const moduleSpecifierIsEqual =!isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier)&&!isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier)&&
     pluginConfig?.responseConfigTypeImportDeclaration?.moduleSpecifier === pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier
 
   const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)

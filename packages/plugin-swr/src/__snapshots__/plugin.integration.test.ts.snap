@@ -1,0 +1,36 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`swr Plugin Integration > 应该生成默认的服务类文件 1`] = `
+"import useSWRMutation from "swr/mutation";
+import type { SWRMutationConfiguration } from "swr/mutation";
+import type { AddPetMutationRequest, AddPetMutationResponse, AddPetResponseError } from "./add-pet.types.ts";
+import { addPetService } from "./add-pet.service.ts";
+export const addPetMutationKey = () => [{ url: '/pet', method: 'post' }] as const;
+export type AddPetMutationKey = ReturnType<typeof addPetMutationKey>;
+
+/**
+ * @summary Add a new pet to the store
+ */
+export function useAddPet(options?: {
+  mutation?: SWRMutationConfiguration<AddPetMutationResponse, AddPetResponseError, AddPetMutationKey | null, AddPetMutationRequest>;
+  shouldFetch?: boolean;
+}) {
+
+  const { mutation: mutationOptions, shouldFetch = true } = options ?? {};
+  const mutationKey = addPetMutationKey();
+
+  return useSWRMutation<
+    AddPetMutationResponse,
+    AddPetResponseError,
+    AddPetMutationKey | null,
+    AddPetMutationRequest
+  >(
+    shouldFetch ? mutationKey : null,
+    async (_url, { arg: data }) => {
+      return addPetService(data);
+    },
+    mutationOptions
+  );
+}
+"
+`;

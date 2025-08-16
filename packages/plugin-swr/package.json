@@ -30,6 +30,7 @@
     "release:alpha": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag alpha",
     "start": "tsup --watch",
     "test": "vitest --passWithNoTests",
+    "test:watch": "vitest --passWithNoTests --watch",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "devDependencies": {
