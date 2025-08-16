@@ -13,7 +13,7 @@ openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specifi
 + [ ] Faker.js
 + [ ] MSW
 + [ ] nestjs
-+ [ ] vue-Query
++ [x] vue-Query
 + [ ] react-Query
 
 # Features
@@ -148,10 +148,10 @@ Request Configuration Type Import
 
 Request Configuration Type name
 
-| Type     | String             |
-| -------- | ------------------ |
-| Required | false              |
-| Default  | AxiosRequestConfig |
+| Type     | String               |
+| -------- | -------------------- |
+| Required | false                |
+| Default  | [AxiosRequestConfig] |
 
 **requestConfigTypeImportDeclaration.moduleSpecifier**
 
@@ -268,6 +268,50 @@ Whether to add an extension (such as .ts) in the import path
 
 With the VueQuery plugin you can create [VueQuery hooks](https://tanstack.com/query/latest/docs/framework/vue/overview) based on an operation.
 
+**requestConfigTypeImportDeclaration**
+
+Request Configuration Type Import
+
+**requestConfigTypeImportDeclaration.namedImports**
+
+Request Configuration Type name
+
+| Type     | String               |
+| -------- | -------------------- |
+| Required | false                |
+| Default  | [AxiosRequestConfig] |
+
+**requestConfigTypeImportDeclaration.moduleSpecifier**
+
+Request Configuration Type module
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | axios  |
+
+
+**responseErrorTypeImportDeclaration**
+
+响应错误类型的 import 声明
+
+**responseErrorTypeImportDeclaration.namedImports**
+
+响应错误类型名称
+
+| Type     | Array\<string> |
+| -------- | -------------- |
+| Required | false          |
+| Default  | [AxiosError]   |
+
+**responseErrorTypeImportDeclaration.moduleSpecifier**
+
+响应错误类型的模块
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | Axios  |
 
 **importWithExtension**
 
@@ -278,12 +322,44 @@ Whether to add an extension (such as .ts) in the import path
 | Required | false  |
 | Default  | true   |
 
+**placeholderData**
 
+Placeholder data configuration when generating hooks
+
+**placeholderData.value**
+
+The value of the placeholder data,When there is no pathInclude attribute, it will be added to all get methods.
+
+| Type     | any    |
+| -------- | ------ |
+| Required | false  |
+| Default  |        |
+
+**placeholderData.pathInclude**
+
+Which paths contain placeholder data (string or regular)
+
+| Type     | Array\<string\|RegExp> |
+| -------- | ---------------------- |
+| Required | false                  |
+| Default  | []                     |
 
 **Example**
 
 ```ts
-    pluginVueQuery({
-      importWithExtension:false
-    })
+pluginVueQuery({
+  requestConfigTypeImportDeclaration: {
+    namedImports: ['AxiosRequestConfig'],
+    moduleSpecifier: 'axios',
+  },
+  responseErrorTypeImportDeclaration: {
+    namedImports: ['AxiosError'],
+    moduleSpecifier: 'axios',
+  },
+  importWithExtension: false,
+  placeholderData: {
+    value: 'keepPreviousData',
+    pathInclude: ['/pet', /^\/user/]
+  }
+})
 ```
