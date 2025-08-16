@@ -33,13 +33,13 @@ export function jsDocTemplateFromSchema(description?: string, schema?: Schema, p
     // 最小值
     if ('minimum' in schema) {
       const exclusiveText = schema.exclusiveMinimum ? ` - ${propertyName}>${schema.minimum}` : `- ${propertyName}≥${schema.minimum}`
-      tags.push({ tagName: 'minimum', text: `${schema.minimum}${exclusiveText}` })
+      tags.push({ tagName: 'minimum', text: `${schema.minimum} ${exclusiveText}` })
     }
 
     // 最大值
     if ('maximum' in schema) {
       const exclusiveText = schema.exclusiveMaximum ? ` - ${propertyName}<${schema.maximum}` : ` - ${propertyName}≤${schema.maximum}`
-      tags.push({ tagName: 'maximum', text: `${schema.maximum}${exclusiveText}` })
+      tags.push({ tagName: 'maximum', text: `${schema.maximum} ${exclusiveText}` })
     }
     //minLength
     if ('minLength' in schema) {

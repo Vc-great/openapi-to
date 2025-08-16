@@ -24,7 +24,7 @@ export function buildSchemas(schemaName: string, schema: ComponentsSchema): Sche
       kind: StructureKind.Interface,
       name: typeName,
       isExported: true,
-      docs: jsDocTemplateFromSchema(schema.description, schema),
+      docs: jsDocTemplateFromSchema(schema.description, schema, schemaName),
       properties: buildSchemaPropertiesTypes(schema, schemaName) || [],
     })
     return statements

@@ -72,7 +72,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
         operationSourceFile.addStatements(imports)
 
         const enumNames = operationEnums.map((item) => enumRegistry.getEnumValueName(item.enumValue, item.name))
-        operationSourceFile.addStatements(buildTypeImports(enumNames, '../types/enum.model'))
+        operationSourceFile.addStatements(buildTypeImports(enumNames, '../types/enum.model.ts'))
 
         operationSourceFile.addStatements(operationStatements)
         ctx.setSourceFiles([pluginEnum.TsType, operation.tagName, operation.accessor.operationName], operationSourceFile)
@@ -227,7 +227,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
       },
       buildEnd: async (ctx) => {
         const enumVariableStatements = buildEnum(enumRegistry.getAll())
-        const filePath = path.join(componentFolderPath, formatterModuleSpecifier('enum.model.ts', pluginConfig?.importWithExtension))
+        const filePath = path.join(componentFolderPath, 'enum.model.ts')
         const enumSourceFile = project.createSourceFile(filePath, '', { overwrite: true })
         enumSourceFile.addStatements(enumVariableStatements)
         ctx.setSourceFiles([pluginEnum.TsType, 'enum.model'], enumSourceFile)

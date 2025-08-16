@@ -40,7 +40,7 @@ export function buildSchemaPropertiesTypes(baseSchema: SchemaObject, schemaModel
         name: propertyKey,
         type: typeString,
         //todo
-        docs: jsDocTemplateFromSchema(schema.description, schema),
+        docs: jsDocTemplateFromSchema(schema.description, schema,propertyName),
       }
     }
   }).filter(Boolean)
