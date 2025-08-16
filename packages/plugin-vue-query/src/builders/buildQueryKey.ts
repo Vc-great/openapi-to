@@ -11,7 +11,7 @@ export function buildQueryKey(operation: OperationWrapper, pluginConfig?: Plugin
   const url = operation.method === OpenAPIV3.HttpMethods.GET ? new URLPath(<string>operation.accessor.operation.path).requestPath : `'${operation.path}'`
   const queryKeyName = formatterQueryKeyName(operation)
 
-  const queryParameters = operation.accessor.hasQueryParameters ? `params?:${operation.accessor.operationTSType?.queryParams}` : ''
+  const queryParameters = operation.accessor.hasQueryParameters ? `params?:MaybeRefOrGetter<${operation.accessor.operationTSType?.queryParams}>` : ''
   const pathParameters = operation.accessor.parameters
     .filter((x) => x.in === 'path')
     .map((item: OpenAPIV3.ParameterObject) => {
@@ -47,7 +47,7 @@ export function buildQueryKey(operation: OperationWrapper, pluginConfig?: Plugin
       {
         name: queryKeyName,
         type: '',
-        initializer: `( ${parameters}) => [{ url:${url}, method: '${operation.method}'${operation.accessor.hasQueryParameters ? ',...(params ? [params] : [])' : ''} }] as const`,
+        initializer: `( ${parameters}) => [{ url:${url}, method: '${operation.method}'}${operation.accessor.hasQueryParameters ? ',...(params ? [params] : [])' : ''}] as const`,
       },
     ],
     isExported: true,

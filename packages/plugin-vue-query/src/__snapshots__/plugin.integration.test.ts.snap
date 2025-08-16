@@ -1,20 +1,54 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Ts Request Plugin Integration > 应该生成默认的服务类文件 1`] = `
-"import type { AddPetMutationRequest, AddPetMutationResponse } from "./add-pet.types.ts";
-import { request } from "@/utils/request";
+"import type { AxiosRequestConfig } from "axios";
+import { toValue } from "vue";
+import type { MaybeRefOrGetter } from "vue";
+import { useMutation } from "@tanstack/vue-query";
+import type { UseMutationOptions } from "@tanstack/vue-query";
+import type { AddPetMutationRequest, AddPetMutationResponse, AddPetResponseError } from "./add-pet.types.ts";
+import { addPetService } from "./add-pet.service.ts";
+
+/** the final transformed data type after \`select\` (or other transforms); this is what components receive. */
+type TData = AddPetMutationResponse;
+
+export interface TVariables {
+  /** The data to be sent in the request body. */
+  data: MaybeRefOrGetter<AddPetMutationRequest>;
+}
+
+export const addPetMutationKey = () => [{ url: '/pet', method: 'post' }] as const;
+
+export type AddPetMutationKey = ReturnType<typeof addPetMutationKey>;
 
 /**
  * @summary Add a new pet to the store
  */
-export async function addPetService(data: AddPetMutationRequest, requestConfig?: Partial<AxiosRequestConfig<AddPetMutationRequest>>) {
-  const res = await request<AddPetMutationResponse, AxiosResponse<AddPetMutationResponse, AddPetMutationRequest>, AddPetMutationRequest>({
-    method: 'POST',
-    url: '/pet',
-    data,
-    ...requestConfig
+export function useAddPet<TContext>(options?: {
+  requestConfig?: Partial<AxiosRequestConfig<AddPetMutationRequest>>;
+  mutation?: UseMutationOptions<
+    AddPetMutationResponse,
+    AddPetResponseError,
+    TVariables,
+    TContext
+  >;
+}) {
+
+  const { mutation: mutationOptions = {}, requestConfig = {} } = options ?? {};
+  const mutationKey = addPetMutationKey();
+
+  return useMutation<
+    TData,
+    AddPetResponseError,
+    TVariables,
+    TContext
+  >({
+    mutationKey,
+    mutationFn: (data) => {
+      return addPetService(toValue(data), requestConfig);
+    },
+    ...mutationOptions
   });
-  return res.data;
 }
 "
 `;

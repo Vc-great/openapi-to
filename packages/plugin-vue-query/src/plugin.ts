@@ -9,19 +9,30 @@ import { buildImports } from './builders/buildImports.ts'
 import { buildMethodBody } from './builders/buildMethodBody.ts'
 import { buildMethodParameters } from './builders/buildMethodParameters.ts'
 import { buildQueryKey, buildQueryKeyType } from './builders/buildQueryKey.ts'
+import {buildTVariables} from "./builders/buildTVariables.ts";
 import {buildTypeParameters} from "./builders/buildTypeParameters.ts";
 import { jsDocTemplateFromMethod } from './templates/jsDocTemplateFromMethod.ts'
-import type { PluginConfig } from './types.ts'
+import type {PluginConfig, RequiredPluginConfig} from './types.ts'
 import HttpMethods = OpenAPIV3.HttpMethods
 export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
   const project = new Project()
-  const pluginConfig: PluginConfig = {
-    ..._pluginConfig,
+  const pluginConfig:RequiredPluginConfig = {
+    infinite:{
+      pageNumParam:""
+    },
+    requestConfigTypeImportDeclaration:{
+      namedImports: _pluginConfig?.responseErrorTypeImportDeclaration?.namedImports ?? ['AxiosRequestConfig'],
+      moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? 'axios',
+    },
     responseErrorTypeImportDeclaration: {
       namedImports: _pluginConfig?.responseErrorTypeImportDeclaration?.namedImports ?? [],
       moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? '',
     },
     importWithExtension: _pluginConfig?.importWithExtension ?? true,
+    placeholderData:{
+        value: _pluginConfig?.placeholderData?.value ?? undefined,
+        pathInclude: _pluginConfig?.placeholderData?.pathInclude ?? [],
+    }
   }
   return {
     name: pluginEnum.VueQuery,
@@ -39,7 +50,13 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 
         operationSourceFile.addStatements(buildImports(filePath, operation, pluginConfig))
 
-        operation.method === HttpMethods.GET && operationSourceFile.addStatements(buildQueryGenericType(operation))
+        if(operation.method === HttpMethods.GET){
+          operationSourceFile.addStatements(buildQueryGenericType(operation))
+        }else {
+          operationSourceFile.addStatements(buildTVariables(operation))
+        }
+
+
         //key
         operationSourceFile.addStatements([buildQueryKey(operation, pluginConfig), buildQueryKeyType(operation)])
 

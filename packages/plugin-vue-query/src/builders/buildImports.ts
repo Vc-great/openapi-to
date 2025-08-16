@@ -4,10 +4,10 @@ import { getRelativePath } from '@openapi-to/core/utils'
 import { compact, isEmpty, union } from 'lodash-es'
 import { OpenAPIV3 } from 'openapi-types'
 import { type ImportDeclarationStructure, StructureKind } from 'ts-morph'
-import type { PluginConfig } from '../types.ts'
+import type {PluginConfig, RequiredPluginConfig} from '../types.ts'
 import HttpMethods = OpenAPIV3.HttpMethods
 
-export function buildImports(filePath: string, operation: OperationWrapper, pluginConfig?: PluginConfig): Array<ImportDeclarationStructure> {
+export function buildImports(filePath: string, operation: OperationWrapper, pluginConfig: RequiredPluginConfig): Array<ImportDeclarationStructure> {
   const request = operation.accessor.operationRequest
   const operationType = operation.accessor.operationTSType
 
@@ -15,10 +15,24 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
   const isInfinite = operation.accessor.queryParameters.some((param) => param.name === pluginConfig?.infinite?.pageNumParam)
   const useQuery: ImportDeclarationStructure = {
     kind: StructureKind.ImportDeclaration,
-    namedImports: ['useQuery','queryOptions'],
+    namedImports: ['useQuery','queryOptions',
+      pluginConfig.placeholderData.value === 'keepPreviousData'?'keepPreviousData':undefined
+    ].filter(Boolean),
     moduleSpecifier: '@tanstack/vue-query',
   }
 
+  const vueOptions: ImportDeclarationStructure = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: ['toValue'],
+    moduleSpecifier: 'vue',
+  }
+
+  const maybeRefOrGetter : ImportDeclarationStructure = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: ['MaybeRefOrGetter'],
+    isTypeOnly: true,
+    moduleSpecifier: 'vue',
+  }
   const useQueryOptions : ImportDeclarationStructure = {
     kind: StructureKind.ImportDeclaration,
     namedImports: ['UseQueryOptions'],
@@ -30,6 +44,13 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
     kind: StructureKind.ImportDeclaration,
     namedImports: ['useMutation'],
     moduleSpecifier: '@tanstack/vue-query',
+  }
+
+  const requestConfigType : ImportDeclarationStructure = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: pluginConfig.requestConfigTypeImportDeclaration.namedImports,
+    isTypeOnly: true,
+    moduleSpecifier: pluginConfig.requestConfigTypeImportDeclaration.moduleSpecifier,
   }
 
 
@@ -51,8 +72,10 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
   }
 
   return [
+    requestConfigType,
+    vueOptions,
+    maybeRefOrGetter,
     ...(isMutation ? [useMutation, mutationConfiguration] : isInfinite ? [] : [useQuery,useQueryOptions]),
-
     ...[
       {
         kind: StructureKind.ImportDeclaration,

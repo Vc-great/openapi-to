@@ -40,7 +40,12 @@ describe('Ts Request Plugin Integration', () => {
       {
         name: 'request',
         root: '',
-        plugins: [defineTsTypePlugin(), defineTsRequestPlugin(),definePlugin()],
+        plugins: [defineTsTypePlugin(), defineTsRequestPlugin(),definePlugin({
+          placeholderData:{
+            value: 'keepPreviousData',
+            pathInclude: ['pet', /\/pet\/\w+/],
+          }
+        })],
         input: {
           path: '',
         },
@@ -63,15 +68,14 @@ describe('Ts Request Plugin Integration', () => {
     expect(fs.existsSync(petDir)).toBe(true)
 
     // 查找pet目录下的所有service文件
-    const serviceFiles = fs.readdirSync(petDir).filter((file) => file.endsWith('.service.ts'))
-    expect(serviceFiles.length).toBeGreaterThan(0)
+    const queryFiles = fs.readdirSync(petDir).filter((file) => file.endsWith('.service.ts'))
+    expect(queryFiles.length).toBeGreaterThan(0)
 
     // 选取第一个服务文件进行内容检查
-    const petServicePath = path.join(petDir, serviceFiles[0])
+    const petServicePath = path.join(petDir, 'use-add-pet.query.ts')
     const fileContent = fs.readFileSync(petServicePath, 'utf-8')
 
-    expect(fileContent).toContain('Service')
-    expect(fileContent).toMatch(/addPet|updatePet|findPetsByStatus/)
+    expect(fileContent).toContain('useAddPet')
 
     expect(fileContent).toMatchSnapshot()
   })

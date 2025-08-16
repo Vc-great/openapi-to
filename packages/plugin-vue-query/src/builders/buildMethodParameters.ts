@@ -2,26 +2,30 @@ import type { OperationWrapper } from '@openapi-to/core'
 import { camelCase } from 'lodash-es'
 import { OpenAPIV3 } from 'openapi-types'
 import type { OptionalKind, ParameterDeclarationStructure } from 'ts-morph'
-import type { PluginConfig } from '../types.ts'
+import type {PluginConfig, RequiredPluginConfig} from '../types.ts'
 import { formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
 
-export function buildMethodParameters(operation: OperationWrapper, pluginConfig?: PluginConfig): OptionalKind<ParameterDeclarationStructure>[] {
+export function buildMethodParameters(operation: OperationWrapper, pluginConfig: RequiredPluginConfig): OptionalKind<ParameterDeclarationStructure>[] {
+
+  const requestConfigType = pluginConfig.requestConfigTypeImportDeclaration.namedImports[0]
+
   const queryParameters: OptionalKind<ParameterDeclarationStructure> = {
     name: 'params',
     hasQuestionToken: operation.accessor.isQueryParametersOptional,
-    type: operation.accessor.operationTSType?.queryParams,
+    type: `MaybeRefOrGetter<${operation.accessor.operationTSType?.queryParams}>`,
   }
 
   const pathParameters: OptionalKind<ParameterDeclarationStructure>[] = operation.accessor.pathParameters.map((item: OpenAPIV3.ParameterObject) => {
     return {
       name: camelCase(item.name),
-      type: `${operation.accessor.operationTSType?.pathParams || ''}['${camelCase(item.name)}']`,
+      type: `MaybeRefOrGetter<${operation.accessor.operationTSType?.pathParams || ''}['${camelCase(item.name)}']>`,
     }
   })
 
   const options: OptionalKind<ParameterDeclarationStructure> = {
     name: 'options?',
     type: `{
+    requestConfig?: Partial<${requestConfigType}>
     query?: Partial<UseQueryOptions<
     TQueryFnData,
     ${operation.accessor.operationTSType?.responseError},
@@ -34,12 +38,13 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
 
   const mutationOptions: OptionalKind<ParameterDeclarationStructure> = {
     name: 'options?',
-    type: `{
+    type: `{       
+        requestConfig?: Partial<${requestConfigType}<${operation.accessor.operationTSType?.body||'never'}>>
         mutation?: UseMutationOptions<
-${operation.accessor.operationTSType?.responseSuccess},  
-${operation.accessor.operationTSType?.responseError}, 
- ${operation.accessor.operationTSType?.body ? `${operation.accessor.operationTSType?.body}` : 'never'},
- TContext
+        ${operation.accessor.operationTSType?.responseSuccess},  
+        ${operation.accessor.operationTSType?.responseError}, 
+        TVariables,
+        TContext
  >;
         }`,
   }
