@@ -25,8 +25,8 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
       moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? 'axios',
     },
     responseErrorTypeImportDeclaration: {
-      namedImports: _pluginConfig?.responseErrorTypeImportDeclaration?.namedImports ?? [],
-      moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? '',
+      namedImports: _pluginConfig?.responseErrorTypeImportDeclaration?.namedImports ?? ['AxiosError'],
+      moduleSpecifier: _pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ?? 'axios',
     },
     importWithExtension: _pluginConfig?.importWithExtension ?? true,
     placeholderData:{

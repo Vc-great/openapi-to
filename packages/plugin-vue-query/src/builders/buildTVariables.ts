@@ -14,7 +14,7 @@ export function buildTVariables(operation: OperationWrapper):(TypeAliasDeclarati
     {
       kind:StructureKind.Interface,
       name:'TVariables',
-      isExported:true,
+      isExported:false,
       properties: [
         ...getPathParameters(operation).map(item=>{
           return {

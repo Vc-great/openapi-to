@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Ts Request Plugin Integration > 应该生成默认的服务类文件 1`] = `
-"import type { AxiosRequestConfig } from "axios";
+"import type { AxiosError, AxiosRequestConfig } from "axios";
 import { toValue } from "vue";
 import type { MaybeRefOrGetter } from "vue";
 import { useMutation } from "@tanstack/vue-query";
@@ -12,7 +12,7 @@ import { addPetService } from "./add-pet.service.ts";
 /** the final transformed data type after \`select\` (or other transforms); this is what components receive. */
 type TData = AddPetMutationResponse;
 
-export interface TVariables {
+interface TVariables {
   /** The data to be sent in the request body. */
   data: MaybeRefOrGetter<AddPetMutationRequest>;
 }
@@ -28,7 +28,7 @@ export function useAddPet<TContext>(options?: {
   requestConfig?: Partial<AxiosRequestConfig<AddPetMutationRequest>>;
   mutation?: UseMutationOptions<
     AddPetMutationResponse,
-    AddPetResponseError,
+    AxiosError<AddPetResponseError>,
     TVariables,
     TContext
   >;
@@ -39,7 +39,7 @@ export function useAddPet<TContext>(options?: {
 
   return useMutation<
     TData,
-    AddPetResponseError,
+    AxiosError<AddPetResponseError>,
     TVariables,
     TContext
   >({

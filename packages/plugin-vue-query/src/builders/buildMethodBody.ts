@@ -34,12 +34,8 @@ export function buildMethodBody(operation: OperationWrapper, pluginConfig: Requi
  */
 function queryMethodBody(operation: OperationWrapper, pluginConfig: RequiredPluginConfig) {
 
-  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
-  const responseType =  operation.accessor.operationTSType?.responseSuccess
+  const responseErrorType = `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
 
-  const responseErrorType = hasResponseError
-    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
-    : operation.accessor.operationTSType?.responseError
 
   const pathParameters = operation.method === OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => `toValue(${x.name})`) : []
 

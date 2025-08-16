@@ -53,7 +53,22 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
     moduleSpecifier: pluginConfig.requestConfigTypeImportDeclaration.moduleSpecifier,
   }
 
+  const requestErrorType : ImportDeclarationStructure = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: pluginConfig.responseErrorTypeImportDeclaration.namedImports,
+    isTypeOnly: true,
+    moduleSpecifier: pluginConfig.responseErrorTypeImportDeclaration.moduleSpecifier,
+  }
 
+  const requestErrorTypeAndRequestConfigType : ImportDeclarationStructure = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: [
+      ...pluginConfig.responseErrorTypeImportDeclaration.namedImports,
+      ...pluginConfig.requestConfigTypeImportDeclaration.namedImports,
+    ],
+    isTypeOnly: true,
+    moduleSpecifier: pluginConfig.responseErrorTypeImportDeclaration.moduleSpecifier,
+  }
 
 
   const mutationConfiguration: ImportDeclarationStructure = {
@@ -63,7 +78,7 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
     moduleSpecifier: '@tanstack/vue-query',
   }
 
-  const hasErrorConfig = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
+
   const errorConfig = {
     kind: StructureKind.ImportDeclaration,
     namedImports: pluginConfig?.responseErrorTypeImportDeclaration?.namedImports,
@@ -72,7 +87,9 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
   }
 
   return [
-    requestConfigType,
+    requestConfigType.moduleSpecifier ===requestErrorType.moduleSpecifier?requestErrorTypeAndRequestConfigType:[
+      ...[requestErrorType, requestConfigType]
+    ],
     vueOptions,
     maybeRefOrGetter,
     ...(isMutation ? [useMutation, mutationConfiguration] : isInfinite ? [] : [useQuery,useQueryOptions]),
@@ -94,7 +111,6 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
         namedImports: [request?.requestName || ''],
         moduleSpecifier: formatterModuleSpecifier(getRelativePath(filePath, request?.filePath || ''), pluginConfig?.importWithExtension),
       },
-    ],
-    ...[ hasErrorConfig ? errorConfig : undefined],
+    ]
   ] as Array<ImportDeclarationStructure>
 }

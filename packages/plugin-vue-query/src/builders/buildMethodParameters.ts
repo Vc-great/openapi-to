@@ -28,7 +28,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig:
     requestConfig?: Partial<${requestConfigType}>
     query?: Partial<UseQueryOptions<
     TQueryFnData,
-    ${operation.accessor.operationTSType?.responseError},
+    ${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>,
     TData,
     TQueryData,
     ${formatterQueryKeyTypeName(operation)}
@@ -42,7 +42,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig:
         requestConfig?: Partial<${requestConfigType}<${operation.accessor.operationTSType?.body||'never'}>>
         mutation?: UseMutationOptions<
         ${operation.accessor.operationTSType?.responseSuccess},  
-        ${operation.accessor.operationTSType?.responseError}, 
+        ${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, 
         TVariables,
         TContext
  >;
