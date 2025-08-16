@@ -53,7 +53,7 @@ function queryMethodBody(operation: OperationWrapper, pluginConfig: RequiredPlug
       return operation.path.includes(item)
     }
       return item.test(operation.path)
-  })
+  }) || pluginConfig.placeholderData.value
 
 const placeholderData =  hasPlaceholderData?`placeholderData:${pluginConfig.placeholderData.value}`:''
   return `

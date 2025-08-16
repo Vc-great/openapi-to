@@ -2,8 +2,10 @@
 export type RequiredPluginConfig = Required<PluginConfig>
 
 export interface PluginConfig {
+  /**
+   * Not open yet
+   */
   infinite?: {
-    // 根据关键字判断是否生成 useSWRInfinite 代码
     pageNumParam?: string
   }
   requestConfigTypeImportDeclaration?: {
@@ -15,7 +17,7 @@ export interface PluginConfig {
     moduleSpecifier: string
   }
   /**
-   * 是否在 import 路径中添加扩展名（如 .ts）
+   * Whether to add an extension (such as .ts) in the import path
    */
   importWithExtension?: boolean
   placeholderData?:{
