@@ -33,9 +33,6 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^18.6.3
         version: 18.6.3
-      '@openapi-to/config-biome':
-        specifier: workspace:*
-        version: link:packages/config-biome
       '@openapi-to/config-ts':
         specifier: workspace:*
         version: link:packages/config-ts
@@ -193,8 +190,6 @@ importers:
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
-
-  packages/config-biome: {}
 
   packages/config-ts: {}
 

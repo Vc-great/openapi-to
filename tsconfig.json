@@ -8,7 +8,6 @@
     { "path": "./packages/cli" },
     { "path": "./packages/core" },
     { "path": "./packages/openapi" },
-    { "path": "./packages/config-biome" },
     { "path": "./packages/config-ts" },
     { "path": "./packages/config-tsup" },
     { "path": "./packages/plugin-ts-type" },
