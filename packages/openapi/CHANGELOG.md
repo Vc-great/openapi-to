@@ -1,5 +1,22 @@
 # openapi-to
 
+## 3.1.0
+
+### Minor Changes
+
+- feature: vue query
+
+### Patch Changes
+
+- Updated dependencies
+  - @openapi-to/cli@3.1.0
+  - @openapi-to/core@3.1.0
+  - @openapi-to/plugin-swr@3.1.0
+  - @openapi-to/plugin-ts-request@3.1.0
+  - @openapi-to/plugin-ts-type@3.1.0
+  - @openapi-to/plugin-vue-query@3.1.0
+  - @openapi-to/plugin-zod@3.1.0
+
 ## 3.0.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @openapi-to/config-ts
 
+## 3.1.0
+
+### Minor Changes
+
+- feature: vue query
+
 ## 3.0.1
 
 ### Patch Changes
