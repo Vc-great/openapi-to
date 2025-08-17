@@ -53,9 +53,9 @@ function queryMethodBody(operation: OperationWrapper, pluginConfig: RequiredPlug
       return operation.path.includes(item)
     }
       return item.test(operation.path)
-  }) || pluginConfig.placeholderData.value
+  }) || (isEmpty(pluginConfig.placeholderData.pathInclude)&&pluginConfig.placeholderData.value)
 
-const placeholderData =  hasPlaceholderData?`placeholderData:${pluginConfig.placeholderData.value}`:''
+
   return `
     const { query: userQueryOptions,requestConfig={} } = options ?? {}
     const queryKey = ${formatterQueryKeyName(operation)}(${[...pathParameters, operation.accessor.hasQueryParameters ? 'params' : ''].filter(Boolean).join(',')})
@@ -70,8 +70,8 @@ const placeholderData =  hasPlaceholderData?`placeholderData:${pluginConfig.plac
         queryKey,
         queryFn: async (${operation.method !== OpenAPIV3.HttpMethods.GET ? '{ signal }: { signal?: AbortSignal }' : `${operation.accessor.hasRequestBody ? 'data' : ''}`}) => {
             return ${operation.accessor.operationRequest?.requestName}(${params});
-        },
-        ${placeholderData}
+        }${hasPlaceholderData?",":""}
+        ${hasPlaceholderData?`placeholderData:${pluginConfig.placeholderData.value}`:''}
      }),
       ...userQueryOptions
     })`
@@ -108,7 +108,7 @@ function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginCo
     TContext
 >({
   mutationKey,
-  mutationFn :(${variables}) => {
+  mutationFn :({${variables}}) => {
     return ${operation.accessor.operationRequest?.requestName}(${params})
   },
   ...mutationOptions

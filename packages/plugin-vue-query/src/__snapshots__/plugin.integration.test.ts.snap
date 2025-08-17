@@ -27,7 +27,7 @@ export type AddPetMutationKey = ReturnType<typeof addPetMutationKey>;
 export function useAddPet<TContext>(options?: {
   requestConfig?: Partial<AxiosRequestConfig<AddPetMutationRequest>>;
   mutation?: UseMutationOptions<
-    AddPetMutationResponse,
+    TData,
     AxiosError<AddPetResponseError>,
     TVariables,
     TContext
@@ -44,7 +44,7 @@ export function useAddPet<TContext>(options?: {
     TContext
   >({
     mutationKey,
-    mutationFn: (data) => {
+    mutationFn: ({ data }) => {
       return addPetService(toValue(data), requestConfig);
     },
     ...mutationOptions

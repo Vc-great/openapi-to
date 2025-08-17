@@ -41,7 +41,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig:
     type: `{       
         requestConfig?: Partial<${requestConfigType}<${operation.accessor.operationTSType?.body||'never'}>>
         mutation?: UseMutationOptions<
-        ${operation.accessor.operationTSType?.responseSuccess},  
+        TData,  
         ${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>, 
         TVariables,
         TContext
@@ -50,13 +50,21 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig:
   }
 
 
+  //GET method
+  if(operation.method === OpenAPIV3.HttpMethods.GET) {
+    return [
+      ...(operation.accessor.hasPathParameters ? pathParameters : []),
+      ...(operation.accessor.hasQueryParameters ? [queryParameters] : []),
+      ...(operation.accessor.queryParameters.some((x) => x.name === pluginConfig?.infinite?.pageNumParam) ? [] : [options]),
+    ]
+
+  }
+
+
+  // not GET method
+
   return [
-    ...(operation.accessor.hasPathParameters ? pathParameters : []),
     ...(operation.accessor.hasQueryParameters ? [queryParameters] : []),
-    ...(operation.method !== OpenAPIV3.HttpMethods.GET
-      ? [mutationOptions]
-      : operation.accessor.queryParameters.some((x) => x.name === pluginConfig?.infinite?.pageNumParam)
-        ? []
-        : [options]),
+    mutationOptions
   ]
 }
