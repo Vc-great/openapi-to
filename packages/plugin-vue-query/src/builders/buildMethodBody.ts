@@ -68,7 +68,8 @@ function queryMethodBody(operation: OperationWrapper, pluginConfig: RequiredPlug
  >({
      ...queryOptions({
         queryKey,
-        queryFn: async (${operation.method !== OpenAPIV3.HttpMethods.GET ? '{ signal }: { signal?: AbortSignal }' : `${operation.accessor.hasRequestBody ? 'data' : ''}`}) => {
+        queryFn: async ({ signal }) => {
+        requestConfig.signal = signal
             return ${operation.accessor.operationRequest?.requestName}(${params});
         }${hasPlaceholderData?",":""}
         ${hasPlaceholderData?`placeholderData:${pluginConfig.placeholderData.value}`:''}

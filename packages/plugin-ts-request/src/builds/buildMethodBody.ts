@@ -73,15 +73,36 @@ const commonClientStrategy = (operation: OperationWrapper, requestFuncContent: s
   })
   ${pluginConfig?.parser === 'zod' ? `return { ...res, data: ${operation.accessor.operationZodSchema?.responseSuccess}.parse(res.data) }` : 'return res.data'}`
 
+
+
+const formDataConfig = ()=>{
+  return `
+      const formData = new FormData()
+      if (data) {
+        Object.keys(data).forEach((key) => {
+          const value = data[key as keyof typeof data]
+          if (typeof value === 'string' || (value as unknown) instanceof Blob) {
+            formData.append(key, value as unknown as string | Blob)
+          }
+        })
+      }
+  `
+}
+
+
 /**
  * Axios 客户端处理策略 - 纯函数
  */
-const axiosClientStrategy = (operation: OperationWrapper, requestFuncContent: string, pluginConfig?: PluginConfig): string =>
-  `const res = await request${buildAxiosTypeAnnotation(operation, pluginConfig)}({
+const axiosClientStrategy = (operation: OperationWrapper, requestFuncContent: string, pluginConfig?: PluginConfig): string =>{
+  const formData = operation.accessor.operation.getContentType() === 'multipart/form-data' ?formDataConfig():''
+  return [
+    formData,
+    `const res = await request${buildAxiosTypeAnnotation(operation, pluginConfig)}({
      ${requestFuncContent}
   })
     ${pluginConfig?.parser === 'zod' ? `return { ...res, data: ${operation.accessor.operationZodSchema?.responseSuccess}.parse(res.data) }` : 'return res.data'}`
-
+  ].filter(Boolean).join('\n')
+}
 /**
  * 选择客户端策略 - 高阶函数实现策略模式
  */

@@ -99,35 +99,7 @@ export const definePlugin = createPlugin<PluginConfig>((pluginConfig) => {
         ctx.setSourceFiles([pluginEnum.Request, operation.accessor.operationName], operationSourceFile)
       },
       tagEnd: async (tagData, ctx) => {
-        // tagSourceFile.addModule(buildNamespaceType(tagData, allStatements))
-        //todo imports zod
-        /*  const zodSourceFile = ctx.getSourceFiles([pluginEnum.Zod, tagData.name])
 
-        tagSourceFile.addStatements(buildImports(zodSourceFile, ctx, pluginConfig))*/
-        /*  tagSourceFile.addStatements(buildImports(operationTypeOfTag, operationZodSchemaOfTag, pluginConfig))
-        tagSourceFile.addClass({
-          name: `${upperFirst(tagData.formattedTagName)}Service`,
-          isExported: false,
-          docs: [
-            {
-              leadingTrivia: '\n',
-              description: `@tag ${tagData.name}\n${tagData.description || ''}`,
-            },
-          ],
-          methods: allMethodStatements,
-        })
-
-        tagSourceFile.addVariableStatement({
-          declarationKind: VariableDeclarationKind.Const,
-          declarations: [
-            {
-              name: `${camelCase(tagData.formattedTagName)}Service`,
-              initializer: `new ${upperFirst(tagData.formattedTagName)}Service`,
-            },
-          ],
-          isExported: true,
-        })*/
-        // ctx.setSourceFiles([tagData.name], tagSourceFile)
       },
     },
   }
