@@ -178,11 +178,21 @@ Whether to add an extension (such as .ts) in the import path
 | Required | false  |
 | Default  | true   |
 
+**dataReturnType**
+
+ReturnType that will be used when calling the client.Use dataReturnType only in get method
+
+| Type     | String |
+| -------- |--------|
+| Required | false  |
+| Default  |        |
+
 **Example**
 
 ```ts
 pluginTSRequest({
   parser: 'zod',
+  dataReturnType:'data',
   requestClient: 'axios',
   requestImportDeclaration: {
     moduleSpecifier: '@/utils/request',
@@ -344,10 +354,21 @@ Which paths contain placeholder data (string or regular)
 | Required | false                  |
 | Default  | []                     |
 
+**dataReturnType**
+
+ReturnType that will be used when calling the client.Use dataReturnType only in get method
+
+| Type     | String |
+| -------- |--------|
+| Required | false  |
+| Default  |        |
+
+
 **Example**
 
 ```ts
 pluginVueQuery({
+  dataReturnType:'data',
   requestConfigTypeImportDeclaration: {
     namedImports: ['AxiosRequestConfig'],
     moduleSpecifier: 'axios',
