@@ -1,6 +1,14 @@
-import type { OperationWrapper } from '@openapi-to/core'
-import { URLPath } from '@openapi-to/core/utils'
-import { type PluginConfig, type RequestClient, RequestClientEnum } from '../types.ts'
+import type { OperationWrapper } from "@openapi-to/core";
+import { URLPath } from "@openapi-to/core/utils";
+import { OpenAPIV3 } from "openapi-types";
+import {
+	type PluginConfig,
+	type RequestClient,
+	RequestClientEnum,
+	type RequiredPluginConfig,
+} from "../types.ts";
+
+import HttpMethods = OpenAPIV3.HttpMethods;
 
 /**
  * 构建请求方法体
@@ -8,75 +16,101 @@ import { type PluginConfig, type RequestClient, RequestClientEnum } from '../typ
  * @param pluginConfig - 插件配置
  * @returns 生成的请求方法体字符串
  */
-export function buildMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig): string {
-  // 使用函数组合构建请求配置内容
-  const requestFuncContent = buildRequestConfig(operation, pluginConfig)
+export function buildMethodBody(
+	operation: OperationWrapper,
+	pluginConfig: RequiredPluginConfig,
+): string {
+	// 使用函数组合构建请求配置内容
+	const requestFuncContent = buildRequestConfig(operation, pluginConfig);
 
-  // 函数式策略模式 - 根据客户端类型处理请求
-  return chooseClientStrategy(pluginConfig?.requestClient)(operation, requestFuncContent, pluginConfig)
+	// 函数式策略模式 - 根据客户端类型处理请求
+	return chooseClientStrategy(pluginConfig.requestClient)(
+		operation,
+		requestFuncContent,
+		pluginConfig,
+	);
 }
 
 /**
  * 构建请求配置
  */
-function buildRequestConfig(operation: OperationWrapper, pluginConfig?: PluginConfig): string {
-  const url = new URLPath(<string>operation.accessor.operation.path)
-  const schemaName = operation.accessor.operationZodSchema?.body
-  return [
-    `method:'${operation.method.toUpperCase()}'`,
-    buildHeader(operation),
-    `url:${url.requestPath}`,
-    operation.accessor.hasQueryParameters ? 'params' : '',
-    operation.accessor.hasRequestBody ? (pluginConfig?.parser === 'zod' ? `data:${schemaName}.parse(data)` : 'data') : '',
-    operation.accessor.isDownLoad ? "responseType:'blob'" : '',
-    '...requestConfig',
-    operation.accessor.hasQueryParametersArray ? buildParamsSerializer(operation, pluginConfig) : '',
-  ]
-    .filter(Boolean)
-    .join(',\n')
+function buildRequestConfig(
+	operation: OperationWrapper,
+	pluginConfig: RequiredPluginConfig,
+): string {
+	const url = new URLPath(<string>operation.accessor.operation.path);
+	const schemaName = operation.accessor.operationZodSchema?.body;
+	return [
+		`method:'${operation.method.toUpperCase()}'`,
+		buildHeader(operation),
+		`url:${url.requestPath}`,
+		operation.accessor.hasQueryParameters ? "params" : "",
+		operation.accessor.hasRequestBody
+			? pluginConfig.parser === "zod"
+				? `data:${schemaName}.parse(data)`
+				: "data"
+			: "",
+		operation.accessor.isDownLoad ? "responseType:'blob'" : "",
+		"...requestConfig",
+		operation.accessor.hasQueryParametersArray
+			? buildParamsSerializer(operation, pluginConfig)
+			: "",
+	]
+		.filter(Boolean)
+		.join(",\n");
 }
 
 /**
  * 构建请求头 - 纯函数
  */
 const buildHeader = (operation: OperationWrapper): string =>
-  operation.accessor.isJsonContainsDefaultCases
-    ? ''
-    : `headers:{
+	operation.accessor.isJsonContainsDefaultCases
+		? ""
+		: `headers:{
         'Content-Type':'${operation.accessor.operation.getContentType()}'
-    }`
+    }`;
 
 /**
  * 构建参数序列化器 - 纯函数
  */
-const buildParamsSerializer = (operation: OperationWrapper, pluginConfig?: PluginConfig): string =>
-  `paramsSerializer(params:${`${operation.accessor.operationTSType?.queryParams}`}) {
+const buildParamsSerializer = (
+	operation: OperationWrapper,
+	pluginConfig: RequiredPluginConfig,
+): string =>
+	`paramsSerializer(params:${`${operation.accessor.operationTSType?.queryParams}`}) {
       return qs.stringify(params)
-  }`
+  }`;
 
 /**
  * 构建 Axios 类型注解 - 纯函数
  */
-const buildAxiosTypeAnnotation = (operation: OperationWrapper, pluginConfig?: PluginConfig): string => {
-  const requestData = operation.accessor.hasRequestBody ? operation.accessor.operationTSType?.body : undefined
-  const responseConfigType = `AxiosResponse<${operation.accessor.operationTSType?.responseSuccess}${requestData ? `,${requestData}` : ''}>`
+const buildAxiosTypeAnnotation = (
+	operation: OperationWrapper,
+	pluginConfig: RequiredPluginConfig,
+): string => {
+	const requestData = operation.accessor.hasRequestBody
+		? operation.accessor.operationTSType?.body
+		: undefined;
+	const responseConfigType = `AxiosResponse<${operation.accessor.operationTSType?.responseSuccess}${requestData ? `,${requestData}` : ""}>`;
 
-  return `<${operation.accessor.operationTSType?.responseSuccess},${responseConfigType}${requestData ? `,${requestData}` : ''}>`
-}
+	return `<${operation.accessor.operationTSType?.responseSuccess},${responseConfigType}${requestData ? `,${requestData}` : ""}>`;
+};
 
 /**
  * 通用客户端处理策略 - 纯函数
  */
-const commonClientStrategy = (operation: OperationWrapper, requestFuncContent: string, pluginConfig?: PluginConfig): string =>
-  `const res = await request<${operation.accessor.operationTSType?.responseSuccess}>({
+const commonClientStrategy = (
+	operation: OperationWrapper,
+	requestFuncContent: string,
+	pluginConfig: RequiredPluginConfig,
+): string =>
+	`const res = await request<${operation.accessor.operationTSType?.responseSuccess}>({
      ${requestFuncContent}
   })
-  ${pluginConfig?.parser === 'zod' ? `return { ...res, data: ${operation.accessor.operationZodSchema?.responseSuccess}.parse(res.data) }` : 'return res.data'}`
+  ${pluginConfig.parser === "zod" ? `return { ...res, data: ${operation.accessor.operationZodSchema?.responseSuccess}.parse(res.data) }` : "return res.data"}`;
 
-
-
-const formDataConfig = ()=>{
-  return `
+const formDataConfig = () => {
+	return `
       const formData = new FormData()
       if (data) {
         Object.keys(data).forEach((key) => {
@@ -86,24 +120,48 @@ const formDataConfig = ()=>{
           }
         })
       }
-  `
-}
-
+  `;
+};
 
 /**
  * Axios 客户端处理策略 - 纯函数
  */
-const axiosClientStrategy = (operation: OperationWrapper, requestFuncContent: string, pluginConfig?: PluginConfig): string =>{
-  const formData = operation.accessor.operation.getContentType() === 'multipart/form-data' ?formDataConfig():''
-  return [
-    formData,
-    `const res = await request${buildAxiosTypeAnnotation(operation, pluginConfig)}({
+const axiosClientStrategy = (
+	operation: OperationWrapper,
+	requestFuncContent: string,
+	pluginConfig: RequiredPluginConfig,
+): string => {
+	const formData =
+		operation.accessor.operation.getContentType() === "multipart/form-data"
+			? formDataConfig()
+			: "";
+
+	//只在get方法中使用 dataReturnType
+	const dataKey =
+		operation.method === HttpMethods.GET
+			? operation.accessor?.dataReturnType.find(
+					(item) => item === pluginConfig.dataReturnType,
+				)
+			: "";
+
+	const result = `return res.data${dataKey ? `.${dataKey}` : ""}`;
+
+	const zodResult = `return { ...res, data: ${operation.accessor.operationZodSchema?.responseSuccess}${dataKey ? `.shape.\`${dataKey}\`` : ""}.parse(${result}) }`;
+
+	return [
+		formData,
+		`const res = await request${buildAxiosTypeAnnotation(operation, pluginConfig)}({
      ${requestFuncContent}
   })
-    ${pluginConfig?.parser === 'zod' ? `return { ...res, data: ${operation.accessor.operationZodSchema?.responseSuccess}.parse(res.data) }` : 'return res.data'}`
-  ].filter(Boolean).join('\n')
-}
+    ${pluginConfig.parser === "zod" ? zodResult : result}`,
+	]
+		.filter(Boolean)
+		.join("\n");
+};
 /**
  * 选择客户端策略 - 高阶函数实现策略模式
  */
-const chooseClientStrategy = (clientType?: RequestClient) => (clientType === RequestClientEnum.COMMON ? commonClientStrategy : axiosClientStrategy)
+const chooseClientStrategy = (clientType?: RequestClient) =>
+	clientType === RequestClientEnum.COMMON
+		? commonClientStrategy
+		: axiosClientStrategy;

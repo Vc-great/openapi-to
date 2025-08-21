@@ -55,6 +55,8 @@ describe('definePlugin', () => {
     accessor: {
       operationName: string
       setOperationRequest: ReturnType<typeof vi.fn>
+      setDataReturnType: ReturnType<typeof vi.fn>
+      dataReturnType: string[]
       operationTSType: {
         pathParams: string
         queryParams: string
@@ -103,6 +105,7 @@ describe('definePlugin', () => {
       accessor: {
         operationName: 'testOperation',
         setOperationRequest: vi.fn(),
+        setDataReturnType: vi.fn(),
         operationTSType: {
           pathParams: 'PathParams',
           queryParams: 'QueryParams',
@@ -195,6 +198,7 @@ describe('definePlugin', () => {
       requestClient:'axios',
       parser: undefined,
       importWithExtension: true,
+      dataReturnType: '',
     })
     expect(buildMethodBody).toHaveBeenCalledWith(mockOperation, {
       requestImportDeclaration: {
@@ -207,6 +211,7 @@ describe('definePlugin', () => {
       requestClient:'axios',
       parser: undefined,
       importWithExtension: true,
+      dataReturnType: '',
     })
     expect(jsDocTemplateFromMethod).toHaveBeenCalledWith(mockOperation)
 
@@ -245,6 +250,7 @@ describe('definePlugin', () => {
           moduleSpecifier: '',
           namedImports: [],
         },
+        dataReturnType: '',
       }
     )
   })

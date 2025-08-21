@@ -194,6 +194,7 @@ describe('definePlugin', () => {
         tagName: 'users',
         accessor: {
           setOperationTSType: vi.fn(),
+          setDataReturnType: vi.fn(),
           operationId: 'getUsers',
           operationName: 'getUsers',
           operation: {

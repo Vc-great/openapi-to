@@ -44,7 +44,8 @@ describe('Ts Request Plugin Integration', () => {
           placeholderData:{
             value: 'keepPreviousData',
             pathInclude: ['pet', /\/pet\/\w+/],
-          }
+          },
+          dataReturnType:'tags'
         })],
         input: {
           path: '',

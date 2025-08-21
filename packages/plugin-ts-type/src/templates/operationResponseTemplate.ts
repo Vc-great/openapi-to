@@ -21,10 +21,10 @@ export function operationResponseTemplate({ code, jsonSchema }: JsonResponseObje
     return createTypeAlias(typeName, 'unknown', docs)
   }
 
-  if (schema.$ref) {
+/*  if (schema?.$ref) {
     const refType = `${upperFirst(getRefAlias(schema.$ref))}Model`
     return createTypeAlias(typeName, refType, docs)
-  }
+  }*/
 
   if (schema.type === 'object' && schema.properties) {
     return {
