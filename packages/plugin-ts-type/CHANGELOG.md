@@ -1,5 +1,13 @@
 # @openapi-to/plugin-ts-type
 
+## 3.1.1
+
+### Patch Changes
+
+- fix bug
+- Updated dependencies
+  - @openapi-to/core@3.1.1
+
 ## 3.1.0
 
 ### Minor Changes

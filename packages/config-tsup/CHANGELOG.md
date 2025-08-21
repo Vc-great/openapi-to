@@ -1,5 +1,11 @@
 # @openapi-to/config-tsup
 
+## 3.1.1
+
+### Patch Changes
+
+- fix bug
+
 ## 3.1.0
 
 ### Minor Changes

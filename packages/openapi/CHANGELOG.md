@@ -1,5 +1,19 @@
 # openapi-to
 
+## 3.1.1
+
+### Patch Changes
+
+- fix bug
+- Updated dependencies
+  - @openapi-to/cli@3.1.1
+  - @openapi-to/core@3.1.1
+  - @openapi-to/plugin-swr@3.1.1
+  - @openapi-to/plugin-ts-request@3.1.1
+  - @openapi-to/plugin-ts-type@3.1.1
+  - @openapi-to/plugin-vue-query@3.1.1
+  - @openapi-to/plugin-zod@3.1.1
+
 ## 3.1.0
 
 ### Minor Changes
