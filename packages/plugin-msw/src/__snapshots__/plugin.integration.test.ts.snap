@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MSW Plugin Integration > 应该生成MSW handler文件 1`] = `
+"import type { AddPetMutationResponse } from "./add-pet.types.ts";
+import { http, HttpResponse } from "msw";
+
+/** Whether to enable handler */
+export const enabled = false;
+
+/**
+ * @summary Add a new pet to the store
+ */
+export default function addPetHandler(data?: AddPetMutationResponse) {
+  return http.get(
+    '/pet',
+    (info) => {
+      return HttpResponse.json(data, {
+        status: 200,
+      });
+    },
+  );
+}
+"
+`;

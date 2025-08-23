@@ -274,6 +274,8 @@ Whether to add an extension (such as .ts) in the import path
     })
 ```
 
+
+
 ## pluginVueQuery
 
 With the VueQuery plugin you can create [VueQuery hooks](https://tanstack.com/query/latest/docs/framework/vue/overview) based on an operation.
@@ -384,3 +386,29 @@ pluginVueQuery({
   }
 })
 ```
+
+
+
+## pluginMSW
+
+With the MSW plugin you can create [mswjs hooks](https://mswjs.io/docs/) based on an operation.
+
+**importWithExtension**
+
+Whether to add an extension (such as .ts) in the import path
+
+| Type     | String |
+| -------- | ------ |
+| Required | false  |
+| Default  | true   |
+
+
+
+**Example**
+
+```ts
+    pluginMSW({
+      importWithExtension:false
+    })
+```
+

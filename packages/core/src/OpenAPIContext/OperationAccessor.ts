@@ -30,6 +30,11 @@ type OperationZodSchema = {
 	filePath: string;
 };
 
+type OperationFaker = {
+	responseSuccess: string;
+	filePath: string;
+};
+
 type OperationRequest = {
 	requestName: string;
 	filePath: string;
@@ -39,6 +44,7 @@ export class OperationAccessor {
 	private static _instances = new Map<string, OperationAccessor>();
 	private _operationType: OperationTSType | undefined;
 	private _operationZodSchema: OperationZodSchema | undefined;
+	private _operationFaker: OperationFaker | undefined;
 	private _operationRequest: OperationRequest | undefined;
 	private _dataReturnType: string[] | undefined;
 	constructor(public operation: Operation) {}
@@ -127,6 +133,14 @@ export class OperationAccessor {
 
 	get operationRequest() {
 		return this._operationRequest;
+	}
+
+	get operationFaker() {
+		return this._operationFaker;
+	}
+
+	setOperationFaker(operationFaker: OperationFaker) {
+		this._operationFaker = operationFaker;
 	}
 
 	get dataReturnType() {

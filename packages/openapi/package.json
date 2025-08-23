@@ -1,79 +1,80 @@
 {
-  "name": "openapi-to",
-  "version": "3.1.1",
-  "description": "OpenAPI to TypeScript,Axios,request,zod,type,MSW,Faker,nestjs.",
-  "keywords": [
-    "openapi",
-    "generate",
-    "typescript",
-    "plugins",
-    "codegen",
-    "cli",
-    "nestjs"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Vc-great/openapi-to.git",
-    "directory": ""
-  },
-  "license": "MIT",
-  "author": "",
-  "sideEffects": false,
-  "type": "module",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
-    "./utils": {
-      "import": "./dist/utils.js",
-      "require": "./dist/utils.cjs"
-    }
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "bin": {
-    "openapi": "bin/openapi.js"
-  },
-  "files": [
-    "dist",
-    "bin",
-    "!/**/**.test.**",
-    "!/**/__tests__/**"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "clean": "npx rimraf ./dist",
-    "lint": "bun biome lint .",
-    "lint:fix": "bun biome lint --write --unsafe .",
-    "release": "pnpm publish --no-git-check",
-    "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
-    "start": "tsup --watch",
-    "test": "vitest --passWithNoTests",
-    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
-  },
-  "dependencies": {
-    "@openapi-to/cli": "workspace:*",
-    "@openapi-to/core": "workspace:*",
-    "@openapi-to/plugin-swr": "workspace:*",
-    "@openapi-to/plugin-vue-query": "workspace:*",
-    "@openapi-to/plugin-ts-request": "workspace:*",
-    "@openapi-to/plugin-ts-type": "workspace:*",
-    "@openapi-to/plugin-zod": "workspace:*",
-    "@types/update-notifier": "^6.0.8",
-    "semver": "^7.5.4",
-    "update-notifier": "^7.0.0"
-  },
-  "engines": {
-    "node": ">=20",
-    "pnpm": ">=10.7.1"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
-  "devDependencies": {
-    "@openapi-to/config-tsup": "workspace:*"
-  }
+	"name": "openapi-to",
+	"version": "3.1.1",
+	"description": "OpenAPI to TypeScript,Axios,request,zod,type,MSW,Faker,nestjs.",
+	"keywords": [
+		"openapi",
+		"generate",
+		"typescript",
+		"plugins",
+		"codegen",
+		"cli",
+		"nestjs"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Vc-great/openapi-to.git",
+		"directory": ""
+	},
+	"license": "MIT",
+	"author": "",
+	"sideEffects": false,
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		},
+		"./utils": {
+			"import": "./dist/utils.js",
+			"require": "./dist/utils.cjs"
+		}
+	},
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"bin": {
+		"openapi": "bin/openapi.js"
+	},
+	"files": [
+		"dist",
+		"bin",
+		"!/**/**.test.**",
+		"!/**/__tests__/**"
+	],
+	"scripts": {
+		"build": "tsup",
+		"clean": "npx rimraf ./dist",
+		"lint": "bun biome lint .",
+		"lint:fix": "bun biome lint --write --unsafe .",
+		"release": "pnpm publish --no-git-check",
+		"release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
+		"start": "tsup --watch",
+		"test": "vitest --passWithNoTests",
+		"typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+	},
+	"dependencies": {
+		"@openapi-to/cli": "workspace:*",
+		"@openapi-to/core": "workspace:*",
+		"@openapi-to/plugin-swr": "workspace:*",
+		"@openapi-to/plugin-msw": "workspace:*",
+		"@openapi-to/plugin-vue-query": "workspace:*",
+		"@openapi-to/plugin-ts-request": "workspace:*",
+		"@openapi-to/plugin-ts-type": "workspace:*",
+		"@openapi-to/plugin-zod": "workspace:*",
+		"@types/update-notifier": "^6.0.8",
+		"semver": "^7.5.4",
+		"update-notifier": "^7.0.0"
+	},
+	"engines": {
+		"node": ">=20",
+		"pnpm": ">=10.7.1"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"devDependencies": {
+		"@openapi-to/config-tsup": "workspace:*"
+	}
 }

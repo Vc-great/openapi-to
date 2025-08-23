@@ -1,9 +1,9 @@
-const fs = require('fs-extra')
-const path = require('path')
+const fs = require("fs-extra");
+const path = require("path");
 
-const filePath = path.resolve(__dirname, './.OpenAPI/openapi.config.ts')
+const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.ts");
 
-const config = `import { defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod,pluginVueQuery } from 'openapi-to'
+const config = `import { defineConfig, pluginMSW,pluginSWR, pluginTSRequest, pluginTSType, pluginZod,pluginVueQuery } from 'openapi-to'
 
 
 export default defineConfig({
@@ -18,6 +18,7 @@ export default defineConfig({
     }
   ],
   plugins: [
+    pluginMSW(),
     pluginSWR(),
     pluginVueQuery(),
     pluginZod(),
@@ -34,6 +35,6 @@ export default defineConfig({
       }
           })
   ]
-})`
+})`;
 
-fs.writeFileSync(filePath, config, { encoding: 'utf8' })
+fs.writeFileSync(filePath, config, { encoding: "utf8" });

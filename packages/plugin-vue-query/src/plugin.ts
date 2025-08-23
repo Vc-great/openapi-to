@@ -39,7 +39,7 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 			value: _pluginConfig?.placeholderData?.value ?? undefined,
 			pathInclude: _pluginConfig?.placeholderData?.pathInclude ?? [],
 		},
-		dataReturnType: _pluginConfig?.dataReturnType||'',
+		dataReturnType: _pluginConfig?.dataReturnType || "",
 	};
 	return {
 		name: pluginEnum.VueQuery,
@@ -92,7 +92,7 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 				});
 
 				ctx.setSourceFiles(
-					[pluginEnum.SWR, operation.accessor.operationName],
+					[pluginEnum.VueQuery, operation.accessor.operationName],
 					operationSourceFile,
 				);
 			},
