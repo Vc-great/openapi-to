@@ -1,5 +1,16 @@
 # @openapi-to/plugin-zod
 
+## 3.2.0
+
+### Minor Changes
+
+- feat msw
+
+### Patch Changes
+
+- Updated dependencies
+  - @openapi-to/core@3.2.0
+
 ## 3.1.1
 
 ### Patch Changes

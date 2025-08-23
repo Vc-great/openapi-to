@@ -1,0 +1,12 @@
+# @openapi-to/plugin-msw
+
+## 3.2.0
+
+### Minor Changes
+
+- feat msw
+
+### Patch Changes
+
+- Updated dependencies
+  - @openapi-to/core@3.2.0

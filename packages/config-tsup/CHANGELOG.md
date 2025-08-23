@@ -1,5 +1,11 @@
 # @openapi-to/config-tsup
 
+## 3.2.0
+
+### Minor Changes
+
+- feat msw
+
 ## 3.1.1
 
 ### Patch Changes

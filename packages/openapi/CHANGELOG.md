@@ -1,5 +1,23 @@
 # openapi-to
 
+## 3.2.0
+
+### Minor Changes
+
+- feat msw
+
+### Patch Changes
+
+- Updated dependencies
+  - @openapi-to/cli@3.2.0
+  - @openapi-to/core@3.2.0
+  - @openapi-to/plugin-msw@3.2.0
+  - @openapi-to/plugin-swr@3.2.0
+  - @openapi-to/plugin-ts-request@3.2.0
+  - @openapi-to/plugin-ts-type@3.2.0
+  - @openapi-to/plugin-vue-query@3.2.0
+  - @openapi-to/plugin-zod@3.2.0
+
 ## 3.1.1
 
 ### Patch Changes
