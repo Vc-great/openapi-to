@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 3.2.1
+
+### Patch Changes
+
+- fix bug
+
 ## 3.2.0
 
 ### Minor Changes
