@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import { kebabCase, upperFirst } from "lodash-es";
 import { OpenAPIV3 } from "openapi-types";
@@ -14,33 +15,16 @@ import { jsDocTemplateFromMethod } from "./templates/jsDocTemplateFromMethod.ts"
 import type { PluginConfig, RequiredPluginConfig } from "./types.ts";
 
 import HttpMethods = OpenAPIV3.HttpMethods;
+
+const stateMap = new WeakMap<
+	OpenapiToSingleConfig,
+	{
+		project: Project;
+		pluginConfig: RequiredPluginConfig;
+	}
+>();
+
 export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
-	const project = new Project();
-	const pluginConfig: RequiredPluginConfig = {
-		infinite: {
-			pageNumParam: "",
-		},
-		requestConfigTypeImportDeclaration: {
-			namedImports: _pluginConfig?.responseErrorTypeImportDeclaration
-				?.namedImports ?? ["AxiosRequestConfig"],
-			moduleSpecifier:
-				_pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ??
-				"axios",
-		},
-		responseErrorTypeImportDeclaration: {
-			namedImports: _pluginConfig?.responseErrorTypeImportDeclaration
-				?.namedImports ?? ["AxiosError"],
-			moduleSpecifier:
-				_pluginConfig?.responseErrorTypeImportDeclaration?.moduleSpecifier ??
-				"axios",
-		},
-		importWithExtension: _pluginConfig?.importWithExtension ?? true,
-		placeholderData: {
-			value: _pluginConfig?.placeholderData?.value ?? undefined,
-			pathInclude: _pluginConfig?.placeholderData?.pathInclude ?? [],
-		},
-		dataReturnType: _pluginConfig?.dataReturnType || "",
-	};
 	return {
 		name: pluginEnum.VueQuery,
 		dependencies: [pluginEnum.TsType, pluginEnum.Request],
@@ -48,8 +32,39 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 			buildStart: async (ctx) => {
 				// 可注入日志、校验 pluginConfig
 				// ctx.logger.info('Request 插件启动', pluginConfig)
+				stateMap.set(ctx.openapiToSingleConfig, {
+					project: new Project(),
+					pluginConfig: {
+						infinite: {
+							pageNumParam: "",
+						},
+						requestConfigTypeImportDeclaration: {
+							namedImports: _pluginConfig?.responseErrorTypeImportDeclaration
+								?.namedImports ?? ["AxiosRequestConfig"],
+							moduleSpecifier:
+								_pluginConfig?.responseErrorTypeImportDeclaration
+									?.moduleSpecifier ?? "axios",
+						},
+						responseErrorTypeImportDeclaration: {
+							namedImports: _pluginConfig?.responseErrorTypeImportDeclaration
+								?.namedImports ?? ["AxiosError"],
+							moduleSpecifier:
+								_pluginConfig?.responseErrorTypeImportDeclaration
+									?.moduleSpecifier ?? "axios",
+						},
+						importWithExtension: _pluginConfig?.importWithExtension ?? true,
+						placeholderData: {
+							value: _pluginConfig?.placeholderData?.value ?? undefined,
+							pathInclude: _pluginConfig?.placeholderData?.pathInclude ?? [],
+						},
+						dataReturnType: _pluginConfig?.dataReturnType || "",
+					},
+				});
 			},
 			operation: async (operation, ctx) => {
+				const { project, pluginConfig } = stateMap.get(
+					ctx.openapiToSingleConfig,
+				)!;
 				const hookName = `use${upperFirst(operation.accessor.operationName)}`;
 
 				const filePath = path.join(

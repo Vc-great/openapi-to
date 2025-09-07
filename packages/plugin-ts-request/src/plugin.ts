@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import {
 	formatterModuleSpecifier,
@@ -17,42 +18,52 @@ import { buildMethodParameters } from "./builds/buildMethodParameters.ts";
 import { jsDocTemplateFromMethod } from "./template/jsDocTemplateFromMethod.ts";
 import type { PluginConfig, RequiredPluginConfig } from "./types.ts";
 
+const stateMap = new WeakMap<
+	OpenapiToSingleConfig,
+	{
+		project: Project;
+		pluginConfig: RequiredPluginConfig;
+	}
+>();
 export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
-	const project = new Project();
-	const dependencies = [
-		...(_pluginConfig?.parser === "zod" ? [pluginEnum.Zod] : []),
-		pluginEnum.TsType,
-	];
-
-	const pluginConfig: RequiredPluginConfig = {
-		requestImportDeclaration: {
-			moduleSpecifier:
-				_pluginConfig?.requestImportDeclaration?.moduleSpecifier ||
-				"@/utils/request",
-		},
-		requestConfigTypeImportDeclaration: {
-			namedImports:
-				_pluginConfig?.requestConfigTypeImportDeclaration?.namedImports || [],
-			moduleSpecifier:
-				_pluginConfig?.requestConfigTypeImportDeclaration?.moduleSpecifier ||
-				"",
-		},
-		requestClient: _pluginConfig?.requestClient || "axios",
-		parser: _pluginConfig?.parser,
-		importWithExtension: _pluginConfig?.importWithExtension ?? true,
-		dataReturnType: _pluginConfig?.dataReturnType || "",
-	};
-
 	return {
-		dependencies: dependencies,
+		dependencies: [
+			...(_pluginConfig?.parser === "zod" ? [pluginEnum.Zod] : []),
+			pluginEnum.TsType,
+		],
 		name: pluginEnum.Request,
 		hooks: {
 			buildStart: async (ctx) => {
 				// 可注入日志、校验 pluginConfig
 				// ctx.logger.info('Request 插件启动', pluginConfig)
+				stateMap.set(ctx.openapiToSingleConfig, {
+					project: new Project(),
+					pluginConfig: {
+						requestImportDeclaration: {
+							moduleSpecifier:
+								_pluginConfig?.requestImportDeclaration?.moduleSpecifier ||
+								"@/utils/request",
+						},
+						requestConfigTypeImportDeclaration: {
+							namedImports:
+								_pluginConfig?.requestConfigTypeImportDeclaration
+									?.namedImports || [],
+							moduleSpecifier:
+								_pluginConfig?.requestConfigTypeImportDeclaration
+									?.moduleSpecifier || "",
+						},
+						requestClient: _pluginConfig?.requestClient || "axios",
+						parser: _pluginConfig?.parser,
+						importWithExtension: _pluginConfig?.importWithExtension ?? true,
+						dataReturnType: _pluginConfig?.dataReturnType || "",
+					},
+				});
 			},
 			tagStart: async (tagData, ctx) => {},
 			operation: async (operation, ctx) => {
+				const { project, pluginConfig } = stateMap.get(
+					ctx.openapiToSingleConfig,
+				)!;
 				const requestName = `${operation.accessor.operationName}Service`;
 				const statement: FunctionDeclarationStructure = {
 					kind: StructureKind.Function,

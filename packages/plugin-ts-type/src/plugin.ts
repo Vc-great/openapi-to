@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import {
 	formatterModuleSpecifier,
@@ -13,7 +14,7 @@ import { buildComponentsRequestBody } from "@/builds/components/buildComponentsR
 import { buildComponentsResponse } from "@/builds/components/buildComponentsResponse.ts";
 import type { SchemaDeclarationStructure } from "@/builds/components/buildSchemas.ts";
 import { buildSchemas } from "@/builds/components/buildSchemas.ts";
-import { buildJsonResponseTypes } from "@/builds/operation";
+
 import { collectEnumFormOperation } from "@/collect/collectEnumFormOperation.ts";
 import {
 	collectEnumsFromComponentParameters,
@@ -35,24 +36,37 @@ import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
 import { buildOperationTypes } from "./builds/buildOperationTypes.ts";
 import type { PluginConfig } from "./types.ts";
 
-export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
-	const project = new Project();
+const stateMap = new WeakMap<
+	OpenapiToSingleConfig,
+	{
+		project: Project;
+		componentFolderPath: string;
+		operationFileNameOfTag: Set<string>;
+	}
+>();
 
-	const operationFileNameOfTag: Set<string> = new Set();
-	let componentFolderPath = "";
+export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 	return {
 		name: pluginEnum.TsType,
 		hooks: {
 			buildStart: async (ctx) => {
-				componentFolderPath = path.join(
-					ctx.openapiToSingleConfig.output.dir,
-					"types",
-				);
+				stateMap.set(ctx.openapiToSingleConfig, {
+					project: new Project(),
+					componentFolderPath: path.join(
+						ctx.openapiToSingleConfig.output.dir,
+						"types",
+					),
+					operationFileNameOfTag: new Set(),
+				});
 			},
 			tagStart: async (tagData, ctx) => {
-				operationFileNameOfTag.clear();
+				const state = stateMap.get(ctx.openapiToSingleConfig);
+				//tag开始时，清空当前tag的operation记录
+				state?.operationFileNameOfTag.clear();
 			},
 			operation: async (operation, ctx) => {
+				const { project, componentFolderPath, operationFileNameOfTag } =
+					stateMap.get(ctx.openapiToSingleConfig)!;
 				const fileName = `${kebabCase(operation.accessor.operationName)}.types.ts`;
 				const filePath = path.join(
 					ctx.openapiToSingleConfig.output.dir,
@@ -113,6 +127,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 			},
 			tagEnd: async (tagData, ctx) => {},
 			componentsSchemas: async (schemas, ctx) => {
+				const { project, componentFolderPath, operationFileNameOfTag } =
+					stateMap.get(ctx.openapiToSingleConfig)!;
 				for (const schemaName in schemas) {
 					const schema = schemas[schemaName]!;
 
@@ -175,6 +191,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsParameters(parameters, ctx) {
+				const { project, componentFolderPath, operationFileNameOfTag } =
+					stateMap.get(ctx.openapiToSingleConfig)!;
 				enumRegistry.adds(collectEnumsFromComponentParameters(parameters));
 
 				const refs = collectRefsFromComponentParameters(parameters);
@@ -221,6 +239,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				});
 			},
 			componentsRequestBodies(requestBodies, ctx) {
+				const { project, componentFolderPath, operationFileNameOfTag } =
+					stateMap.get(ctx.openapiToSingleConfig)!;
 				// components.requestBodies
 				for (const [requestBodyName, requestObject] of Object.entries(
 					requestBodies,
@@ -271,6 +291,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsResponses(responses, ctx) {
+				const { project, componentFolderPath, operationFileNameOfTag } =
+					stateMap.get(ctx.openapiToSingleConfig)!;
 				// components.responses
 				forEach(responses, (response, responseName) => {
 					const formatterResponse =
@@ -325,6 +347,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				});
 			},
 			buildEnd: async (ctx) => {
+				const { project, componentFolderPath, operationFileNameOfTag } =
+					stateMap.get(ctx.openapiToSingleConfig)!;
 				const enumVariableStatements = buildEnum(enumRegistry.getAll());
 				const filePath = path.join(componentFolderPath, "enum.model.ts");
 				const enumSourceFile = project.createSourceFile(filePath, "", {
