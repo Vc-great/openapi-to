@@ -63,6 +63,7 @@
     "do-swagger2openapi": "^7.0.18",
     "esbuild-fix-imports-plugin": "^1.0.20",
     "eventemitter3": "^5.0.1",
+    "execa": "^8.0.1",
     "find-up": "^7.0.0",
     "fs-extra": "^11.2.0",
     "is-chinese": "^2.0.0",

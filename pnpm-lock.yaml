@@ -94,8 +94,8 @@ importers:
         specifier: ^11.2.0
         version: 11.3.0
       openapi-to:
-        specifier: workspace:*
-        version: link:../../packages/openapi
+        specifier: link:../../../../Library/pnpm/global/5/node_modules/openapi-to
+        version: link:../../../../Library/pnpm/global/5/node_modules/openapi-to
       zod:
         specifier: ^3.23.8
         version: 3.24.2
@@ -121,8 +121,8 @@ importers:
         specifier: ^2.2.2
         version: 2.7.3(@types/node@22.14.0)(typescript@5.8.3)
       openapi-to:
-        specifier: workspace:*
-        version: link:../../packages/openapi
+        specifier: link:../../../../Library/pnpm/global/5/node_modules/openapi-to
+        version: link:../../../../Library/pnpm/global/5/node_modules/openapi-to
       swr:
         specifier: ^2.2.5
         version: 2.3.3(react@19.1.0)
@@ -232,6 +232,9 @@ importers:
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.1
+      execa:
+        specifier: ^8.0.1
+        version: 8.0.1
       find-up:
         specifier: ^7.0.0
         version: 7.0.0

@@ -117,10 +117,42 @@ function resolveObjectSchema(schema: Schema, parentName: string): string {
   if (isBoolean(schema)) {
     return '.unknown()'
   }
+
+  // 如果有 properties，使用 buildSchemaPropertiesTypes 处理
   if ('properties' in schema && schema.properties) {
     return buildSchemaPropertiesTypes(schema as SchemaObject, parentName)
   }
-  return '.record(z.string(), z.unknown())'
+
+  // 如果没有 properties 但有 additionalProperties，生成 record 类型
+  if ('additionalProperties' in schema && schema.additionalProperties) {
+    const additional = schema.additionalProperties
+
+    // 处理 additionalProperties 为 true 的情况
+    if (additional === true) {
+      return '.record(z.string(), z.unknown())'
+    }
+
+    // 处理 additionalProperties 为引用的情况
+    if (!isBoolean(additional) && '$ref' in additional && additional.$ref) {
+      return `.record(z.string(), z.lazy(() => ${getlowerFirstRefAlias(additional.$ref)}))`
+    }
+
+    // 处理 additionalProperties 为具体 schema 的情况
+    if (!isBoolean(additional) && 'type' in additional) {
+      if (additional.type === 'object') {
+        return '.record(z.string(), z.object({}))'
+      }
+      // 递归处理其他类型
+      const itemType = schemaTemplate(additional as Schema, '', parentName)
+      const prefix = itemType.startsWith('.') ? 'z' : ''
+      return `.record(z.string(), ${prefix}${itemType})`
+    }
+
+    return '.record(z.string(), z.unknown())'
+  }
+
+  // 纯粹的 object 类型（没有 properties 也没有 additionalProperties）
+  return '.object({})'
 }
 
 function formatterString(schema: Schema) {

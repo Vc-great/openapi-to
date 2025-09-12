@@ -12,7 +12,9 @@ export function formatOpenapiToConfig(root: string, server: OpenapiToConfigServe
     root,
     ...server,
     output: {
+      ...server.output,
       dir: `${root}/${folderName}/${server.output.dir}`,
+
     },
     plugins: openapiToConfig.plugins,
   }

@@ -10,8 +10,8 @@ openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specifi
 + [x] ts type
 + [x] zod
 + [x] SWR
++ [x] MSW
 + [ ] Faker.js
-+ [ ] MSW
 + [ ] nestjs
 + [x] vue-Query
 + [ ] react-Query
@@ -26,14 +26,7 @@ openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specifi
 npm i openapi-to --save-dev
 ```
 
-
-## Usage 1
-```js
-  npx openapi init  // Generate openapi.config.ts file
-  npx openapi g     // Generate code from the openapi.config.ts file
-```
-
-## Usage 2
+## Usage 
 ```json [package.json]
 {
   "scripts": {
@@ -44,22 +37,21 @@ npm i openapi-to --save-dev
 ```
 ## Example
 ```typescript twoslash [single]
-import { defineConfig, pluginSWR, pluginTSRequest, pluginTSType, pluginZod } from 'openapi-to'
+import { defineConfig, pluginTSRequest, pluginTSType, pluginZod } from 'openapi-to'
 
 
 export default defineConfig({
   servers:[
     {
-    input: {
-      path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
-    },
-        output:{
-       dir:'server'
-    }
+      input: {
+        path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+      },
+       output:{
+         dir:'server'
+      }
     }
   ],
   plugins: [
-    pluginSWR(),
     pluginZod(),
     pluginTSType(),
     pluginTSRequest({
@@ -72,11 +64,84 @@ export default defineConfig({
         namedImports: ['AxiosRequestConfig'],
         moduleSpecifier: 'axios',
       }
+    })
+  ]
+})
+```
+# defineConfig
+When using TypeScript/JavaScript you should consider using defineConfig.
+
+# Options
+By setting the following options you can override the default behavior of openapi-to and even extend it with your plugins.
+## servers
+An array of server configurations. Each configuration defines the input source and output destination for the generated code.
+
+### input
+You can use either input.path, depending on your specific needs.
+
+**input.path**
+Specify your Swagger/OpenAPI file, either as an absolute path or a path relative to the root.
+
+| Type     | string |
+| -------- | ------ |
+| Required | True   |
+
+```ts
+import { defineConfig } from 'openapi-to'
+export default defineConfig({
+  servers:[
+    {
+      input: {
+        path:'https://petstore.swagger.io/v2/swagger.json'
+      }
+    }
   ]
 })
 ```
 
+### output
+
+**output.dir**
+
+The dir where all generated files will be exported. Directory is in the .OpenAPI folder
+
+**output.clean**  
+
+Clean the output directory before each build.
+
+| Type: 类型：     | `boolean` |
+| :--------------- | --------- |
+| Required: 必填： | `false`   |
+
+```ts
+import { defineConfig } from 'openapi-to'
+export default defineConfig({
+  servers:[
+    {
+      input: {
+        path:'https://petstore.swagger.io/v2/swagger.json'
+      },
+       output:{
+         dir:'server'
+      }
+    }
+  ]
+})
+```
+
+#### output.format 
+
+Specifies the formatting tool to be used.
+
+| Type:     | ` 'biome'` |
+| :-------- | :--------- |
+| Required: | `false`    |
+| Default:  |            |
+
+
+
 # plugins
+
 ## pluginTSRequest
 
 The  plugin enables you to generate API controllers, simplifying the process of handling API requests and improving integration between frontend and backend services.
