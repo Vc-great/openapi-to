@@ -1,5 +1,11 @@
 # @openapi-to/config-ts
 
+## 3.2.2
+
+### Patch Changes
+
+- fix bug
+
 ## 3.2.1
 
 ### Patch Changes
