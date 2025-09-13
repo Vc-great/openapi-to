@@ -1,4 +1,6 @@
-export type RequiredPluginConfig = Required<PluginConfig>;
+import type { RequiredDeep } from "type-fest";
+
+export type RequiredPluginConfig = RequiredDeep<PluginConfig>;
 
 export interface PluginConfig {
 	/**

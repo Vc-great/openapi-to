@@ -1,9 +1,13 @@
-import type { OperationWrapper } from '@openapi-to/core'
-import { isEmpty } from 'lodash-es'
-import { OpenAPIV3 } from 'openapi-types'
-import type {PluginConfig, RequiredPluginConfig} from '../types.ts'
-import { formatterQueryKeyName, formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
-import {getPathParameters} from "../utils/getPathParameters.ts";
+import type { OperationWrapper } from "@openapi-to/core";
+import { isEmpty } from "lodash-es";
+import { OpenAPIV3 } from "openapi-types";
+import type { PluginConfig, RequiredPluginConfig } from "../types.ts";
+import {
+	formatterQueryKeyName,
+	formatterQueryKeyTypeName,
+} from "../utils/formatterQueryKey.ts";
+import { getPathParameters } from "../utils/getPathParameters.ts";
+import { hasPlaceholderData } from "../utils/hasPlaceholderData.ts";
 
 /**
  * 构建请求方法体
@@ -11,20 +15,25 @@ import {getPathParameters} from "../utils/getPathParameters.ts";
  * @param pluginConfig - 插件配置
  * @returns 生成的请求方法体字符串
  */
-export function buildMethodBody(operation: OperationWrapper, pluginConfig: RequiredPluginConfig): string {
-  if (operation.accessor.queryParameters.some((x) => x.name === pluginConfig?.infinite?.pageNumParam)) {
-    //todo: infinite query
-    return ''
-  }
+export function buildMethodBody(
+	operation: OperationWrapper,
+	pluginConfig: RequiredPluginConfig,
+): string {
+	if (
+		operation.accessor.queryParameters.some(
+			(x) => x.name === pluginConfig?.infinite?.pageNumParam,
+		)
+	) {
+		//todo: infinite query
+		return "";
+	}
 
-  if (operation.method === OpenAPIV3.HttpMethods.GET) {
-    return queryMethodBody(operation, pluginConfig)
-  }
+	if (operation.method === OpenAPIV3.HttpMethods.GET) {
+		return queryMethodBody(operation, pluginConfig);
+	}
 
-  return mutationMethodBody(operation, pluginConfig)
+	return mutationMethodBody(operation, pluginConfig);
 }
-
-
 
 /**
  * 构建查询方法体
@@ -32,33 +41,34 @@ export function buildMethodBody(operation: OperationWrapper, pluginConfig: Requi
  * @param pluginConfig
  * @returns 生成的查询方法体字符串
  */
-function queryMethodBody(operation: OperationWrapper, pluginConfig: RequiredPluginConfig) {
+function queryMethodBody(
+	operation: OperationWrapper,
+	pluginConfig: RequiredPluginConfig,
+) {
+	const responseErrorType = `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`;
 
-  const responseErrorType = `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
+	const pathParameters =
+		operation.method === OpenAPIV3.HttpMethods.GET
+			? operation.accessor.pathParameters.map((x) => `toValue(${x.name})`)
+			: [];
 
+	const params = [
+		...pathParameters,
+		operation.accessor.hasQueryParameters ? "toValue(params)" : "",
+		operation.accessor.hasRequestBody ? "toValue(data)" : "",
+		"requestConfig",
+	]
+		.filter(Boolean)
+		.join(",");
 
-  const pathParameters = operation.method === OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => `toValue(${x.name})`) : []
+	const hasPlaceholder = hasPlaceholderData(
+		pluginConfig.placeholderData,
+		operation.path,
+	);
 
-  const params = [
-    ...pathParameters,
-    operation.accessor.hasQueryParameters ? 'toValue(params)' : '',
-    operation.accessor.hasRequestBody ? 'toValue(data)' : '',
-    'requestConfig'
-  ]
-    .filter(Boolean)
-    .join(',')
-
-  const hasPlaceholderData = pluginConfig.placeholderData.pathInclude?.some(item=>{
-    if (typeof item === 'string') {
-      return operation.path.includes(item)
-    }
-      return item.test(operation.path)
-  }) || (isEmpty(pluginConfig.placeholderData.pathInclude)&&pluginConfig.placeholderData.value)
-
-
-  return `
+	return `
     const { query: userQueryOptions,requestConfig={} } = options ?? {}
-    const queryKey = ${formatterQueryKeyName(operation)}(${[...pathParameters, operation.accessor.hasQueryParameters ? 'params' : ''].filter(Boolean).join(',')})
+    const queryKey = ${formatterQueryKeyName(operation)}(${[...pathParameters, operation.accessor.hasQueryParameters ? "params" : ""].filter(Boolean).join(",")})
 
     return useQuery<
     TQueryFnData,
@@ -71,34 +81,44 @@ function queryMethodBody(operation: OperationWrapper, pluginConfig: RequiredPlug
         queryFn: async ({ signal }) => {
         requestConfig.signal = signal
             return ${operation.accessor.operationRequest?.requestName}(${params});
-        }${hasPlaceholderData?",":""}
-        ${hasPlaceholderData?`placeholderData:${pluginConfig.placeholderData.value}`:''}
+        }${hasPlaceholder ? "," : ""}
+        ${hasPlaceholder ? `placeholderData:${pluginConfig.placeholderData.value}` : ""}
      }),
       ...userQueryOptions
-    })`
+    })`;
 }
 
-function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
+function mutationMethodBody(
+	operation: OperationWrapper,
+	pluginConfig?: PluginConfig,
+) {
+	const hasResponseError = !isEmpty(
+		pluginConfig?.responseErrorTypeImportDeclaration?.namedImports,
+	);
 
-  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
+	const responseErrorType = hasResponseError
+		? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
+		: operation.accessor.operationTSType?.responseError;
 
-  const responseErrorType = hasResponseError
-    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
-    : operation.accessor.operationTSType?.responseError
+	const params = [
+		...(operation.method !== OpenAPIV3.HttpMethods.GET
+			? operation.accessor.pathParameters.map((x) => `toValue(${x.name})`)
+			: ""),
+		operation.accessor.hasRequestBody ? "toValue(data)" : "",
+		"requestConfig",
+	]
+		.filter(Boolean)
+		.join(",");
+	const variables = [
+		...(operation.method !== OpenAPIV3.HttpMethods.GET
+			? operation.accessor.pathParameters.map((x) => `${x.name}`)
+			: ""),
+		operation.accessor.hasRequestBody ? "data" : "",
+	]
+		.filter(Boolean)
+		.join(",");
 
-
-
-  const params = [
-    ...operation.method !== OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => `toValue(${x.name})`) : '',
-    operation.accessor.hasRequestBody ? 'toValue(data)' : '',
-    'requestConfig'
-  ].filter(Boolean).join(',')
-  const variables = [
-    ...operation.method !== OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => `${x.name}`) : '',
-    operation.accessor.hasRequestBody ? 'data' : ''].filter(Boolean).join(',')
-
-
-  return `
+	return `
     const { mutation:mutationOptions={},requestConfig={} } = options ?? {}
     const mutationKey = ${formatterQueryKeyName(operation)}()
    
@@ -113,5 +133,5 @@ function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginCo
     return ${operation.accessor.operationRequest?.requestName}(${params})
   },
   ...mutationOptions
-})`
+})`;
 }

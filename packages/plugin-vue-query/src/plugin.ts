@@ -3,7 +3,7 @@ import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import { kebabCase, upperFirst } from "lodash-es";
 import { OpenAPIV3 } from "openapi-types";
-import { Project, StructureKind, TypeParameterVariance } from "ts-morph";
+import { Project, StructureKind } from "ts-morph";
 import { buildQueryGenericType } from "./builders/buildGenericType.ts";
 import { buildImports } from "./builders/buildImports.ts";
 import { buildMethodBody } from "./builders/buildMethodBody.ts";
@@ -54,7 +54,8 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 						},
 						importWithExtension: _pluginConfig?.importWithExtension ?? true,
 						placeholderData: {
-							value: _pluginConfig?.placeholderData?.value ?? undefined,
+							value:
+								_pluginConfig?.placeholderData?.value ?? "keepPreviousData",
 							pathInclude: _pluginConfig?.placeholderData?.pathInclude ?? [],
 						},
 						dataReturnType: _pluginConfig?.dataReturnType || "",
@@ -62,9 +63,12 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 				});
 			},
 			operation: async (operation, ctx) => {
-				const { project, pluginConfig } = stateMap.get(
-					ctx.openapiToSingleConfig,
-				)!;
+				const state = stateMap.get(ctx.openapiToSingleConfig);
+				if (!state) {
+					console.error("VueQuery plugin state not found");
+					return;
+				}
+				const { project, pluginConfig } = state;
 				const hookName = `use${upperFirst(operation.accessor.operationName)}`;
 
 				const filePath = path.join(

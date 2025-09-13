@@ -1,3 +1,5 @@
+import type { RequiredDeep } from "type-fest";
+
 export enum RequestClientEnum {
 	AXIOS = "axios",
 	COMMON = "common",
@@ -5,7 +7,9 @@ export enum RequestClientEnum {
 
 export type RequestClient = "axios" | "common";
 
-export type RequiredPluginConfig = Required<Omit<PluginConfig, "parser">> & {
+export type RequiredPluginConfig = RequiredDeep<
+	Omit<PluginConfig, "parser">
+> & {
 	parser?: "zod";
 };
 
