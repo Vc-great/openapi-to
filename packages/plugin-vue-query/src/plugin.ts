@@ -65,16 +65,18 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 			operation: async (operation, ctx) => {
 				const state = stateMap.get(ctx.openapiToSingleConfig);
 				if (!state) {
-					console.error("VueQuery plugin state not found");
+					new Error("VueQuery plugin state not found");
 					return;
 				}
 				const { project, pluginConfig } = state;
-				const hookName = `use${upperFirst(operation.accessor.operationName)}`;
-
+				const baseName = `use${upperFirst(operation.accessor.operationName)}`;
+				const suffix =
+					operation.method === HttpMethods.GET ? "query" : "mutation";
+				const hookName = `${baseName}${upperFirst(suffix)}`;
 				const filePath = path.join(
 					ctx.openapiToSingleConfig.output.dir,
 					kebabCase(operation.tagName),
-					`${kebabCase(hookName)}.query.ts`,
+					`${kebabCase(baseName)}.${suffix}.ts`,
 				);
 				const operationSourceFile = project.createSourceFile(filePath, "", {
 					overwrite: true,

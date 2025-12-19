@@ -11,7 +11,7 @@ export type AddPetMutationKey = ReturnType<typeof addPetMutationKey>;
 /**
  * @summary Add a new pet to the store
  */
-export function useAddPet(options?: {
+export function useAddPetMutation(options?: {
   mutation?: SWRMutationConfiguration<AddPetMutationResponse, AddPetResponseError, AddPetMutationKey | null, AddPetMutationRequest>;
   shouldFetch?: boolean;
 }) {

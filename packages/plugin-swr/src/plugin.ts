@@ -2,6 +2,7 @@ import path from "node:path";
 import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import { kebabCase, upperFirst } from "lodash-es";
+import { OpenAPIV3 } from "openapi-types";
 import { Project, StructureKind } from "ts-morph";
 import { buildImports } from "./builders/buildImports.ts";
 import { buildMethodBody } from "./builders/buildMethodBody.ts";
@@ -9,6 +10,8 @@ import { buildMethodParameters } from "./builders/buildMethodParameters.ts";
 import { buildQueryKey, buildQueryKeyType } from "./builders/buildQueryKey.ts";
 import { jsDocTemplateFromMethod } from "./templates/jsDocTemplateFromMethod.ts";
 import type { PluginConfig } from "./types.ts";
+
+import HttpMethods = OpenAPIV3.HttpMethods;
 
 const stateMap = new WeakMap<
 	OpenapiToSingleConfig,
@@ -50,15 +53,23 @@ export const definePlugin = createPlugin<PluginConfig>((_pluginConfig) => {
 				});
 			},
 			operation: async (operation, ctx) => {
-				const { project, pluginConfig } = stateMap.get(
-					ctx.openapiToSingleConfig,
-				)!;
-				const hookName = `use${upperFirst(operation.accessor.operationName)}`;
+				const state = stateMap.get(ctx.openapiToSingleConfig);
 
+				if (!state) {
+					new Error("SWR plugin state not found");
+					return;
+				}
+				const { project, pluginConfig } = state;
+
+				const baseName = `use${upperFirst(operation.accessor.operationName)}`;
+				const suffix =
+					operation.method === HttpMethods.GET ? "query" : "mutation";
+
+				const hookName = `${baseName}${upperFirst(suffix)}`;
 				const filePath = path.join(
 					ctx.openapiToSingleConfig.output.dir,
 					kebabCase(operation.tagName),
-					`${kebabCase(hookName)}.swr.ts`,
+					`${kebabCase(baseName)}.${suffix}.ts`,
 				);
 				const operationSourceFile = project.createSourceFile(filePath, "", {
 					overwrite: true,

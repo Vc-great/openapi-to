@@ -24,7 +24,7 @@ export type AddPetMutationKey = ReturnType<typeof addPetMutationKey>;
 /**
  * @summary Add a new pet to the store
  */
-export function useAddPet<TContext>(options?: {
+export function useAddPetMutation<TContext>(options?: {
   requestConfig?: Partial<AxiosRequestConfig<AddPetMutationRequest>>;
   mutation?: UseMutationOptions<
     TData,
