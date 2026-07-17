@@ -14,6 +14,17 @@ export type OpenapiToConfigSingleInput = {
 	 * api document path
 	 */
 	path: string;
+	/** Security policy for remote documents and external references. */
+	remote?: RemoteSourceOptions;
+};
+
+export type RemoteSourceOptions = {
+	allowPrivateNetwork?: boolean;
+	allowedHosts?: string[];
+	headers?: Record<string, string>;
+	timeoutMs?: number;
+	maxResponseBytes?: number;
+	maxRedirects?: number;
 };
 
 export type OpenapiToConfigSingleOutput = {
