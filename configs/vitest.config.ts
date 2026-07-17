@@ -5,7 +5,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     globals: true,
-    exclude: ['**/node_modules/**', '**/dist/**', '**/mocks/**'],
+    // Repository Agent scripts use Node's built-in test runner, not Vitest.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/mocks/**', '**/.agents/**'],
     coverage: {
       exclude: [
         '**/**/plugin.ts', // exclude because we have e2e

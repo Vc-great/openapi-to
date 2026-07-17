@@ -12,15 +12,15 @@ Read the root `AGENTS.md` first. Re-read current core lifecycle types and at lea
 Establish before editing:
 
 - Intended consumer and output kind: per operation, per component, per tag, or whole build.
-- Output representation: TypeScript source or non-TypeScript text/binary.
+- Output representation: legacy TypeScript `SourceFile`, TypeScript artifact, text artifact, JSON artifact, or binary artifact.
 - Required upstream metadata and plugin dependencies.
 - Configuration surface, defaults, file naming, import-extension policy, and public export name.
 - Supported OpenAPI constructs and deliberately unsupported cases.
 - Whether this is a new package or an extension to an existing package.
 
-For a new official plugin, ordinary registration work may include adding its package, plugin name to the existing enum/type, workspace/aggregate dependencies and exports, root TypeScript project reference, package exports, tests, and fixtures. Do not stop merely because the official name must be registered. Stop for separately scoped core-design changes: `HookContext`, Hook names/order, `OperationAccessor`'s public model, dependency-graph semantics, output representation, non-TypeScript artifacts, or existing plugin stage definitions. The fixed plugin-name union limits third-party extension; record that architecture concern rather than redesigning it incidentally.
+For a new official plugin, ordinary registration work may include adding its package, plugin name to the existing enum/type, workspace/aggregate dependencies and exports, root TypeScript project reference, package exports, tests, and fixtures. Do not stop merely because the official name must be registered. Stop for separately scoped core-design changes: `HookContext`, Hook names/order, `OperationAccessor`'s public model, dependency-graph semantics, or existing plugin stage definitions. The fixed plugin-name union limits third-party extension; record that architecture concern rather than redesigning it incidentally.
 
-At this revision `HookContext.setSourceFiles` collects only `ts-morph` `SourceFile` objects, and `PluginManager.writeFiles()` formats every collected file as TypeScript. If the requested plugin emits Markdown or other non-TypeScript content, stop before scaffolding: report that the current output contract cannot safely represent it and request explicit scope for a core output abstraction. Do not fake support with a `.md` `SourceFile`, write around the manager from a Hook, or assume another task added a generalized artifact type.
+P0 provides the general `GeneratedArtifact` contract. Existing TypeScript plugins may continue registering `ts-morph` files through `ctx.setSourceFiles()`; core adapts them to TypeScript artifacts. New plugins should prefer `ctx.addArtifact()`: use a TypeScript artifact for a `SourceFile`, JSON artifact for structured JSON, text artifact for Markdown/YAML/plain text, and binary only for a bounded, explicit byte output. Never fake a non-TypeScript file with a `SourceFile` or write around the artifact writer from a Hook.
 
 ## Workflow
 
@@ -49,6 +49,8 @@ Use only Hooks declared by `PluginDefinition` at the current revision:
 
 Verify the await boundaries in `runPluginsByTags.ts`, not only the Hook names. In the current runner, component Hooks finish before the tag loop; operations within a tag can run concurrently; operations from different tags can overlap; `tagEnd` can run before its operations finish; and a later `tagStart` can run while an earlier tag still has operations in flight. All scheduled operations are awaited before `buildEnd`, making it the current final aggregation barrier. Never depend on shared `currentTag`/`currentOperation` variables or an unpartitioned mutable SourceFile/import/Set/Map. Partition state by build/tag/operation or synchronize it explicitly.
 
+`ctx.addArtifact()` registers synchronously, but asynchronous operation Hooks can complete in any order. Core sorts the final artifact set; it cannot make concurrently mutated aggregate content deterministic. Collect immutable operation facts and emit a shared aggregate artifact once in `buildEnd`.
+
 Declare `dependencies` when the plugin reads metadata produced by another plugin. Verify names against `pluginEnum` and the current `PluginEnumType`; do not invent a name that core types cannot represent.
 
 ### 3. Implement isolated state
@@ -61,15 +63,17 @@ Declare `dependencies` when the plugin reads metadata produced by another plugin
 6. Run two consecutive builds with fresh configuration objects and assert that names, files, registries, and counters do not leak.
 7. Make missing state or missing dependency metadata a clear error, not a non-null assertion that later produces a vague exception.
 
-### 4. Produce deterministic files
+### 4. Produce deterministic artifacts
 
 1. Resolve every output beneath `ctx.openapiToSingleConfig.output.dir`.
 2. Derive names from normalized operation/schema names using existing utilities when they match the contract.
 3. Detect collisions after normalization, including case-only collisions relevant on Windows/macOS.
-4. Create `ts-morph` `SourceFile` objects with explicit overwrite behavior, then register them with a unique `ctx.setSourceFiles` key.
+4. Choose one output API: retain `ctx.setSourceFiles()` for a small change to an existing TypeScript plugin, otherwise register the correctly typed artifact with `ctx.addArtifact()`.
 5. Sort aggregate entries, imports, exports, schemas, and operations explicitly. Do not use timestamps, ambient locale, network data, or unseeded randomness.
 6. Create shared/barrel files once in `buildEnd`, never once per operation.
 7. Keep generated import specifiers consistent with the plugin's `importWithExtension` contract and existing `formatterModuleSpecifier`/`getRelativePath` helpers.
+8. Treat paths as output-root-relative artifact paths. Do not bypass normalization, case-collision, duplicate-content, traversal, symlink, size, or ownership-manifest checks.
+9. Identical paths with identical serialized bytes are deduplicated; identical or case-only paths with different identities/content are errors. Test the intended behavior rather than depending on Hook completion order.
 
 ### 5. Register the plugin
 
@@ -96,6 +100,13 @@ Add all applicable layers:
 6. A second build using a fresh configuration/state to detect cross-build pollution.
 7. Cases beyond one happy path: collision/invalid option plus relevant `$ref`, nullable/union, enum, request body, or empty-input behavior.
 
+Add representation-specific assertions:
+
+- TypeScript: exact file set, semantics, imports, compilation, and a byte-stable second generation.
+- JSON: parse the serialized bytes, assert the structure/sorting policy, and require byte stability.
+- Text/Markdown/YAML: assert UTF-8/newline policy, no unintended TypeScript formatting, and byte stability.
+- Binary: assert exact bytes, hash, bounded size, and byte stability.
+
 Never modify a checked-in generated result without changing and testing the generating logic or fixture that explains it.
 
 ## Validation matrix
@@ -112,15 +123,15 @@ Then:
 
 - Run tests for each declared plugin dependency and the focused composition test.
 - Inspect snapshots and every generated add/delete/rename, not just the test exit code.
-- Use the repository's `run-codegen-tests` Skill when the current Agent supports Skill invocation. Otherwise read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly. Optional shortcuts are Codex `$run-codegen-tests` and Claude Code `/run-codegen-tests`; the workflow must not depend on either syntax.
+- Use the Codex `$run-codegen-tests` Skill. If Skill invocation is unavailable, read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly.
 - If core public types or lifecycle changed with explicit authorization, run core tests/typecheck plus every official plugin test, then `pnpm typecheck` and `pnpm build`.
 - Inspect the plugin and aggregate package export maps and built declarations.
 
 Do not automatically update fixtures/snapshots. First explain why the semantic diff is expected. Unexpected broad output, unstable second generation, a path outside the output root, a collision, or missing dependency metadata is a stop condition.
 
-## Diagnostics compatibility
+## Diagnostics
 
-If the current branch provides a unified Diagnostic API, use stable code, severity, location, and bounded message fields. If it does not—as in the reviewed revision—use the current error mechanism, preserve locatable context, do not swallow failures, and do not expose full documents or secrets. Do not expand a plugin task into a repository-wide Diagnostics refactor; record structured Diagnostics as follow-up infrastructure.
+Use `ctx.addDiagnostic(...)` for plugin-owned unsupported structures and recoverable failures. Codes are stable API; choose `warning` when generation can continue with a named limitation and `error` when promised output is unreliable. Include the plugin name and an OpenAPI field path when available. Do not emit an empty file as success, substitute `console.warn`, repeat Loader/Resolver/Validator diagnostics, serialize complete documents, or expose tokens, headers, cookies, or URL queries.
 
 ## Stop conditions and prohibited shortcuts
 

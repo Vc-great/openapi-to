@@ -1,11 +1,14 @@
 export * from './defineConfig'
 export * from './errors.ts'
 export * from './diagnostics.ts'
+export * from './artifacts/index.ts'
+export * from './diff/index.ts'
 export * from './exitCodes.ts'
 
 export { PackageManager } from './PackageManager.ts'
 
-export { build, requestRemoteData } from './build.ts'
+export { build, requestRemoteData, swagger2ToOpenapi3 } from './build.ts'
+export type { BuildResult } from './build.ts'
 export * from './constants.ts'
 export * from './enums.ts'
 export { folderName } from './folderName.ts'

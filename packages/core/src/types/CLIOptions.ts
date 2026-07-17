@@ -12,4 +12,8 @@ export type CLIOptions = {
    * @default `silent`
    */
   logLevel?: 0 | 1 | 2 | 3 | 4 | 5 | (number & {})
+  json?: boolean
+  dryRun?: boolean
+  check?: boolean
+  debug?: boolean
 }

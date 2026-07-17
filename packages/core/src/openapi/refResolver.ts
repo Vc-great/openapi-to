@@ -1,6 +1,6 @@
 import { sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
-import type { RemoteSourceOptions } from '../types'
-import { loadOpenAPIDocument, type CompatibleOpenAPIDocument, type LoadedSource } from './sourceLoader.ts'
+import type { CompatibleOpenAPIDocument, RemoteSourceOptions } from '../types'
+import { loadOpenAPIDocument, type LoadedSource } from './sourceLoader.ts'
 
 export interface ResolveReferencesOptions {
   remote?: RemoteSourceOptions
@@ -33,7 +33,7 @@ export function resolveJSONPointer(document: unknown, fragment: string): { found
       if (Array.isArray(current)) {
         if (!/^(0|[1-9]\d*)$/.test(token)) return { found: false }
         current = current[Number(token)]
-      } else if (typeof current === 'object' && current !== null && Object.prototype.hasOwnProperty.call(current, token)) {
+      } else if (typeof current === 'object' && current !== null && Object.hasOwn(current, token)) {
         current = (current as Record<string, unknown>)[token]
       } else {
         return { found: false }
@@ -102,6 +102,7 @@ export async function resolveOpenAPIReferences(
   }
 
   const memo = new WeakMap<object, unknown>()
+  const activeObjects = new WeakSet<object>()
   const resolveNode = async (
     node: unknown,
     currentDocument: DocumentRecord,
@@ -113,12 +114,14 @@ export async function resolveOpenAPIReferences(
       if (cached) return cached
       const result: unknown[] = []
       memo.set(node, result)
+      activeObjects.add(node)
       for (let index = 0; index < node.length; index += 1) result.push(await resolveNode(node[index], currentDocument, [...path, index], stack))
+      activeObjects.delete(node)
       return result
     }
     if (typeof node !== 'object' || node === null) return node
     const record = node as Record<string, unknown>
-    if (Object.prototype.hasOwnProperty.call(record, '$ref')) {
+    if (Object.hasOwn(record, '$ref')) {
       if (typeof record.$ref !== 'string' || record.$ref.length === 0) {
         addDiagnostic({ code: 'OPENAPI_REF_INVALID', severity: 'error', message: '$ref must be a non-empty string.', location: { source: currentDocument.source, path: [...path, '$ref'] } })
         return { ...record }
@@ -135,9 +138,18 @@ export async function resolveOpenAPIReferences(
       targetDocumentUri.hash = ''
       const currentDocumentUri = new URL(currentDocument.baseUri)
       currentDocumentUri.hash = ''
+      if ((currentDocumentUri.protocol === 'http:' || currentDocumentUri.protocol === 'https:') && targetDocumentUri.protocol !== 'http:' && targetDocumentUri.protocol !== 'https:') {
+        addDiagnostic({
+          code: 'REMOTE_SOURCE_BLOCKED',
+          severity: 'error',
+          message: `Remote documents may only reference HTTP(S) resources; ${targetDocumentUri.protocol} was blocked.`,
+          location: { source: currentDocument.source, path: [...path, '$ref'] },
+        })
+        return { ...record }
+      }
       const external = targetDocumentUri.toString() !== currentDocumentUri.toString()
       if (external) externalReferenceCount += 1
-      const targetDocument = await loadDocument(targetDocumentUri.toString(), [...path, '$ref'])
+      const targetDocument = external ? await loadDocument(targetDocumentUri.toString(), [...path, '$ref']) : currentDocument
       if (!targetDocument) return { ...record }
       if (fragment && !fragment.startsWith('#/')) {
         addDiagnostic({ code: 'OPENAPI_REF_INVALID', severity: 'error', message: `Only JSON Pointer fragments are currently supported: ${record.$ref}`, location: { source: currentDocument.source, path: [...path, '$ref'] } })
@@ -149,7 +161,7 @@ export async function resolveOpenAPIReferences(
         return { ...record }
       }
       const canonical = `${targetDocumentUri.toString()}${fragment}`
-      if (stack.includes(canonical)) {
+      if (stack.includes(canonical) || (typeof pointer.value === 'object' && pointer.value !== null && activeObjects.has(pointer.value))) {
         addDiagnostic({
           code: 'OPENAPI_REF_CYCLE',
           severity: 'warning',
@@ -169,12 +181,17 @@ export async function resolveOpenAPIReferences(
     if (cached) return cached
     const result: Record<string, unknown> = {}
     memo.set(record, result)
+    activeObjects.add(record)
     for (const key of Object.keys(record).sort()) result[key] = await resolveNode(record[key], currentDocument, [...path, key], stack)
+    activeObjects.delete(record)
     return result
   }
 
-  const rootDocument = (await documentCache.get(rootKey))!
-  const resolvedDocument = (await resolveNode(document, rootDocument!, [], [])) as CompatibleOpenAPIDocument
+  const rootDocumentPromise = documentCache.get(rootKey)
+  if (!rootDocumentPromise) throw new Error('Internal reference resolver state is missing the root document.')
+  const rootDocument = await rootDocumentPromise
+  if (!rootDocument) throw new Error('Internal reference resolver could not initialize the root document.')
+  const resolvedDocument = (await resolveNode(document, rootDocument, [], [])) as CompatibleOpenAPIDocument
   return {
     document,
     resolvedDocument,

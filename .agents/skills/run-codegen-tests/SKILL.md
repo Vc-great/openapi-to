@@ -49,7 +49,11 @@ The root has `test:vitest`, `typecheck`, and `build`; use them only when the imp
 
 1. Use the smallest fixture reproducing the changed construct; broad Petstore generation is additional smoke coverage.
 2. Capture the command, fixture path/hash or diff, output root, exit status, and relevant diagnostics.
-3. Record the generated manifest immediately after the expected first run. With a temporary manifest path:
+3. Prefer the real compiler pipeline. For output written once, run `openapi-to generate --check --json`; for proposed output that must not touch disk, run `openapi-to generate --dry-run --json`.
+4. Parse stdout with `JSON.parse` and assert `success`, `command`, `mode`, `diagnostics`, `summary`, and `servers`; each server carries its `manifest` with `entries`, `summary`, and `outdated`. Stderr may contain logs but must not pollute stdout.
+5. A normal regression sequence is: real write, inspect `servers[].manifest`, run `--check --json`, and require success with no outdated entries.
+
+Formal `generate --check` is generator-semantic evidence. The helper below is only a filesystem supplement for a harness that bypasses the build pipeline, an external fixture directory, explicit case-collision checks, or a legacy plugin test that cannot invoke the CLI. It cannot replace formal check. With a temporary manifest path:
 
 ```sh
 node .agents/skills/run-codegen-tests/scripts/verify-generated-output.mjs \
@@ -93,7 +97,9 @@ If a snapshot changes, read its complete semantic diff. Accept it only when each
 ### 6. Prove idempotency
 
 1. Without changing config, dependency versions, input, locale, or runtime, run the exact same generation command again.
-2. Compare the second result with the first manifest:
+2. Prefer `openapi-to generate --check --json`; require `success: true`, `mode: "check"`, every server manifest `outdated: false`, and no added/modified/deleted entries.
+3. Require JSON stdout to parse without preprocessing and identical check runs to be byte-stable unless a documented field is intentionally nondeterministic.
+4. Only for a harness outside the formal build pipeline, compare the second result with the helper manifest:
 
 ```sh
 node .agents/skills/run-codegen-tests/scripts/verify-generated-output.mjs \
@@ -101,8 +107,8 @@ node .agents/skills/run-codegen-tests/scripts/verify-generated-output.mjs \
   --manifest <first-run-manifest.json>
 ```
 
-3. Require no added, deleted, content-changed, or renamed file. A test pass with a manifest mismatch is a failure.
-4. Remove only temporary artifacts created by this validation and only when their ownership is certain.
+5. Require no added, deleted, content-changed, or renamed file. A test pass with a manifest mismatch is a failure.
+6. Remove only temporary artifacts created by this validation and only when their ownership is certain.
 
 ## Stop conditions
 
@@ -118,9 +124,9 @@ Stop and investigate before accepting output when:
 
 Do not automatically overwrite fixture or snapshot updates. Preserve the failing evidence until the cause is understood.
 
-## Diagnostics compatibility
+## Diagnostics and artifacts
 
-If the current branch provides a unified Diagnostic API, use stable code, severity, location, and bounded message fields. Otherwise use the current error/exit mechanism, include locatable context, keep errors on stderr, and never print full OpenAPI documents, Manifest contents, tokens, or sensitive request data. Do not turn codegen validation into a repository-wide Diagnostics redesign; record that infrastructure dependency for later.
+The repository has machine-readable diagnostics and typed artifacts. Assert stable diagnostic codes/severity/location/sorting, and inspect the manifest rather than parsing human logs. Never print full documents, artifact contents, tokens, headers, cookies, or URL queries. The ownership manifest governs clean deletion: a generated stale file may be deleted, while an unmanaged user file must survive.
 
 ## Validation matrix
 

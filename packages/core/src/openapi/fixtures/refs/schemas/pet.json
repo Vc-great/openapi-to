@@ -1,0 +1,11 @@
+{
+  "$defs": {
+    "Pet": {
+      "type": "object",
+      "properties": {
+        "owner": { "$ref": "../shared.yaml#/$defs/Owner" }
+      }
+    },
+    "a/b~c": { "type": "string" }
+  }
+}

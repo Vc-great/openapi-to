@@ -19,7 +19,7 @@ export function exitCodeForDiagnostics(diagnostics: readonly Diagnostic[]): Exit
   if ([...codes].some((code) => code === 'CONFIG_LOAD_FAILED' || code.startsWith('CONFIG_'))) return ExitCode.ConfigError
   if ([...codes].some((code) => code === 'PLUGIN_EXECUTION_FAILED' || code.startsWith('PLUGIN_'))) return ExitCode.PluginError
   if ([...codes].some((code) => code === 'GENERATED_OUTPUT_OUTDATED')) return ExitCode.GeneratedOutputOutdated
-  if ([...codes].some((code) => code.startsWith('OPENAPI_PARSE') || code.startsWith('OPENAPI_VALIDATION') || code.startsWith('OPENAPI_REF') || code === 'OPENAPI_UNSUPPORTED_VERSION')) {
+  if ([...codes].some((code) => code.startsWith('OPENAPI_'))) {
     return ExitCode.OpenAPIError
   }
   if ([...codes].some((code) => code.startsWith('REMOTE_') || code.startsWith('INPUT_'))) return ExitCode.InputError

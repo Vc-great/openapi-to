@@ -1,12 +1,12 @@
-import { promises } from 'fs-extra'
-import { camelCase, find, head, isEmpty, isFunction } from 'lodash-es'
-import type { TagObject } from 'oas/types'
+import { camelCase, find, isEmpty } from 'lodash-es'
 import type { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types'
 import type { SourceFile } from 'ts-morph'
+import type { Diagnostic } from '../diagnostics.ts'
+import type { GeneratedArtifact } from '../artifacts/types.ts'
 import type { OpenAPIHelper } from '../OpenAPIContext/OpenAPIHelper.ts'
-import type { HookTagObject, OperationWrapper } from '../OpenAPIContext/types.ts'
+import type { HookTagObject } from '../OpenAPIContext/types.ts'
 import type { PluginEnumType } from '../enums.ts'
-import type { ComponentHookType, ComponentHooks, OpenAPIDocument, OpenapiToSingleConfig } from '../types'
+import type { ComponentHookType, OpenAPIDocument, OpenapiToSingleConfig } from '../types'
 import type { HookContext, PluginDefinition } from './types.ts'
 
 type Context = {
@@ -16,11 +16,14 @@ type Context = {
   pluginNames: PluginEnumType
 }
 
+type ComponentHookData = NonNullable<ComponentHookType['data']>
+
 export async function runPluginsByTags(
   stages: PluginDefinition[][],
   { openAPIHelper, openAPIDocument, openapiToSingleConfig, pluginNames }: Context,
-): Promise<{ failedPluginNames: string[]; sourceFiles: SourceFile[] }> {
+): Promise<{ failedPluginNames: string[]; sourceFiles: SourceFile[]; artifacts: GeneratedArtifact[]; diagnostics: Diagnostic[] }> {
   const failedPluginNamesSet = new Set<string>() // 收集失败的插件名称
+  const diagnostics: Diagnostic[] = []
 
   const ctx: HookContext = {
     _tagSourceFiles: new Map<string[], SourceFile>(),
@@ -34,6 +37,14 @@ export async function runPluginsByTags(
     setSourceFiles(name: string[], sourceFile: SourceFile) {
       ctx._tagSourceFiles.set(name, sourceFile)
     },
+    artifacts: [],
+    diagnostics,
+    addArtifact(artifact) {
+      ctx.artifacts.push(artifact)
+    },
+    addDiagnostic(diagnostic) {
+      diagnostics.push(diagnostic)
+    },
     store: new Map(),
     /*    clearSourceFiles() {
       ctx._tagSourceFiles.clear()
@@ -46,53 +57,53 @@ export async function runPluginsByTags(
   for (const stage of stages) {
     try {
       // 1. 先顺序执行 buildStart 和 tagStart
-      await executePluginHooks(stage, 'buildStart', (plugin) => plugin.hooks.buildStart?.(ctx), failedPluginNamesSet)
+      await executePluginHooks(stage, 'buildStart', (plugin) => plugin.hooks.buildStart?.(ctx), failedPluginNamesSet, diagnostics)
 
       // 2. 并发执行组件钩子和操作
       const components = openAPIHelper.oas.getDefinition().components
-      const concurrentComponentTasks: Array<Awaited<any>> = [
-        ...(isEmpty(components) ? [] : await executePluginComponents(stage, ctx, components, failedPluginNamesSet)),
-      ]
+      if (!isEmpty(components)) await executePluginComponents(stage, ctx, components, failedPluginNamesSet, diagnostics)
       const concurrentTagStartTasks = []
       const concurrentTagOperationsTasks = []
       const concurrentTagTagEndTasks = []
       //
       for (const tagName in openAPIHelper.operationsByTag) {
-        const operations = openAPIHelper.operationsByTag[tagName]!
-
-        const tagData: HookTagObject = {
-          ...find(head(operations)!.accessor.operation.getTags(), (x) => camelCase(x.name) === tagName)!,
-        }
-        if (!tagData) {
+        const operations = openAPIHelper.operationsByTag[tagName]
+        const firstOperation = operations?.[0]
+        if (!operations || !firstOperation) continue
+        const matchedTag = find(firstOperation.accessor.operation.getTags(), (tag) => camelCase(tag.name) === tagName)
+        if (!matchedTag) {
           throw new Error(`Tag with name "${tagName}" not found`)
         }
-        concurrentTagStartTasks.push(await executePluginHooks(stage, 'tagStart', (plugin) => plugin.hooks.tagStart?.(tagData, ctx), failedPluginNamesSet))
+        const tagData: HookTagObject = { ...matchedTag }
+        concurrentTagStartTasks.push(await executePluginHooks(stage, 'tagStart', (plugin) => plugin.hooks.tagStart?.(tagData, ctx), failedPluginNamesSet, diagnostics))
 
         // 添加操作钩子并发任务（所有操作并发执行）
         const operationsTask = Promise.all(
-          operations.map((operation) => executePluginHooks(stage, 'operation', (plugin) => plugin.hooks.operation?.(operation, ctx), failedPluginNamesSet)),
+          operations.map((operation) => executePluginHooks(stage, 'operation', (plugin) => plugin.hooks.operation?.(operation, ctx), failedPluginNamesSet, diagnostics)),
         )
         concurrentTagOperationsTasks.push(operationsTask)
 
-        concurrentTagTagEndTasks.push(await executePluginHooks(stage, 'tagEnd', (plugin) => plugin.hooks.tagEnd?.(tagData, ctx), failedPluginNamesSet))
+        concurrentTagTagEndTasks.push(await executePluginHooks(stage, 'tagEnd', (plugin) => plugin.hooks.tagEnd?.(tagData, ctx), failedPluginNamesSet, diagnostics))
       }
 
       // 并发执行所有任务
-      await Promise.all([...concurrentComponentTasks, ...concurrentTagStartTasks])
+      await Promise.all(concurrentTagStartTasks)
       await Promise.all(concurrentTagOperationsTasks)
       await Promise.all(concurrentTagTagEndTasks)
 
       // 3. 最后顺序执行buildEnd
 
-      await executePluginHooks(stage, 'buildEnd', (plugin) => plugin.hooks.buildEnd?.(ctx), failedPluginNamesSet)
+      await executePluginHooks(stage, 'buildEnd', (plugin) => plugin.hooks.buildEnd?.(ctx), failedPluginNamesSet, diagnostics)
     } catch (error) {
-      console.error(`Error executing plugin stage: ${error instanceof Error ? error.message : String(error)}`)
+      diagnostics.push({ code: 'PLUGIN_EXECUTION_FAILED', severity: 'error', message: `Plugin stage failed: ${error instanceof Error ? error.message : String(error)}`, cause: error instanceof Error ? error.message : undefined })
       throw error
     }
   }
 
   return {
     sourceFiles: [...ctx._tagSourceFiles.values()].flat(),
+    artifacts: ctx.artifacts,
+    diagnostics,
     failedPluginNames: [...failedPluginNamesSet],
   }
 }
@@ -103,14 +114,21 @@ export async function runPluginsByTags(
 async function executePluginHooks(
   plugins: PluginDefinition[],
   hookName: string,
-  hookExecutor: (plugin: PluginDefinition) => any,
+  hookExecutor: (plugin: PluginDefinition) => unknown | Promise<unknown>,
   failedPluginNames: Set<string>,
+  diagnostics: Diagnostic[],
 ) {
   for (const plugin of plugins) {
     try {
       await hookExecutor(plugin)
     } catch (error) {
-      console.error(`Error executing plugin ${plugin.name} hook ${hookName}: ${error instanceof Error ? error.message : String(error)}`)
+      diagnostics.push({
+        code: 'PLUGIN_EXECUTION_FAILED',
+        severity: 'error',
+        message: `Plugin ${plugin.name} hook ${hookName} failed: ${error instanceof Error ? error.message : String(error)}`,
+        plugin: plugin.name,
+        cause: error instanceof Error ? error.message : undefined,
+      })
       failedPluginNames.add(plugin.name)
     }
   }
@@ -121,6 +139,7 @@ async function executePluginComponents(
   ctx: HookContext,
   components: OpenAPIV3.ComponentsObject | OpenAPIV3_1.ComponentsObject,
   failedPluginNames: Set<string>,
+  diagnostics: Diagnostic[],
 ) {
   // 准备组件钩子任务
   const componentHooks: ComponentHookType[] = [
@@ -138,11 +157,11 @@ async function executePluginComponents(
           stage,
           type,
           (plugin) => {
-            const hookFn = plugin.hooks[type] as (typeof plugin.hooks)[typeof type]
-            //todo any
-            return isFunction(hookFn) ? hookFn(data as any, ctx) : undefined
+            const hookFn = plugin.hooks[type] as ((hookData: ComponentHookData, hookContext: HookContext) => Promise<void> | void) | undefined
+            return hookFn?.(data as ComponentHookData, ctx)
           },
           failedPluginNames,
+          diagnostics,
         ),
       )
       .filter(Boolean),

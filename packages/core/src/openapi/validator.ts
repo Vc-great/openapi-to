@@ -7,10 +7,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function compareText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
 function add32FieldWarnings(document: Record<string, unknown>, source: string, diagnostics: Diagnostic[]): void {
   const visit = (value: unknown, path: Array<string | number>) => {
     if (Array.isArray(value)) {
-      value.forEach((item, index) => visit(item, [...path, index]))
+      for (let index = 0; index < value.length; index += 1) visit(value[index], [...path, index])
       return
     }
     if (!isRecord(value)) return
@@ -79,7 +83,8 @@ export function validateOpenAPIDocument(document: CompatibleOpenAPIDocument, sou
     for (const pathName of Object.keys(record.paths).sort()) {
       const pathItem = record.paths[pathName]
       if (!isRecord(pathItem)) continue
-      for (const method of operationMethods) {
+      const methods: string[] = [...operationMethods, ...(version.startsWith('3.2.') ? ['query'] : [])]
+      for (const method of methods) {
         const operation = pathItem[method]
         if (operation === undefined) continue
         if (!isRecord(operation)) {
@@ -96,6 +101,11 @@ export function validateOpenAPIDocument(document: CompatibleOpenAPIDocument, sou
         parameters.forEach((parameter, index) => {
           if (isRecord(parameter) && parameter.in === 'path' && parameter.required !== true) diagnostics.push({ code: 'OPENAPI_VALIDATION_FAILED', severity: 'error', message: 'Path parameters must set required: true.', location: { source, path: ['paths', pathName, method, 'parameters', index, 'required'] } })
         })
+      }
+      if (version.startsWith('3.2.') && isRecord(pathItem.additionalOperations)) {
+        for (const [method, operation] of Object.entries(pathItem.additionalOperations).sort(([left], [right]) => compareText(left, right))) {
+          if (!isRecord(operation) || !isRecord(operation.responses)) diagnostics.push({ code: 'OPENAPI_VALIDATION_FAILED', severity: 'error', message: `Additional operation ${method} ${pathName} must be an object with responses.`, location: { source, path: ['paths', pathName, 'additionalOperations', method] } })
+        }
       }
     }
   }

@@ -3,6 +3,7 @@ import type { CompatibleOpenAPIDocument } from '../types'
 import { resolveOpenAPIReferences, type ResolvedReferences } from './refResolver.ts'
 import { loadOpenAPIDocument, type OpenAPIInput, type SourceLoaderOptions } from './sourceLoader.ts'
 import { validateOpenAPIDocument } from './validator.ts'
+import { normalizeOpenAPIDocument } from './normalizer.ts'
 
 export interface OpenAPICompilation {
   success: boolean
@@ -11,6 +12,7 @@ export interface OpenAPICompilation {
   version?: string
   document?: CompatibleOpenAPIDocument
   resolvedDocument?: CompatibleOpenAPIDocument
+  normalizedDocument?: CompatibleOpenAPIDocument
   diagnostics: Diagnostic[]
   references?: Omit<ResolvedReferences, 'document' | 'resolvedDocument' | 'diagnostics'>
 }
@@ -29,6 +31,7 @@ export async function compileOpenAPI(input: OpenAPIInput, options: SourceLoaderO
     version: loaded.version,
     document: loaded.document,
     resolvedDocument: references.resolvedDocument,
+    normalizedDocument: normalizeOpenAPIDocument(references.resolvedDocument),
     diagnostics: sorted,
     references: {
       externalReferenceCount: references.externalReferenceCount,

@@ -1,14 +1,16 @@
 import { execa } from "execa";
-import fs from "fs-extra";
 import Oas from "oas";
-import type { SourceFile } from "ts-morph";
-import { ts } from "ts-morph";
+import type { SourceFile, ts } from "ts-morph";
 import { type PluginEnumType, PluginStatus } from "../enums.ts";
 import { OpenAPIHelper } from "../OpenAPIContext/OpenAPIHelper.ts";
 import type { OpenAPIDocument, OpenapiToSingleConfig } from "../types";
 import { sortPluginsByStages } from "./graph.ts";
 import { runPluginsByTags } from "./runPluginsByTags.ts";
 import type { PluginDefinition } from "./types.ts";
+import { DiagnosticError, hasDiagnosticErrors } from '../diagnostics.ts'
+import { compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts } from '../artifacts/index.ts'
+import type { Diagnostic } from '../diagnostics.ts'
+import type { GeneratedArtifact } from '../artifacts/types.ts'
 export type PluginStatusValue = `${PluginStatus}`;
 type Executed = {
 	name: string;
@@ -19,6 +21,7 @@ export class PluginManager {
 	executed: Array<Executed> = [];
 	readonly plugins: Array<PluginDefinition> = [];
 	filesCreated = 0;
+	diagnostics: Diagnostic[] = [];
 	constructor(
 		private readonly openapiToSingleConfig: OpenapiToSingleConfig,
 		private readonly openAPIDocument: OpenAPIDocument,
@@ -38,15 +41,20 @@ export class PluginManager {
 
 	async execute(): Promise<{
 		sourceFiles: SourceFile[];
+		artifacts: GeneratedArtifact[];
+		diagnostics: Diagnostic[];
 		failedPluginNames: string[];
 	}> {
+		const helperDocument = this.openapiToSingleConfig && String((this.openAPIDocument as { openapi?: string }).openapi).startsWith('3.2.')
+			? { ...this.openAPIDocument, openapi: '3.1.0' }
+			: this.openAPIDocument;
 		const openAPIHelper = new OpenAPIHelper(
-			new Oas({ ...this.openAPIDocument }),
+			new Oas({ ...helperDocument }),
 		);
 		const sourceFileAll = [];
 		const failedPluginNameSet = new Set<string>();
 
-		const { sourceFiles, failedPluginNames } = await runPluginsByTags(
+		const { sourceFiles, artifacts, diagnostics, failedPluginNames } = await runPluginsByTags(
 			this.pluginsByStages,
 			{
 				openAPIHelper: openAPIHelper,
@@ -56,10 +64,17 @@ export class PluginManager {
 			},
 		);
 		sourceFileAll.push(...sourceFiles);
-		failedPluginNames.forEach((name) => failedPluginNameSet.add(name));
+		for (const name of failedPluginNames) failedPluginNameSet.add(name);
+		this.diagnostics = diagnostics;
+		this.executed = this.plugins.map((plugin) => ({
+			name: plugin.name,
+			status: failedPluginNames.includes(plugin.name) ? PluginStatus.Failed : PluginStatus.Succeeded,
+		}));
 
 		return {
 			sourceFiles: sourceFileAll,
+			artifacts,
+			diagnostics,
 			failedPluginNames: [...failedPluginNameSet],
 		};
 	}
@@ -68,7 +83,7 @@ export class PluginManager {
 		return {
 			// 缩进与换行
 			indentSize: 2,
-			indentStyle: ts.IndentStyle.Smart,
+			indentStyle: 2 as ts.IndentStyle,
 			convertTabsToSpaces: true,
 			newLineCharacter: "\n",
 
@@ -88,7 +103,7 @@ export class PluginManager {
 			placeOpenBraceOnNewLineForControlBlocks: false,
 
 			// 分号策略
-			semicolons: ts.SemicolonPreference.Insert,
+			semicolons: 'insert' as ts.SemicolonPreference,
 		};
 	}
 
@@ -119,24 +134,14 @@ export class PluginManager {
 	}
 
 	async run(): Promise<void> {
-		const { sourceFiles, failedPluginNames } = await this.execute();
-
-		this.executed = this.plugins.map((plugin) => {
-			return {
-				name: plugin.name,
-				status: failedPluginNames.includes(plugin.name)
-					? PluginStatus.Failed
-					: PluginStatus.Succeeded,
-			};
-		});
-		//clear output dir
-		this.openapiToSingleConfig.output.clean &&
-			(await fs.emptyDir(this.openapiToSingleConfig.output.dir));
-		// write files
-		await this.writeFiles(sourceFiles);
-		//formatter code
-		this.openapiToSingleConfig.output.format === "biome" &&
-			(await this.formatterCode());
-		this.filesCreated = sourceFiles.length;
+		const { sourceFiles, artifacts, diagnostics } = await this.execute();
+		if (hasDiagnosticErrors(diagnostics)) throw new DiagnosticError('Plugin execution failed.', diagnostics);
+		const collected = sortGeneratedArtifacts([...sourceFiles.map((sourceFile) => sourceFileToArtifact(sourceFile)), ...artifacts]);
+		const materialized = materializeArtifacts(collected, this.openapiToSingleConfig.output.dir);
+		if (hasDiagnosticErrors(materialized.diagnostics)) throw new DiagnosticError('Generated artifact collection failed.', materialized.diagnostics);
+		const formatted = await formatMaterializedArtifacts(materialized.artifacts, this.openapiToSingleConfig.output.format);
+		const manifest = await compareArtifacts(formatted.artifacts, this.openapiToSingleConfig.output.dir, this.openapiToSingleConfig.output.clean === true);
+		await writeArtifacts(formatted.artifacts, manifest);
+		this.filesCreated = materialized.artifacts.length;
 	}
 }

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Run Codegen Tests"
-  short_description: "Verify generated output and codegen regressions"
-  default_prompt: "Use $run-codegen-tests to validate affected generators, snapshots, and idempotency."

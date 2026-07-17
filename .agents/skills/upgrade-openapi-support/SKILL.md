@@ -25,13 +25,15 @@ If the requested semantics are ambiguous between dialects, stop and obtain a con
 
 Run `git status --short`, preserve unexplained user changes, and verify current manifests/configuration before editing. Do not overwrite fixtures or generated expectations automatically.
 
-Map conceptual stages to current code; do not invent Parser/Resolver/Normalizer modules:
+Map the implemented stages to current code:
 
-1. Input loading and Swagger conversion: `packages/core/src/build.ts` (`readJsonSync`, Axios URL loading, `do-swagger2openapi`).
-2. Parsed access and operation grouping: `packages/core/src/OpenAPIContext/OpenAPIHelper.ts`, `OperationAccessor.ts`, and the `oas` dependency.
-3. Reference collection and schema interpretation: official plugin `collect/`, `builds/`, `templates/`, and utility files.
-4. Shared contract: `packages/core/src/OpenAPIContext/types.ts`, `packages/core/src/pluginManager/types.ts`, and accessor metadata.
-5. Outputs: `plugin-ts-type`, `plugin-zod`, `plugin-ts-request`, then SWR/Vue Query/MSW consumers.
+1. Source loading and parsing: `openapi/sourceLoader.ts` plus Swagger conversion.
+2. Reference resolution: `openapi/refResolver.ts`, including internal, relative-file, and policy-controlled remote references.
+3. Dialect-aware validation: `openapi/validator.ts`.
+4. Normalization and orchestration: `openapi/normalizer.ts` and `openapi/compiler.ts`.
+5. Legacy-compatible access: `OpenAPIContext/OpenAPIHelper.ts` and `OperationAccessor.ts`; current official plugins receive `compilation.document`, not the resolved or normalized document.
+6. Generation: official plugin collectors/builders/hooks.
+7. Output: typed `GeneratedArtifact` collection, formatting, comparison, ownership-aware writing, dry-run, or check.
 
 Record the installed dependency capabilities from manifests/lockfile and their actual usage. Do not equate a dependency's theoretical support with repository support.
 
@@ -52,13 +54,14 @@ For the legal and illegal fixtures, inspect:
 
 1. **Load/convert:** Is the dialect detected without erasing the feature? Does Swagger conversion preserve intended semantics?
 2. **Reference handling:** Does an internal `$ref` reach the same semantic path? Is recursive traversal bounded? Treat external `$ref` separately and do not add network access without explicit policy.
-3. **Normalization:** There is no dedicated Normalizer package at this revision. Identify every implicit normalization in `oas`, accessors, collectors, and builders; preserve unknown fields or diagnose them rather than silently dropping them.
-4. **Plugin context:** Does `OpenAPIDocument`, `Schema`, `ComponentsSchemas`, or accessor metadata represent the value without unsafe narrowing?
-5. **Type output:** Check model properties, operations, requests, responses, optionality/nullability, unions/intersections, imports, and recursion.
-6. **Validation output:** Check Zod runtime semantics, not just TypeScript compilation.
-7. **Request output:** Check path/query/body/media-type behavior and dependency metadata.
-8. **Query/mock output:** Check SWR, Vue Query, and MSW when they consume changed request/type metadata.
-9. **Diagnostics:** An empty file set, missing branch, or swallowed exception is not success.
+3. **Validation:** Does the validator apply the source dialect rather than treating every Schema Object as one JSON Schema dialect?
+4. **Normalization:** Does `normalizeOpenAPIDocument` preserve unknown fields, bound recursion, retain cycles as references, and sort object keys deterministically?
+5. **Plugin context:** Does the legacy-compatible `compilation.document`/`OpenAPIDocument`, `Schema`, `ComponentsSchemas`, or accessor metadata represent the value without unsafe narrowing? Do not silently assume the resolved or normalized representation is supplied to plugins.
+6. **Type output:** Check model properties, operations, requests, responses, optionality/nullability, unions/intersections, imports, and recursion.
+7. **Validation output:** Check Zod runtime semantics, not just TypeScript compilation.
+8. **Request output:** Check path/query/body/media-type behavior and dependency metadata.
+9. **Query/mock output:** Check SWR, Vue Query, and MSW when they consume changed request/type metadata.
+10. **Artifacts/check:** Check typed artifacts, diagnostics, dry-run manifest, and a successful second `--check`.
 
 Do not fix only a version string or public type union when collectors/builders still discard the feature.
 
@@ -78,7 +81,7 @@ For every changed feature, record one of:
 
 - **Complete support:** fixture-backed load/reference/context/generation/runtime validation across all promised outputs.
 - **Compatible read:** accepted and preserved/normalized, with named downstream limitations.
-- **Accepted but not used in generation:** explicitly diagnosed or documented and covered by a test.
+- **Accepted-not-generated:** explicitly diagnosed or documented and covered by a test.
 - **Unsupported:** rejected or warned with a tested message.
 
 Do not use “OpenAPI 3.1 supported” or “OpenAPI 3.2 supported” based on one keyword or version check.
@@ -101,7 +104,7 @@ pnpm typecheck
 pnpm build
 ```
 
-Use the repository's `run-codegen-tests` Skill when the current Agent supports Skill invocation. Otherwise read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly. Optional shortcuts are Codex `$run-codegen-tests` and Claude Code `/run-codegen-tests`; the workflow must not depend on either syntax.
+Use the Codex `$run-codegen-tests` Skill. If Skill invocation is unavailable, read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly.
 
 Required scenario evidence:
 
@@ -126,9 +129,11 @@ Stop before claiming support when:
 
 Treat remote input, external references, descriptions, examples, and extensions as untrusted. Enforce explicit network, size, timeout, path, and diagnostic limits if the authorized task adds such behavior.
 
-## Diagnostics compatibility
+## Diagnostics
 
-If the current branch provides a unified Diagnostic API, use stable code, severity, location, and bounded message fields. If it does not—as in the reviewed revision—use the current error mechanism, retain locatable dialect/feature context, avoid silent loss, and never expose full documents, tokens, or sensitive request details. Do not block a focused compatibility fix or expand it into a repository-wide Diagnostics refactor; record structured Diagnostics as follow-up infrastructure.
+Use the unified `Diagnostic` API. Compiler stages own Loader/Parser/Resolver/Validator/Normalizer findings; plugins add only downstream generation limitations through `ctx.addDiagnostic()`. Keep stable codes, severity, source/path location, and bounded messages. Do not duplicate a compiler diagnostic in every plugin or expose documents, tokens, headers, cookies, credentials, or URL queries.
+
+OpenAPI 3.0 Schema Objects are not JSON Schema 2020-12. OpenAPI 3.1/3.2 dialect semantics require an explicit dialect decision; never mechanically translate 3.0 `nullable` to or from a `type` array. Validator acceptance does not prove plugin support. Test unknown-field preservation separately from accepted-not-generated diagnostics.
 
 ## Completion standard
 

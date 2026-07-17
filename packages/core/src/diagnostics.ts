@@ -29,6 +29,10 @@ const severityOrder: Record<DiagnosticSeverity, number> = {
   info: 2,
 }
 
+function compareText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
 function locationKey(diagnostic: Diagnostic): string {
   const location = diagnostic.location
   return [location?.source ?? '', ...(location?.path ?? []).map(String), location?.line ?? '', location?.column ?? ''].join('\u0000')
@@ -38,10 +42,10 @@ export function sortDiagnostics(diagnostics: readonly Diagnostic[]): Diagnostic[
   return [...diagnostics].sort((left, right) => {
     return (
       severityOrder[left.severity] - severityOrder[right.severity] ||
-      locationKey(left).localeCompare(locationKey(right)) ||
-      left.code.localeCompare(right.code) ||
-      left.message.localeCompare(right.message) ||
-      (left.plugin ?? '').localeCompare(right.plugin ?? '')
+      compareText(locationKey(left), locationKey(right)) ||
+      compareText(left.code, right.code) ||
+      compareText(left.message, right.message) ||
+      compareText(left.plugin ?? '', right.plugin ?? '')
     )
   })
 }

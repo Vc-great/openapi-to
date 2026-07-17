@@ -7,7 +7,9 @@ These facts route an investigation. Re-read the files because release configurat
 - Root `package.json` is private, declares pnpm as the package manager, and provides `build`, `typecheck`, `test:vitest`, Changesets-related scripts, and release scripts.
 - Published/runtime packages are under `packages/`; `packages/config-ts` and `packages/config-tsup` are marked private at the authored revision.
 - Published packages commonly declare ESM/CJS entrypoints and declarations under `dist`, built with tsup.
-- The `openapi-to` aggregate package depends on CLI, core, and official plugins through workspace ranges and exposes the `openapi` bin.
+- The `openapi-to` aggregate package depends on CLI, core, and official plugins through workspace ranges, re-exports core/official factories, and exposes both `openapi` and `openapi-to` bin aliases through `bin/openapi.js`.
+- P0 adds public compiler, diagnostic, artifact/manifest/result, diff/inspect, and exit-code exports. Treat `@openapi-to/core`, `@openapi-to/cli`, and the aggregate package as direct release candidates; inspect official plugin declarations/dependency edges before deciding whether they need coordinated bumps.
+- Root policy accepts Node >=18, core has no package-local engine declaration, and the aggregate package requires Node >=20. This mismatch is a release-policy risk even though CI/README prefer Node 20.
 - Package manifests use `workspace:*` for internal edges; never replace those values or lockfile entries manually as a release workaround.
 - Package `CHANGELOG.md` files exist. Root and some packages have README files, but plugin packages do not all have package-local READMEs at this revision.
 - Root Changesets dependencies/scripts exist, but no tracked `.changeset/config.json` was found at the authored revision. This blocks a normal Changesets release until explicitly resolved.

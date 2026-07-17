@@ -18,7 +18,8 @@ openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specifi
 
 # Features
 - Works with Node.js 20+.
-- Supports Swagger 2.0, OpenAPI 3.0, and OpenAPI 3.1.
+- Supports JSON and YAML inputs for Swagger 2.0, OpenAPI 3.0, and OpenAPI 3.1.
+- Recognizes OpenAPI 3.2 in compatibility mode. 3.2-only fields are preserved and reported when existing generators do not consume them.
 
 # Quick Start
 ## Install
@@ -35,6 +36,40 @@ npm i openapi-to --save-dev
   }
 }
 ```
+
+## Compiler commands
+
+The `openapi` and `openapi-to` binaries are aliases. Validation and inspection do not require a generation config.
+
+```shell
+openapi validate ./openapi.yaml
+openapi inspect ./openapi.yaml --json
+openapi diff ./old.yaml ./new.yaml --fail-on-breaking
+openapi generate --dry-run --json
+openapi generate --check --json
+```
+
+`--json` writes one JSON document to stdout; diagnostics and incidental plugin logs use stderr. `--dry-run` executes plugins and reports the artifact manifest without writing. `--check` performs the same comparison and fails when output is outdated. With `output.clean`, deletion is ownership-based: only files recorded by the previous `.openapi-to-manifest.json` are removed, and unmanaged user files are preserved.
+
+Exit codes are stable: `0` success, `1` general failure, `2` config failure, `3` OpenAPI parse/validation/ref failure, `4` input or remote load failure, `5` plugin failure, `6` outdated generated output, and `7` breaking changes with `diff --fail-on-breaking`.
+
+Remote documents use safe defaults: only HTTP(S), bounded response size and redirects, timeouts, and private/local address blocking including DNS results. Trusted internal APIs must opt in explicitly:
+
+```ts
+input: {
+  path: 'https://openapi.internal.example.com/api.yaml',
+  remote: {
+    allowPrivateNetwork: true,
+    allowedHosts: ['openapi.internal.example.com'],
+    timeoutMs: 10_000,
+    maxResponseBytes: 10 * 1024 * 1024,
+  },
+}
+```
+
+Compiler library APIs such as `compileOpenAPI`, `resolveOpenAPIReferences`, `validateOpenAPIDocument`, `inspectOpenAPIDocument`, `diffOpenAPIDocuments`, diagnostics, and `GeneratedArtifact` are exported from both `@openapi-to/core` and `openapi-to`. Existing plugins can keep using `ctx.setSourceFiles`; new plugins may use `ctx.addArtifact` and `ctx.addDiagnostic`.
+
+OpenAPI 3.2 support is intentionally incremental. `$self` participates in reference base resolution and the document, info, paths, components, and standard operations remain readable. New 3.2 fields such as `query`, `additionalOperations`, `querystring`, streaming `itemSchema`/encoding fields, and tag hierarchy are inspected and diagnosed, but existing TypeScript generators do not yet emit code from them. The first-stage diff engine covers paths, operations, parameters, request/response schemas, component properties, required state, enums, and types; less certain schema-composition changes are reported as warnings rather than claimed as definitive compatibility results.
 ## Example
 ```typescript twoslash [single]
 import { defineConfig, pluginTSRequest, pluginTSType, pluginZod } from 'openapi-to'
@@ -476,4 +511,3 @@ Whether to add an extension (such as .ts) in the import path
       importWithExtension:false
     })
 ```
-

@@ -1,4 +1,4 @@
-export { defineConfig } from "@openapi-to/core";
+export * from "@openapi-to/core";
 export {
 	definePlugin as pluginSWR,
 	definePlugin as pluginMSW,

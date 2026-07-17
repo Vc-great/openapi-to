@@ -1,5 +1,6 @@
 export * from './compiler.ts'
 export * from './inspect.ts'
+export * from './normalizer.ts'
 export * from './refResolver.ts'
 export * from './sourceLoader.ts'
 export * from './validator.ts'

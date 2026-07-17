@@ -6,12 +6,12 @@ This document is an investigation matrix, not a declaration of support. Re-run r
 
 | Area | Evidence currently present | Required next proof before a support claim |
 | --- | --- | --- |
-| Swagger 2.0 | `packages/core/mock/swagger2.0.json`, `packages/cli/mock/swagger.json`, conversion in `packages/core/src/build.ts` | Minimal conversion assertions plus affected plugin generation |
+| Swagger 2.0 | `packages/core/mock/swagger2.0.json`, `packages/cli/mock/swagger.json`, conversion through `compileOpenAPI` | Minimal conversion assertions plus affected plugin generation |
 | OpenAPI 3.0 | `packages/core/mock/openapiV3.json` and plugin `mock/petstore.json` files identify 3.0.x | Focused feature fixtures and output assertions; Petstore alone is insufficient |
-| OpenAPI 3.1 | Core/shared types mention `OpenAPIV3_1`; README claims support | Add an explicitly 3.1 fixture and prove JSON Schema 2020-12 semantics through outputs |
-| OpenAPI 3.2 | No explicit fixture or repository support evidence found | Audit dependencies/types first; classify unsupported until end-to-end evidence exists |
-| External `$ref` | No focused resolver fixture or policy found | Separate file/URL cases, security policy, cycles, and downstream generation |
-| Changes to unknown fields | No single normalization layer exists | Trace `oas`, accessors, collectors, and builders; prove preserve/diagnose behavior |
+| OpenAPI 3.1 | Compiler accepts 3.1 and focused CLI inspection exercises it | Prove each promised JSON Schema 2020-12 keyword through affected outputs |
+| OpenAPI 3.2 | `openapi-3.2.yaml` proves compatible reading and tested warnings for accepted-not-generated additions | Keep claims at compatible-read/accepted-not-generated until plugin output fixtures exist |
+| External `$ref` | Focused resolver and controlled local HTTP tests cover files, URLs, cycles, cache, and security policy | Add downstream plugin evidence for each feature whose schema is externally referenced |
+| Changes to unknown fields | `normalizer.ts` preserves and deterministically sorts unknown object keys | Prove each unknown field is either generated, preserved-only, or diagnosed at its owning stage |
 
 Do not convert the table above to “supported/not supported” without executing evidence. A type import or parser acceptance is not generation support.
 
@@ -44,10 +44,10 @@ For each applicable row, record: fixture path, load result, reference result, co
 
 ### OpenAPI 3.2
 
-- Verify current primary specification and dependency support before designing behavior.
-- Add an explicit `openapi: "3.2.x"` fixture only with a stated feature target.
-- Separate compatible reading of unchanged constructs from support for 3.2 additions.
-- Keep the default status unsupported/unproven until end-to-end fixtures pass.
+- **Compatible-read evidence:** `openapi: "3.2.x"`, base `paths`/`components`, `$self`, and the implemented basic checks for `query`/`additionalOperations`.
+- **Accepted-not-generated boundary:** `querystring`, `itemSchema`, `itemEncoding`, `prefixEncoding`, tag `parent`/hierarchy, `serializedValue`, `dataValue`, and other fields absent from the legacy plugin type model.
+- Require every boundary warning to have stable code, field path, non-duplication, JSON serialization, and a focused test.
+- Do not call this complete OpenAPI 3.2 support until official output plugins consume the promised constructs.
 
 ## Schema feature matrix
 
@@ -128,7 +128,7 @@ For each applicable row, record: fixture path, load result, reference result, co
 
 ## Evidence template
 
-For each implemented item, record:
+For each implemented item, record every applicable field:
 
 ```text
 Dialect/feature:
@@ -136,9 +136,15 @@ Support class: complete | compatible-read | accepted-not-generated | unsupported
 Valid fixture:
 Invalid/unsupported fixture:
 Reference fixture:
-Load/convert assertion:
-Context assertion:
-Type/Zod/request/query/mock assertions:
-Generated manifest + second-run result:
+Loader assertion:
+Resolver assertion:
+Validator assertion:
+Normalizer assertion:
+Inspect assertion:
+Type output:
+Zod output:
+Request/query/mock output:
+Diagnostic:
+Dry-run/check result:
 Known boundary:
 ```

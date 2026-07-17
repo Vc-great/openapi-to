@@ -4,7 +4,7 @@ This file is the repository-level authority for coding agents. Keep task-specifi
 
 ## Project purpose
 
-`openapi-to` is a TypeScript monorepo that turns Swagger/OpenAPI documents into TypeScript types, request functions, validators, and framework integrations. `@openapi-to/core` owns input loading, Swagger 2.0 conversion, OpenAPI access, plugin orchestration, and file writing. `@openapi-to/cli` owns `openapi init` and `openapi g`. The published `openapi-to` package aggregates the CLI/core-facing API and official plugins.
+`openapi-to` is a TypeScript monorepo that turns Swagger/OpenAPI documents into TypeScript types, request functions, validators, and framework integrations. `@openapi-to/core` owns the compiler stages, machine-readable diagnostics, plugin orchestration, generated artifacts, comparison, and the explicit writer stage. `@openapi-to/cli` owns `init`, `generate`/`g`, `validate`, `inspect`, and `diff`, including text/JSON presentation and exit-code selection. The published `openapi-to` package aggregates the CLI/core-facing API and official plugins.
 
 Generation must be deterministic: the same configuration, input document, dependency graph, and runtime must produce the same file set and bytes. Do not introduce timestamps, ambient randomness, network-dependent templates, locale-dependent ordering, or iteration over unordered data without an explicit stable sort.
 
@@ -31,8 +31,13 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 
 ## Repository map
 
-- `packages/core/` — core types, configuration formatting, local/remote JSON loading, Swagger 2.0 conversion, `OpenAPIHelper`/`OperationAccessor`, plugin graph and Hook runner, `ts-morph` source-file collection, and final writes. Public plugin types are in `packages/core/src/pluginManager/types.ts`; OpenAPI context types are in `packages/core/src/OpenAPIContext/` and `packages/core/src/types/`.
-- `packages/cli/` — the `openapi` command implementation. The currently registered commands are `init` and `g`; do not document unimplemented commands as available.
+- `packages/core/src/openapi/` — source loading, JSON/YAML parsing, Swagger 2.0 conversion, reference resolution, validation, normalization, inspection, and compilation orchestration. `compiler.ts` returns the legacy-compatible document plus resolved and normalized representations.
+- `packages/core/src/diagnostics.ts` — the public `Diagnostic` contract, stable sorting, summaries, and safe causes. `exitCodes.ts` maps error codes to the centralized CLI exit codes.
+- `packages/core/src/diff/` — deterministic first-stage contract comparison. It is not a complete OpenAPI breaking-change oracle.
+- `packages/core/src/artifacts/` — TypeScript/text/JSON/binary artifacts, serialization, path/collision checks, formatting, hashes, managed-output manifests, comparison, and writing.
+- `packages/core/src/build.ts` — composes compilation, legacy-compatible plugin execution, artifact collection, formatting, comparison, and write/dry-run/check behavior; it is not the parser or remote loader.
+- `packages/core/src/pluginManager/` and `packages/core/src/OpenAPIContext/` — plugin dependency stages, Hook scheduling, the legacy OpenAPI context, `ctx.setSourceFiles()` compatibility, `ctx.addArtifact()`, and `ctx.addDiagnostic()`.
+- `packages/cli/` — text and machine-readable command presentation for `init`, `generate`/`g`, `validate`, `inspect`, and `diff`. Both `openapi` and `openapi-to` binaries point to the same entrypoint.
 - `packages/openapi/` — the published `openapi-to` aggregate package and `bin/openapi.js`; it re-exports core configuration and official plugin factories.
 - `packages/plugin-ts-type/` — TypeScript model and operation type generation.
 - `packages/plugin-zod/` — Zod schema generation.
@@ -43,11 +48,33 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 - `e2e/common/` and `e2e/module/` — CommonJS and ESM CLI generation smoke projects used by `.github/workflows/e2e.yaml` after a repository build.
 - `configs/` — root Vitest and Prettier configuration. `biome.json`, `tsconfig.json`, `turbo.json`, and `pnpm-workspace.yaml` are root tool configuration.
 - `.github/workflows/` and `.github/setup/action.yml` — CI build, typecheck, test, lint, and cross-platform e2e definitions.
-- `.agents/skills/` — the single authoritative Skill source. `.claude/skills/` is a generated Claude Code mirror; `CLAUDE.md` is only a compatibility pointer. Validate or update the mirror with `.agents/scripts/sync-claude-skills.mjs`.
+- `.agents/skills/` — the single authoritative Codex Skill source. Keep each `SKILL.md`, its `agents/openai.yaml`, and directly referenced resources consistent.
 - Package builds emit `dist/`; integration tests may create untracked `packages/*/test-output/`. Never treat those outputs as source.
 - Package `CHANGELOG.md` files and root Changesets scripts are release-related. At this revision there is no tracked `.changeset/config.json`; check that fact again before relying on `pnpm changeset` or preparing a release.
 
 `pnpm-workspace.yaml` mentions `docs`, `examples/*`, and `e2e/*`, but `docs/` and `examples/` are not present in this revision. Do not invent paths or use the root `generate` script as evidence until the relevant workspace exists. Always re-scan for lower-level `AGENTS.md` files and repository Skills because later changes may add narrower rules.
+
+## Compiler architecture and representation boundaries
+
+Classify a change before editing. Put each semantic rule in its owning stage rather than duplicating it in plugins or CLI presentation:
+
+1. **Input loading** — local/object/HTTP(S) acquisition and remote policy in `sourceLoader.ts`.
+2. **Parsing/conversion** — JSON/YAML parsing and Swagger 2.0 conversion in `sourceLoader.ts`.
+3. **Reference resolution** — internal/external `$ref`, cache, pointer, cycle, and missing-target behavior in `refResolver.ts`.
+4. **Validation** — dialect/version and structural diagnostics in `validator.ts`.
+5. **Normalization** — deterministic, non-mutating key ordering in `normalizer.ts`.
+6. **OpenAPI context** — `OpenAPIHelper`, operation grouping, and legacy plugin-facing access.
+7. **Plugin generation** — Hook execution and plugin diagnostics/artifact contribution.
+8. **Artifact formatting** — TypeScript formatting and optional configured formatter.
+9. **Artifact comparison** — hashes, managed deletions, dry-run/check manifests.
+10. **Filesystem writing** — the explicit writer only.
+11. **CLI presentation** — text/JSON output and exit-code priority.
+
+The actual compiler order is load → parse/Swagger conversion → resolve references → validate the legacy-compatible document → normalize the resolved document. `OpenAPICompilation.document` is the converted, legacy-compatible plugin document; `resolvedDocument` expands resolvable references while preserving detected cycles as `$ref`; `normalizedDocument` recursively sorts object keys in the resolved representation while preserving array order and unknown fields. Existing plugins receive `document` through `HookContext.openAPIDocument`; they do not currently select `resolvedDocument` or `normalizedDocument` through HookContext. Call `compileOpenAPI()` directly when a tool needs those explicit representations. Do not use the vague phrase “parsed OpenAPI” when the distinction matters.
+
+Generation then runs the legacy OpenAPI context and plugins, collects legacy `SourceFile` values plus `GeneratedArtifact` values, materializes/formats, compares, and either writes or returns dry-run/check results. Library stages do not call `process.exit`. Only the writer may modify generated output.
+
+Keep stage ownership singular: plugins must not reimplement `$ref` loading, artifact path confinement, diagnostic JSON envelopes, or OpenAPI 3.2 compatibility warnings already owned by core.
 
 ## Runtime and tools
 
@@ -90,24 +117,40 @@ Dependencies are topologically grouped into stages, and stages run in order. In 
 - Use `buildEnd` for aggregate/barrel files that require all component and operation work to be complete. Do not assume `tagEnd` means all asynchronous operations for that tag have finished at the current revision.
 - Do not keep shared `currentTag`/`currentOperation` state or mutate an unpartitioned SourceFile/import/Set/Map from concurrent operations. Partition by build/tag/operation or synchronize explicitly.
 - Treat `ctx.store` and accessor metadata as a scoped contract. Namespace keys, avoid sharing mutable objects between unrelated plugins, and document dependencies when consuming another plugin's metadata.
-- Create `ts-morph` files inside the output directory and register each through `ctx.setSourceFiles(...)`. Normalize and validate paths before registration. Fail on two logical outputs resolving to the same path; do not rely on final write order.
-- At this revision the collected output type is `ts-morph` `SourceFile`, and `PluginManager.writeFiles()` applies TypeScript `formatText()` before saving. Do not claim arbitrary text output such as Markdown is supported by giving a `SourceFile` a non-TypeScript extension. A safe non-TypeScript plugin requires an explicitly scoped core output-contract change and cross-plugin tests; do not assume a parallel task supplied it.
+- Existing TypeScript plugins may keep creating `ts-morph` files beneath the output root and registering them through `ctx.setSourceFiles(...)`; core adapts them to TypeScript artifacts and formats them before comparison.
+- New output should use `ctx.addArtifact()`: `typescript` for a `SourceFile`, `text` for Markdown/YAML/plain text, `json` for stable JSON serialization, and `binary` only for a justified bounded binary. Hooks must not write the target directory directly or bypass the artifact writer.
+- Artifact paths are relative to `output.dir`; an absolute path is accepted only when it remains inside that root. Exact duplicate paths with identical bytes are deduplicated. Different bytes at one path are an error, and case-only path collisions are errors on every platform. The output root, parent segments, and existing targets must not be symlinks.
+- The default per-artifact serialized-size limit is 64 MiB. Keep plugin-specific output smaller where practical and test any intentional large/binary output.
+- `output.clean` deletes only paths recorded in the prior `.openapi-to-manifest.json`; unmanaged user files are not candidates. A first run without that ownership manifest intentionally performs no legacy-directory sweep. Dry-run and check never update the ownership manifest.
 - Sort schema names, operations, imports, exports, and aggregate file entries explicitly when source ordering is not part of the contract.
 - Export the factory and public config types from the plugin's `src/index.ts`. For a new official package, normal scope includes its package files, plugin enum/type registration, workspace dependency, aggregate export, root TypeScript project reference, package exports, tests, and fixtures. Changes to `HookContext`, Hook names/order, `OperationAccessor`'s public model, dependency-graph semantics, output representation, or existing plugin stages require separately explicit core-design scope.
 - Validate the plugin alone and in dependency order with plugins whose accessor metadata it consumes. A successful isolated test is not sufficient for `ts-request`, SWR, Vue Query, or similar dependent plugins.
 
 ## OpenAPI input rules
 
-- Swagger 2.0, OpenAPI 3.0, OpenAPI 3.1, and OpenAPI 3.2 are distinct dialects. The README's support claim is not substitute for fixture-backed behavior. This revision has explicit Swagger 2.0 and OpenAPI 3.0 fixtures; verify newer dialect coverage before claiming it.
+- Swagger 2.0, OpenAPI 3.0, OpenAPI 3.1, and OpenAPI 3.2 are distinct dialects. Classify every claim as **complete**, **compatible-read**, **accepted-not-generated**, or **unsupported**, and name the pipeline stages covered. Never shorten “OpenAPI 3.2 compatible reading with diagnosed generation gaps” to “OpenAPI 3.2 supported.”
 - Test `$ref`, `nullable`, JSON Schema type arrays, `oneOf`, `anyOf`, `allOf`, `enum`, `const`, `additionalProperties`, discriminators, recursive schemas, request bodies, and media types independently where relevant.
 - A Petstore fixture is broad smoke coverage, not proof of dialect compatibility. Add one minimal valid fixture and one minimal invalid/unsupported case for parser fixes.
 - Classify nonstandard inputs explicitly as a compatibility policy, warning, or error. Do not describe permissive behavior as a specification mandate.
 - Do not silently discard an unparsed field or treat an empty operation/schema/file set as unconditional success. Preserve it, diagnose it, or document that it does not participate in generation and test that boundary.
 - Treat local and remote `$ref` resolution separately. Do not infer external-reference support from internal component references.
 
-## Diagnostics compatibility
+## Diagnostics contract
 
-This revision has no unified machine-readable Diagnostic API and no general Artifact abstraction. If a later branch provides a unified Diagnostic API, use its stable code, severity, location, and bounded message. Otherwise use the repository's current error mechanism, include enough context to locate the failure, do not silently swallow errors, and never expose complete OpenAPI documents, tokens, or sensitive request data. Do not turn an ordinary plugin/OpenAPI task into a repository-wide Diagnostics redesign; record structured Diagnostics as a follow-up infrastructure dependency.
+Use the public `Diagnostic` model for compiler, generation, and CLI-actionable conditions. A diagnostic has a stable `code`, `severity` (`error`, `warning`, or `info`), bounded human message, and optional source/path/line/column, hint, plugin, and safe cause.
+
+- Use `error` when the requested operation cannot be trusted or completed, `warning` for accepted input/output with a named limitation or uncertain compatibility, and `info` for non-failing transformations such as Swagger conversion.
+- Treat codes as compatibility surface: improve messages without casually renaming codes. Sort diagnostics with `sortDiagnostics()` before public return/serialization.
+- Loader owns read/protocol/remote diagnostics; parser owns syntax; resolver owns `$ref`; validator owns dialect/structure; artifact stages own serialization/path/compare/write; plugins own only their generation limitations. Do not report the same compiler error again from every plugin. The resolver deduplicates identical reference diagnostics; there is no blanket cross-stage deduplicator.
+- Plugins call `ctx.addDiagnostic()` and include `plugin` plus the most precise OpenAPI `location.path` available. Do not use `console.warn` as a diagnostic or emit an empty file to simulate success.
+- Default JSON output must not contain stacks. Even debug causes must not expose documents, Authorization/Cookie headers, credentials, URL queries, or tokens. Never stringify arbitrary Error/request/parser objects into user output.
+- Library code never calls `process.exit`; CLI entrypoints set `process.exitCode` after output is flushed.
+
+## CLI contract
+
+For a CLI command change, test human-readable and JSON modes, options before and after the command where supported, stdout/stderr separation, `JSON.parse(stdout)`, help, input/config/plugin failures, and the centralized exit code. Test `generate` write, `--dry-run`, successful/outdated `--check`, and added/modified/deleted manifest entries. Check Windows and POSIX path forms when path parsing changes.
+
+JSON mode emits exactly one JSON document on stdout. Diagnostics, progress, debug output, and plugin `console` output go to stderr. Do not add banners, update notices, colors, or prose to JSON stdout. Keep top-level envelopes stable and arrays deterministically ordered. Do not force-exit after printing.
 
 ## Validation matrix
 
@@ -118,8 +161,7 @@ First confirm each command exists in the current `package.json`. Replace `<packa
 - Run `git diff --check`.
 - Check every relative Markdown link and mentioned repository path.
 - Compare mentioned scripts with root and package `package.json` files.
-- Run `node .agents/scripts/sync-claude-skills.mjs` to validate Skill structure, metadata, links, and Claude mirror drift. Use `--sync` only when intentionally updating the mirror.
-- Run the Agent script tests when those scripts change: `node --test .agents/scripts/*.test.mjs .agents/skills/run-codegen-tests/scripts/*.test.mjs`.
+- Validate a changed Skill's frontmatter, `agents/openai.yaml`, relative links, and referenced repository paths. Run its bundled script tests when those scripts change, such as `node --test .agents/skills/run-codegen-tests/scripts/*.test.mjs`.
 - No unrelated build or full test suite is required.
 
 ### Single-package logic
@@ -150,6 +192,7 @@ First confirm each command exists in the current `package.json`. Replace `<packa
 - `pnpm --filter @openapi-to/cli typecheck`
 - `pnpm --filter @openapi-to/cli build`
 - After the repository build, run the applicable real smoke workflow: `pnpm --dir e2e/common generate` and/or `pnpm --dir e2e/module generate` after their documented init/edit setup. Verify success and failure exit codes, stdout, stderr, and created files; do not infer them only from mocked calls.
+- Use the repository's `add-cli-command` Skill when available; otherwise read `.agents/skills/add-cli-command/SKILL.md`.
 
 ### Release preparation
 
@@ -183,4 +226,4 @@ Before the final response:
 - Separate pre-existing issues from regressions introduced by the change.
 - Do not claim an unexecuted test passed, and do not replace evidence with “should be fine.”
 
-For reusable task workflows, use the canonical Skills under `.agents/skills/`. Codex can invoke a Skill by its supported Skill mechanism; Claude Code discovers the synchronized `.claude/skills/` mirror. Do not edit mirrored Skill bodies directly or rely on one vendor's invocation syntax as the only workflow—read the canonical `SKILL.md` directly when invocation is unavailable.
+For reusable task workflows, use the Codex Skills under `.agents/skills/`. Invoke the matching `$skill-name` when available; otherwise read its canonical `SKILL.md` directly. Do not create vendor mirrors or duplicate Skill bodies.

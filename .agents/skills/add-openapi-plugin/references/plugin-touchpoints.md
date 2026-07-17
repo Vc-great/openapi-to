@@ -11,7 +11,7 @@ Use this reference after reading the current files. It is a routing checklist, n
 | Dependency stages | `packages/core/src/pluginManager/graph.ts` | Declare every metadata producer dependency; check cycles/missing names. |
 | Operation metadata | `packages/core/src/OpenAPIContext/OperationAccessor.ts` | Read/write only established metadata or explicitly scope a public API change. |
 | Build-local state | closest official `src/plugin.ts` | Use per-configuration state; do not copy module-global registries. |
-| Output representation | `packages/core/src/pluginManager/types.ts` and `PluginManager.writeFiles()` | Current contract is formatted `ts-morph` `SourceFile`; non-TypeScript artifacts require explicit core scope. |
+| Output representation | `packages/core/src/artifacts/`, `packages/core/src/pluginManager/types.ts`, and `build.ts` | Choose a typed `GeneratedArtifact`; legacy `SourceFile` registration is an adapter for existing TypeScript plugins. |
 
 The current runner provides one shared `HookContext` for a `PluginManager.execute()` call. `buildStart` completes first, and component Hooks finish before the tag loop. Each `tagStart` is awaited, then that tag's operations are scheduled concurrently; `tagEnd` is invoked before those operation promises are awaited. A later tag can therefore start while earlier-tag operations are still active. After the loop the runner awaits all scheduled operations before `buildEnd`, so `buildEnd` is the current final aggregation barrier. Re-read the runner whenever it changes.
 
@@ -42,6 +42,8 @@ Do not blindly copy manifest versions, dependency lists, or export conditions. C
 - Request producer: model after `plugin-ts-request`; declare type/Zod dependencies based on consumed accessor metadata.
 - Framework consumer: model after SWR/Vue Query/MSW only for relevant behavior; verify its request/type/schema dependency combination.
 - Whole-build TypeScript index output: collect immutable facts during appropriate Hooks and emit one deterministically sorted file from `buildEnd`.
-- Markdown or other non-TypeScript output: stop under the current contract. Do not bypass `PluginManager` with direct writes or treat a non-TypeScript file as a formatted `SourceFile`; request an explicitly authorized core artifact/output extension.
+- JSON output: use a JSON artifact so serialization, hashing, comparison, and writing remain centralized.
+- Markdown, YAML, or other text output: use a text artifact; do not treat it as TypeScript or write directly from a Hook.
+- Binary output: use only for an explicit bounded byte artifact and assert exact bytes/hash/size.
 
 For any combination, test plugin order through declared dependencies rather than relying on the user's array order.

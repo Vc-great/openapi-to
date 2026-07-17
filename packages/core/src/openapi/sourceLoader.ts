@@ -1,6 +1,9 @@
+import { lookup as lookupWithCallback } from 'node:dns'
 import { lookup } from 'node:dns/promises'
 import { readFile } from 'node:fs/promises'
-import { isIP } from 'node:net'
+import { Agent as HttpAgent } from 'node:http'
+import { Agent as HttpsAgent } from 'node:https'
+import { isIP, type LookupFunction } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -119,12 +122,40 @@ export async function validateRemoteURL(url: URL, options: RemoteSourceOptions =
   return []
 }
 
-function sourceDiagnostic(code: string, message: string, source: string, error?: unknown): Diagnostic {
-  return { code, severity: 'error', message, location: { source }, cause: errorCause(error) }
+function sourceDiagnostic(code: string, message: string, source: string, error?: unknown, debug = false): Diagnostic {
+  return { code, severity: 'error', message, location: { source }, cause: errorCause(error, debug) }
 }
 
-async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions): Promise<LoadedSource> {
+function sanitizedRemoteCause(error: unknown, url: URL, debug = false): string | undefined {
+  const cause = errorCause(error, debug)
+  if (!cause) return undefined
+  return cause.replaceAll(url.toString(), sanitizedRemoteSource(url)).replaceAll(`${url.origin}${url.pathname}${url.search}`, `${url.origin}${url.pathname}`)
+}
+
+function restrictedLookup(): LookupFunction {
+  return (hostname, _options, callback) => {
+    lookupWithCallback(hostname, { all: true, verbatim: true }, (error, addresses) => {
+      if (error) {
+        callback(error, '', 0)
+        return
+      }
+      const address = addresses.find((candidate) => !isPrivateIPAddress(candidate.address))
+      if (!address || addresses.some((candidate) => isPrivateIPAddress(candidate.address))) {
+        const blocked = new Error(`Connection to ${hostname} was blocked because DNS resolved to a private, local, or reserved address.`) as NodeJS.ErrnoException
+        blocked.code = 'EACCES'
+        callback(blocked, '', 0)
+        return
+      }
+      callback(null, address.address, address.family)
+    })
+  }
+}
+
+async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, debug = false): Promise<LoadedSource> {
   const policy = { ...defaultRemoteOptions, ...options }
+  const lookupAtConnection = policy.allowPrivateNetwork ? undefined : restrictedLookup()
+  const httpAgent = lookupAtConnection ? new HttpAgent({ lookup: lookupAtConnection }) : undefined
+  const httpsAgent = lookupAtConnection ? new HttpsAgent({ lookup: lookupAtConnection }) : undefined
   let currentURL = initialURL
   for (let redirect = 0; redirect <= policy.maxRedirects; redirect += 1) {
     const diagnostics = await validateRemoteURL(currentURL, policy)
@@ -133,6 +164,8 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions):
     try {
       const response = await axios.get<string>(currentURL.toString(), {
         headers: options.headers,
+        httpAgent,
+        httpsAgent,
         maxBodyLength: policy.maxResponseBytes,
         maxContentLength: policy.maxResponseBytes,
         maxRedirects: 0,
@@ -159,7 +192,9 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions):
     } catch (error) {
       const axiosCode = axios.isAxiosError(error) ? error.code : undefined
       const code = axiosCode === 'ECONNABORTED' || axiosCode === 'ETIMEDOUT' ? 'REMOTE_SOURCE_TIMEOUT' : axiosCode === 'ERR_FR_MAX_BODY_LENGTH_EXCEEDED' || axiosCode === 'ERR_BAD_RESPONSE' ? 'REMOTE_SOURCE_TOO_LARGE' : 'REMOTE_SOURCE_FAILED'
-      return { source, uri: currentURL.toString(), diagnostics: [sourceDiagnostic(code, code === 'REMOTE_SOURCE_TIMEOUT' ? 'Remote source request timed out.' : 'Unable to load remote source.', source, error)] }
+      const diagnostic = sourceDiagnostic(code, code === 'REMOTE_SOURCE_TIMEOUT' ? 'Remote source request timed out.' : 'Unable to load remote source.', source)
+      diagnostic.cause = sanitizedRemoteCause(error, currentURL, debug)
+      return { source, uri: currentURL.toString(), diagnostics: [diagnostic] }
     }
   }
   return { source: sanitizedRemoteSource(initialURL), uri: initialURL.toString(), diagnostics: [] }
@@ -181,7 +216,7 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
     const cache = options.cache ?? new Map<string, Promise<LoadedSource>>()
     const cached = cache.get(key)
     if (cached) return cached
-    const pending = fetchRemoteSource(parsedURL, options.remote ?? {})
+    const pending = fetchRemoteSource(parsedURL, options.remote ?? {}, options.debug)
     cache.set(key, pending)
     return pending
   }
@@ -191,7 +226,7 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
   try {
     return { source: filePath, uri, text: await readFile(filePath, 'utf8'), diagnostics: [] }
   } catch (error) {
-    return { source: filePath, uri, diagnostics: [sourceDiagnostic('INPUT_READ_FAILED', 'Unable to read OpenAPI source.', filePath, error)] }
+    return { source: filePath, uri, diagnostics: [sourceDiagnostic('INPUT_READ_FAILED', 'Unable to read OpenAPI source.', filePath, error, options.debug)] }
   }
 }
 
@@ -199,11 +234,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function parseOpenAPISource(source: LoadedSource): { value?: Record<string, unknown>; diagnostics: Diagnostic[] } {
+export function parseOpenAPISource(source: LoadedSource, debug = false): { value?: Record<string, unknown>; diagnostics: Diagnostic[] } {
   if (source.value) return { value: source.value, diagnostics: [] }
   if (source.text === undefined) return { diagnostics: source.diagnostics }
-  const likelyJSON = source.contentType?.toLowerCase().includes('json') || path.extname(new URL(source.uri).pathname).toLowerCase() === '.json' || /^[\s\uFEFF]*[\[{]/.test(source.text)
-  const parsers: Array<() => unknown> = likelyJSON ? [() => JSON.parse(source.text!), () => loadYaml(source.text!)] : [() => loadYaml(source.text!), () => JSON.parse(source.text!)]
+  const text = source.text
+  const likelyJSON = source.contentType?.toLowerCase().includes('json') || path.extname(new URL(source.uri).pathname).toLowerCase() === '.json' || /^[\s\uFEFF]*(?:\[|\{)/.test(text)
+  const parsers: Array<() => unknown> = likelyJSON ? [() => JSON.parse(text), () => loadYaml(text)] : [() => loadYaml(text), () => JSON.parse(text)]
   let lastError: unknown
   for (const parse of parsers) {
     try {
@@ -214,27 +250,33 @@ export function parseOpenAPISource(source: LoadedSource): { value?: Record<strin
       lastError = error
     }
   }
-  return { diagnostics: [sourceDiagnostic('OPENAPI_PARSE_FAILED', 'Unable to parse OpenAPI document as JSON or YAML.', source.source, lastError)] }
+  const mark = (lastError as { mark?: { line?: number; column?: number } } | undefined)?.mark
+  const diagnostic = sourceDiagnostic('OPENAPI_PARSE_FAILED', 'Unable to parse OpenAPI document as JSON or YAML.', source.source, lastError, debug)
+  if (mark?.line !== undefined) diagnostic.location = { ...diagnostic.location, line: mark.line + 1, column: (mark.column ?? 0) + 1 }
+  return { diagnostics: [diagnostic] }
 }
 
-async function convertSwaggerDocument(document: Record<string, unknown>, source: string): Promise<{ document?: CompatibleOpenAPIDocument; diagnostics: Diagnostic[] }> {
+async function convertSwaggerDocument(document: Record<string, unknown>, source: string, debug = false): Promise<{ document?: CompatibleOpenAPIDocument; diagnostics: Diagnostic[] }> {
   if (typeof document.openapi === 'string') return { document: document as CompatibleOpenAPIDocument, diagnostics: [] }
   if (document.swagger !== '2.0') return { diagnostics: [] }
   try {
     const converted = await converter.convertObj(document as never, { warnOnly: true })
-    return { document: converted.openapi as CompatibleOpenAPIDocument, diagnostics: [] }
+    return {
+      document: converted.openapi as CompatibleOpenAPIDocument,
+      diagnostics: [{ code: 'OPENAPI_SWAGGER_CONVERTED', severity: 'info', message: 'Swagger 2.0 input was converted to an OpenAPI 3 compatibility document for validation and generation.', location: { source } }],
+    }
   } catch (error) {
-    return { diagnostics: [sourceDiagnostic('OPENAPI_VALIDATION_FAILED', 'Unable to convert Swagger 2.0 document to OpenAPI 3.', source, error)] }
+    return { diagnostics: [sourceDiagnostic('OPENAPI_VALIDATION_FAILED', 'Unable to convert Swagger 2.0 document to OpenAPI 3.', source, error, debug)] }
   }
 }
 
 export async function loadOpenAPIDocument(input: OpenAPIInput, options: SourceLoaderOptions = {}): Promise<LoadedOpenAPIDocument> {
   const source = await loadSource(input, options)
   if (source.diagnostics.length > 0) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(source.diagnostics) }
-  const parsed = parseOpenAPISource(source)
+  const parsed = parseOpenAPISource(source, options.debug)
   if (!parsed.value) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(parsed.diagnostics) }
   const originalDocument = parsed.value as OpenAPIAllDocument
-  const converted = await convertSwaggerDocument(parsed.value, source.source)
+  const converted = await convertSwaggerDocument(parsed.value, source.source, options.debug)
   const document = converted.document ?? (parsed.value as CompatibleOpenAPIDocument)
   const version = typeof parsed.value.openapi === 'string' ? parsed.value.openapi : typeof parsed.value.swagger === 'string' ? parsed.value.swagger : undefined
   return { source: source.source, uri: source.uri, originalDocument, document, version, diagnostics: sortDiagnostics(converted.diagnostics) }

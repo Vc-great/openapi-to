@@ -1,0 +1,24 @@
+openapi: 3.2.0
+$self: ./openapi-3.2.yaml
+info:
+  title: OpenAPI 3.2 compatibility fixture
+  summary: Exercises fields that are read but not yet generated
+  version: 1.0.0
+paths:
+  /search:
+    query:
+      operationId: searchPets
+      responses:
+        '200':
+          description: Search result
+          content:
+            application/jsonl:
+              itemSchema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer

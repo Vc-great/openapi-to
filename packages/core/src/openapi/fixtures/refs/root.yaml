@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Reference fixture
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Pet:
+      $ref: './schemas/pet.json#/$defs/Pet'
+    Escaped:
+      $ref: './schemas/pet.json#/$defs/a~1b~0c'

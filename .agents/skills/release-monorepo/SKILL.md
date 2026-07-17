@@ -63,6 +63,14 @@ For each release candidate:
 6. Inspect README availability: update root/package documentation only where the user-facing API needs it; do not invent missing package READMEs as a release prerequisite unless project policy requires them.
 7. Perform a dry-run pack using a command supported by the installed package manager (verify with local help first), and inspect the complete file list. No secrets, fixtures, test outputs, source maps not intended for publication, or undeclared runtime files may leak.
 
+For a P0 compiler release, explicitly verify:
+
+- `@openapi-to/core` declarations/exports for `compileOpenAPI`, diagnostics, `GeneratedArtifact`/generation manifest/result, and `ExitCode`.
+- `@openapi-to/cli` command behavior/declarations for validate, inspect, diff, generate, dry-run, check, JSON output, and exit-code mapping.
+- The `openapi-to` aggregate re-export of core plus both `openapi` and `openapi-to` bin aliases.
+- Whether additive `HookContext` fields require coordinated plugin releases even while legacy `setSourceFiles()` remains source-compatible.
+- Runtime-engine consistency. At this revision the root policy permits Node >=18, core has no package-local engine declaration, and the aggregate requires Node >=20; classify or document that release risk.
+
 Do not edit built output by hand. Rebuild it from source.
 
 ### 5. Verify Changesets and release metadata
@@ -94,7 +102,7 @@ pnpm build
 
 Also:
 
-- For generator changes, use the repository's `run-codegen-tests` Skill when the current Agent supports Skill invocation. Otherwise read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly. Optional shortcuts are Codex `$run-codegen-tests` and Claude Code `/run-codegen-tests`; the release decision must not depend on either syntax.
+- For generator changes, use the Codex `$run-codegen-tests` Skill. If Skill invocation is unavailable, read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly.
 - Run applicable CLI e2e smoke projects after a successful build when CLI/aggregate package behavior changes.
 - Re-run pack inspection after the final build/version state.
 - Ensure no uncommitted generated/test output was introduced.
@@ -126,7 +134,7 @@ Do not run root `release`, package `release`, `pnpm publish`, `npm publish`, cre
 
 ## Diagnostics compatibility
 
-If the current branch provides a unified Diagnostic API, preserve its stable code, severity, location, and bounded message in release evidence. Otherwise record current command/error output with sensitive values redacted and enough context to locate the failure. Do not make release preparation depend on an absent Diagnostics framework or broaden it into that refactor.
+The P0 public surface includes unified diagnostics. Preserve stable codes, severity, locations, deterministic serialization, and exit-code mapping in release evidence. Redact sensitive values and never treat a human log string as the machine contract.
 
 ## Completion standard
 

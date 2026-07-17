@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add openapi-to CLI Command"
+  short_description: "Add deterministic diagnostic-aware CLI commands"
+  default_prompt: "Use $add-cli-command to add a safe machine-readable openapi-to CLI command."

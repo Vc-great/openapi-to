@@ -1,5 +1,7 @@
 import type { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types'
 import type { SourceFile } from 'ts-morph'
+import type { Diagnostic } from '../diagnostics.ts'
+import type { GeneratedArtifact } from '../artifacts/types.ts'
 import type { OpenAPIHelper } from '../OpenAPIContext/OpenAPIHelper.ts'
 
 import type { ComponentsParameters, ComponentsRequestBodies, ComponentsResponses, HookTagObject, OperationWrapper } from '../OpenAPIContext/types.ts'
@@ -27,10 +29,17 @@ export interface HookContext extends PluginContext {
   _tagSourceFiles: Map<(string | undefined)[], SourceFile>
   getSourceFiles: (name: string[]) => SourceFile | undefined
   setSourceFiles: (name: string[], files: SourceFile) => void
+  /** Add a non-ts-morph artifact without affecting the legacy SourceFile API. */
+  addArtifact: (artifact: GeneratedArtifact) => void
+  /** Contribute a machine-readable diagnostic from a plugin hook. */
+  addDiagnostic: (diagnostic: Diagnostic) => void
+  artifacts: GeneratedArtifact[]
+  diagnostics: Diagnostic[]
   openapiHelper: OpenAPIHelper
   pluginNames: PluginEnumType
   openAPIDocument: OpenAPIDocument
   openapiToSingleConfig: OpenapiToSingleConfig
+  // biome-ignore lint/suspicious/noExplicitAny: Preserve the legacy plugin store's intentionally open value contract.
   store: Map<any, any>
 }
 export type ComponentsSchemas =

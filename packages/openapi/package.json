@@ -34,7 +34,8 @@
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"bin": {
-		"openapi": "bin/openapi.js"
+		"openapi": "bin/openapi.js",
+		"openapi-to": "bin/openapi.js"
 	},
 	"files": [
 		"dist",

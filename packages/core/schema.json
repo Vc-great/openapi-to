@@ -17,6 +17,19 @@
         "path": {
           "type": "string",
           "description": "Path to be used as the input. Can be an absolute path, or a path relative from the defined root option."
+        },
+        "remote": {
+          "type": "object",
+          "description": "Security policy for remote inputs and external references.",
+          "properties": {
+            "allowPrivateNetwork": { "type": "boolean", "default": false },
+            "allowedHosts": { "type": "array", "items": { "type": "string" } },
+            "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+            "timeoutMs": { "type": "integer", "minimum": 1, "default": 10000 },
+            "maxResponseBytes": { "type": "integer", "minimum": 1, "default": 10485760 },
+            "maxRedirects": { "type": "integer", "minimum": 0, "default": 5 }
+          },
+          "additionalProperties": false
         }
       }
     },
