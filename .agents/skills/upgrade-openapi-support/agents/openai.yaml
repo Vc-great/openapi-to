@@ -1,0 +1,4 @@
+interface:
+  display_name: "Upgrade OpenAPI Support"
+  short_description: "Extend OpenAPI and JSON Schema compatibility"
+  default_prompt: "Use $upgrade-openapi-support to fix an OpenAPI compatibility gap with focused fixtures."

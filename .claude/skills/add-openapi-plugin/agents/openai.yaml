@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add OpenAPI Plugin"
+  short_description: "Create and validate an openapi-to plugin package"
+  default_prompt: "Use $add-openapi-plugin to add a repository plugin with fixtures and regression validation."
