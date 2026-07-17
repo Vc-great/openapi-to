@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Monorepo"
+  short_description: "Prepare and verify a safe monorepo release"
+  default_prompt: "Use $release-monorepo to prepare a package release plan without publishing."
