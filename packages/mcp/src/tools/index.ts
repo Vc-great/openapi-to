@@ -19,57 +19,57 @@ export function registerReadOnlyTools(server: McpServer, context: ToolContext): 
     'openapi_validate',
     {
       title: 'Validate OpenAPI',
-      description: 'Load, parse, resolve references, and validate an OpenAPI document. Does not generate code or modify files. Parser acceptance does not imply every generator supports every construct; OpenAPI 3.2 is currently compatible-read with diagnosed generation gaps.',
+      description: 'Use when the question is whether one OpenAPI document is valid or why parsing, references, or validation failed. Does not summarize API shape, compare versions, generate code, or modify files. Parser acceptance does not imply every generator supports every construct; OpenAPI 3.2 is compatible-read with diagnosed generation gaps.',
       inputSchema: validateInputSchema,
       outputSchema: validateOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     },
-    (input) => validateTool(context, input),
+    (input, extra) => validateTool(context, input, extra),
   )
   server.registerTool(
     'openapi_inspect',
     {
       title: 'Inspect OpenAPI',
-      description: 'Return a bounded, structured summary of an OpenAPI document and its compatibility classification. Does not return the full document or modify files.',
+      description: 'Use for counts, operations, tags, missing operationIds, security schemes, and compatibility classification of one OpenAPI document. This is structural inspection, not validation or version comparison. Returns a bounded summary, never the full document, and modifies no files.',
       inputSchema: inspectInputSchema,
       outputSchema: inspectOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     },
-    (input) => inspectTool(context, input),
+    (input, extra) => inspectTool(context, input, extra),
   )
   server.registerTool(
     'openapi_diff',
     {
       title: 'Compare OpenAPI Documents',
-      description: 'Compare two OpenAPI documents with the first-stage breaking/non-breaking/warning rules. This is not a complete compatibility proof or breaking-change oracle. Does not modify files.',
+      description: 'Use only to compare a before and after OpenAPI document for first-stage breaking, non-breaking, and warning changes. This is not validation, generation freshness, a complete compatibility proof, or a breaking-change oracle. Modifies no files.',
       inputSchema: diffInputSchema,
       outputSchema: diffOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     },
-    (input) => diffTool(context, input),
+    (input, extra) => diffTool(context, input, extra),
   )
   if (!context.trustedConfig.configured) return
   server.registerTool(
     'openapi_generate_dry_run',
     {
       title: 'Preview OpenAPI Generation',
-      description: 'Run configured plugins and compute bounded artifact changes without writing generated files, ownership manifests, snapshots, or caches. Uses only the trusted configuration fixed at server startup.',
+      description: 'Use to preview which configured generation artifacts would be added, modified, deleted, or unchanged. Unlike generation check, this returns the bounded plan and optional bounded text previews. It never writes files, manifests, snapshots, or caches and uses only startup-trusted config.',
       inputSchema: generateDryRunInputSchema,
       outputSchema: generateDryRunOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     },
-    (input) => generateDryRunTool(context, input),
+    (input, extra) => generateDryRunTool(context, input, extra),
   )
   server.registerTool(
     'openapi_check_generation',
     {
       title: 'Check OpenAPI Generation',
-      description: 'Check whether configured generated files match the current OpenAPI inputs without repairing, writing, or deleting anything. Uses only the trusted configuration fixed at server startup.',
+      description: 'Use for CI/freshness questions: whether current configured generated files are outdated. Unlike dry-run, this focuses on current versus expected hashes and never repairs, writes, or deletes anything. Uses only startup-trusted config.',
       inputSchema: checkGenerationInputSchema,
       outputSchema: checkGenerationOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     },
-    (input) => checkGenerationTool(context, input),
+    (input, extra) => checkGenerationTool(context, input, extra),
   )
 }
 

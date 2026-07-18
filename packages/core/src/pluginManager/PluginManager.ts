@@ -11,6 +11,7 @@ import { DiagnosticError, hasDiagnosticErrors } from '../diagnostics.ts'
 import { compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts } from '../artifacts/index.ts'
 import type { Diagnostic } from '../diagnostics.ts'
 import type { GeneratedArtifact } from '../artifacts/types.ts'
+import { throwIfAborted } from '../execution.ts'
 export type PluginStatusValue = `${PluginStatus}`;
 type Executed = {
 	name: string;
@@ -25,6 +26,7 @@ export class PluginManager {
 	constructor(
 		private readonly openapiToSingleConfig: OpenapiToSingleConfig,
 		private readonly openAPIDocument: OpenAPIDocument,
+		private readonly signal?: AbortSignal,
 	) {
 		this.openapiToSingleConfig = openapiToSingleConfig;
 		this.openAPIDocument = openAPIDocument;
@@ -45,6 +47,7 @@ export class PluginManager {
 		diagnostics: Diagnostic[];
 		failedPluginNames: string[];
 	}> {
+		throwIfAborted(this.signal);
 		const helperDocument = this.openapiToSingleConfig && String((this.openAPIDocument as { openapi?: string }).openapi).startsWith('3.2.')
 			? { ...this.openAPIDocument, openapi: '3.1.0' }
 			: this.openAPIDocument;
@@ -61,6 +64,7 @@ export class PluginManager {
 				openapiToSingleConfig: this.openapiToSingleConfig,
 				openAPIDocument: this.openAPIDocument,
 				pluginNames: this.pluginNames,
+				signal: this.signal,
 			},
 		);
 		sourceFileAll.push(...sourceFiles);

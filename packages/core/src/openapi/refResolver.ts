@@ -1,4 +1,6 @@
 import { sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
+import { throwIfAborted } from '../execution.ts'
+import { setImmediate as yieldToEventLoop } from 'node:timers/promises'
 import type { CompatibleOpenAPIDocument, RemoteSourceOptions } from '../types'
 import { loadOpenAPIDocument, type LoadedSource } from './sourceLoader.ts'
 
@@ -7,6 +9,7 @@ export interface ResolveReferencesOptions {
   localFileRoot?: string
   cache?: Map<string, Promise<LoadedSource>>
   debug?: boolean
+  signal?: AbortSignal
 }
 
 export interface ResolvedReferences {
@@ -60,6 +63,7 @@ export async function resolveOpenAPIReferences(
   baseUri: string,
   options: ResolveReferencesOptions = {},
 ): Promise<ResolvedReferences> {
+  throwIfAborted(options.signal)
   const diagnostics: Diagnostic[] = []
   const diagnosticKeys = new Set<string>()
   const sourceCache = options.cache ?? new Map<string, Promise<LoadedSource>>()
@@ -70,6 +74,7 @@ export async function resolveOpenAPIReferences(
   const rootKey = rootUri.toString()
   documentCache.set(rootKey, Promise.resolve({ document: document as Record<string, unknown>, baseUri: effectiveBaseUri(document as Record<string, unknown>, rootKey), source: baseUri }))
   let externalReferenceCount = 0
+  let visitedNodes = 0
 
   const addDiagnostic = (diagnostic: Diagnostic) => {
     const key = `${diagnostic.code}:${diagnostic.location?.source ?? ''}:${diagnostic.location?.path?.join('/') ?? ''}:${diagnostic.message}`
@@ -86,7 +91,7 @@ export async function resolveOpenAPIReferences(
     const cached = documentCache.get(key)
     if (cached) return cached
     const pending = (async () => {
-      const loaded = await loadOpenAPIDocument(normalized, { remote: options.remote, localFileRoot: options.localFileRoot, cache: sourceCache, debug: options.debug })
+      const loaded = await loadOpenAPIDocument(normalized, { remote: options.remote, localFileRoot: options.localFileRoot, cache: sourceCache, debug: options.debug, signal: options.signal })
       loadedSources.add(loaded.source)
       for (const diagnostic of loaded.diagnostics) {
         addDiagnostic({ ...diagnostic, location: { ...diagnostic.location, path: refPath } })
@@ -110,6 +115,12 @@ export async function resolveOpenAPIReferences(
     path: Array<string | number>,
     stack: string[],
   ): Promise<unknown> => {
+    throwIfAborted(options.signal)
+    visitedNodes += 1
+    if (options.signal && visitedNodes % 512 === 0) {
+      await yieldToEventLoop()
+      throwIfAborted(options.signal)
+    }
     if (Array.isArray(node)) {
       const cached = memo.get(node)
       if (cached) return cached

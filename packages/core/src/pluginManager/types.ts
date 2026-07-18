@@ -26,6 +26,8 @@ export type WriteFile = Array<{
 export type PluginConfigFactory<T> = (pluginConfig?: T) => PluginDefinition
 
 export interface HookContext extends PluginContext {
+  /** Invocation-scoped cancellation signal. Plugins should check it in long-running hooks. */
+  signal?: AbortSignal
   _tagSourceFiles: Map<(string | undefined)[], SourceFile>
   getSourceFiles: (name: string[]) => SourceFile | undefined
   setSourceFiles: (name: string[], files: SourceFile) => void

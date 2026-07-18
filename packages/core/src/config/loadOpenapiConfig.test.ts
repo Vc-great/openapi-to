@@ -1,4 +1,4 @@
-import { access, mkdtemp, symlink, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, symlink, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -28,5 +28,14 @@ describe('loadOpenapiConfig', () => {
     const linked = path.join(root, 'openapi.config.js')
     await symlink(target, linked)
     await expect(loadOpenapiConfig({ cwd: root, configPath: linked, localFileRoot: root })).rejects.toThrow(/inside the configured local file root/)
+  })
+
+  it('fails closed when config metadata changes during bundling', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-config-race-'))
+    const config = path.join(root, 'openapi.config.ts')
+    await writeFile(config, `/*${'x'.repeat(4 * 1024 * 1024)}*/\nexport default { servers: [], plugins: [] }\n`)
+    const timer = setInterval(() => { void utimes(config, new Date(), new Date()) }, 1)
+    await expect(loadOpenapiConfig({ cwd: root, configPath: config, localFileRoot: root })).rejects.toThrow(/changed while it was being loaded/)
+    clearInterval(timer)
   })
 })

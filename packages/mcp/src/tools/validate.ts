@@ -5,7 +5,7 @@ import { safeExecutionDiagnostic } from '../errors.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { resolveToolSource, sanitizeSourceDisplay } from '../security/source.ts'
 import { mapWorkspaceDiagnostics } from './common.ts'
-import { loggedToolCall, type ToolContext } from './context.ts'
+import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
 export const validateInputSchema = z.object({ source: z.string().min(1).max(4096), failOnWarning: z.boolean().optional() })
 export const validateOutputSchema = z.object({
@@ -19,9 +19,9 @@ export const validateOutputSchema = z.object({
   truncated: z.object({ diagnostics: z.boolean(), totalDiagnostics: z.number().int(), returnedDiagnostics: z.number().int(), omittedDiagnostics: z.number().int() }),
 })
 
-export async function validateTool(context: ToolContext, input: z.infer<typeof validateInputSchema>) {
+export async function validateTool(context: ToolContext, input: z.infer<typeof validateInputSchema>, extra: McpHandlerExtra = detachedHandlerExtra()) {
   const tool = 'openapi_validate'
-  return loggedToolCall(context, tool, async () => {
+  return loggedToolCall(context, tool, extra, async (execution) => {
     let display = sanitizeSourceDisplay(context.options.workspaceRoot, input.source)
     try {
       const source = await resolveToolSource(context.options.workspaceRoot, input.source)
@@ -30,6 +30,7 @@ export async function validateTool(context: ToolContext, input: z.infer<typeof v
         cwd: context.options.workspaceRoot,
         localFileRoot: context.options.workspaceRoot,
         remote: context.options.remote,
+        signal: execution.signal,
       })
       const diagnostics: Diagnostic[] = mapWorkspaceDiagnostics(compilation.diagnostics)
       if (input.failOnWarning && diagnostics.some((diagnostic) => diagnostic.severity === 'warning')) {
@@ -52,7 +53,7 @@ export async function validateTool(context: ToolContext, input: z.infer<typeof v
         !success,
       )
     } catch (error) {
-      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error)], context.options.limits, { source: display })
+      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error, execution)], context.options.limits, { source: display })
     }
   })
 }

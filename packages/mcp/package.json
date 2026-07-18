@@ -35,7 +35,11 @@
     "lint:fix": "bun biome lint --write --unsafe .",
     "start": "tsup --watch",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false",
+    "benchmark": "node ./scripts/benchmark.mjs",
+    "benchmark:check": "node ./scripts/benchmark.mjs --iterations 2 --check",
+    "stress": "node ./scripts/stress.mjs",
+    "evaluate:tools": "node ./scripts/evaluate-tool-selection.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

@@ -79,3 +79,30 @@ npx @modelcontextprotocol/inspector --cli -- \
 The list exposed three tools without config, including input/output schemas and read-only annotations. The valid call returned OpenAPI 3.1.0; the escape returned `isError: true` and `MCP_WORKSPACE_PATH_OUTSIDE_ROOT`. The local npm wrapper attempted to start the Inspector UI when asked for its version, so the smoke invoked the installed 0.22.0 package CLI entry directly; this changes only command dispatch, not the Inspector client implementation.
 
 Codex CLI was then run with an ephemeral, read-only session and configuration overrides matching `docs/codex-mcp.md`. Codex discovered `openapi_to` and called all five tools. Validate and inspect succeeded, diff returned one breaking and one non-breaking change, dry-run returned one planned artifact without creating its output directory, and check returned the expected structured outdated result without writing. The smoke used no committed machine-specific Codex configuration.
+
+## P2.5 protocol and SDK revalidation
+
+Revalidated on **2026-07-18**: the production specification remains **2025-11-25**, `@modelcontextprotocol/sdk` **1.29.0** is npm stable, and the split v2 packages are **2.0.0-beta.4**. The official TypeScript repository still recommends v1 for production while v2 is prerelease, so this hardening phase does not migrate or maintain a dual stack. Inspector stable is **0.22.0**. Codex currently documents `startup_timeout_sec` (default 10 seconds) and `tool_timeout_sec` (default 60 seconds) for MCP servers.
+
+Stable SDK v1 exposes `RequestHandlerExtra.signal`, `_meta.progressToken`, and `sendNotification`. The server therefore propagates request cancellation and emits only coarse standard `notifications/progress` notifications when a client supplied a token. It does not use experimental Tasks or hand-code cancellation/progress JSON-RPC. Sources: [cancellation](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation), [progress](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/progress), [TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk), and [Codex MCP configuration](https://developers.openai.com/codex/mcp/).
+
+Server timeouts are invocation-scoped AbortSignals, separate from client and HTTP timeouts. Defaults are based on the versioned synthetic corpus and are bounded to 100–600000 ms. Timers and listeners are released in `finally`. Analysis has call-local state; generation is serialized per Server instance and a cancelled waiter releases its queue position only after the preceding position completes, preserving ordering.
+
+Local source/config reads use opened handles plus pre/open/post identity and metadata checks. This narrows TOCTOU windows; it does not claim to eliminate all hostile same-user filesystem races. A detected change fails closed. Trusted config remains cached for the Server lifetime, so a config edit requires restart.
+
+P2.5 Inspector smoke used the actual 0.22.0 bin and current help syntax:
+
+```bash
+npx --yes --package @modelcontextprotocol/inspector@0.22.0 \
+  mcp-inspector --cli -- node packages/mcp/bin/openapi-to-mcp.js \
+  --workspace-root . --method tools/list
+
+npx --yes --package @modelcontextprotocol/inspector@0.22.0 \
+  mcp-inspector --cli -- node packages/mcp/bin/openapi-to-mcp.js \
+  --workspace-root . --method tools/call --tool-name openapi_validate \
+  --tool-arg source=packages/mcp/src/evaluation/fixtures/large/openapi.json
+```
+
+It exposed exactly three no-config tools with input/output schemas, annotations, and task support forbidden; the 700-operation local validate succeeded. The escape case `source=../outside.yaml` returned `isError: true` and `MCP_WORKSPACE_PATH_OUTSIDE_ROOT`. stderr did not break the connection.
+
+The real Codex CLI selection evaluation ran 17 independent ephemeral read-only sessions against the five-tool configured Server. It observed **100% tool selection**, **94.1% strict argument accuracy**, **0% unnecessary calls**, and **0% forbidden calls**. The single argument miss omitted the optional target restriction for dry-run; because the fixture config has one target, execution remained read-only and selected the intended startup-trusted target. The fixed threshold is 80% tool/argument accuracy and at most 10% unnecessary calls.

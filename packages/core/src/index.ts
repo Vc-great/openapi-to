@@ -4,6 +4,7 @@ export * from './diagnostics.ts'
 export * from './artifacts/index.ts'
 export * from './diff/index.ts'
 export * from './exitCodes.ts'
+export * from './execution.ts'
 
 export { PackageManager } from './PackageManager.ts'
 

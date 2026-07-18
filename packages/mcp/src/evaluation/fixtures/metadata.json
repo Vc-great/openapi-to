@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "source": "Synthetic fixtures created for openapi-to P2.5",
+    "license": "MIT",
+    "acquired": "2026-07-18",
+    "cropped": false,
+    "secretsRemoved": true
+  },
+  "fixtures": [
+    {
+      "id": "small-3.0",
+      "file": "small/openapi-3.0.json",
+      "openapiVersion": "3.0.3",
+      "paths": 1,
+      "operations": 1,
+      "schemas": 1,
+      "externalRefs": 0,
+      "expected": [
+        "validate",
+        "inspect"
+      ],
+      "bytes": 723
+    },
+    {
+      "id": "small-3.1",
+      "file": "small/openapi-3.1.json",
+      "openapiVersion": "3.1.0",
+      "paths": 1,
+      "operations": 1,
+      "schemas": 1,
+      "externalRefs": 0,
+      "expected": [
+        "validate",
+        "inspect"
+      ],
+      "bytes": 723
+    },
+    {
+      "id": "small-3.2",
+      "file": "small/openapi-3.2.json",
+      "openapiVersion": "3.2.0",
+      "paths": 1,
+      "operations": 1,
+      "schemas": 1,
+      "externalRefs": 0,
+      "expected": [
+        "compatible-read warning"
+      ],
+      "bytes": 723
+    },
+    {
+      "id": "small-swagger",
+      "file": "small/swagger-2.0.json",
+      "openapiVersion": "2.0",
+      "paths": 1,
+      "operations": 1,
+      "schemas": 0,
+      "externalRefs": 0,
+      "expected": [
+        "conversion info"
+      ],
+      "bytes": 272
+    },
+    {
+      "id": "medium",
+      "file": "medium/openapi.json",
+      "openapiVersion": "3.1.0",
+      "paths": 150,
+      "operations": 150,
+      "schemas": 81,
+      "externalRefs": 81,
+      "expected": [
+        "bounded inspect"
+      ],
+      "bytes": 85915
+    },
+    {
+      "id": "large",
+      "file": "large/openapi.json",
+      "openapiVersion": "3.1.0",
+      "paths": 700,
+      "operations": 700,
+      "schemas": 301,
+      "externalRefs": 301,
+      "expected": [
+        "operation and artifact truncation"
+      ],
+      "bytes": 345459
+    },
+    {
+      "id": "pathological",
+      "file": "pathological/bounded.json",
+      "openapiVersion": "3.2.0",
+      "paths": 600,
+      "operations": 600,
+      "schemas": 6,
+      "externalRefs": 0,
+      "expected": [
+        "bounded warnings",
+        "cycle preservation",
+        "long text not returned"
+      ],
+      "bytes": 903317
+    },
+    {
+      "id": "generation",
+      "file": "generation/openapi.json",
+      "openapiVersion": "3.1.0",
+      "paths": 250,
+      "operations": 250,
+      "schemas": 1,
+      "externalRefs": 0,
+      "expected": [
+        "250 deterministic text artifacts",
+        "no writes"
+      ],
+      "bytes": 115139
+    }
+  ]
+}

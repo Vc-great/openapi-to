@@ -15,6 +15,8 @@ startup_timeout_sec = 10
 tool_timeout_sec = 60
 ```
 
+`tool_timeout_sec` is the Codex-side deadline. The Server also enforces its own per-tool deadlines; configure them only in `args`, for example `"--validate-timeout-ms", "30000", "--generation-timeout-ms", "60000"`. Codex cancellation is propagated to the active compiler/generator call and queued generation. The Server remains usable after cancellation.
+
 To enable generation preview/check, add the startup-fixed trusted config argument:
 
 ```toml

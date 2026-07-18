@@ -1,6 +1,6 @@
 import { lookup as lookupWithCallback } from 'node:dns'
 import { lookup } from 'node:dns/promises'
-import { lstat, readFile, realpath } from 'node:fs/promises'
+import { lstat, open, realpath } from 'node:fs/promises'
 import { Agent as HttpAgent } from 'node:http'
 import { Agent as HttpsAgent } from 'node:https'
 import { isIP, type LookupFunction } from 'node:net'
@@ -12,6 +12,7 @@ import converter from 'do-swagger2openapi'
 import { load as loadYaml } from 'js-yaml'
 
 import { errorCause, sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
+import { throwIfAborted } from '../execution.ts'
 import type { CompatibleOpenAPIDocument, OpenAPIAllDocument, RemoteSourceOptions } from '../types'
 
 export type OpenAPIInput = string | URL | Record<string, unknown>
@@ -23,6 +24,9 @@ export interface SourceLoaderOptions {
   remote?: RemoteSourceOptions
   cache?: Map<string, Promise<LoadedSource>>
   debug?: boolean
+  signal?: AbortSignal
+  /** Maximum bytes for a local source before parsing. Defaults to 64 MiB. */
+  maxSourceBytes?: number
 }
 
 function isOutsideRoot(root: string, candidate: string): boolean {
@@ -81,6 +85,7 @@ const defaultRemoteOptions: Required<Omit<RemoteSourceOptions, 'allowedHosts' | 
   maxResponseBytes: 10 * 1024 * 1024,
   maxRedirects: 5,
 }
+export const DEFAULT_MAX_LOCAL_SOURCE_BYTES = 64 * 1024 * 1024
 
 function sanitizedRemoteSource(url: URL): string {
   const copy = new URL(url)
@@ -124,7 +129,8 @@ export function isPrivateIPAddress(address: string): boolean {
   return normalized === '::' || normalized === '::1' || normalized.startsWith('fc') || normalized.startsWith('fd') || /^fe[89ab]/.test(normalized)
 }
 
-export async function validateRemoteURL(url: URL, options: RemoteSourceOptions = {}): Promise<Diagnostic[]> {
+export async function validateRemoteURL(url: URL, options: RemoteSourceOptions = {}, signal?: AbortSignal): Promise<Diagnostic[]> {
+  throwIfAborted(signal)
   const source = sanitizedRemoteSource(url)
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return [{ code: 'REMOTE_SOURCE_BLOCKED', severity: 'error', message: `Remote protocol ${url.protocol} is not allowed.`, location: { source } }]
@@ -141,6 +147,7 @@ export async function validateRemoteURL(url: URL, options: RemoteSourceOptions =
 
   try {
     const addresses = await lookup(url.hostname, { all: true, verbatim: true })
+    throwIfAborted(signal)
     if (addresses.length === 0 || addresses.some(({ address }) => isPrivateIPAddress(address))) {
       return [{
         code: 'REMOTE_SOURCE_BLOCKED',
@@ -158,6 +165,13 @@ export async function validateRemoteURL(url: URL, options: RemoteSourceOptions =
 
 function sourceDiagnostic(code: string, message: string, source: string, error?: unknown, debug = false): Diagnostic {
   return { code, severity: 'error', message, location: { source }, cause: errorCause(error, debug) }
+}
+
+class LocalSourceChangedError extends Error {
+  constructor() {
+    super('Local OpenAPI source changed during the read.')
+    this.name = 'LocalSourceChangedError'
+  }
 }
 
 function sanitizedRemoteCause(error: unknown, url: URL, debug = false): string | undefined {
@@ -185,14 +199,15 @@ function restrictedLookup(): LookupFunction {
   }
 }
 
-async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, debug = false): Promise<LoadedSource> {
+async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, debug = false, signal?: AbortSignal): Promise<LoadedSource> {
   const policy = { ...defaultRemoteOptions, ...options }
   const lookupAtConnection = policy.allowPrivateNetwork ? undefined : restrictedLookup()
   const httpAgent = lookupAtConnection ? new HttpAgent({ lookup: lookupAtConnection }) : undefined
   const httpsAgent = lookupAtConnection ? new HttpsAgent({ lookup: lookupAtConnection }) : undefined
   let currentURL = initialURL
   for (let redirect = 0; redirect <= policy.maxRedirects; redirect += 1) {
-    const diagnostics = await validateRemoteURL(currentURL, policy)
+    throwIfAborted(signal)
+    const diagnostics = await validateRemoteURL(currentURL, policy, signal)
     if (diagnostics.length > 0) return { source: sanitizedRemoteSource(currentURL), uri: currentURL.toString(), diagnostics }
     const source = sanitizedRemoteSource(currentURL)
     try {
@@ -207,6 +222,7 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
         timeout: policy.timeoutMs,
         transformResponse: [(value) => value],
         validateStatus: () => true,
+        signal,
       })
       if (response.status >= 300 && response.status < 400 && response.headers.location) {
         if (redirect === policy.maxRedirects) {
@@ -224,6 +240,7 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
       }
       return { source, uri: currentURL.toString(), contentType: response.headers['content-type'], text, diagnostics: [] }
     } catch (error) {
+      throwIfAborted(signal)
       const axiosCode = axios.isAxiosError(error) ? error.code : undefined
       const code = axiosCode === 'ECONNABORTED' || axiosCode === 'ETIMEDOUT' ? 'REMOTE_SOURCE_TIMEOUT' : axiosCode === 'ERR_FR_MAX_BODY_LENGTH_EXCEEDED' || axiosCode === 'ERR_BAD_RESPONSE' ? 'REMOTE_SOURCE_TOO_LARGE' : 'REMOTE_SOURCE_FAILED'
       const diagnostic = sourceDiagnostic(code, code === 'REMOTE_SOURCE_TIMEOUT' ? 'Remote source request timed out.' : 'Unable to load remote source.', source)
@@ -235,6 +252,7 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
 }
 
 export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptions = {}): Promise<LoadedSource> {
+  throwIfAborted(options.signal)
   if (typeof input === 'object' && !(input instanceof URL)) {
     return { source: '<object>', uri: 'memory://openapi', value: input, diagnostics: [] }
   }
@@ -250,7 +268,7 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
     const cache = options.cache ?? new Map<string, Promise<LoadedSource>>()
     const cached = cache.get(key)
     if (cached) return cached
-    const pending = fetchRemoteSource(parsedURL, options.remote ?? {}, options.debug)
+    const pending = fetchRemoteSource(parsedURL, options.remote ?? {}, options.debug, options.signal)
     cache.set(key, pending)
     return pending
   }
@@ -263,8 +281,32 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
   }
   const uri = pathToFileURL(filePath).toString()
   try {
-    return { source: filePath, uri, text: await readFile(filePath, 'utf8'), diagnostics: [] }
+    throwIfAborted(options.signal)
+    const before = await lstat(filePath, { bigint: true })
+    if (!before.isFile()) throw new Error('The OpenAPI source is not a regular file.')
+    const maxSourceBytes = BigInt(options.maxSourceBytes ?? DEFAULT_MAX_LOCAL_SOURCE_BYTES)
+    if (before.size > maxSourceBytes) {
+      return { source: filePath, uri, diagnostics: [sourceDiagnostic('LOCAL_SOURCE_TOO_LARGE', `Local OpenAPI source exceeds the ${maxSourceBytes} byte limit.`, filePath)] }
+    }
+    const handle = await open(filePath, 'r')
+    try {
+      const opened = await handle.stat({ bigint: true })
+      if (opened.dev !== before.dev || opened.ino !== before.ino) throw new LocalSourceChangedError()
+      const text = await handle.readFile('utf8')
+      throwIfAborted(options.signal)
+      const after = await lstat(filePath, { bigint: true })
+      if (after.dev !== opened.dev || after.ino !== opened.ino || after.size !== opened.size || after.mtimeNs !== opened.mtimeNs) {
+        return { source: filePath, uri, diagnostics: [sourceDiagnostic('LOCAL_SOURCE_CHANGED_DURING_READ', 'The OpenAPI source changed while it was being read; the result was discarded.', filePath)] }
+      }
+      return { source: filePath, uri, text, diagnostics: [] }
+    } finally {
+      await handle.close()
+    }
   } catch (error) {
+    throwIfAborted(options.signal)
+    if (error instanceof LocalSourceChangedError) {
+      return { source: filePath, uri, diagnostics: [sourceDiagnostic('LOCAL_SOURCE_CHANGED_DURING_READ', 'The OpenAPI source changed while it was being read; the result was discarded.', filePath)] }
+    }
     return { source: filePath, uri, diagnostics: [sourceDiagnostic('INPUT_READ_FAILED', 'Unable to read OpenAPI source.', filePath, error, options.debug)] }
   }
 }
@@ -310,12 +352,16 @@ async function convertSwaggerDocument(document: Record<string, unknown>, source:
 }
 
 export async function loadOpenAPIDocument(input: OpenAPIInput, options: SourceLoaderOptions = {}): Promise<LoadedOpenAPIDocument> {
+  throwIfAborted(options.signal)
   const source = await loadSource(input, options)
+  throwIfAborted(options.signal)
   if (source.diagnostics.length > 0) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(source.diagnostics) }
   const parsed = parseOpenAPISource(source, options.debug)
+  throwIfAborted(options.signal)
   if (!parsed.value) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(parsed.diagnostics) }
   const originalDocument = parsed.value as OpenAPIAllDocument
   const converted = await convertSwaggerDocument(parsed.value, source.source, options.debug)
+  throwIfAborted(options.signal)
   const document = converted.document ?? (parsed.value as CompatibleOpenAPIDocument)
   const version = typeof parsed.value.openapi === 'string' ? parsed.value.openapi : typeof parsed.value.swagger === 'string' ? parsed.value.swagger : undefined
   return { source: source.source, uri: source.uri, originalDocument, document, version, diagnostics: sortDiagnostics(converted.diagnostics) }

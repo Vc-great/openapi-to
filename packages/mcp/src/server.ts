@@ -17,7 +17,7 @@ export function createOpenapiToMcpServer(options: OpenapiToMcpServerOptions): Mc
   )
   registerReadOnlyTools(server, {
     options: resolved,
-    logger: createStderrLogger(),
+    logger: createStderrLogger({ format: resolved.logFormat, level: resolved.logLevel }),
     trustedConfig: new TrustedConfigProvider(resolved.workspaceRoot, resolved.configPath),
     generationLock: new GenerationLock(),
   })

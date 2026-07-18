@@ -43,4 +43,5 @@ export interface GenerationResult {
 export interface MaterializeArtifactOptions {
   /** Maximum serialized size for one artifact. Defaults to 64 MiB. */
   maxArtifactBytes?: number
+  signal?: AbortSignal
 }

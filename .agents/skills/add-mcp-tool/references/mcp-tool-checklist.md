@@ -23,6 +23,9 @@
 - stdin/stdout contain JSON-RPC only; stderr contains bounded sanitized logs.
 - Plugin `console.log/info/debug` cannot corrupt stdout.
 - Analysis state is call-local; generation lock is per server and releases in `finally`.
+- SDK request cancellation and bounded Server timeout use call-local signals; active and queued generation release cleanly, timers/listeners are removed, and cancellation is not mislabeled as generic execution failure.
+- Optional progress uses only stable standard notifications, a client-supplied token, coarse monotonic phases, and stops after cancellation/completion.
+- Text/NDJSON logs contain duration/status/counts only; no arguments, documents, generated content, headers, environment, or config source.
 - No resources, prompts, sampling, elicitation, Apps UI, LLM calls, background tasks, or HTTP half-implementation.
 
 ## Tests and release
@@ -30,6 +33,9 @@
 - Unit: schemas, success/error, ordering, sanitization, limits, target/config/remote policy.
 - Security: relative/absolute inside, traversal, transitive ref, symlink entry/ref/output/config, Windows drive/UNC, case conflict, missing file, URL redaction.
 - stdio subprocess: initialize, list, schemas, annotations, call, structured content, error, stderr, clean close, no stdout pollution.
+- Hardening: remote/inspect/diff/generation cancellation, Tool timeout, queue wait cancellation, disconnect, SIGINT/SIGTERM/EOF, two Server instances, and no timer/listener/handle leak.
+- Safety races: source/config/ref/output/manifest replacement fails closed; document residual TOCTOU limits.
+- Evaluation: fixed licensed local small/medium/large/pathological corpus, multi-run machine-readable benchmark, bounded stress test, and real Codex selection/argument/no-call rates.
 - Matrix: 3 tools without config; 5 with fixed trusted config.
 - Determinism: repeat results byte-stably without time/random/temp paths.
 - Run official Inspector using its current help; run Codex smoke with current official config fields.

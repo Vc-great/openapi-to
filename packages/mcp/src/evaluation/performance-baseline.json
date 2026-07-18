@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "description": "Order-of-magnitude regression limits for the fixed synthetic P2.5 corpus; not developer-machine performance promises.",
+  "reference": {
+    "nodeMajor": 24,
+    "iterations": 5,
+    "serverStartupP95Ms": 557,
+    "toolsListP95Ms": 31,
+    "validateP95Ms": 52,
+    "inspectP95Ms": 28,
+    "diffP95Ms": 37,
+    "generateDryRunP95Ms": 59,
+    "checkP95Ms": 48,
+    "maxObservedRssBytesApprox": 355123200,
+    "maxStructuredContentBytes": 77814,
+    "expectedDiffChanges": 1232,
+    "expectedGenerationArtifacts": 250
+  },
+  "maxPeakRssBytesApprox": 1073741824,
+  "thresholds": {
+    "serverStartup": { "maxP95Ms": 5000, "maxStructuredContentBytes": 0 },
+    "toolsList": { "maxP95Ms": 2000, "maxStructuredContentBytes": 0 },
+    "validate": { "maxP95Ms": 15000, "maxStructuredContentBytes": 262144 },
+    "inspect": { "maxP95Ms": 15000, "maxStructuredContentBytes": 262144 },
+    "diff": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 },
+    "generateDryRun": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 },
+    "check": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 }
+  }
+}

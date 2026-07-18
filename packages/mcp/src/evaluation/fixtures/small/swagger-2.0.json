@@ -1,0 +1,19 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Swagger",
+    "version": "1"
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "operationId": "ping",
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  }
+}

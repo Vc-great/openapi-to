@@ -5,7 +5,7 @@ import { safeExecutionDiagnostic } from '../errors.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { resolveToolSource, sanitizeSourceDisplay } from '../security/source.ts'
 import { mapWorkspaceDiagnostics } from './common.ts'
-import { loggedToolCall, type ToolContext } from './context.ts'
+import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
 const LIMITATION = '当前是第一阶段 OpenAPI diff 规则集，不是完整的兼容性证明或 breaking-change oracle。'
 export const diffInputSchema = z.object({ before: z.string().min(1).max(4096), after: z.string().min(1).max(4096) })
@@ -36,9 +36,9 @@ export const diffOutputSchema = z.object({
   limitation: z.string().optional(),
 })
 
-export async function diffTool(context: ToolContext, input: z.infer<typeof diffInputSchema>) {
+export async function diffTool(context: ToolContext, input: z.infer<typeof diffInputSchema>, extra: McpHandlerExtra = detachedHandlerExtra()) {
   const tool = 'openapi_diff'
-  return loggedToolCall(context, tool, async () => {
+  return loggedToolCall(context, tool, extra, async (execution) => {
     let beforeDisplay = sanitizeSourceDisplay(context.options.workspaceRoot, input.before)
     let afterDisplay = sanitizeSourceDisplay(context.options.workspaceRoot, input.after)
     try {
@@ -48,20 +48,23 @@ export async function diffTool(context: ToolContext, input: z.infer<typeof diffI
       ])
       beforeDisplay = beforeSource.display
       afterDisplay = afterSource.display
-      const compileOptions = { cwd: context.options.workspaceRoot, localFileRoot: context.options.workspaceRoot, remote: context.options.remote }
+      await execution.progress('Compiling both OpenAPI inputs', 10)
+      const compileOptions = { cwd: context.options.workspaceRoot, localFileRoot: context.options.workspaceRoot, remote: context.options.remote, signal: execution.signal }
       const [before, after] = await Promise.all([compileOpenAPI(beforeSource.value, compileOptions), compileOpenAPI(afterSource.value, compileOptions)])
       const diagnostics = mapWorkspaceDiagnostics([...before.diagnostics, ...after.diagnostics])
       if (!before.normalizedDocument || !after.normalizedDocument || hasDiagnosticErrors(diagnostics)) {
         return executionFailure(context.options.workspaceRoot, tool, diagnostics, context.options.limits, { before: beforeDisplay, after: afterDisplay, breaking: false, changes: [], summary: { breaking: 0, nonBreaking: 0, warnings: 0, informational: 0 }, limitation: LIMITATION })
       }
-      const difference = diffOpenAPIDocuments(before.normalizedDocument, after.normalizedDocument)
+      await execution.progress('Comparing API contracts', 70)
+      const difference = diffOpenAPIDocuments(before.normalizedDocument, after.normalizedDocument, { signal: execution.signal })
       const priority = { breaking: 0, warning: 1, 'non-breaking': 2, informational: 3 } as const
       const compareText = (left: string, right: string) => (left < right ? -1 : left > right ? 1 : 0)
       const orderedChanges = [...difference.changes].sort((left, right) => priority[left.classification] - priority[right.classification] || compareText(left.path.map(String).join('\u0000'), right.path.map(String).join('\u0000')) || compareText(left.code, right.code))
       const changes = orderedChanges.slice(0, context.options.limits.maxChanges).map(({ classification, code, path, message }) => ({ classification, code, path, message }))
       if (changes.length < difference.changes.length) diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: `The result omitted ${difference.changes.length - changes.length} changes because it exceeded the configured limit.` })
       const bounded = truncateDiagnostics(context.options.workspaceRoot, diagnostics, context.options.limits.maxDiagnostics)
-      return createToolResult(
+      await execution.progress('Preparing bounded result', 95)
+      const result = createToolResult(
         tool,
         {
           success: true,
@@ -84,8 +87,10 @@ export async function diffTool(context: ToolContext, input: z.infer<typeof diffI
         `${difference.summary.breaking} breaking and ${difference.summary.nonBreaking} non-breaking change(s); first-stage rules only`,
         context.options.limits,
       )
+      await execution.progress('Complete', 100)
+      return result
     } catch (error) {
-      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error)], context.options.limits, { before: beforeDisplay, after: afterDisplay, breaking: false, changes: [], summary: { breaking: 0, nonBreaking: 0, warnings: 0, informational: 0 }, limitation: LIMITATION })
+      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error, execution)], context.options.limits, { before: beforeDisplay, after: afterDisplay, breaking: false, changes: [], summary: { breaking: 0, nonBreaking: 0, warnings: 0, informational: 0 }, limitation: LIMITATION })
     }
   })
 }

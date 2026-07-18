@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { safeExecutionDiagnostic } from '../errors.ts'
 import { executeGeneration, generationSucceeded } from '../generation/service.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
-import { loggedToolCall, type ToolContext } from './context.ts'
+import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
 export const checkGenerationInputSchema = z.object({ targets: z.array(z.string().min(1).max(200)).max(100).optional() })
 const changeSchema = z.object({ path: z.string(), status: z.enum(['added', 'modified', 'deleted']), expectedSha256: z.string().optional(), actualSha256: z.string().optional() })
@@ -20,12 +20,12 @@ export const checkGenerationOutputSchema = z.object({
   }),
 })
 
-export async function checkGenerationTool(context: ToolContext, input: z.infer<typeof checkGenerationInputSchema>) {
+export async function checkGenerationTool(context: ToolContext, input: z.infer<typeof checkGenerationInputSchema>, extra: McpHandlerExtra = detachedHandlerExtra()) {
   const tool = 'openapi_check_generation'
-  return loggedToolCall(context, tool, () =>
-    context.generationLock.run(async () => {
-      try {
-        const run = await executeGeneration(context.trustedConfig, context.options, input.targets, 'check')
+  return loggedToolCall(context, tool, extra, async (execution) => {
+    try {
+      return await context.generationLock.run(async () => {
+        const run = await executeGeneration(context.trustedConfig, context.options, input.targets, 'check', execution)
         let totalChanges = 0
         let returnedChanges = 0
         let changeBudget = context.options.limits.maxChanges
@@ -57,7 +57,8 @@ export async function checkGenerationTool(context: ToolContext, input: z.infer<t
         const finalBounded = truncateDiagnostics(context.options.workspaceRoot, run.diagnostics, context.options.limits.maxDiagnostics)
         const outdated = servers.some((server) => server.outdated)
         const success = generationSucceeded(run) && !outdated
-        return createToolResult(
+        await execution.progress('Preparing bounded result', 95)
+        const result = createToolResult(
           tool,
           {
             success,
@@ -78,9 +79,11 @@ export async function checkGenerationTool(context: ToolContext, input: z.infer<t
           context.options.limits,
           !success,
         )
-      } catch (error) {
-        return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error)], context.options.limits, { mode: 'check', outdated: false, servers: [] })
-      }
-    }),
-  )
+        await execution.progress('Complete', 100)
+        return result
+      }, execution.signal)
+    } catch (error) {
+      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error, execution)], context.options.limits, { mode: 'check', outdated: false, servers: [] })
+    }
+  })
 }

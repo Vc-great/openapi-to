@@ -23,11 +23,20 @@ export class TrustedConfigProvider {
           throw new McpToolError('MCP_CONFIG_LOAD_FAILED', 'The startup-configured OpenAPI configuration could not be loaded safely.')
         }
       })()
+      // The trusted config is loaded eagerly and consumed lazily by generation tools.
+      // Mark rejection as observed so a config error cannot terminate an idle stdio server.
+      void this.loaded.catch(() => undefined)
     }
   }
 
-  async get(): Promise<LoadedOpenapiConfig & { displayPath: string }> {
+  async get(signal?: AbortSignal): Promise<LoadedOpenapiConfig & { displayPath: string }> {
     if (!this.loaded) throw new McpToolError('MCP_CONFIG_NOT_AVAILABLE', 'Generation tools require a trusted configuration fixed at server startup.')
-    return this.loaded
+    if (!signal) return this.loaded
+    if (signal.aborted) throw signal.reason
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(signal.reason)
+      signal.addEventListener('abort', abort, { once: true })
+      this.loaded?.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort))
+    })
   }
 }

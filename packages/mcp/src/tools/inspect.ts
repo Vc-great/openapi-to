@@ -5,7 +5,7 @@ import { safeExecutionDiagnostic } from '../errors.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { resolveToolSource, sanitizeSourceDisplay } from '../security/source.ts'
 import { HTTP_METHODS, mapWorkspaceDiagnostics, record } from './common.ts'
-import { loggedToolCall, type ToolContext } from './context.ts'
+import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
 const operationSchema = z.object({ method: z.string(), path: z.string(), operationId: z.string().optional(), tags: z.array(z.string()), deprecated: z.boolean() })
 export const inspectInputSchema = z.object({ source: z.string().min(1).max(4096), includeOperations: z.boolean().optional() })
@@ -46,10 +46,11 @@ export const inspectOutputSchema = z.object({
   }),
 })
 
-function operations(document: Record<string, unknown>) {
+function operations(document: Record<string, unknown>, signal?: AbortSignal) {
   const result: Array<{ method: string; path: string; operationId?: string; tags: string[]; deprecated: boolean }> = []
   const paths = record(document.paths) ?? {}
   for (const pathName of Object.keys(paths).sort()) {
+    if (signal?.aborted) throw signal.reason
     const pathItem = record(paths[pathName]) ?? {}
     for (const method of HTTP_METHODS) {
       const operation = record(pathItem[method])
@@ -77,18 +78,18 @@ function supportClassification(version: string | undefined) {
   }
 }
 
-export async function inspectTool(context: ToolContext, input: z.infer<typeof inspectInputSchema>) {
+export async function inspectTool(context: ToolContext, input: z.infer<typeof inspectInputSchema>, extra: McpHandlerExtra = detachedHandlerExtra()) {
   const tool = 'openapi_inspect'
-  return loggedToolCall(context, tool, async () => {
+  return loggedToolCall(context, tool, extra, async (execution) => {
     let display = sanitizeSourceDisplay(context.options.workspaceRoot, input.source)
     try {
       const source = await resolveToolSource(context.options.workspaceRoot, input.source)
       display = source.display
-      const compilation = await compileOpenAPI(source.value, { cwd: context.options.workspaceRoot, localFileRoot: context.options.workspaceRoot, remote: context.options.remote })
+      const compilation = await compileOpenAPI(source.value, { cwd: context.options.workspaceRoot, localFileRoot: context.options.workspaceRoot, remote: context.options.remote, signal: execution.signal })
       const diagnostics = mapWorkspaceDiagnostics(compilation.diagnostics)
       if (!compilation.document) return executionFailure(context.options.workspaceRoot, tool, diagnostics, context.options.limits, { source: display })
-      const core = inspectOpenAPIDocument(compilation.document, compilation.references?.externalReferenceCount ?? 0, diagnostics)
-      const allOperations = operations(compilation.document as Record<string, unknown>)
+      const core = inspectOpenAPIDocument(compilation.document, compilation.references?.externalReferenceCount ?? 0, diagnostics, { signal: execution.signal })
+      const allOperations = operations(compilation.document as Record<string, unknown>, execution.signal)
       const returnedOperations = input.includeOperations ? allOperations.slice(0, context.options.limits.maxChanges) : undefined
       if (returnedOperations && returnedOperations.length < allOperations.length) {
         diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: `The result omitted ${allOperations.length - returnedOperations.length} operations because it exceeded the configured limit.` })
@@ -136,7 +137,7 @@ export async function inspectTool(context: ToolContext, input: z.infer<typeof in
         !success,
       )
     } catch (error) {
-      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error)], context.options.limits, { source: display })
+      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error, execution)], context.options.limits, { source: display })
     }
   })
 }

@@ -35,4 +35,18 @@ describe('GenerationLock', () => {
     await Promise.all([run(left), run(right)])
     expect(maximum).toBe(2)
   })
+
+  it('removes a cancelled waiter without blocking later work', async () => {
+    const lock = new GenerationLock()
+    let releaseFirst!: () => void
+    const first = lock.run(() => new Promise<void>((resolve) => { releaseFirst = resolve }))
+    const controller = new AbortController()
+    const cancelled = lock.run(async () => undefined, controller.signal)
+    const third = lock.run(async () => 'third')
+    controller.abort(new Error('cancelled'))
+    await expect(cancelled).rejects.toThrow('cancelled')
+    releaseFirst()
+    await first
+    await expect(third).resolves.toBe('third')
+  })
 })

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { safeExecutionDiagnostic } from '../errors.ts'
 import { executeGeneration, generationSucceeded, manifestHash } from '../generation/service.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
-import { loggedToolCall, type ToolContext } from './context.ts'
+import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
 export const generateDryRunInputSchema = z.object({ targets: z.array(z.string().min(1).max(200)).max(100).optional(), includePreview: z.boolean().optional() })
 const artifactSchema = z.object({
@@ -25,12 +25,12 @@ export const generateDryRunOutputSchema = z.object({
   }),
 })
 
-export async function generateDryRunTool(context: ToolContext, input: z.infer<typeof generateDryRunInputSchema>) {
+export async function generateDryRunTool(context: ToolContext, input: z.infer<typeof generateDryRunInputSchema>, extra: McpHandlerExtra = detachedHandlerExtra()) {
   const tool = 'openapi_generate_dry_run'
-  return loggedToolCall(context, tool, () =>
-    context.generationLock.run(async () => {
-      try {
-        const run = await executeGeneration(context.trustedConfig, context.options, input.targets, 'dry-run')
+  return loggedToolCall(context, tool, extra, async (execution) => {
+    try {
+      return await context.generationLock.run(async () => {
+        const run = await executeGeneration(context.trustedConfig, context.options, input.targets, 'dry-run', execution)
         let previewBytes = 0
         let omittedPreviewBytes = 0
         let totalArtifacts = 0
@@ -83,7 +83,8 @@ export async function generateDryRunTool(context: ToolContext, input: z.infer<ty
         if (omittedPreviewBytes > 0) run.diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: `Artifact previews omitted ${omittedPreviewBytes} bytes because they exceeded the configured preview limit.` })
         const finalBounded = truncateDiagnostics(context.options.workspaceRoot, run.diagnostics, context.options.limits.maxDiagnostics)
         const success = generationSucceeded(run)
-        return createToolResult(
+        await execution.progress('Preparing bounded result', 95)
+        const result = createToolResult(
           tool,
           {
             success,
@@ -106,9 +107,11 @@ export async function generateDryRunTool(context: ToolContext, input: z.infer<ty
           context.options.limits,
           !success,
         )
-      } catch (error) {
-        return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error)], context.options.limits, { mode: 'dry-run', servers: [] })
-      }
-    }),
-  )
+        await execution.progress('Complete', 100)
+        return result
+      }, execution.signal)
+    } catch (error) {
+      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error, execution)], context.options.limits, { mode: 'dry-run', servers: [] })
+    }
+  })
 }

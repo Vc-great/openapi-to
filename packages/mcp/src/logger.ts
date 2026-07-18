@@ -38,9 +38,20 @@ function safeLogData(value: unknown, seen = new WeakSet<object>()): unknown {
   )
 }
 
-export function createStderrLogger(): McpLogger {
+const LOG_PRIORITY = { debug: 10, info: 20, warn: 30, error: 40, silent: 100 } as const
+
+export function createStderrLogger(options: { format?: 'text' | 'json'; level?: keyof typeof LOG_PRIORITY } = {}): McpLogger {
+  const format = options.format ?? 'text'
+  const minimum = LOG_PRIORITY[options.level ?? 'info']
   const write = (level: string, message: string, data?: unknown) => {
-    const suffix = data === undefined ? '' : ` ${JSON.stringify(safeLogData(data))}`
+    const normalizedLevel = level.toLowerCase() as Exclude<keyof typeof LOG_PRIORITY, 'silent'>
+    if (LOG_PRIORITY[normalizedLevel] < minimum) return
+    const safeData = data === undefined ? undefined : safeLogData(data)
+    if (format === 'json') {
+      process.stderr.write(`${JSON.stringify({ level: normalizedLevel, event: safeLogText(message), ...(safeData && typeof safeData === 'object' ? safeData : safeData === undefined ? {} : { data: safeData }) })}\n`)
+      return
+    }
+    const suffix = safeData === undefined ? '' : ` ${JSON.stringify(safeData)}`
     process.stderr.write(`[openapi-to-mcp] ${level} ${safeLogText(message)}${suffix}\n`)
   }
   return {

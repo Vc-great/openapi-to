@@ -1,12 +1,13 @@
 import converter from 'do-swagger2openapi'
 
-import { compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts, type GenerationManifest, type GenerationResult } from './artifacts/index.ts'
+import { ArtifactComparisonChangedError, compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts, type GenerationManifest, type GenerationResult } from './artifacts/index.ts'
 import { DiagnosticError, hasDiagnosticErrors, sortDiagnostics, type Diagnostic } from './diagnostics.ts'
 import { compileOpenAPI, loadOpenAPIDocument } from './openapi/index.ts'
 import { PluginManager } from './pluginManager'
 
 import type { Logger } from './logger.ts'
 import type { CLIOptions, CompatibleOpenAPIDocument, OpenAPIAllDocument, OpenAPIDocument, OpenapiToSingleConfig } from './types'
+import { isOpenapiOperationCancelled, throwIfAborted } from './execution.ts'
 
 export async function requestRemoteData(requestUrl: string): Promise<OpenAPIAllDocument | undefined> {
   const loaded = await loadOpenAPIDocument(requestUrl)
@@ -45,9 +46,10 @@ export async function build(
     remote: openapiToSingleConfig.input.remote,
     localFileRoot: CLIOptions.localFileRoot,
     debug: CLIOptions.debug,
+    signal: CLIOptions.signal,
   })
   const placeholderDocument = (compilation.document ?? { openapi: '3.1.0', info: { title: 'invalid', version: '0' }, paths: {} }) as OpenAPIDocument
-  const pluginManager = new PluginManager(openapiToSingleConfig, placeholderDocument)
+  const pluginManager = new PluginManager(openapiToSingleConfig, placeholderDocument, CLIOptions.signal)
   let diagnostics = [...compilation.diagnostics]
   if (!compilation.document || hasDiagnosticErrors(diagnostics)) {
     const error = new DiagnosticError('OpenAPI compilation failed.', diagnostics)
@@ -58,13 +60,15 @@ export async function build(
   try {
     execution = await pluginManager.execute()
   } catch (error) {
+    if (isOpenapiOperationCancelled(error)) throw error
     diagnostics.push({ code: 'PLUGIN_EXECUTION_FAILED', severity: 'error', message: 'Plugin execution failed.', cause: error instanceof Error ? error.message : undefined })
     const diagnosticError = new DiagnosticError('Plugin execution failed.', diagnostics)
     return { pluginManager, diagnostics: sortDiagnostics(diagnostics), error: diagnosticError }
   }
   diagnostics.push(...execution.diagnostics)
   const artifacts = sortGeneratedArtifacts([...execution.sourceFiles.map((sourceFile) => sourceFileToArtifact(sourceFile)), ...execution.artifacts])
-  const materialized = materializeArtifacts(artifacts, openapiToSingleConfig.output.dir)
+  throwIfAborted(CLIOptions.signal)
+  const materialized = materializeArtifacts(artifacts, openapiToSingleConfig.output.dir, { signal: CLIOptions.signal })
   diagnostics.push(...materialized.diagnostics)
   if (hasDiagnosticErrors(diagnostics)) {
     const error = new DiagnosticError('Generation failed.', diagnostics)
@@ -76,13 +80,14 @@ export async function build(
     }
   }
 
-  const formatted = await formatMaterializedArtifacts(materialized.artifacts, openapiToSingleConfig.output.format)
+  const formatted = await formatMaterializedArtifacts(materialized.artifacts, openapiToSingleConfig.output.format, { signal: CLIOptions.signal })
   diagnostics.push(...formatted.diagnostics)
   let manifest: GenerationManifest
   try {
-    manifest = await compareArtifacts(formatted.artifacts, openapiToSingleConfig.output.dir, openapiToSingleConfig.output.clean === true)
+    manifest = await compareArtifacts(formatted.artifacts, openapiToSingleConfig.output.dir, openapiToSingleConfig.output.clean === true, { signal: CLIOptions.signal })
   } catch (error) {
-    diagnostics.push({ code: 'OUTPUT_COMPARE_FAILED', severity: 'error', message: 'Unable to compare generated artifacts with existing output.', location: { source: openapiToSingleConfig.output.dir }, cause: error instanceof Error ? error.message : undefined })
+    if (isOpenapiOperationCancelled(error)) throw error
+    diagnostics.push({ code: error instanceof ArtifactComparisonChangedError ? 'OUTPUT_CHANGED_DURING_COMPARE' : 'OUTPUT_COMPARE_FAILED', severity: 'error', message: error instanceof ArtifactComparisonChangedError ? 'Generated output changed during comparison; the check result was discarded.' : 'Unable to compare generated artifacts with existing output.', location: { source: openapiToSingleConfig.output.dir }, cause: error instanceof Error ? error.message : undefined })
     const diagnosticError = new DiagnosticError('Output comparison failed.', diagnostics)
     return { pluginManager, diagnostics: sortDiagnostics(diagnostics), error: diagnosticError }
   }

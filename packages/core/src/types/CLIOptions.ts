@@ -18,4 +18,6 @@ export type CLIOptions = {
   debug?: boolean
   /** Optional library-only boundary for local OpenAPI inputs and transitive file references. */
   localFileRoot?: string
+  /** Cancels only this build invocation. */
+  signal?: AbortSignal
 }
