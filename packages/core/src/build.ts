@@ -43,6 +43,7 @@ export async function build(
   const compilation = await compileOpenAPI(openapiToSingleConfig.input.path, {
     cwd: openapiToSingleConfig.root,
     remote: openapiToSingleConfig.input.remote,
+    localFileRoot: CLIOptions.localFileRoot,
     debug: CLIOptions.debug,
   })
   const placeholderDocument = (compilation.document ?? { openapi: '3.1.0', info: { title: 'invalid', version: '0' }, paths: {} }) as OpenAPIDocument

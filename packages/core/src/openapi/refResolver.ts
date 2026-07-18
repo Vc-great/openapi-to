@@ -4,6 +4,7 @@ import { loadOpenAPIDocument, type LoadedSource } from './sourceLoader.ts'
 
 export interface ResolveReferencesOptions {
   remote?: RemoteSourceOptions
+  localFileRoot?: string
   cache?: Map<string, Promise<LoadedSource>>
   debug?: boolean
 }
@@ -85,7 +86,7 @@ export async function resolveOpenAPIReferences(
     const cached = documentCache.get(key)
     if (cached) return cached
     const pending = (async () => {
-      const loaded = await loadOpenAPIDocument(normalized, { remote: options.remote, cache: sourceCache, debug: options.debug })
+      const loaded = await loadOpenAPIDocument(normalized, { remote: options.remote, localFileRoot: options.localFileRoot, cache: sourceCache, debug: options.debug })
       loadedSources.add(loaded.source)
       for (const diagnostic of loaded.diagnostics) {
         addDiagnostic({ ...diagnostic, location: { ...diagnostic.location, path: refPath } })

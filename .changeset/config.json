@@ -5,6 +5,7 @@
 	"fixed": [
 		[
 			"@openapi-to/core",
+			"@openapi-to/mcp",
 			"@openapi-to/cli",
 			"@openapi-to/plugin-msw",
 			"@openapi-to/plugin-swr",

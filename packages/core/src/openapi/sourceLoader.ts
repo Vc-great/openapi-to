@@ -1,6 +1,6 @@
 import { lookup as lookupWithCallback } from 'node:dns'
 import { lookup } from 'node:dns/promises'
-import { readFile } from 'node:fs/promises'
+import { lstat, readFile, realpath } from 'node:fs/promises'
 import { Agent as HttpAgent } from 'node:http'
 import { Agent as HttpsAgent } from 'node:https'
 import { isIP, type LookupFunction } from 'node:net'
@@ -18,9 +18,43 @@ export type OpenAPIInput = string | URL | Record<string, unknown>
 
 export interface SourceLoaderOptions {
   cwd?: string
+  /** Restrict every local source, including transitive file references, to this real directory. */
+  localFileRoot?: string
   remote?: RemoteSourceOptions
   cache?: Map<string, Promise<LoadedSource>>
   debug?: boolean
+}
+
+function isOutsideRoot(root: string, candidate: string): boolean {
+  const relativePath = path.relative(root, candidate)
+  return relativePath === '..' || relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)
+}
+
+async function resolveRestrictedLocalPath(filePath: string, localFileRoot: string, debug = false): Promise<{ path?: string; diagnostics: Diagnostic[] }> {
+  const lexicalRoot = path.resolve(localFileRoot)
+  const lexicalPath = path.resolve(filePath)
+  let root: string
+  try {
+    root = await realpath(lexicalRoot)
+    const rootStat = await lstat(lexicalRoot)
+    if (!rootStat.isDirectory()) throw new Error('The local file root is not a directory.')
+  } catch (error) {
+    return { diagnostics: [sourceDiagnostic('LOCAL_SOURCE_ROOT_INVALID', 'The configured local file root is unavailable.', lexicalRoot, error, debug)] }
+  }
+  const lexicallyInside = !isOutsideRoot(lexicalRoot, lexicalPath) || !isOutsideRoot(root, lexicalPath)
+  if (!lexicallyInside) {
+    return { diagnostics: [sourceDiagnostic('LOCAL_SOURCE_OUTSIDE_ROOT', 'Local OpenAPI sources must remain inside the configured local file root.', lexicalPath)] }
+  }
+  try {
+    await lstat(lexicalPath)
+    const canonicalPath = await realpath(lexicalPath)
+    if (isOutsideRoot(root, canonicalPath)) {
+      return { diagnostics: [sourceDiagnostic('LOCAL_SOURCE_SYMLINK_ESCAPE', 'Local OpenAPI sources may not escape the configured local file root through a symlink.', lexicalPath)] }
+    }
+    return { path: canonicalPath, diagnostics: [] }
+  } catch (error) {
+    return { diagnostics: [sourceDiagnostic('INPUT_READ_FAILED', 'Unable to read OpenAPI source.', lexicalPath, error, debug)] }
+  }
 }
 
 export interface LoadedSource {
@@ -221,7 +255,12 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
     return pending
   }
 
-  const filePath = parsedURL?.protocol === 'file:' ? fileURLToPath(parsedURL) : path.resolve(options.cwd ?? process.cwd(), raw)
+  let filePath = parsedURL?.protocol === 'file:' ? fileURLToPath(parsedURL) : path.resolve(options.cwd ?? process.cwd(), raw)
+  if (options.localFileRoot) {
+    const restricted = await resolveRestrictedLocalPath(filePath, options.localFileRoot, options.debug)
+    if (!restricted.path) return { source: filePath, uri: pathToFileURL(filePath).toString(), diagnostics: restricted.diagnostics }
+    filePath = restricted.path
+  }
   const uri = pathToFileURL(filePath).toString()
   try {
     return { source: filePath, uri, text: await readFile(filePath, 'utf8'), diagnostics: [] }

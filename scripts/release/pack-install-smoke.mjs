@@ -8,6 +8,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const packageDirectories = [
 	"packages/core",
 	"packages/cli",
+	"packages/mcp",
 	"packages/plugin-msw",
 	"packages/plugin-swr",
 	"packages/plugin-ts-request",
@@ -136,7 +137,9 @@ try {
 					),
 				),
 				devDependencies: {
+					"@modelcontextprotocol/sdk": "1.29.0",
 					"@types/node": "^22.7.4",
+					zod: "3.25.76",
 				},
 				pnpm: {
 					overrides: Object.fromEntries(
@@ -196,9 +199,11 @@ if (pluginSWR().name !== "SWR" || pluginMSW().name !== "MSW") throw new Error("p
 		`const openapiTo = require("openapi-to");
 const swr = require("@openapi-to/plugin-swr");
 const msw = require("@openapi-to/plugin-msw");
+const mcp = require("@openapi-to/mcp");
 if (typeof openapiTo.compileOpenAPI !== "function") throw new Error("CJS core export missing");
 if (openapiTo.pluginSWR !== swr.definePlugin || openapiTo.pluginMSW !== msw.definePlugin) throw new Error("CJS plugin identity failed");
 if (openapiTo.pluginSWR === openapiTo.pluginMSW) throw new Error("CJS plugins collapsed");
+if (typeof mcp.createOpenapiToMcpServer !== "function") throw new Error("MCP CJS export missing");
 `,
 	);
 	await writeFile(
@@ -212,13 +217,37 @@ if (openapiTo.pluginSWR === openapiTo.pluginMSW) throw new Error("CJS plugins co
   type Diagnostic,
   type GeneratedArtifact,
   type GenerationManifest,
-  type GenerationResult,
-} from "openapi-to";
+	  type GenerationResult,
+	} from "openapi-to";
+import { createOpenapiToMcpServer, type OpenapiToMcpServerOptions } from "@openapi-to/mcp";
 const diagnostic: Diagnostic = { code: "SMOKE", severity: "info", message: "smoke" };
 declare const artifact: GeneratedArtifact;
 declare const manifest: GenerationManifest;
 declare const generation: GenerationResult;
-void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, artifact, manifest, generation];
+const mcpOptions: OpenapiToMcpServerOptions = { workspaceRoot: "." };
+void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, artifact, manifest, generation, createOpenapiToMcpServer, mcpOptions];
+`,
+	);
+	await writeFile(
+		join(installationDirectory, "mcp-esm-smoke.mjs"),
+		`import { createOpenapiToMcpServer } from "@openapi-to/mcp";
+const server = createOpenapiToMcpServer({ workspaceRoot: process.cwd() });
+if (typeof server.connect !== "function") throw new Error("MCP ESM export missing");
+await server.close();
+`,
+	);
+	await writeFile(
+		join(installationDirectory, "mcp-stdio-smoke.mjs"),
+		`import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+const transport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd()], stderr: "pipe" });
+const client = new Client({ name: "release-smoke", version: "1.0.0" });
+await client.connect(transport);
+const tools = await client.listTools();
+if (tools.tools.map(({ name }) => name).join(",") !== "openapi_validate,openapi_inspect,openapi_diff") throw new Error("Unexpected no-config MCP tool matrix");
+const result = await client.callTool({ name: "openapi_validate", arguments: { source: "openapi.yaml" } });
+if (result.isError || result.structuredContent?.success !== true) throw new Error("MCP validate smoke failed");
+await client.close();
 `,
 	);
 	await writeFile(
@@ -241,6 +270,7 @@ void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, p
 	);
 
 	run(process.execPath, ["esm-smoke.mjs"], installationDirectory);
+	run(process.execPath, ["mcp-esm-smoke.mjs"], installationDirectory);
 	run(process.execPath, ["cjs-smoke.cjs"], installationDirectory);
 	run(
 		resolve(repositoryRoot, "node_modules", ".bin", process.platform === "win32" ? "tsc.cmd" : "tsc"),
@@ -270,6 +300,13 @@ void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, p
 	if (reportedVersions.openapi !== reportedVersions["openapi-to"]) {
 		throw new Error(`Bin aliases report different versions: ${JSON.stringify(reportedVersions)}`);
 	}
+	const mcpExecutable = binPath(installationDirectory, "openapi-to-mcp");
+	if (process.platform !== "win32") await chmod(mcpExecutable, 0o755);
+	run(mcpExecutable, ["--help"], installationDirectory);
+	const mcpVersion = run(mcpExecutable, ["--version"], installationDirectory).stdout.trim();
+	const expectedMcpVersion = packed.find(({ name }) => name === "@openapi-to/mcp").version;
+	if (mcpVersion !== expectedMcpVersion) throw new Error(`openapi-to-mcp reported ${mcpVersion}; expected ${expectedMcpVersion}`);
+	run(process.execPath, ["mcp-stdio-smoke.mjs", mcpExecutable], installationDirectory);
 
 	succeeded = true;
 	process.stdout.write(
@@ -286,7 +323,7 @@ void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, p
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
-				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "validate-json", "inspect-json"],
+				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "validate-json", "inspect-json"],
 			},
 			null,
 			2,

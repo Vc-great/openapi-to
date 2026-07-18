@@ -1,0 +1,56 @@
+{
+  "name": "@openapi-to/mcp",
+  "version": "3.2.2",
+  "description": "Read-only MCP adapter for openapi-to",
+  "keywords": ["openapi", "mcp", "codex", "stdio"],
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "openapi-to-mcp": "./bin/openapi-to-mcp.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "!dist/**/*.map",
+    "!/**/**.test.**",
+    "!/**/__tests__/**"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "npx rimraf ./dist",
+    "lint": "bun biome lint .",
+    "lint:fix": "bun biome lint --write --unsafe .",
+    "start": "tsup --watch",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@openapi-to/core": "workspace:*",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@openapi-to/config-ts": "workspace:*",
+    "@openapi-to/config-tsup": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

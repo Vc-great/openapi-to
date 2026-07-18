@@ -16,4 +16,6 @@ export type CLIOptions = {
   dryRun?: boolean
   check?: boolean
   debug?: boolean
+  /** Optional library-only boundary for local OpenAPI inputs and transitive file references. */
+  localFileRoot?: string
 }
