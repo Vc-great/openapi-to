@@ -1,0 +1,128 @@
+import { z } from 'zod'
+
+import { safeExecutionDiagnostic } from '../errors.ts'
+import { prepareGenerationWritePlan } from '../generation/write-plan.ts'
+import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
+import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
+
+export const prepareGenerationInputSchema = z.object({
+  targets: z.array(z.string().min(1).max(200)).max(100).optional(),
+  includePreview: z.boolean().optional(),
+}).strict()
+
+const preparedChangeSchema = z.object({
+  outputRoot: z.string(),
+  path: z.string(),
+  status: z.enum(['added', 'modified', 'deleted']),
+  artifactKind: z.string().optional(),
+  beforeSha256: z.string().optional(),
+  afterSha256: z.string().optional(),
+  bytes: z.number().int().optional(),
+  preview: z.string().optional(),
+  previewTruncated: z.boolean().optional(),
+})
+
+export const prepareGenerationOutputSchema = z.object({
+  schemaVersion: z.literal(1),
+  tool: z.literal('openapi_prepare_generation'),
+  success: z.boolean(),
+  plan: z.object({
+    planId: z.string(),
+    token: z.string(),
+    planHash: z.string(),
+    createdAt: z.string(),
+    expiresAt: z.string(),
+    targets: z.array(z.string()),
+    summary: z.object({
+      added: z.number().int(), modified: z.number().int(), deleted: z.number().int(), unchanged: z.number().int(), totalBytesAfter: z.number().int(),
+    }),
+    changes: z.array(preparedChangeSchema),
+    truncated: z.object({ changes: z.boolean(), returned: z.number().int(), total: z.number().int(), omitted: z.number().int() }),
+  }).optional(),
+  diagnostics: z.array(diagnosticSchema),
+  diagnosticSummary: diagnosticSummarySchema,
+  truncated: z.object({ diagnostics: z.boolean(), totalDiagnostics: z.number().int(), returnedDiagnostics: z.number().int(), omittedDiagnostics: z.number().int() }),
+})
+
+export async function prepareGenerationTool(context: ToolContext, input: z.infer<typeof prepareGenerationInputSchema>, extra: McpHandlerExtra = detachedHandlerExtra()) {
+  const tool = 'openapi_prepare_generation'
+  return loggedToolCall(context, tool, extra, async (execution) => {
+    try {
+      if (!context.generationPlans) throw new Error('Controlled write plan storage is unavailable.')
+      return await context.generationLock.run(async () => {
+        await execution.progress('Preparing generation plan', 5)
+        const prepared = await prepareGenerationWritePlan(context.trustedConfig, context.generationPlans as NonNullable<ToolContext['generationPlans']>, context.options, input.targets, execution)
+        const server = prepared.run.servers[0]
+        const manifest = server?.result.generationResult?.manifest
+        if (!server || !manifest) throw new Error('Prepared generation plan is incomplete.')
+        const materialized = new Map(server.materialized.map((artifact) => [artifact.relativePath, artifact]))
+        const allChanges = manifest.entries.filter((entry) => entry.status !== 'unchanged')
+        const returnedEntries = allChanges.slice(0, context.options.limits.maxChanges)
+        let previewBytes = 0
+        const changes = returnedEntries.map((entry) => {
+          const artifact = materialized.get(entry.path)
+          const base = {
+            outputRoot: server.outputRoot,
+            path: entry.path,
+            status: entry.status as 'added' | 'modified' | 'deleted',
+            ...(artifact ? { artifactKind: artifact.kind } : {}),
+            ...(entry.previousHash ? { beforeSha256: entry.previousHash } : {}),
+            ...(entry.hash ? { afterSha256: entry.hash } : {}),
+            ...(entry.bytes !== undefined ? { bytes: entry.bytes } : {}),
+          }
+          if (!input.includePreview || !artifact || artifact.kind === 'binary') return base
+          const remaining = Math.max(0, context.options.limits.maxPreviewBytes - previewBytes)
+          const maximum = Math.min(8192, remaining)
+          const selected = artifact.content.slice(0, maximum)
+          previewBytes += selected.byteLength
+          return {
+            ...base,
+            ...(selected.byteLength ? { preview: new TextDecoder().decode(selected) } : {}),
+            previewTruncated: selected.byteLength < artifact.content.byteLength,
+          }
+        })
+        const diagnostics = [...prepared.run.diagnostics]
+        if (changes.length < allChanges.length) diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: `The plan summary omitted ${allChanges.length - changes.length} changes; the complete internal plan remains applyable.` })
+        const bounded = truncateDiagnostics(context.options.workspaceRoot, diagnostics, context.options.limits.maxDiagnostics)
+        context.logger.info('generation_plan_created', {
+          planId: prepared.stored.planId,
+          planHashPrefix: prepared.stored.planHash.slice(0, 12),
+          targetCount: 1,
+          added: manifest.summary.added,
+          modified: manifest.summary.modified,
+          deleted: manifest.summary.deleted,
+          bytes: server.materialized.reduce((total, artifact) => total + artifact.content.byteLength, 0),
+        })
+        const deletionNotice = manifest.summary.deleted ? ` The plan includes ${manifest.summary.deleted} managed file deletion(s).` : ''
+        await execution.progress('Plan ready for explicit review', 100)
+        return createToolResult(
+          tool,
+          {
+            success: true,
+            plan: {
+              planId: prepared.stored.planId,
+              token: prepared.token,
+              planHash: prepared.stored.planHash,
+              createdAt: new Date(prepared.stored.createdAt).toISOString(),
+              expiresAt: new Date(prepared.stored.expiresAt).toISOString(),
+              targets: [prepared.stored.target],
+              summary: {
+                ...manifest.summary,
+                totalBytesAfter: server.materialized.reduce((total, artifact) => total + artifact.content.byteLength, 0),
+              },
+              changes,
+              truncated: { changes: changes.length < allChanges.length, returned: changes.length, total: allChanges.length, omitted: allChanges.length - changes.length },
+            },
+            diagnostics: bounded.diagnostics,
+            diagnosticSummary: bounded.summary,
+            truncated: bounded.truncated,
+          },
+          `plan created for ${allChanges.length} change(s); no files or ownership manifest were written.${deletionNotice}`,
+          context.options.limits,
+        )
+      }, execution.signal)
+    } catch (error) {
+      return executionFailure(context.options.workspaceRoot, tool, [safeExecutionDiagnostic(error, execution)], context.options.limits)
+    }
+  })
+}

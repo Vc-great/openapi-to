@@ -1,4 +1,5 @@
 import { sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
+import { throwIfAborted, type OpenapiExecutionOptions } from '../execution.ts'
 import type { CompatibleOpenAPIDocument } from '../types'
 
 const operationMethods = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'] as const
@@ -11,8 +12,9 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
 
-function add32FieldWarnings(document: Record<string, unknown>, source: string, diagnostics: Diagnostic[]): void {
+function add32FieldWarnings(document: Record<string, unknown>, source: string, diagnostics: Diagnostic[], options: OpenapiExecutionOptions): void {
   const visit = (value: unknown, path: Array<string | number>) => {
+    throwIfAborted(options.signal)
     if (Array.isArray(value)) {
       for (let index = 0; index < value.length; index += 1) visit(value[index], [...path, index])
       return
@@ -46,7 +48,8 @@ function add32FieldWarnings(document: Record<string, unknown>, source: string, d
   visit(document, [])
 }
 
-export function validateOpenAPIDocument(document: CompatibleOpenAPIDocument, source = '<object>'): Diagnostic[] {
+export function validateOpenAPIDocument(document: CompatibleOpenAPIDocument, source = '<object>', options: OpenapiExecutionOptions = {}): Diagnostic[] {
+  throwIfAborted(options.signal)
   const diagnostics: Diagnostic[] = []
   const record = document as Record<string, unknown>
   const version = record.openapi
@@ -65,7 +68,7 @@ export function validateOpenAPIDocument(document: CompatibleOpenAPIDocument, sou
       location: { source, path: ['openapi'] },
       hint: '3.2-only fields are preserved but may not affect generated output.',
     })
-    add32FieldWarnings(record, source, diagnostics)
+    add32FieldWarnings(record, source, diagnostics, options)
   }
 
   if (!isRecord(record.info)) {
@@ -81,6 +84,7 @@ export function validateOpenAPIDocument(document: CompatibleOpenAPIDocument, sou
   const operationIds = new Map<string, Array<string | number>>()
   if (isRecord(record.paths)) {
     for (const pathName of Object.keys(record.paths).sort()) {
+      throwIfAborted(options.signal)
       const pathItem = record.paths[pathName]
       if (!isRecord(pathItem)) continue
       const methods: string[] = [...operationMethods, ...(version.startsWith('3.2.') ? ['query'] : [])]

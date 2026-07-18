@@ -1,0 +1,109 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+
+import { checkGenerationInputSchema, checkGenerationOutputSchema, checkGenerationTool } from './check-generation.ts'
+import { applyGenerationInputSchema, applyGenerationOutputSchema, applyGenerationTool } from './apply-generation.ts'
+import type { ToolContext } from './context.ts'
+import { diffInputSchema, diffOutputSchema, diffTool } from './diff.ts'
+import { generateDryRunInputSchema, generateDryRunOutputSchema, generateDryRunTool } from './generate-dry-run.ts'
+import { inspectInputSchema, inspectOutputSchema, inspectTool } from './inspect.ts'
+import { prepareGenerationInputSchema, prepareGenerationOutputSchema, prepareGenerationTool } from './prepare-generation.ts'
+import { validateInputSchema, validateOutputSchema, validateTool } from './validate.ts'
+
+const READ_ONLY_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const
+
+export function registerReadOnlyTools(server: McpServer, context: ToolContext): void {
+  server.registerTool(
+    'openapi_validate',
+    {
+      title: 'Validate OpenAPI',
+      description: 'Use when the question is whether one OpenAPI document is valid or why parsing, references, or validation failed. Does not summarize API shape, compare versions, generate code, or modify files. Parser acceptance does not imply every generator supports every construct; OpenAPI 3.2 is compatible-read with diagnosed generation gaps.',
+      inputSchema: validateInputSchema,
+      outputSchema: validateOutputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => validateTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_inspect',
+    {
+      title: 'Inspect OpenAPI',
+      description: 'Use for counts, operations, tags, missing operationIds, security schemes, and compatibility classification of one OpenAPI document. This is structural inspection, not validation or version comparison. Returns a bounded summary, never the full document, and modifies no files.',
+      inputSchema: inspectInputSchema,
+      outputSchema: inspectOutputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => inspectTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_diff',
+    {
+      title: 'Compare OpenAPI Documents',
+      description: 'Use only to compare a before and after OpenAPI document for first-stage breaking, non-breaking, and warning changes. This is not validation, generation freshness, a complete compatibility proof, or a breaking-change oracle. Modifies no files.',
+      inputSchema: diffInputSchema,
+      outputSchema: diffOutputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => diffTool(context, input, extra),
+  )
+  if (!context.trustedConfig.configured) return
+  server.registerTool(
+    'openapi_generate_dry_run',
+    {
+      title: 'Preview OpenAPI Generation',
+      description: 'Use to preview which configured generation artifacts would be added, modified, deleted, or unchanged. Unlike generation check, this returns the bounded plan and optional bounded text previews. It never writes files, manifests, snapshots, or caches and uses only startup-trusted config.',
+      inputSchema: generateDryRunInputSchema,
+      outputSchema: generateDryRunOutputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => generateDryRunTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_check_generation',
+    {
+      title: 'Check OpenAPI Generation',
+      description: 'Use for CI/freshness questions: whether current configured generated files are outdated. Unlike dry-run, this focuses on current versus expected hashes and never repairs, writes, or deletes anything. Uses only startup-trusted config.',
+      inputSchema: checkGenerationInputSchema,
+      outputSchema: checkGenerationOutputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => checkGenerationTool(context, input, extra),
+  )
+}
+
+export function registerControlledWriteTools(server: McpServer, context: ToolContext): void {
+  server.registerTool(
+    'openapi_prepare_generation',
+    {
+      title: 'Prepare Controlled OpenAPI Generation',
+      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Executes the startup-trusted generator and creates a short-lived in-memory plan token, but writes, deletes, and creates no Workspace files or ownership manifest. Current release supports exactly one target/output root per plan. Do not call Apply until the user explicitly confirms this returned plan hash.',
+      inputSchema: prepareGenerationInputSchema,
+      outputSchema: prepareGenerationOutputSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    (input, extra) => prepareGenerationTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_apply_generation',
+    {
+      title: 'Apply Confirmed OpenAPI Generation Plan',
+      description: 'Use only after the user explicitly confirms one unexpired openapi_prepare_generation result and its exact plan hash. Applies that same one-time plan through a locked transaction; it may create, replace, and delete only startup-configured managed generated files. It cannot accept targets, paths, content, force, or skip-validation overrides. Never use for preview, freshness checks, ambiguous requests, or automatic retry after a stale plan.',
+      inputSchema: applyGenerationInputSchema,
+      outputSchema: applyGenerationOutputSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    },
+    (input, extra) => applyGenerationTool(context, input, extra),
+  )
+}
+
+export * from './validate.ts'
+export * from './inspect.ts'
+export * from './diff.ts'
+export * from './generate-dry-run.ts'
+export * from './check-generation.ts'
+export * from './prepare-generation.ts'
+export * from './apply-generation.ts'

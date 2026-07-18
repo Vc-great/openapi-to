@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add MCP Tool"
+  short_description: "Add a safe, schema-stable read-only MCP tool"
+  default_prompt: "Use $add-mcp-tool to add a read-only MCP tool with protocol, security, and integration coverage."

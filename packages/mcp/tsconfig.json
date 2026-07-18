@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "@openapi-to/config-ts"]
+  },
+  "include": ["src/**/*.ts", "package.json", "tsup.config.ts"]
+}

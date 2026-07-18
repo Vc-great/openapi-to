@@ -1,0 +1,569 @@
+{
+  "Entity": {
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "state": {
+        "enum": [
+          "active",
+          "disabled"
+        ]
+      }
+    }
+  },
+  "Shared0": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "type": "string"
+      }
+    }
+  },
+  "Shared1": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared0"
+      }
+    }
+  },
+  "Shared2": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared1"
+      }
+    }
+  },
+  "Shared3": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared2"
+      }
+    }
+  },
+  "Shared4": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared3"
+      }
+    }
+  },
+  "Shared5": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared4"
+      }
+    }
+  },
+  "Shared6": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared5"
+      }
+    }
+  },
+  "Shared7": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared6"
+      }
+    }
+  },
+  "Shared8": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared7"
+      }
+    }
+  },
+  "Shared9": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared8"
+      }
+    }
+  },
+  "Shared10": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared9"
+      }
+    }
+  },
+  "Shared11": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared10"
+      }
+    }
+  },
+  "Shared12": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared11"
+      }
+    }
+  },
+  "Shared13": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared12"
+      }
+    }
+  },
+  "Shared14": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared13"
+      }
+    }
+  },
+  "Shared15": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared14"
+      }
+    }
+  },
+  "Shared16": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared15"
+      }
+    }
+  },
+  "Shared17": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared16"
+      }
+    }
+  },
+  "Shared18": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared17"
+      }
+    }
+  },
+  "Shared19": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared18"
+      }
+    }
+  },
+  "Shared20": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared19"
+      }
+    }
+  },
+  "Shared21": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared20"
+      }
+    }
+  },
+  "Shared22": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared21"
+      }
+    }
+  },
+  "Shared23": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared22"
+      }
+    }
+  },
+  "Shared24": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared23"
+      }
+    }
+  },
+  "Shared25": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared24"
+      }
+    }
+  },
+  "Shared26": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared25"
+      }
+    }
+  },
+  "Shared27": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared26"
+      }
+    }
+  },
+  "Shared28": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared27"
+      }
+    }
+  },
+  "Shared29": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared28"
+      }
+    }
+  },
+  "Shared30": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared29"
+      }
+    }
+  },
+  "Shared31": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared30"
+      }
+    }
+  },
+  "Shared32": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared31"
+      }
+    }
+  },
+  "Shared33": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared32"
+      }
+    }
+  },
+  "Shared34": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared33"
+      }
+    }
+  },
+  "Shared35": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared34"
+      }
+    }
+  },
+  "Shared36": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared35"
+      }
+    }
+  },
+  "Shared37": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared36"
+      }
+    }
+  },
+  "Shared38": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared37"
+      }
+    }
+  },
+  "Shared39": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared38"
+      }
+    }
+  },
+  "Shared40": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared39"
+      }
+    }
+  },
+  "Shared41": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared40"
+      }
+    }
+  },
+  "Shared42": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared41"
+      }
+    }
+  },
+  "Shared43": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared42"
+      }
+    }
+  },
+  "Shared44": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared43"
+      }
+    }
+  },
+  "Shared45": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared44"
+      }
+    }
+  },
+  "Shared46": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared45"
+      }
+    }
+  },
+  "Shared47": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared46"
+      }
+    }
+  },
+  "Shared48": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared47"
+      }
+    }
+  },
+  "Shared49": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "child": {
+        "$ref": "#/Shared48"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info: { title: MCP fixture, version: 2.0.0 }
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses: { '200': { description: ok } }
+  /owners:
+    get:
+      operationId: listOwners
+      responses: { '200': { description: ok } }

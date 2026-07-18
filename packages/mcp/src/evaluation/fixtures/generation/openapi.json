@@ -1,0 +1,5113 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Generation corpus",
+    "version": "1"
+  },
+  "tags": [
+    {
+      "name": "domain0"
+    },
+    {
+      "name": "domain1"
+    },
+    {
+      "name": "domain2"
+    },
+    {
+      "name": "domain3"
+    },
+    {
+      "name": "domain4"
+    },
+    {
+      "name": "domain5"
+    },
+    {
+      "name": "domain6"
+    },
+    {
+      "name": "domain7"
+    },
+    {
+      "name": "domain8"
+    },
+    {
+      "name": "domain9"
+    },
+    {
+      "name": "domain10"
+    },
+    {
+      "name": "domain11"
+    },
+    {
+      "name": "domain12"
+    },
+    {
+      "name": "domain13"
+    },
+    {
+      "name": "domain14"
+    },
+    {
+      "name": "domain15"
+    },
+    {
+      "name": "domain16"
+    },
+    {
+      "name": "domain17"
+    },
+    {
+      "name": "domain18"
+    },
+    {
+      "name": "domain19"
+    },
+    {
+      "name": "domain20"
+    },
+    {
+      "name": "domain21"
+    },
+    {
+      "name": "domain22"
+    },
+    {
+      "name": "domain23"
+    },
+    {
+      "name": "domain24"
+    },
+    {
+      "name": "domain25"
+    },
+    {
+      "name": "domain26"
+    },
+    {
+      "name": "domain27"
+    },
+    {
+      "name": "domain28"
+    },
+    {
+      "name": "domain29"
+    }
+  ],
+  "paths": {
+    "/enterprise/resources/0": {
+      "get": {
+        "operationId": "getEnterpriseResource0",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/1": {
+      "get": {
+        "operationId": "getEnterpriseResource1",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/2": {
+      "get": {
+        "operationId": "getEnterpriseResource2",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/3": {
+      "get": {
+        "operationId": "getEnterpriseResource3",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/4": {
+      "get": {
+        "operationId": "getEnterpriseResource4",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/5": {
+      "get": {
+        "operationId": "getEnterpriseResource5",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/6": {
+      "get": {
+        "operationId": "getEnterpriseResource6",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/7": {
+      "get": {
+        "operationId": "getEnterpriseResource7",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/8": {
+      "get": {
+        "operationId": "getEnterpriseResource8",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/9": {
+      "get": {
+        "operationId": "getEnterpriseResource9",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/10": {
+      "get": {
+        "operationId": "getEnterpriseResource10",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/11": {
+      "get": {
+        "operationId": "getEnterpriseResource11",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/12": {
+      "get": {
+        "operationId": "getEnterpriseResource12",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/13": {
+      "get": {
+        "operationId": "getEnterpriseResource13",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/14": {
+      "get": {
+        "operationId": "getEnterpriseResource14",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/15": {
+      "get": {
+        "operationId": "getEnterpriseResource15",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/16": {
+      "get": {
+        "operationId": "getEnterpriseResource16",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/17": {
+      "get": {
+        "operationId": "getEnterpriseResource17",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/18": {
+      "get": {
+        "operationId": "getEnterpriseResource18",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/19": {
+      "get": {
+        "operationId": "getEnterpriseResource19",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/20": {
+      "get": {
+        "operationId": "getEnterpriseResource20",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/21": {
+      "get": {
+        "operationId": "getEnterpriseResource21",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/22": {
+      "get": {
+        "operationId": "getEnterpriseResource22",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/23": {
+      "get": {
+        "operationId": "getEnterpriseResource23",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/24": {
+      "get": {
+        "operationId": "getEnterpriseResource24",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/25": {
+      "get": {
+        "operationId": "getEnterpriseResource25",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/26": {
+      "get": {
+        "operationId": "getEnterpriseResource26",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/27": {
+      "get": {
+        "operationId": "getEnterpriseResource27",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/28": {
+      "get": {
+        "operationId": "getEnterpriseResource28",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/29": {
+      "get": {
+        "operationId": "getEnterpriseResource29",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/30": {
+      "get": {
+        "operationId": "getEnterpriseResource30",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/31": {
+      "get": {
+        "operationId": "getEnterpriseResource31",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/32": {
+      "get": {
+        "operationId": "getEnterpriseResource32",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/33": {
+      "get": {
+        "operationId": "getEnterpriseResource33",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/34": {
+      "get": {
+        "operationId": "getEnterpriseResource34",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/35": {
+      "get": {
+        "operationId": "getEnterpriseResource35",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/36": {
+      "get": {
+        "operationId": "getEnterpriseResource36",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/37": {
+      "get": {
+        "operationId": "getEnterpriseResource37",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/38": {
+      "get": {
+        "operationId": "getEnterpriseResource38",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/39": {
+      "get": {
+        "operationId": "getEnterpriseResource39",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/40": {
+      "get": {
+        "operationId": "getEnterpriseResource40",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/41": {
+      "get": {
+        "operationId": "getEnterpriseResource41",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/42": {
+      "get": {
+        "operationId": "getEnterpriseResource42",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/43": {
+      "get": {
+        "operationId": "getEnterpriseResource43",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/44": {
+      "get": {
+        "operationId": "getEnterpriseResource44",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/45": {
+      "get": {
+        "operationId": "getEnterpriseResource45",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/46": {
+      "get": {
+        "operationId": "getEnterpriseResource46",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/47": {
+      "get": {
+        "operationId": "getEnterpriseResource47",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/48": {
+      "get": {
+        "operationId": "getEnterpriseResource48",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/49": {
+      "get": {
+        "operationId": "getEnterpriseResource49",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/50": {
+      "get": {
+        "operationId": "getEnterpriseResource50",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/51": {
+      "get": {
+        "operationId": "getEnterpriseResource51",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/52": {
+      "get": {
+        "operationId": "getEnterpriseResource52",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/53": {
+      "get": {
+        "operationId": "getEnterpriseResource53",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/54": {
+      "get": {
+        "operationId": "getEnterpriseResource54",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/55": {
+      "get": {
+        "operationId": "getEnterpriseResource55",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/56": {
+      "get": {
+        "operationId": "getEnterpriseResource56",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/57": {
+      "get": {
+        "operationId": "getEnterpriseResource57",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/58": {
+      "get": {
+        "operationId": "getEnterpriseResource58",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/59": {
+      "get": {
+        "operationId": "getEnterpriseResource59",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/60": {
+      "get": {
+        "operationId": "getEnterpriseResource60",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/61": {
+      "get": {
+        "operationId": "getEnterpriseResource61",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/62": {
+      "get": {
+        "operationId": "getEnterpriseResource62",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/63": {
+      "get": {
+        "operationId": "getEnterpriseResource63",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/64": {
+      "get": {
+        "operationId": "getEnterpriseResource64",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/65": {
+      "get": {
+        "operationId": "getEnterpriseResource65",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/66": {
+      "get": {
+        "operationId": "getEnterpriseResource66",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/67": {
+      "get": {
+        "operationId": "getEnterpriseResource67",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/68": {
+      "get": {
+        "operationId": "getEnterpriseResource68",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/69": {
+      "get": {
+        "operationId": "getEnterpriseResource69",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/70": {
+      "get": {
+        "operationId": "getEnterpriseResource70",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/71": {
+      "get": {
+        "operationId": "getEnterpriseResource71",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/72": {
+      "get": {
+        "operationId": "getEnterpriseResource72",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/73": {
+      "get": {
+        "operationId": "getEnterpriseResource73",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/74": {
+      "get": {
+        "operationId": "getEnterpriseResource74",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/75": {
+      "get": {
+        "operationId": "getEnterpriseResource75",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/76": {
+      "get": {
+        "operationId": "getEnterpriseResource76",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/77": {
+      "get": {
+        "operationId": "getEnterpriseResource77",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/78": {
+      "get": {
+        "operationId": "getEnterpriseResource78",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/79": {
+      "get": {
+        "operationId": "getEnterpriseResource79",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/80": {
+      "get": {
+        "operationId": "getEnterpriseResource80",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/81": {
+      "get": {
+        "operationId": "getEnterpriseResource81",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/82": {
+      "get": {
+        "operationId": "getEnterpriseResource82",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/83": {
+      "get": {
+        "operationId": "getEnterpriseResource83",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/84": {
+      "get": {
+        "operationId": "getEnterpriseResource84",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/85": {
+      "get": {
+        "operationId": "getEnterpriseResource85",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/86": {
+      "get": {
+        "operationId": "getEnterpriseResource86",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/87": {
+      "get": {
+        "operationId": "getEnterpriseResource87",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/88": {
+      "get": {
+        "operationId": "getEnterpriseResource88",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/89": {
+      "get": {
+        "operationId": "getEnterpriseResource89",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/90": {
+      "get": {
+        "operationId": "getEnterpriseResource90",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/91": {
+      "get": {
+        "operationId": "getEnterpriseResource91",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/92": {
+      "get": {
+        "operationId": "getEnterpriseResource92",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/93": {
+      "get": {
+        "operationId": "getEnterpriseResource93",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/94": {
+      "get": {
+        "operationId": "getEnterpriseResource94",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/95": {
+      "get": {
+        "operationId": "getEnterpriseResource95",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/96": {
+      "get": {
+        "operationId": "getEnterpriseResource96",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/97": {
+      "get": {
+        "operationId": "getEnterpriseResource97",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/98": {
+      "get": {
+        "operationId": "getEnterpriseResource98",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/99": {
+      "get": {
+        "operationId": "getEnterpriseResource99",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/100": {
+      "get": {
+        "operationId": "getEnterpriseResource100",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/101": {
+      "get": {
+        "operationId": "getEnterpriseResource101",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/102": {
+      "get": {
+        "operationId": "getEnterpriseResource102",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/103": {
+      "get": {
+        "operationId": "getEnterpriseResource103",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/104": {
+      "get": {
+        "operationId": "getEnterpriseResource104",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/105": {
+      "get": {
+        "operationId": "getEnterpriseResource105",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/106": {
+      "get": {
+        "operationId": "getEnterpriseResource106",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/107": {
+      "get": {
+        "operationId": "getEnterpriseResource107",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/108": {
+      "get": {
+        "operationId": "getEnterpriseResource108",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/109": {
+      "get": {
+        "operationId": "getEnterpriseResource109",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/110": {
+      "get": {
+        "operationId": "getEnterpriseResource110",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/111": {
+      "get": {
+        "operationId": "getEnterpriseResource111",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/112": {
+      "get": {
+        "operationId": "getEnterpriseResource112",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/113": {
+      "get": {
+        "operationId": "getEnterpriseResource113",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/114": {
+      "get": {
+        "operationId": "getEnterpriseResource114",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/115": {
+      "get": {
+        "operationId": "getEnterpriseResource115",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/116": {
+      "get": {
+        "operationId": "getEnterpriseResource116",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/117": {
+      "get": {
+        "operationId": "getEnterpriseResource117",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/118": {
+      "get": {
+        "operationId": "getEnterpriseResource118",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/119": {
+      "get": {
+        "operationId": "getEnterpriseResource119",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/120": {
+      "get": {
+        "operationId": "getEnterpriseResource120",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/121": {
+      "get": {
+        "operationId": "getEnterpriseResource121",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/122": {
+      "get": {
+        "operationId": "getEnterpriseResource122",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/123": {
+      "get": {
+        "operationId": "getEnterpriseResource123",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/124": {
+      "get": {
+        "operationId": "getEnterpriseResource124",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/125": {
+      "get": {
+        "operationId": "getEnterpriseResource125",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/126": {
+      "get": {
+        "operationId": "getEnterpriseResource126",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/127": {
+      "get": {
+        "operationId": "getEnterpriseResource127",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/128": {
+      "get": {
+        "operationId": "getEnterpriseResource128",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/129": {
+      "get": {
+        "operationId": "getEnterpriseResource129",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/130": {
+      "get": {
+        "operationId": "getEnterpriseResource130",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/131": {
+      "get": {
+        "operationId": "getEnterpriseResource131",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/132": {
+      "get": {
+        "operationId": "getEnterpriseResource132",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/133": {
+      "get": {
+        "operationId": "getEnterpriseResource133",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/134": {
+      "get": {
+        "operationId": "getEnterpriseResource134",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/135": {
+      "get": {
+        "operationId": "getEnterpriseResource135",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/136": {
+      "get": {
+        "operationId": "getEnterpriseResource136",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/137": {
+      "get": {
+        "operationId": "getEnterpriseResource137",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/138": {
+      "get": {
+        "operationId": "getEnterpriseResource138",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/139": {
+      "get": {
+        "operationId": "getEnterpriseResource139",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/140": {
+      "get": {
+        "operationId": "getEnterpriseResource140",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/141": {
+      "get": {
+        "operationId": "getEnterpriseResource141",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/142": {
+      "get": {
+        "operationId": "getEnterpriseResource142",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/143": {
+      "get": {
+        "operationId": "getEnterpriseResource143",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/144": {
+      "get": {
+        "operationId": "getEnterpriseResource144",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/145": {
+      "get": {
+        "operationId": "getEnterpriseResource145",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/146": {
+      "get": {
+        "operationId": "getEnterpriseResource146",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/147": {
+      "get": {
+        "operationId": "getEnterpriseResource147",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/148": {
+      "get": {
+        "operationId": "getEnterpriseResource148",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/149": {
+      "get": {
+        "operationId": "getEnterpriseResource149",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/150": {
+      "get": {
+        "operationId": "getEnterpriseResource150",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/151": {
+      "get": {
+        "operationId": "getEnterpriseResource151",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/152": {
+      "get": {
+        "operationId": "getEnterpriseResource152",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/153": {
+      "get": {
+        "operationId": "getEnterpriseResource153",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/154": {
+      "get": {
+        "operationId": "getEnterpriseResource154",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/155": {
+      "get": {
+        "operationId": "getEnterpriseResource155",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/156": {
+      "get": {
+        "operationId": "getEnterpriseResource156",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/157": {
+      "get": {
+        "operationId": "getEnterpriseResource157",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/158": {
+      "get": {
+        "operationId": "getEnterpriseResource158",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/159": {
+      "get": {
+        "operationId": "getEnterpriseResource159",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/160": {
+      "get": {
+        "operationId": "getEnterpriseResource160",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/161": {
+      "get": {
+        "operationId": "getEnterpriseResource161",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/162": {
+      "get": {
+        "operationId": "getEnterpriseResource162",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/163": {
+      "get": {
+        "operationId": "getEnterpriseResource163",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/164": {
+      "get": {
+        "operationId": "getEnterpriseResource164",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/165": {
+      "get": {
+        "operationId": "getEnterpriseResource165",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/166": {
+      "get": {
+        "operationId": "getEnterpriseResource166",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/167": {
+      "get": {
+        "operationId": "getEnterpriseResource167",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/168": {
+      "get": {
+        "operationId": "getEnterpriseResource168",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/169": {
+      "get": {
+        "operationId": "getEnterpriseResource169",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/170": {
+      "get": {
+        "operationId": "getEnterpriseResource170",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/171": {
+      "get": {
+        "operationId": "getEnterpriseResource171",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/172": {
+      "get": {
+        "operationId": "getEnterpriseResource172",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/173": {
+      "get": {
+        "operationId": "getEnterpriseResource173",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/174": {
+      "get": {
+        "operationId": "getEnterpriseResource174",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/175": {
+      "get": {
+        "operationId": "getEnterpriseResource175",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/176": {
+      "get": {
+        "operationId": "getEnterpriseResource176",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/177": {
+      "get": {
+        "operationId": "getEnterpriseResource177",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/178": {
+      "get": {
+        "operationId": "getEnterpriseResource178",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/179": {
+      "get": {
+        "operationId": "getEnterpriseResource179",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/180": {
+      "get": {
+        "operationId": "getEnterpriseResource180",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/181": {
+      "get": {
+        "operationId": "getEnterpriseResource181",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/182": {
+      "get": {
+        "operationId": "getEnterpriseResource182",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/183": {
+      "get": {
+        "operationId": "getEnterpriseResource183",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/184": {
+      "get": {
+        "operationId": "getEnterpriseResource184",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/185": {
+      "get": {
+        "operationId": "getEnterpriseResource185",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/186": {
+      "get": {
+        "operationId": "getEnterpriseResource186",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/187": {
+      "get": {
+        "operationId": "getEnterpriseResource187",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/188": {
+      "get": {
+        "operationId": "getEnterpriseResource188",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/189": {
+      "get": {
+        "operationId": "getEnterpriseResource189",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/190": {
+      "get": {
+        "operationId": "getEnterpriseResource190",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/191": {
+      "get": {
+        "operationId": "getEnterpriseResource191",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/192": {
+      "get": {
+        "operationId": "getEnterpriseResource192",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/193": {
+      "get": {
+        "operationId": "getEnterpriseResource193",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/194": {
+      "get": {
+        "operationId": "getEnterpriseResource194",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/195": {
+      "get": {
+        "operationId": "getEnterpriseResource195",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/196": {
+      "get": {
+        "operationId": "getEnterpriseResource196",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/197": {
+      "get": {
+        "operationId": "getEnterpriseResource197",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/198": {
+      "get": {
+        "operationId": "getEnterpriseResource198",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/199": {
+      "get": {
+        "operationId": "getEnterpriseResource199",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/200": {
+      "get": {
+        "operationId": "getEnterpriseResource200",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/201": {
+      "get": {
+        "operationId": "getEnterpriseResource201",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/202": {
+      "get": {
+        "operationId": "getEnterpriseResource202",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/203": {
+      "get": {
+        "operationId": "getEnterpriseResource203",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/204": {
+      "get": {
+        "operationId": "getEnterpriseResource204",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/205": {
+      "get": {
+        "operationId": "getEnterpriseResource205",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/206": {
+      "get": {
+        "operationId": "getEnterpriseResource206",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/207": {
+      "get": {
+        "operationId": "getEnterpriseResource207",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/208": {
+      "get": {
+        "operationId": "getEnterpriseResource208",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/209": {
+      "get": {
+        "operationId": "getEnterpriseResource209",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/210": {
+      "get": {
+        "operationId": "getEnterpriseResource210",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/211": {
+      "get": {
+        "operationId": "getEnterpriseResource211",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/212": {
+      "get": {
+        "operationId": "getEnterpriseResource212",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/213": {
+      "get": {
+        "operationId": "getEnterpriseResource213",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/214": {
+      "get": {
+        "operationId": "getEnterpriseResource214",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/215": {
+      "get": {
+        "operationId": "getEnterpriseResource215",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/216": {
+      "get": {
+        "operationId": "getEnterpriseResource216",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/217": {
+      "get": {
+        "operationId": "getEnterpriseResource217",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/218": {
+      "get": {
+        "operationId": "getEnterpriseResource218",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/219": {
+      "get": {
+        "operationId": "getEnterpriseResource219",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/220": {
+      "get": {
+        "operationId": "getEnterpriseResource220",
+        "tags": [
+          "domain10"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/221": {
+      "get": {
+        "operationId": "getEnterpriseResource221",
+        "tags": [
+          "domain11"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/222": {
+      "get": {
+        "operationId": "getEnterpriseResource222",
+        "tags": [
+          "domain12"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/223": {
+      "get": {
+        "operationId": "getEnterpriseResource223",
+        "tags": [
+          "domain13"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/224": {
+      "get": {
+        "operationId": "getEnterpriseResource224",
+        "tags": [
+          "domain14"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/225": {
+      "get": {
+        "operationId": "getEnterpriseResource225",
+        "tags": [
+          "domain15"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/226": {
+      "get": {
+        "operationId": "getEnterpriseResource226",
+        "tags": [
+          "domain16"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/227": {
+      "get": {
+        "operationId": "getEnterpriseResource227",
+        "tags": [
+          "domain17"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/228": {
+      "get": {
+        "operationId": "getEnterpriseResource228",
+        "tags": [
+          "domain18"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/229": {
+      "get": {
+        "operationId": "getEnterpriseResource229",
+        "tags": [
+          "domain19"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/230": {
+      "get": {
+        "operationId": "getEnterpriseResource230",
+        "tags": [
+          "domain20"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/231": {
+      "get": {
+        "operationId": "getEnterpriseResource231",
+        "tags": [
+          "domain21"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/232": {
+      "get": {
+        "operationId": "getEnterpriseResource232",
+        "tags": [
+          "domain22"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/233": {
+      "get": {
+        "operationId": "getEnterpriseResource233",
+        "tags": [
+          "domain23"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/234": {
+      "get": {
+        "operationId": "getEnterpriseResource234",
+        "tags": [
+          "domain24"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/235": {
+      "get": {
+        "operationId": "getEnterpriseResource235",
+        "tags": [
+          "domain25"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/236": {
+      "get": {
+        "operationId": "getEnterpriseResource236",
+        "tags": [
+          "domain26"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/237": {
+      "get": {
+        "operationId": "getEnterpriseResource237",
+        "tags": [
+          "domain27"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/238": {
+      "get": {
+        "operationId": "getEnterpriseResource238",
+        "tags": [
+          "domain28"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/239": {
+      "get": {
+        "operationId": "getEnterpriseResource239",
+        "tags": [
+          "domain29"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/240": {
+      "get": {
+        "operationId": "getEnterpriseResource240",
+        "tags": [
+          "domain0"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/241": {
+      "get": {
+        "operationId": "getEnterpriseResource241",
+        "tags": [
+          "domain1"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/242": {
+      "get": {
+        "operationId": "getEnterpriseResource242",
+        "tags": [
+          "domain2"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/243": {
+      "get": {
+        "operationId": "getEnterpriseResource243",
+        "tags": [
+          "domain3"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/244": {
+      "get": {
+        "operationId": "getEnterpriseResource244",
+        "tags": [
+          "domain4"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/245": {
+      "get": {
+        "operationId": "getEnterpriseResource245",
+        "tags": [
+          "domain5"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/246": {
+      "get": {
+        "operationId": "getEnterpriseResource246",
+        "tags": [
+          "domain6"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/247": {
+      "get": {
+        "operationId": "getEnterpriseResource247",
+        "tags": [
+          "domain7"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/248": {
+      "get": {
+        "operationId": "getEnterpriseResource248",
+        "tags": [
+          "domain8"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enterprise/resources/249": {
+      "get": {
+        "operationId": "getEnterpriseResource249",
+        "tags": [
+          "domain9"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entity"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Entity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

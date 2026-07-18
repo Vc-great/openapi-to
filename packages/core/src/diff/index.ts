@@ -1,5 +1,6 @@
 import type { CompatibleOpenAPIDocument } from '../types'
 import { HTTP_OPERATION_METHODS } from '../openapi/validator.ts'
+import { throwIfAborted, type OpenapiExecutionOptions } from '../execution.ts'
 
 export type OpenAPIChangeClassification = 'breaking' | 'non-breaking' | 'warning' | 'informational'
 
@@ -61,7 +62,8 @@ function requestSchema(operation: Record<string, unknown>): unknown {
   return Object.fromEntries(Object.keys(content).sort().map((mediaType) => [mediaType, record(content[mediaType]).schema]))
 }
 
-export function diffOpenAPIDocuments(beforeDocument: CompatibleOpenAPIDocument, afterDocument: CompatibleOpenAPIDocument): OpenAPIDiffResult {
+export function diffOpenAPIDocuments(beforeDocument: CompatibleOpenAPIDocument, afterDocument: CompatibleOpenAPIDocument, options: OpenapiExecutionOptions = {}): OpenAPIDiffResult {
+  throwIfAborted(options.signal)
   const changes: OpenAPIChange[] = []
   const add = (classification: OpenAPIChangeClassification, code: string, message: string, path: Array<string | number>, before?: unknown, after?: unknown) => {
     changes.push({ classification, code, message, path, ...(before !== undefined ? { before } : {}), ...(after !== undefined ? { after } : {}) })
@@ -72,6 +74,7 @@ export function diffOpenAPIDocuments(beforeDocument: CompatibleOpenAPIDocument, 
   const afterPaths = record(afterRoot.paths)
   const pathNames = [...new Set([...Object.keys(beforePaths), ...Object.keys(afterPaths)])].sort()
   for (const pathName of pathNames) {
+    throwIfAborted(options.signal)
     if (!(pathName in beforePaths)) {
       add('non-breaking', 'PATH_ADDED', `Path ${pathName} was added.`, ['paths', pathName])
       continue
@@ -111,7 +114,7 @@ export function diffOpenAPIDocuments(beforeDocument: CompatibleOpenAPIDocument, 
         else if (beforeParameter && !afterParameter) add('breaking', 'PARAMETER_REMOVED', `Parameter ${name} was removed.`, parameterPath)
         else if (beforeParameter && afterParameter) {
           if (beforeParameter.required !== afterParameter.required) add(afterParameter.required === true ? 'breaking' : 'non-breaking', 'PARAMETER_REQUIRED_CHANGED', `Required state changed for parameter ${name}.`, [...parameterPath, 'required'], beforeParameter.required === true, afterParameter.required === true)
-          compareSchema(record(beforeParameter.schema), record(afterParameter.schema), [...parameterPath, 'schema'], add)
+          compareSchema(record(beforeParameter.schema), record(afterParameter.schema), [...parameterPath, 'schema'], add, options)
         }
       }
 
@@ -138,7 +141,7 @@ export function diffOpenAPIDocuments(beforeDocument: CompatibleOpenAPIDocument, 
     const location = ['components', 'schemas', schemaName] as Array<string | number>
     if (!(schemaName in beforeSchemas)) add('non-breaking', 'SCHEMA_ADDED', `Component schema ${schemaName} was added.`, location)
     else if (!(schemaName in afterSchemas)) add('breaking', 'SCHEMA_REMOVED', `Component schema ${schemaName} was removed.`, location)
-    else compareSchema(record(beforeSchemas[schemaName]), record(afterSchemas[schemaName]), location, add)
+    else compareSchema(record(beforeSchemas[schemaName]), record(afterSchemas[schemaName]), location, add, options)
   }
 
   const classificationOrder: Record<OpenAPIChangeClassification, number> = { breaking: 0, warning: 1, 'non-breaking': 2, informational: 3 }
@@ -158,7 +161,9 @@ function compareSchema(
   after: Record<string, unknown>,
   path: Array<string | number>,
   add: (classification: OpenAPIChangeClassification, code: string, message: string, path: Array<string | number>, before?: unknown, after?: unknown) => void,
+  options: OpenapiExecutionOptions,
 ): void {
+  throwIfAborted(options.signal)
   if (before.type !== after.type) add('breaking', 'SCHEMA_TYPE_CHANGED', 'Schema type changed.', [...path, 'type'], before.type, after.type)
   const beforeProperties = record(before.properties)
   const afterProperties = record(after.properties)
@@ -168,7 +173,7 @@ function compareSchema(
     const propertyPath = [...path, 'properties', property]
     if (!(property in beforeProperties)) add(afterRequired.has(property) ? 'breaking' : 'non-breaking', 'SCHEMA_PROPERTY_ADDED', `Property ${property} was added.`, propertyPath)
     else if (!(property in afterProperties)) add('breaking', 'SCHEMA_PROPERTY_REMOVED', `Property ${property} was removed.`, propertyPath)
-    else compareSchema(record(beforeProperties[property]), record(afterProperties[property]), propertyPath, add)
+    else compareSchema(record(beforeProperties[property]), record(afterProperties[property]), propertyPath, add, options)
     if (beforeRequired.has(property) !== afterRequired.has(property)) add(afterRequired.has(property) ? 'breaking' : 'non-breaking', 'SCHEMA_PROPERTY_REQUIRED_CHANGED', `Required state changed for property ${property}.`, [...path, 'required', property], beforeRequired.has(property), afterRequired.has(property))
   }
   const beforeEnum = new Set(Array.isArray(before.enum) ? before.enum.map((item) => JSON.stringify(item)) : [])

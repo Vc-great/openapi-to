@@ -1,17 +1,35 @@
 import { createHash } from 'node:crypto'
-import { lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { lstat, open } from 'node:fs/promises'
 import path from 'node:path'
 
 import { execa } from 'execa'
 import type { SourceFile, ts } from 'ts-morph'
 import { sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
+import { throwIfAborted, type OpenapiExecutionOptions } from '../execution.ts'
 import type { GeneratedArtifact, GenerationManifest, GenerationManifestEntry, MaterializeArtifactOptions, MaterializedArtifact } from './types.ts'
+import {
+  ARTIFACT_MANIFEST_FILENAME,
+  OUTPUT_TRANSACTION_DIRECTORY,
+  OUTPUT_TRANSACTION_JOURNAL,
+  OUTPUT_WRITE_LOCK_DIRECTORY,
+  outputWriteInProgress,
+  snapshotOutputFile,
+  writeArtifactsTransaction,
+  type OutputTransactionOptions,
+  type OutputWriteLock,
+} from './transaction.ts'
 
 export * from './types.ts'
+export * from './transaction.ts'
 
 const encoder = new TextEncoder()
-export const ARTIFACT_MANIFEST_FILENAME = '.openapi-to-manifest.json'
 export const DEFAULT_MAX_ARTIFACT_BYTES = 64 * 1024 * 1024
+const RESERVED_ARTIFACT_PATHS = new Set([
+  ARTIFACT_MANIFEST_FILENAME,
+  OUTPUT_WRITE_LOCK_DIRECTORY,
+  OUTPUT_TRANSACTION_DIRECTORY,
+  OUTPUT_TRANSACTION_JOURNAL,
+])
 
 function compareStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
@@ -95,16 +113,17 @@ export function materializeArtifacts(
   const byFoldedPath = new Map<string, string>()
   const maxArtifactBytes = options.maxArtifactBytes ?? DEFAULT_MAX_ARTIFACT_BYTES
   for (const artifact of sortGeneratedArtifacts(artifacts)) {
+    throwIfAborted(options.signal)
     const normalized = normalizeArtifactPath(outputRoot, artifact.path)
     if (!normalized.absolutePath || !normalized.relativePath) {
       if (normalized.diagnostic) diagnostics.push(normalized.diagnostic)
       continue
     }
-    if (normalized.relativePath === ARTIFACT_MANIFEST_FILENAME) {
+    if (RESERVED_ARTIFACT_PATHS.has(normalized.relativePath.split('/')[0] ?? '')) {
       diagnostics.push({
         code: 'ARTIFACT_PATH_RESERVED',
         severity: 'error',
-        message: `${ARTIFACT_MANIFEST_FILENAME} is reserved for the generated-output ownership manifest.`,
+        message: `${normalized.relativePath} collides with reserved generator transaction state.`,
         location: { source: artifact.path },
         plugin: artifact.plugin,
       })
@@ -174,20 +193,27 @@ export function materializeArtifacts(
 export async function formatMaterializedArtifacts(
   artifacts: readonly MaterializedArtifact[],
   formatter?: 'biome',
+  options: OpenapiExecutionOptions = {},
 ): Promise<{ artifacts: MaterializedArtifact[]; diagnostics: Diagnostic[] }> {
+  throwIfAborted(options.signal)
   if (!formatter) return { artifacts: [...artifacts], diagnostics: [] }
   const diagnostics: Diagnostic[] = []
   const formatted: MaterializedArtifact[] = []
   for (const artifact of artifacts) {
+    throwIfAborted(options.signal)
     if (artifact.kind === 'binary') {
       formatted.push(artifact)
       continue
     }
     try {
-      const result = await execa('biome', ['format', '--stdin-file-path', artifact.path], {
+      const subprocess = execa('biome', ['format', '--stdin-file-path', artifact.path], {
         input: new TextDecoder().decode(artifact.content),
         reject: true,
       })
+      const abort = () => subprocess.kill('SIGTERM')
+      options.signal?.addEventListener('abort', abort, { once: true })
+      const result = await subprocess.finally(() => options.signal?.removeEventListener('abort', abort))
+      throwIfAborted(options.signal)
       const content = encoder.encode(result.stdout.endsWith('\n') ? result.stdout : `${result.stdout}\n`)
       formatted.push({ ...artifact, content, hash: hashArtifactContent(content) })
     } catch (error) {
@@ -208,14 +234,15 @@ async function readManagedPaths(root: string): Promise<string[]> {
   try {
     const manifestPath = path.join(root, ARTIFACT_MANIFEST_FILENAME)
     await assertNoSymlinkSegments(root, manifestPath)
-    const parsed = JSON.parse(await readFile(manifestPath, 'utf8')) as unknown
-    if (!parsed || typeof parsed !== 'object' || (parsed as { version?: unknown }).version !== 1 || !Array.isArray((parsed as { files?: unknown }).files)) {
+    const parsed = JSON.parse(new TextDecoder().decode(await readStableComparisonFile(manifestPath))) as unknown
+    if (!parsed || typeof parsed !== 'object' || ![1, 2].includes((parsed as { version?: number }).version ?? 0) || !Array.isArray((parsed as { files?: unknown }).files)) {
       throw new Error(`Invalid generated-output ownership manifest: ${path.join(root, ARTIFACT_MANIFEST_FILENAME)}`)
     }
     const result = new Set<string>()
     const folded = new Set<string>()
-    for (const value of (parsed as { files: unknown[] }).files) {
-      if (typeof value !== 'string') throw new Error(`Invalid managed artifact path in ${ARTIFACT_MANIFEST_FILENAME}.`)
+    for (const item of (parsed as { files: unknown[] }).files) {
+      const value = typeof item === 'string' ? item : item && typeof item === 'object' && typeof (item as { path?: unknown }).path === 'string' ? (item as { path: string }).path : undefined
+      if (!value) throw new Error(`Invalid managed artifact path in ${ARTIFACT_MANIFEST_FILENAME}.`)
       const normalized = normalizeArtifactPath(root, value)
       if (!normalized.relativePath || normalized.relativePath !== value || value === ARTIFACT_MANIFEST_FILENAME) {
         throw new Error(`Unsafe managed artifact path in ${ARTIFACT_MANIFEST_FILENAME}: ${value}`)
@@ -232,14 +259,45 @@ async function readManagedPaths(root: string): Promise<string[]> {
   }
 }
 
-export async function compareArtifacts(artifacts: readonly MaterializedArtifact[], outputRoot: string, includeDeletes = false): Promise<GenerationManifest> {
+export class ArtifactComparisonChangedError extends Error {
+  constructor() {
+    super('A compared output file changed while it was being read.')
+    this.name = 'ArtifactComparisonChangedError'
+  }
+}
+
+async function readStableComparisonFile(filePath: string): Promise<Uint8Array> {
+  const before = await lstat(filePath, { bigint: true })
+  const handle = await open(filePath, 'r')
+  try {
+    const opened = await handle.stat({ bigint: true })
+    if (before.dev !== opened.dev || before.ino !== opened.ino) throw new ArtifactComparisonChangedError()
+    const content = new Uint8Array(await handle.readFile())
+    const after = await lstat(filePath, { bigint: true })
+    if (after.dev !== opened.dev || after.ino !== opened.ino || after.size !== opened.size || after.mtimeNs !== opened.mtimeNs) throw new ArtifactComparisonChangedError()
+    return content
+  } finally {
+    await handle.close()
+  }
+}
+
+export interface ArtifactComparisonOptions extends OpenapiExecutionOptions {
+  outputWriteLock?: OutputWriteLock
+}
+
+export async function compareArtifacts(artifacts: readonly MaterializedArtifact[], outputRoot: string, includeDeletes = false, options: ArtifactComparisonOptions = {}): Promise<GenerationManifest> {
+  throwIfAborted(options.signal)
   const root = path.resolve(outputRoot)
+  if (await outputWriteInProgress(root, options.outputWriteLock)) {
+    throw new Error('Generated output is currently being modified by another writer.')
+  }
   const entries: GenerationManifestEntry[] = []
   const expected = new Set(artifacts.map((artifact) => artifact.relativePath))
   for (const artifact of artifacts) {
+    throwIfAborted(options.signal)
     try {
       await assertNoSymlinkSegments(root, artifact.path)
-      const previous = new Uint8Array(await readFile(artifact.path))
+      const previous = await readStableComparisonFile(artifact.path)
       const previousHash = hashArtifactContent(previous)
       entries.push({ path: artifact.relativePath, status: previousHash === artifact.hash ? 'unchanged' : 'modified', hash: artifact.hash, previousHash, bytes: artifact.content.byteLength })
     } catch (error) {
@@ -249,7 +307,12 @@ export async function compareArtifacts(artifacts: readonly MaterializedArtifact[
   }
   if (includeDeletes) {
     for (const relativePath of await readManagedPaths(root)) {
-      if (!expected.has(relativePath)) entries.push({ path: relativePath, status: 'deleted' })
+      throwIfAborted(options.signal)
+      if (!expected.has(relativePath)) {
+        const previous = await snapshotOutputFile(path.resolve(root, ...relativePath.split('/')))
+        if (!previous.exists || !previous.sha256) throw new ArtifactComparisonChangedError()
+        entries.push({ path: relativePath, status: 'deleted', previousHash: previous.sha256, bytes: previous.bytes })
+      }
     }
   }
   entries.sort((a, b) => compareStrings(a.path, b.path) || compareStrings(a.status, b.status))
@@ -258,31 +321,8 @@ export async function compareArtifacts(artifacts: readonly MaterializedArtifact[
   return { outputRoot: root, entries, summary, outdated: summary.added + summary.modified + summary.deleted > 0 }
 }
 
-export async function writeArtifacts(artifacts: readonly MaterializedArtifact[], manifest: GenerationManifest): Promise<void> {
-  const byPath = new Map(artifacts.map((artifact) => [artifact.relativePath, artifact]))
-  for (const entry of manifest.entries) {
-    if (entry.status === 'unchanged') continue
-    const absolutePath = path.resolve(manifest.outputRoot, entry.path)
-    const normalized = normalizeArtifactPath(manifest.outputRoot, absolutePath)
-    if (!normalized.absolutePath) throw new Error(`Refusing to write outside output root: ${entry.path}`)
-    if (entry.status === 'deleted') {
-      await assertNoSymlinkSegments(manifest.outputRoot, path.dirname(normalized.absolutePath))
-      await rm(normalized.absolutePath, { force: true })
-      continue
-    }
-    const artifact = byPath.get(entry.path)
-    if (!artifact) throw new Error(`Missing materialized artifact for ${entry.path}`)
-    await assertNoSymlinkSegments(manifest.outputRoot, artifact.path)
-    await mkdir(path.dirname(artifact.path), { recursive: true })
-    await writeFile(artifact.path, artifact.content)
-  }
-  if (artifacts.length > 0) {
-    await writeOwnershipManifest(manifest.outputRoot, artifacts.map((artifact) => artifact.relativePath))
-  } else if (manifest.entries.some((entry) => entry.status === 'deleted')) {
-    const ownershipManifest = path.join(path.resolve(manifest.outputRoot), ARTIFACT_MANIFEST_FILENAME)
-    await assertNoSymlinkSegments(manifest.outputRoot, ownershipManifest)
-    await rm(ownershipManifest, { force: true })
-  }
+export async function writeArtifacts(artifacts: readonly MaterializedArtifact[], manifest: GenerationManifest, options: OutputTransactionOptions = {}): Promise<void> {
+  await writeArtifactsTransaction(artifacts, manifest, options)
 }
 
 async function assertNoSymlinkSegments(outputRoot: string, artifactPath: string): Promise<void> {
@@ -304,13 +344,4 @@ async function assertNoSymlinkSegments(outputRoot: string, artifactPath: string)
       throw error
     }
   }
-}
-
-async function writeOwnershipManifest(outputRoot: string, relativePaths: string[]): Promise<void> {
-  const root = path.resolve(outputRoot)
-  const manifestPath = path.join(root, ARTIFACT_MANIFEST_FILENAME)
-  await assertNoSymlinkSegments(root, manifestPath)
-  await mkdir(root, { recursive: true })
-  const files = [...new Set(relativePaths)].sort(compareStrings)
-  await writeFile(manifestPath, `${JSON.stringify({ version: 1, files }, null, 2)}\n`)
 }

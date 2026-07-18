@@ -39,6 +39,7 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 - `packages/core/src/pluginManager/` and `packages/core/src/OpenAPIContext/` — plugin dependency stages, Hook scheduling, the legacy OpenAPI context, `ctx.setSourceFiles()` compatibility, `ctx.addArtifact()`, and `ctx.addDiagnostic()`.
 - `packages/cli/` — text and machine-readable command presentation for `init`, `generate`/`g`, `validate`, `inspect`, and `diff`. Both `openapi` and `openapi-to` binaries point to the same entrypoint.
 - `packages/openapi/` — the published `openapi-to` aggregate package and `bin/openapi.js`; it re-exports core configuration and official plugin factories.
+- `packages/mcp/` — the independently published read-only stdio MCP adapter. It calls Core public APIs directly and is intentionally not re-exported by `openapi-to`.
 - `packages/plugin-ts-type/` — TypeScript model and operation type generation.
 - `packages/plugin-zod/` — Zod schema generation.
 - `packages/plugin-ts-request/` — request service generation; depends on the type plugin and may depend on Zod.
@@ -151,6 +152,31 @@ Use the public `Diagnostic` model for compiler, generation, and CLI-actionable c
 For a CLI command change, test human-readable and JSON modes, options before and after the command where supported, stdout/stderr separation, `JSON.parse(stdout)`, help, input/config/plugin failures, and the centralized exit code. Test `generate` write, `--dry-run`, successful/outdated `--check`, and added/modified/deleted manifest entries. Check Windows and POSIX path forms when path parsing changes.
 
 JSON mode emits exactly one JSON document on stdout. Diagnostics, progress, debug output, and plugin `console` output go to stderr. Do not add banners, update notices, colors, or prose to JSON stdout. Keep top-level envelopes stable and arrays deterministically ordered. Do not force-exit after printing.
+
+## MCP contract
+
+- Use only the current production-stable `@modelcontextprotocol/sdk`; never copy beta/v2 prerelease APIs into the v1 server or hand-code a protocol version. The SDK negotiates the stable revision.
+- Keep stdio strict: stdin/stdout are MCP JSON-RPC only. Send logs and plugin incidental `console.log/info/debug` to stderr without replacing `process.stdout.write` or installing concurrent per-call console restore logic.
+- MCP handlers call Core APIs directly. Never spawn the CLI, parse CLI stdout, call the MCP server recursively, or add a `plugin-mcp` generator.
+- Every Tool has a stable name/title/description, bounded input and output schemas, truthful stable annotations, one short text summary, and non-duplicated JSON-safe `structuredContent` that conforms to `outputSchema`.
+- Expected compilation, Workspace, remote-policy, config, plugin, stale-generation, and result-limit failures return `isError: true`. Reserve protocol errors for unknown tools, invalid Schema input, lifecycle errors, and unrecoverable SDK/protocol failures.
+- Canonicalize one startup Workspace. Constrain entry files, transitive local `$ref`, config entries and bundled local imports, output/check/ownership paths, traversal, symlinks, Windows drive/UNC paths, and case-folded artifact collisions with resolved/real paths rather than string prefixes.
+- Treat startup `configPath` as operator-authorized executable project code. Tool arguments may not choose config/plugins/packages/code/shell/env, Workspace/output roots, or relax remote/private-network policy. Cache one config load Promise for the server lifetime; restart to observe changes.
+- Register generation tools only when a startup config is supplied. Dry-run/check may execute plugins and read current managed output but must never call the writer, create/update an ownership manifest, format user files, repair, delete, or overwrite anything.
+- Controlled generation writes require both startup-trusted config and operator `allowWrite`; Tool arguments can never grant or broaden that authority. Every write must be `openapi_prepare_generation` followed by explicit review and `openapi_apply_generation`. Never add a direct-write shortcut.
+- Prepare writes no Workspace, output, manifest, staging, lock, or journal file. Apply accepts only the returned plan ID, one-time HMAC token, and exact approved plan hash; it may not accept targets, paths, content, deletes, config, plugins, `force`, stale overrides, or validation bypasses.
+- Bind plans to one Server/Workspace/config/target, all input and local-reference hashes, remote response hashes, output/manifest/file state, generator/plugin identity, and complete artifact hashes. Plans are bounded per-instance memory state with TTL, LRU cleanup, restart invalidation, and no token/secret logging.
+- Apply must acquire the shared CLI/MCP output lock, revalidate every precondition, re-run generation, and reject any changed plan rather than re-planning. Added paths must remain absent; deletion is limited to unchanged regular files in both the ownership manifest and exact prepared deletion set.
+- Use Core's shared transaction writer for all formal writes. Stage and verify every file, commit the stable ownership manifest with the files, journal crash phases, and either succeed fully or roll back byte-identically. Do not recursively clean user directories or silently ignore an unsafe journal.
+- Before commit, Apply is cancellable and must release locks without consuming a waiting plan. After commit begins, defer cancellation until commit or rollback completes, enforce the independent commit deadline, and report whether rollback occurred. Transaction/failpoint/crash and cross-process CLI/MCP lock tests are mandatory.
+- Bound diagnostics, operations, changes, artifacts, text, and previews. Preserve stable totals and priority ordering, report omitted counts, add `MCP_RESULT_TRUNCATED`, never return full documents/generated output by default, and never return binary Base64.
+- Analysis calls may run concurrently with call-local state. Serialize generation per MCP server instance with a `finally`-released lock; never use a module-global cross-server lock.
+- Propagate the SDK handler's call-local AbortSignal through remote loading, compiler checkpoints, plugin hooks, artifacts, comparison, and generation queue waits. Distinguish client cancellation, Server deadline, and HTTP timeout; clear timers/listeners on every exit and prove a cancelled generation cannot strand the lock.
+- Server deadlines are startup authority with validated lower/upper bounds; Tool arguments may never extend them. Use only stable standard progress notifications with a client-supplied token, keep progress coarse/monotonic/content-free, and do not introduce experimental Tasks.
+- Preserve TOCTOU fail-closed checks around local source/config/output/manifest reads. Do not claim total race elimination; use opened handles or revalidation where practical and never return `current` after detected inconsistency.
+- Keep operational logs on stderr in bounded text or NDJSON form. Never log Tool arguments, whole diagnostics, documents, generated bodies, headers, environment, or secrets.
+- Do not add Streamable HTTP, auth, Resources, Prompts, Sampling, Elicitation, Apps UI, tasks, LLM calls, chat, or additional write Tools as incidental MCP work. This project uses Codex only; do not create Claude Code files.
+- Use `.agents/skills/add-mcp-tool/SKILL.md` for MCP Tool changes and `.agents/skills/add-mcp-write-tool/SKILL.md` for controlled-write protocol changes. Verify with an official SDK Client over a real stdio subprocess, current MCP Inspector help/smoke, Codex safety evaluation, package surface, and pack-install write smoke.
 
 ## Validation matrix
 

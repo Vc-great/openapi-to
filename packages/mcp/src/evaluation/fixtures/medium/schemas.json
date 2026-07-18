@@ -1,0 +1,20 @@
+{
+  "Entity": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string"
+      }
+    }
+  },
+  "Nested": {
+    "oneOf": [
+      {
+        "type": "string"
+      },
+      {
+        "type": "null"
+      }
+    ]
+  }
+}

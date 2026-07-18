@@ -1,9 +1,11 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { mkdtemp, rm, utimes, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { compileOpenAPI } from './compiler.ts'
-import { isPrivateIPAddress, loadOpenAPIDocument, validateRemoteURL } from './sourceLoader.ts'
+import { isPrivateIPAddress, loadOpenAPIDocument, loadSource, validateRemoteURL } from './sourceLoader.ts'
 
 const fixtureRoot = path.dirname(fileURLToPath(import.meta.url))
 
@@ -41,5 +43,28 @@ describe('OpenAPI source loader', () => {
     expect(request).toHaveBeenCalledTimes(1)
     expect(result.diagnostics[0]?.code).toBe('REMOTE_SOURCE_BLOCKED')
     vi.restoreAllMocks()
+  })
+
+  it('honors pre-aborted calls and local input size boundaries', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(loadOpenAPIDocument({ openapi: '3.1.0' }, { signal: controller.signal })).rejects.toMatchObject({ code: 'OPENAPI_OPERATION_CANCELLED' })
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-source-limit-'))
+    const file = path.join(root, 'large.json')
+    await writeFile(file, '{}')
+    const result = await loadSource(file, { maxSourceBytes: 1 })
+    expect(result.diagnostics[0]?.code).toBe('LOCAL_SOURCE_TOO_LARGE')
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it('fails closed when local source metadata changes during a large read', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-source-race-'))
+    const file = path.join(root, 'changing.json')
+    await writeFile(file, `{"openapi":"3.1.0","padding":"${'x'.repeat(8 * 1024 * 1024)}"}`)
+    const timer = setInterval(() => { void utimes(file, new Date(), new Date()) }, 1)
+    const result = await loadSource(file, { maxSourceBytes: 16 * 1024 * 1024 })
+    clearInterval(timer)
+    expect(result.diagnostics[0]?.code).toBe('LOCAL_SOURCE_CHANGED_DURING_READ')
+    await rm(root, { recursive: true, force: true })
   })
 })

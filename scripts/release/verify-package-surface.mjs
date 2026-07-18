@@ -7,6 +7,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const packageDirectories = [
 	"packages/core",
 	"packages/cli",
+	"packages/mcp",
 	"packages/plugin-msw",
 	"packages/plugin-swr",
 	"packages/plugin-ts-request",

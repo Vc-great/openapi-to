@@ -16,4 +16,10 @@ export type CLIOptions = {
   dryRun?: boolean
   check?: boolean
   debug?: boolean
+  /** Optional library-only boundary for local OpenAPI inputs and transitive file references. */
+  localFileRoot?: string
+  /** Cancels only this build invocation. */
+  signal?: AbortSignal
+  /** @internal A shared transaction lock held by a trusted writer such as MCP Apply. */
+  outputWriteLock?: import('../artifacts/transaction.ts').OutputWriteLock
 }

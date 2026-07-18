@@ -7,6 +7,7 @@ import {
   exitCodeForDiagnostics,
   hasDiagnosticErrors,
   inspectOpenAPIDocument,
+  loadOpenapiConfig,
   sortDiagnostics,
   summarizeDiagnostics,
   type Diagnostic,
@@ -19,8 +20,6 @@ import { cac } from 'cac'
 import { version } from '../../openapi/package.json'
 import { generate } from './generate.ts'
 import { init } from './init.ts'
-import { getCosmiConfig } from './utils/getCosmiConfig.ts'
-import { getDefineConfig } from './utils/getDefineConfig.ts'
 
 const moduleName = 'openapi'
 
@@ -65,7 +64,7 @@ async function runGenerateInternal(options: Record<string, unknown>, io: CLIIO):
   const json = options.json === true
   let config: OpenapiToConfig
   try {
-    config = getDefineConfig(await getCosmiConfig(moduleName))
+    config = (await loadOpenapiConfig({ cwd: process.cwd(), moduleName })).config
   } catch (error) {
     const diagnostics = configFailure(error)
     const output = { success: false, command: 'generate', diagnostics, summary: summarizeDiagnostics(diagnostics), servers: [] }

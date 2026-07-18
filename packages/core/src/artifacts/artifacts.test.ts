@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, symlink, utimes, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Project } from 'ts-morph'
@@ -26,7 +26,9 @@ describe('generated artifacts', () => {
     expect(next.summary).toMatchObject({ unchanged: 4, deleted: 0 })
     expect(await readFile(path.join(root, 'stale.txt'), 'utf8')).toBe('stale')
     expect(hashArtifactContent(materialized.artifacts[0]?.content ?? new Uint8Array())).toMatch(/^[a-f0-9]{64}$/)
-    expect(JSON.parse(await readFile(path.join(root, ARTIFACT_MANIFEST_FILENAME), 'utf8')).files).toEqual(['asset.bin', 'data.json', 'example.ts', 'readme.md'])
+    const ownership = JSON.parse(await readFile(path.join(root, ARTIFACT_MANIFEST_FILENAME), 'utf8'))
+    expect(ownership.version).toBe(2)
+    expect(ownership.files.map(({ path: managedPath }: { path: string }) => managedPath)).toEqual(['asset.bin', 'data.json', 'example.ts', 'readme.md'])
   })
 
   it('deduplicates identical paths and rejects traversal, size, case, and content conflicts', () => {
@@ -59,7 +61,9 @@ describe('generated artifacts', () => {
     await writeArtifacts(first.artifacts, firstManifest)
 
     const secondManifest = await compareArtifacts([], root, true)
-    expect(secondManifest.entries).toEqual([{ path: 'generated.txt', status: 'deleted' }])
+    expect(secondManifest.entries).toEqual([
+      expect.objectContaining({ path: 'generated.txt', status: 'deleted', previousHash: expect.stringMatching(/^[a-f0-9]{64}$/), bytes: 9 }),
+    ])
     await writeArtifacts([], secondManifest)
     await expect(access(path.join(root, 'generated.txt'))).rejects.toThrow()
     await expect(access(path.join(root, ARTIFACT_MANIFEST_FILENAME))).rejects.toThrow()
@@ -98,5 +102,24 @@ describe('generated artifacts', () => {
     const first = materializeArtifacts([sourceFileToArtifact(sourceFile)], root)
     const second = materializeArtifacts([sourceFileToArtifact(sourceFile)], root)
     expect(first.artifacts[0]?.hash).toBe(second.artifacts[0]?.hash)
+  })
+
+  it('fails closed when an existing generated file changes during comparison', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-compare-race-'))
+    const file = path.join(root, 'large.txt')
+    await writeFile(file, 'x'.repeat(8 * 1024 * 1024))
+    const expected = materializeArtifacts([{ kind: 'text', path: 'large.txt', content: 'expected' }], root)
+    const timer = setInterval(() => { void utimes(file, new Date(), new Date()) }, 1)
+    await expect(compareArtifacts(expected.artifacts, root)).rejects.toMatchObject({ name: 'ArtifactComparisonChangedError' })
+    clearInterval(timer)
+  })
+
+  it('fails closed when the ownership manifest changes during comparison', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-manifest-race-'))
+    const manifestPath = path.join(root, ARTIFACT_MANIFEST_FILENAME)
+    await writeFile(manifestPath, `${JSON.stringify({ version: 1, files: [], padding: 'x'.repeat(8 * 1024 * 1024) })}\n`)
+    const timer = setInterval(() => { void utimes(manifestPath, new Date(), new Date()) }, 1)
+    await expect(compareArtifacts([], root, true)).rejects.toMatchObject({ name: 'ArtifactComparisonChangedError' })
+    clearInterval(timer)
   })
 })

@@ -1,6 +1,7 @@
 import { summarizeDiagnostics, type DiagnosticSummary } from '../diagnostics.ts'
 import type { CompatibleOpenAPIDocument } from '../types'
 import { HTTP_OPERATION_METHODS } from './validator.ts'
+import { throwIfAborted, type OpenapiExecutionOptions } from '../execution.ts'
 
 export interface OpenAPIInspection {
   openapiVersion: string
@@ -26,7 +27,8 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
 
-export function inspectOpenAPIDocument(document: CompatibleOpenAPIDocument, externalReferenceCount = 0, diagnostics = [] as Parameters<typeof summarizeDiagnostics>[0]): OpenAPIInspection {
+export function inspectOpenAPIDocument(document: CompatibleOpenAPIDocument, externalReferenceCount = 0, diagnostics = [] as Parameters<typeof summarizeDiagnostics>[0], options: OpenapiExecutionOptions = {}): OpenAPIInspection {
+  throwIfAborted(options.signal)
   const root = document as Record<string, unknown>
   const info = record(root.info)
   const paths = record(root.paths) ?? {}
@@ -36,6 +38,7 @@ export function inspectOpenAPIDocument(document: CompatibleOpenAPIDocument, exte
   const methodDistribution: Record<string, number> = {}
   let operationCount = 0
   for (const pathName of Object.keys(paths).sort()) {
+    throwIfAborted(options.signal)
     const pathItem = record(paths[pathName])
     if (!pathItem) continue
     for (const method of [...HTTP_OPERATION_METHODS, 'query'] as const) {
