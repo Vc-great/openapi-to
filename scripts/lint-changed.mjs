@@ -1,0 +1,112 @@
+import { existsSync } from "node:fs";
+import { extname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+
+const LINTABLE_EXTENSIONS = new Set([
+	".cjs",
+	".js",
+	".json",
+	".jsonc",
+	".jsx",
+	".mjs",
+	".ts",
+	".tsx",
+]);
+
+function run(command, args, options = {}) {
+	const result = spawnSync(command, args, {
+		cwd: process.cwd(),
+		encoding: "utf8",
+		maxBuffer: 16 * 1024 * 1024,
+		...options,
+	});
+	if (result.error) throw result.error;
+	if (result.status !== 0) {
+		process.stderr.write(result.stderr ?? "");
+		throw new Error(`${command} exited with status ${result.status}`);
+	}
+	return result.stdout ?? "";
+}
+
+function nulSeparatedGit(args) {
+	return run("git", args)
+		.split("\0")
+		.filter(Boolean);
+}
+
+export function collectChangedFiles(base) {
+	const paths = new Set();
+	const add = (items) => {
+		for (const item of items) paths.add(item);
+	};
+
+	if (base) {
+		add(nulSeparatedGit(["diff", "--name-only", "-z", "--diff-filter=ACMR", `${base}...HEAD`]));
+	}
+	add(nulSeparatedGit(["diff", "--name-only", "-z", "--diff-filter=ACMR"]));
+	add(nulSeparatedGit(["diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"]));
+	add(nulSeparatedGit(["ls-files", "--others", "--exclude-standard", "-z"]));
+
+	return [...paths]
+		.filter((path) => LINTABLE_EXTENSIONS.has(extname(path).toLowerCase()))
+		.filter((path) => existsSync(resolve(process.cwd(), path)))
+		.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+}
+
+function parseArguments(arguments_) {
+	let base;
+	for (let index = 0; index < arguments_.length; index += 1) {
+		const argument = arguments_[index];
+		if (argument === "--base") {
+			base = arguments_[index + 1];
+			if (!base) throw new Error("--base requires a Git reference.");
+			index += 1;
+		} else {
+			throw new Error(`Unknown argument: ${argument}`);
+		}
+	}
+	return { base };
+}
+
+function biomeCommand() {
+	const configured = process.env.LINT_CHANGED_BIOME;
+	if (configured) {
+		return configured.endsWith(".mjs") || configured.endsWith(".js")
+			? { command: process.execPath, prefix: [configured] }
+			: { command: configured, prefix: [] };
+	}
+	const suffix = process.platform === "win32" ? ".cmd" : "";
+	return {
+		command: resolve(process.cwd(), "node_modules", ".bin", `biome${suffix}`),
+		prefix: [],
+	};
+}
+
+export function main(arguments_ = process.argv.slice(2)) {
+	const { base } = parseArguments(arguments_);
+	const files = collectChangedFiles(base);
+	if (files.length === 0) {
+		process.stdout.write("No changed lintable files.\n");
+		return;
+	}
+
+	const { command, prefix } = biomeCommand();
+	const result = spawnSync(
+		command,
+		[
+			...prefix,
+			"lint",
+			"--error-on-warnings",
+			"--files-ignore-unknown=true",
+			"--no-errors-on-unmatched",
+			"--max-diagnostics=none",
+			"--",
+			...files,
+		],
+		{ cwd: process.cwd(), stdio: "inherit" },
+	);
+	if (result.error) throw result.error;
+	if (result.status !== 0) process.exitCode = result.status ?? 1;
+}
+
+main();

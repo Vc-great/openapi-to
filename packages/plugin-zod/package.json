@@ -17,6 +17,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "!dist/**/*.map",
     "!/**/**.test.**",
     "!/**/__tests__/**"
   ],
@@ -42,6 +43,9 @@
     "lodash": "^4.17.21",
     "oas": "^24.9.0",
     "ts-morph": "^23.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "keywords": [],
   "author": "",

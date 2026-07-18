@@ -9,11 +9,12 @@ These facts route an investigation. Re-read the files because release configurat
 - Published packages commonly declare ESM/CJS entrypoints and declarations under `dist`, built with tsup.
 - The `openapi-to` aggregate package depends on CLI, core, and official plugins through workspace ranges, re-exports core/official factories, and exposes both `openapi` and `openapi-to` bin aliases through `bin/openapi.js`.
 - P0 adds public compiler, diagnostic, artifact/manifest/result, diff/inspect, and exit-code exports. Treat `@openapi-to/core`, `@openapi-to/cli`, and the aggregate package as direct release candidates; inspect official plugin declarations/dependency edges before deciding whether they need coordinated bumps.
-- Root policy accepts Node >=18, core has no package-local engine declaration, and the aggregate package requires Node >=20. This mismatch is a release-policy risk even though CI/README prefer Node 20.
+- Root development policy, CI, bins, and package manifests require Node >=20. A lower runtime must not be claimed unless it has its own maintained CI and pack-install smoke lane.
 - Package manifests use `workspace:*` for internal edges; never replace those values or lockfile entries manually as a release workaround.
 - Package `CHANGELOG.md` files exist. Root and some packages have README files, but plugin packages do not all have package-local READMEs at this revision.
-- Root Changesets dependencies/scripts exist, but no tracked `.changeset/config.json` was found at the authored revision. This blocks a normal Changesets release until explicitly resolved.
-- CI builds, typechecks, tests, and lints; e2e builds then generates in `e2e/common` and `e2e/module` on multiple operating systems.
+- `.changeset/config.json` is tracked. It uses public access, `main` as the base branch, workspace-protocol-aware internal dependency bumps, and one fixed-version group for all nine public packages. Private config packages are excluded by `private: true`, not `ignore`.
+- Root release gates include `lint:changed`, `test:release-scripts`, `verify:package-surface`, and `release:smoke`. The smoke script packs all public packages and installs them in a temporary consumer to verify ESM/CJS/types and both aggregate bins.
+- CI on Node 20 builds, typechecks packages and root project references, runs Vitest, rejects changed-file lint warnings, verifies Changesets, and performs pack-install smoke. e2e generation runs on Linux, Windows, and macOS.
 
 ## Files to inspect
 
@@ -30,8 +31,12 @@ packages/*/README.md (where present)
 packages/openapi/src/index.ts
 packages/openapi/bin/openapi.js
 .changeset/config.json (only if it exists)
+.changeset/*.md
 .github/workflows/quality.yml
 .github/workflows/e2e.yaml
+scripts/lint-changed.mjs
+scripts/release/verify-package-surface.mjs
+scripts/release/pack-install-smoke.mjs
 ```
 
 ## Evidence table template

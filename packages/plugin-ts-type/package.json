@@ -17,6 +17,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "!dist/**/*.map",
     "!/**/**.test.**",
     "!/**/__tests__/**"
   ],
@@ -46,6 +47,9 @@
   "keywords": [],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

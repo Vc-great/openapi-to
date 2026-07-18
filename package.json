@@ -27,6 +27,7 @@
 		"graph": "npx nx graph",
 		"install:csb": "corepack enable && pnpm install --frozen-lockfile",
 		"lint": "biome lint ./packages",
+		"lint:changed": "node scripts/lint-changed.mjs",
 		"lint:case": "npx case-police  --fix",
 		"lint:ci": "biome lint ./packages",
 		"lint:fix": "biome lint --write --unsafe ./packages ./examples && bun run lint:case",
@@ -34,6 +35,7 @@
 		"start": "turbo run start --filter=./packages/*",
 		"test": "vitest run --config ./configs/vitest.config.ts --coverage",
 		"test:vitest": "vitest run --config ./configs/vitest.config.ts",
+		"test:release-scripts": "node --test scripts/*.node-test.mjs",
 		"test:watch": "vitest --config ./configs/vitest.config.ts",
 		"typecheck": "turbo run typecheck --continue --filter='./packages/*'",
 		"typecheck:examples": "turbo run typecheck --continue --filter='./examples/*'",
@@ -43,6 +45,9 @@
 		"//changeset:beta:rc": "changeset pre enter rc",
 		"//changeset:beta:exit": "changeset pre exit",
 		"changeset": "changeset",
+		"verify:package-surface": "node scripts/release/verify-package-surface.mjs",
+		"release:smoke": "node scripts/release/pack-install-smoke.mjs",
+		"release:check": "pnpm build && pnpm typecheck && pnpm test:vitest && pnpm lint:changed && pnpm test:release-scripts && pnpm verify:package-surface && pnpm release:smoke && pnpm exec changeset status",
 		"version": "changeset version",
 		"release": "pnpm i &&pnpm run clean && pnpm run build && changeset publish",
 		"version:canary": "changeset v ersion --snapshot canary",
@@ -74,7 +79,7 @@
 	},
 	"packageManager": "pnpm@10.14.0",
 	"engines": {
-		"node": ">=18",
+		"node": ">=20",
 		"pnpm": ">=10.7.1"
 	},
 	"pnpm": {

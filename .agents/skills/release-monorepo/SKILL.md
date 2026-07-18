@@ -61,7 +61,10 @@ For each release candidate:
 4. Check aggregate exports in `packages/openapi/src/index.ts` and dependency declarations in `packages/openapi/package.json`.
 5. Check the CLI's package/version relationship and built bin behavior when CLI/openapi packages change.
 6. Inspect README availability: update root/package documentation only where the user-facing API needs it; do not invent missing package READMEs as a release prerequisite unless project policy requires them.
-7. Perform a dry-run pack using a command supported by the installed package manager (verify with local help first), and inspect the complete file list. No secrets, fixtures, test outputs, source maps not intended for publication, or undeclared runtime files may leak.
+7. Perform a pack using a command supported by the installed package manager (verify with local help first), and inspect the complete file list. No secrets, fixtures, test outputs, source maps outside policy, Agent files, or undeclared runtime files may leak.
+8. Install the tarballs together in a clean OS-temporary consumer. Verify ESM, CJS when declared, TypeScript declarations, and all bins without resolving workspace source paths. A successful `pack` alone is not installation evidence.
+9. For the aggregate, identity-test every official factory against its owning package. In particular, `pluginSWR` must equal the SWR package factory, `pluginMSW` must equal the MSW package factory, and they must differ from each other.
+10. Execute both `openapi` and `openapi-to` aliases from the temporary install. Check help/version behavior and `JSON.parse(stdout)` for representative `validate`/`inspect` invocations.
 
 For a P0 compiler release, explicitly verify:
 
@@ -69,15 +72,15 @@ For a P0 compiler release, explicitly verify:
 - `@openapi-to/cli` command behavior/declarations for validate, inspect, diff, generate, dry-run, check, JSON output, and exit-code mapping.
 - The `openapi-to` aggregate re-export of core plus both `openapi` and `openapi-to` bin aliases.
 - Whether additive `HookContext` fields require coordinated plugin releases even while legacy `setSourceFiles()` remains source-compatible.
-- Runtime-engine consistency. At this revision the root policy permits Node >=18, core has no package-local engine declaration, and the aggregate requires Node >=20; classify or document that release risk.
+- Runtime-engine consistency. The repository, CI, bins, and all package manifests require Node >=20. Never claim compatibility with another version based only on API inspection; add and pass a maintained CI/smoke lane first.
 
 Do not edit built output by hand. Rebuild it from source.
 
 ### 5. Verify Changesets and release metadata
 
-1. Check for `.changeset/config.json` before invoking Changesets. At the authored revision, root scripts/dependencies exist but the tracked configuration directory does not; re-check rather than assuming it was added.
+1. Check that `.changeset/config.json` is tracked before invoking Changesets; an ignored local configuration is not release evidence.
 2. If configuration is missing, report release infrastructure as incomplete and stop before `pnpm changeset`, versioning, or publish. Do not silently initialize Changesets unless the user requests that scope.
-3. If configured, run the non-publishing status command supported by the installed CLI and inspect package bumps/dependent bumps.
+3. Run `pnpm exec changeset status` and inspect package bumps/dependent bumps. The current policy is a fixed-version group containing all nine public packages; private config packages rely on `private: true` rather than an `ignore` entry that would invalidate their public dev dependents.
 4. Add or review a changeset that names only affected packages and describes user-visible behavior. Do not rewrite historical versions.
 5. Verify package changelogs and the intended local tag names against existing local tags/history.
 6. Treat canary/alpha/beta/rc scripts as separate paths; inspect their exact command text and resulting dist-tag/version policy before use.
@@ -98,13 +101,20 @@ For shared core/public API, aggregate package, or multi-package releases, run as
 pnpm test:vitest
 pnpm typecheck
 pnpm build
+pnpm exec tsc -b
+pnpm lint:changed
+pnpm test:release-scripts
+pnpm verify:package-surface
+pnpm release:smoke
+pnpm exec changeset status
 ```
 
 Also:
 
 - For generator changes, use the Codex `$run-codegen-tests` Skill. If Skill invocation is unavailable, read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly.
 - Run applicable CLI e2e smoke projects after a successful build when CLI/aggregate package behavior changes.
-- Re-run pack inspection after the final build/version state.
+- Re-run pack-install smoke after the final build/version state. Inspect its file-count/size summary and retain a temporary workspace only when debugging.
+- Run changed-file lint with warnings as failures. Do not use the historical full-lint backlog, `continue-on-error`, or a green wrapper job to hide new diagnostics.
 - Ensure no uncommitted generated/test output was introduced.
 
 A failing required test, typecheck, build, generated compile, idempotency check, export target, or pack inspection blocks a “ready to publish” conclusion.

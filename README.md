@@ -69,6 +69,20 @@ input: {
 
 Compiler library APIs such as `compileOpenAPI`, `resolveOpenAPIReferences`, `validateOpenAPIDocument`, `inspectOpenAPIDocument`, `diffOpenAPIDocuments`, diagnostics, and `GeneratedArtifact` are exported from both `@openapi-to/core` and `openapi-to`. Existing plugins can keep using `ctx.setSourceFiles`; new plugins may use `ctx.addArtifact` and `ctx.addDiagnostic`.
 
+## Release verification
+
+The repository and all published packages require Node.js 20 or newer and use pnpm 10.14.0. Maintainers verify release candidates with the tracked Changesets plan and real local installation smoke tests:
+
+```shell
+pnpm exec changeset status
+pnpm lint:changed
+pnpm build
+pnpm verify:package-surface
+pnpm release:smoke
+```
+
+`release:smoke` packs every public workspace package and verifies ESM, CJS, declarations, the `openapi`/`openapi-to` aliases, and machine-readable CLI output in a temporary consumer. It does not publish.
+
 OpenAPI 3.2 support is intentionally incremental. `$self` participates in reference base resolution and the document, info, paths, components, and standard operations remain readable. New 3.2 fields such as `query`, `additionalOperations`, `querystring`, streaming `itemSchema`/encoding fields, and tag hierarchy are inspected and diagnosed, but existing TypeScript generators do not yet emit code from them. The first-stage diff engine covers paths, operations, parameters, request/response schemas, component properties, required state, enums, and types; less certain schema-composition changes are reported as warnings rather than claimed as definitive compatibility results.
 ## Example
 ```typescript twoslash [single]

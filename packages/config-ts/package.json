@@ -8,5 +8,8 @@
     "base.json",
     "bundler.json"
   ],
-  "devDependencies": {}
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20"
+  }
 }

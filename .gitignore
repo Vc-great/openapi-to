@@ -55,6 +55,9 @@ docs/.vitepress/dist/**
 .nx
 
 .gitignore
-.changeset
+.changeset/*
+!.changeset/config.json
+!.changeset/README.md
+!.changeset/*.md
 
 **/test-output/**

@@ -17,6 +17,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "!dist/**/*.map",
     "!/**/**.test.**",
     "!/**/__tests__/**"
   ],
@@ -47,7 +48,11 @@
     "@openapi-to/core": "workspace:*",
     "lodash": "^4.17.21",
     "oas": "^24.9.0",
+    "type-fest": "^4.40.0",
     "ts-morph": "^23.0.0"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "publishConfig": {
     "access": "public",

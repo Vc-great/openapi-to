@@ -50,7 +50,7 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 - `.github/workflows/` and `.github/setup/action.yml` — CI build, typecheck, test, lint, and cross-platform e2e definitions.
 - `.agents/skills/` — the single authoritative Codex Skill source. Keep each `SKILL.md`, its `agents/openai.yaml`, and directly referenced resources consistent.
 - Package builds emit `dist/`; integration tests may create untracked `packages/*/test-output/`. Never treat those outputs as source.
-- Package `CHANGELOG.md` files and root Changesets scripts are release-related. At this revision there is no tracked `.changeset/config.json`; check that fact again before relying on `pnpm changeset` or preparing a release.
+- `.changeset/config.json` is the tracked release policy. All nine public runtime packages form one fixed-version group; `packages/config-ts` and `packages/config-tsup` remain private and are not release candidates. A task-specific `.changeset/*.md` is required for user-visible package changes.
 
 `pnpm-workspace.yaml` mentions `docs`, `examples/*`, and `e2e/*`, but `docs/` and `examples/` are not present in this revision. Do not invent paths or use the root `generate` script as evidence until the relevant workspace exists. Always re-scan for lower-level `AGENTS.md` files and repository Skills because later changes may add narrower rules.
 
@@ -78,7 +78,7 @@ Keep stage ownership singular: plugins must not reimplement `$ref` loading, arti
 
 ## Runtime and tools
 
-- Use the pinned package manager from root `packageManager`: pnpm. The root engines require Node.js `>=18` and pnpm `>=10.7.1`; CI and the README use Node.js 20, so prefer Node.js 20 for CI parity.
+- Use the pinned package manager from root `packageManager`: pnpm 10.14.0. Development, CI, bins, and every package manifest require Node.js `>=20`; do not claim Node 18 compatibility without first changing the policy and adding a maintained Node 18 CI lane.
 - Use package scripts exactly as declared. `pnpm exec <tool>` invokes a binary and is not evidence that a same-named package script exists.
 - Vitest is the test runner. Turbo coordinates root build/typecheck tasks. Biome is the package linter; dprint/Prettier scripts exist for formatting, but there is no root Markdown-check script.
 - Prefer package filtering for focused work: `pnpm --filter <package-name> <script>`. Do not replace a focused validation with an unrelated full-suite run.
@@ -198,7 +198,11 @@ First confirm each command exists in the current `package.json`. Replace `<packa
 
 - Re-read package versions, `workspace:*` edges, `exports`, `types`, `files`, and `dist` contents.
 - Run affected package tests/typechecks/builds, then the root matrix appropriate to the impact (`pnpm test:vitest`, `pnpm typecheck`, `pnpm build`).
-- Inspect Changesets availability before `pnpm changeset`; this revision lacks the tracked configuration directory.
+- Run `pnpm exec changeset status` against the tracked `.changeset/config.json` and review the fixed-group consequences; never depend on an ignored local Changesets configuration.
+- Run `pnpm lint:changed` for staged, unstaged, and untracked applicable files. It treats warnings as failures. The historical full-repository lint backlog is not permission to add new diagnostics.
+- After a successful build, run `pnpm verify:package-surface` and `pnpm release:smoke`. Readiness requires aggregate factory identity checks, real tarballs, a clean temporary install, ESM/CJS/type imports, both bin aliases, and JSON CLI smoke—not merely a successful `pack` command.
+- Inspect every tarball file list for fixtures, test output, coverage, source maps outside policy, credentials, logs, Agent files, and other non-runtime content.
+- Treat P0 remote-network defaults, artifact collision/cleanup behavior, and classified CLI exit codes as compatibility-sensitive when selecting SemVer. Current packages are intentionally fixed-version; explain the coordinated bump for plugins even when their factory API is unchanged.
 - Do not run `pnpm release`, `pnpm publish`, create tags, or push unless the user explicitly requests that external change.
 
 ## Safety and reliability

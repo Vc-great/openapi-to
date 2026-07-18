@@ -29,7 +29,7 @@ jobs:
           run: ${{ matrix.installer }} build
 
         - name: Install e2e dependencies
-          run: pnpm install --prefer-offline
+          run: pnpm install --frozen-lockfile --prefer-offline
           working-directory: ./e2e/common
 
         - name: E2e  openapi-to init
@@ -71,7 +71,7 @@ jobs:
         run: ${{ matrix.installer }} build
 
       - name: Install e2e dependencies
-        run: pnpm install --prefer-offline
+        run: pnpm install --frozen-lockfile --prefer-offline
         working-directory: ./e2e/module
 
       - name: E2e  openapi-to init
@@ -87,4 +87,3 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
         run: ${{ matrix.installer }} generate
-

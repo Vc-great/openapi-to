@@ -6,7 +6,7 @@ runs:
   steps:
     - uses: pnpm/action-setup@v4
       with:
-        version:
+        version: 10.14.0
 
     - name: Setup Node.js environment
       uses: actions/setup-node@v4
@@ -23,7 +23,7 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install --prefer-offline
+      run: pnpm install --frozen-lockfile --prefer-offline
 
     - name: Setup Turbo
       uses: dtinth/setup-github-actions-caching-for-turbo@v1.2.0

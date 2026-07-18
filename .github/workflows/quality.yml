@@ -1,93 +1,96 @@
 name: Quality
+
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+
 jobs:
   build:
-      name: Build
-      timeout-minutes: 15
-      runs-on: ubuntu-latest
-
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 2
-
-        - name: Setup
-          uses: ./.github/setup
-
-        - name: Build
-          run: npm run build --concurrency=1
+    name: Build
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Build
+        run: pnpm build --concurrency=1
 
   typecheck:
-      name: Typecheck
-      timeout-minutes: 15
-      runs-on: ubuntu-latest
-
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 2
-
-        - name: Setup
-          uses: ./.github/setup
-
-        - name: Build
-          run: npm run build --concurrency=1
-
-        - name: Typecheck
-          run: npm run typecheck --concurrency=1
+    name: Typecheck
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Build
+        run: pnpm build --concurrency=1
+      - name: Package typecheck
+        run: pnpm typecheck --concurrency=1
+      - name: Project-reference typecheck
+        run: pnpm exec tsc -b
 
   tests:
-      name: Tests
-      timeout-minutes: 15
-      runs-on: ubuntu-latest
+    name: Tests
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Build
+        run: pnpm build
+      - name: Test
+        run: pnpm test:vitest
 
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 2
+  lint-changed:
+    name: Lint changed files
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup
+        uses: ./.github/setup
+      - name: Test lint collector
+        run: pnpm test:release-scripts
+      - name: Lint pull request files
+        if: github.event_name == 'pull_request'
+        run: pnpm lint:changed -- --base "${{ github.event.pull_request.base.sha }}"
+      - name: Lint pushed files
+        if: github.event_name == 'push'
+        run: pnpm lint:changed -- --base "${{ github.event.before }}"
 
-        - name: Setup
-          uses: ./.github/setup
-
-        - name: Build
-          run: npm run build
-
-        - name: Test
-          run: npm run test
-
-        - name: Upload coverage reports to Codecov
-          uses: codecov/codecov-action@v3
-
-        - name: Test with node
-          continue-on-error: true
-          run: npm run test:vitest --coverage
-
-
-
-  linting:
-      name: Linting
-      timeout-minutes: 15
-      runs-on: ubuntu-latest
-
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 2
-
-        - name: Setup
-          uses: ./.github/setup
-
-        - name: Build
-          run: npm run build
-
-        - name: Linting
-          env:
-            NODE_OPTIONS: "--max_old_space_size=4096"
-          continue-on-error: true
-          run: npm run lint:ci
+  release-smoke:
+    name: Package and install smoke
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Build
+        run: pnpm build
+      - name: Verify package surface
+        run: pnpm verify:package-surface
+      - name: Pack and install packages
+        run: pnpm release:smoke
+      - name: Verify Changesets plan
+        run: pnpm exec changeset status
