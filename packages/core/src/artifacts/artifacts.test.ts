@@ -26,7 +26,9 @@ describe('generated artifacts', () => {
     expect(next.summary).toMatchObject({ unchanged: 4, deleted: 0 })
     expect(await readFile(path.join(root, 'stale.txt'), 'utf8')).toBe('stale')
     expect(hashArtifactContent(materialized.artifacts[0]?.content ?? new Uint8Array())).toMatch(/^[a-f0-9]{64}$/)
-    expect(JSON.parse(await readFile(path.join(root, ARTIFACT_MANIFEST_FILENAME), 'utf8')).files).toEqual(['asset.bin', 'data.json', 'example.ts', 'readme.md'])
+    const ownership = JSON.parse(await readFile(path.join(root, ARTIFACT_MANIFEST_FILENAME), 'utf8'))
+    expect(ownership.version).toBe(2)
+    expect(ownership.files.map(({ path: managedPath }: { path: string }) => managedPath)).toEqual(['asset.bin', 'data.json', 'example.ts', 'readme.md'])
   })
 
   it('deduplicates identical paths and rejects traversal, size, case, and content conflicts', () => {
@@ -59,7 +61,9 @@ describe('generated artifacts', () => {
     await writeArtifacts(first.artifacts, firstManifest)
 
     const secondManifest = await compareArtifacts([], root, true)
-    expect(secondManifest.entries).toEqual([{ path: 'generated.txt', status: 'deleted' }])
+    expect(secondManifest.entries).toEqual([
+      expect.objectContaining({ path: 'generated.txt', status: 'deleted', previousHash: expect.stringMatching(/^[a-f0-9]{64}$/), bytes: 9 }),
+    ])
     await writeArtifacts([], secondManifest)
     await expect(access(path.join(root, 'generated.txt'))).rejects.toThrow()
     await expect(access(path.join(root, ARTIFACT_MANIFEST_FILENAME))).rejects.toThrow()

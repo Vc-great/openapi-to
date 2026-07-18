@@ -1,11 +1,19 @@
 import { execFile } from 'node:child_process'
-import { readFile, stat } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import {
+  compareArtifacts,
+  materializeArtifacts,
+  OutputTransactionRolledBackError,
+  writeArtifacts,
+  writeArtifactsTransaction,
+} from '@openapi-to/core'
 
 const execFileAsync = promisify(execFile)
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -50,6 +58,34 @@ async function connect(withConfig) {
   const started = performance.now()
   await client.connect(transport)
   return { client, transport, stderr, startupMs: performance.now() - started }
+}
+
+async function connectWrite(workspaceRoot) {
+  const stderr = []
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [bin, '--workspace-root', workspaceRoot, '--config', '.OpenAPI/openapi.config.cjs', '--allow-write', '--log-format', 'json', '--log-level', 'info'],
+    stderr: 'pipe',
+  })
+  transport.stderr?.on('data', (chunk) => stderr.push(Buffer.from(chunk)))
+  const client = new Client({ name: 'openapi-to-write-benchmark', version: '1.0.0' })
+  await client.connect(transport)
+  return { client, transport, stderr }
+}
+
+async function createWriteWorkspace() {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-write-benchmark-'))
+  await mkdir(path.join(root, '.OpenAPI'))
+  await copyFile(path.join(fixtures, 'generation/openapi.json'), path.join(root, 'openapi.json'))
+  await writeFile(path.join(root, '.OpenAPI/openapi.config.cjs'), `module.exports = {
+  servers: [{ name: 'evaluation', input: { path: './openapi.json' }, output: { dir: 'generated', clean: true } }],
+  plugins: [{ name: 'write-benchmark', hooks: { buildStart(ctx) {
+    const paths = Object.keys(ctx.openAPIDocument.paths || {}).sort();
+    for (const [index, apiPath] of paths.entries()) ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/operation-' + String(index).padStart(4, '0') + '.txt', content: apiPath + '\\n' });
+  } } }]
+};
+`)
+  return root
 }
 
 const measurements = {}
@@ -105,13 +141,115 @@ for (const [id, name, argumentsValue] of cases) {
 const stderrBytes = connected.stderr.reduce((total, chunk) => total + chunk.byteLength, 0)
 await connected.client.close()
 
+const prepareTimes = []
+const applyTimes = []
+const prepareSizes = []
+const applySizes = []
+const planBytes = []
+const writeRss = []
+const stagingTimes = []
+const commitTimes = []
+let writeStderrBytes = 0
+for (let index = 0; index < iterations; index += 1) {
+  const root = await createWriteWorkspace()
+  try {
+    const write = await connectWrite(root)
+    const prepareStarted = performance.now()
+    const prepared = await write.client.callTool({ name: 'openapi_prepare_generation', arguments: { targets: ['evaluation'] } }, undefined, { timeout: 120_000 })
+    prepareTimes.push(performance.now() - prepareStarted)
+    const preparedStructured = prepared.structuredContent ?? {}
+    prepareSizes.push(Buffer.byteLength(JSON.stringify(preparedStructured)))
+    const plan = preparedStructured.plan
+    if (preparedStructured.success !== true || !plan || plan.summary?.added !== 250) throw new Error('Write benchmark Prepare did not produce the expected 250-file plan.')
+    planBytes.push(Buffer.byteLength(JSON.stringify(plan)))
+    const applyStarted = performance.now()
+    const applied = await write.client.callTool({
+      name: 'openapi_apply_generation',
+      arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash },
+    }, undefined, { timeout: 120_000 })
+    applyTimes.push(performance.now() - applyStarted)
+    const appliedStructured = applied.structuredContent ?? {}
+    applySizes.push(Buffer.byteLength(JSON.stringify(appliedStructured)))
+    if (appliedStructured.success !== true || appliedStructured.summary?.added !== 250) throw new Error('Write benchmark Apply did not commit the expected 250 files.')
+    const sample = await rssBytes(write.transport._process?.pid)
+    if (sample !== null) writeRss.push(sample)
+    await write.client.close()
+    const logText = Buffer.concat(write.stderr).toString('utf8')
+    writeStderrBytes += Buffer.byteLength(logText)
+    for (const line of logText.split(/\r?\n/).filter(Boolean)) {
+      try {
+        const event = JSON.parse(line)
+        if (event.event === 'generation_apply_succeeded') {
+          if (Number.isFinite(event.stagingMs)) stagingTimes.push(event.stagingMs)
+          if (Number.isFinite(event.commitMs)) commitTimes.push(event.commitMs)
+        }
+      } catch {
+        throw new Error('Write benchmark stderr contained a non-JSON operational log line.')
+      }
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+}
+measurements.prepareGeneration = {
+  timingMs: summary(prepareTimes),
+  structuredContentBytes: summary(prepareSizes),
+  planBytes: summary(planBytes),
+  peakRssBytesApprox: writeRss.length ? Math.max(...writeRss) : null,
+  artifactsOrChanges: 250,
+}
+measurements.applyGeneration = {
+  timingMs: summary(applyTimes),
+  structuredContentBytes: summary(applySizes),
+  peakRssBytesApprox: writeRss.length ? Math.max(...writeRss) : null,
+  artifactsOrChanges: 250,
+  stagingMs: stagingTimes.length ? summary(stagingTimes) : null,
+  commitMs: commitTimes.length ? summary(commitTimes) : null,
+}
+
+const rollbackTimes = []
+const rollbackOnlyTimes = []
+for (let index = 0; index < iterations; index += 1) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-rollback-benchmark-'))
+  try {
+    const before = materializeArtifacts(
+      Array.from({ length: 50 }, (_, artifactIndex) => ({ kind: 'text', path: `file-${String(artifactIndex).padStart(3, '0')}.txt`, content: `before ${artifactIndex}\n` })),
+      root,
+    )
+    await writeArtifacts(before.artifacts, await compareArtifacts(before.artifacts, root, true), { generatorVersion: 'benchmark' })
+    const after = materializeArtifacts(
+      Array.from({ length: 50 }, (_, artifactIndex) => ({ kind: 'text', path: `file-${String(artifactIndex).padStart(3, '0')}.txt`, content: `after ${artifactIndex}\n` })),
+      root,
+    )
+    const afterManifest = await compareArtifacts(after.artifacts, root, true)
+    const started = performance.now()
+    try {
+      await writeArtifactsTransaction(after.artifacts, afterManifest, { generatorVersion: 'benchmark', testFailpoint: 'rename-middle' })
+      throw new Error('Rollback benchmark failpoint unexpectedly committed.')
+    } catch (error) {
+      if (!(error instanceof OutputTransactionRolledBackError)) throw error
+      rollbackTimes.push(performance.now() - started)
+      rollbackOnlyTimes.push(error.rollbackMs)
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+}
+measurements.rollbackGeneration = {
+  timingMs: summary(rollbackTimes),
+  rollbackMs: summary(rollbackOnlyTimes),
+  structuredContentBytes: { min: 0, median: 0, p95: 0, max: 0 },
+  peakRssBytesApprox: null,
+  artifactsOrChanges: 50,
+}
+
 const report = {
   schemaVersion: 1,
   runtime: { nodeMajor: Number(process.versions.node.split('.')[0]), cpuTime: { available: false, reason: 'Portable child-process CPU accounting is not reliable across supported platforms.' } },
   corpus: { largeInputBytes: (await stat(path.join(fixtures, 'large/openapi.json'))).size, largeOperations: 700, largeSchemas: 301, generationOperations: 250 },
   iterations,
   measurements,
-  stderrBytes,
+  stderrBytes: stderrBytes + writeStderrBytes,
 }
 
 if (check) {

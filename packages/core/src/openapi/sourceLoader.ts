@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { lookup as lookupWithCallback } from 'node:dns'
 import { lookup } from 'node:dns/promises'
 import { lstat, open, realpath } from 'node:fs/promises'
@@ -68,6 +69,22 @@ export interface LoadedSource {
   text?: string
   value?: Record<string, unknown>
   diagnostics: Diagnostic[]
+  snapshot?: SourceSnapshot
+}
+
+export interface SourceSnapshot {
+  source: string
+  uri: string
+  sha256: string
+  bytes: number
+  /** Identifies the compilation entry source when snapshots are returned by compileOpenAPI. */
+  isRoot?: boolean
+  localIdentity?: {
+    device: string
+    inode: string
+    size: string
+    modifiedNanoseconds: string
+  }
 }
 
 export interface LoadedOpenAPIDocument {
@@ -77,6 +94,18 @@ export interface LoadedOpenAPIDocument {
   originalDocument?: OpenAPIAllDocument
   version?: string
   diagnostics: Diagnostic[]
+  snapshot?: SourceSnapshot
+}
+
+function contentSnapshot(source: string, uri: string, content: string | Uint8Array, localIdentity?: SourceSnapshot['localIdentity']): SourceSnapshot {
+  const bytes = typeof content === 'string' ? Buffer.from(content) : content
+  return {
+    source,
+    uri,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    bytes: bytes.byteLength,
+    ...(localIdentity ? { localIdentity } : {}),
+  }
 }
 
 const defaultRemoteOptions: Required<Omit<RemoteSourceOptions, 'allowedHosts' | 'headers'>> = {
@@ -238,7 +267,14 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
       if (Buffer.byteLength(text) > policy.maxResponseBytes) {
         return { source, uri: currentURL.toString(), diagnostics: [sourceDiagnostic('REMOTE_SOURCE_TOO_LARGE', `Remote source exceeds the ${policy.maxResponseBytes} byte limit.`, source)] }
       }
-      return { source, uri: currentURL.toString(), contentType: response.headers['content-type'], text, diagnostics: [] }
+      return {
+        source,
+        uri: currentURL.toString(),
+        contentType: response.headers['content-type'],
+        text,
+        diagnostics: [],
+        snapshot: contentSnapshot(source, currentURL.toString(), text),
+      }
     } catch (error) {
       throwIfAborted(signal)
       const axiosCode = axios.isAxiosError(error) ? error.code : undefined
@@ -254,7 +290,8 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
 export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptions = {}): Promise<LoadedSource> {
   throwIfAborted(options.signal)
   if (typeof input === 'object' && !(input instanceof URL)) {
-    return { source: '<object>', uri: 'memory://openapi', value: input, diagnostics: [] }
+    const text = JSON.stringify(input)
+    return { source: '<object>', uri: 'memory://openapi', value: input, diagnostics: [], snapshot: contentSnapshot('<object>', 'memory://openapi', text) }
   }
   const raw = input instanceof URL ? input.toString() : input
   let parsedURL: URL | undefined
@@ -298,7 +335,18 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
       if (after.dev !== opened.dev || after.ino !== opened.ino || after.size !== opened.size || after.mtimeNs !== opened.mtimeNs) {
         return { source: filePath, uri, diagnostics: [sourceDiagnostic('LOCAL_SOURCE_CHANGED_DURING_READ', 'The OpenAPI source changed while it was being read; the result was discarded.', filePath)] }
       }
-      return { source: filePath, uri, text, diagnostics: [] }
+      return {
+        source: filePath,
+        uri,
+        text,
+        diagnostics: [],
+        snapshot: contentSnapshot(filePath, uri, text, {
+          device: opened.dev.toString(),
+          inode: opened.ino.toString(),
+          size: opened.size.toString(),
+          modifiedNanoseconds: opened.mtimeNs.toString(),
+        }),
+      }
     } finally {
       await handle.close()
     }
@@ -355,14 +403,14 @@ export async function loadOpenAPIDocument(input: OpenAPIInput, options: SourceLo
   throwIfAborted(options.signal)
   const source = await loadSource(input, options)
   throwIfAborted(options.signal)
-  if (source.diagnostics.length > 0) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(source.diagnostics) }
+  if (source.diagnostics.length > 0) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(source.diagnostics), snapshot: source.snapshot }
   const parsed = parseOpenAPISource(source, options.debug)
   throwIfAborted(options.signal)
-  if (!parsed.value) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(parsed.diagnostics) }
+  if (!parsed.value) return { source: source.source, uri: source.uri, diagnostics: sortDiagnostics(parsed.diagnostics), snapshot: source.snapshot }
   const originalDocument = parsed.value as OpenAPIAllDocument
   const converted = await convertSwaggerDocument(parsed.value, source.source, options.debug)
   throwIfAborted(options.signal)
   const document = converted.document ?? (parsed.value as CompatibleOpenAPIDocument)
   const version = typeof parsed.value.openapi === 'string' ? parsed.value.openapi : typeof parsed.value.swagger === 'string' ? parsed.value.swagger : undefined
-  return { source: source.source, uri: source.uri, originalDocument, document, version, diagnostics: sortDiagnostics(converted.diagnostics) }
+  return { source: source.source, uri: source.uri, originalDocument, document, version, diagnostics: sortDiagnostics(converted.diagnostics), snapshot: source.snapshot }
 }

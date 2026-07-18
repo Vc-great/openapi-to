@@ -4,14 +4,21 @@
   "reference": {
     "nodeMajor": 24,
     "iterations": 5,
-    "serverStartupP95Ms": 557,
+    "serverStartupP95Ms": 631,
     "toolsListP95Ms": 31,
-    "validateP95Ms": 52,
-    "inspectP95Ms": 28,
-    "diffP95Ms": 37,
-    "generateDryRunP95Ms": 59,
-    "checkP95Ms": 48,
-    "maxObservedRssBytesApprox": 355123200,
+    "validateP95Ms": 60,
+    "inspectP95Ms": 31,
+    "diffP95Ms": 39,
+    "generateDryRunP95Ms": 63,
+    "checkP95Ms": 46,
+    "prepareGenerationP95Ms": 117,
+    "applyGenerationP95Ms": 1830,
+    "applyStagingP95Ms": 1620,
+    "applyCommitP95Ms": 125,
+    "rollbackGenerationP95Ms": 433,
+    "rollbackOnlyP95Ms": 38,
+    "preparedPlanBytes": 49201,
+    "maxObservedRssBytesApprox": 369508352,
     "maxStructuredContentBytes": 77814,
     "expectedDiffChanges": 1232,
     "expectedGenerationArtifacts": 250
@@ -24,6 +31,9 @@
     "inspect": { "maxP95Ms": 15000, "maxStructuredContentBytes": 262144 },
     "diff": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 },
     "generateDryRun": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 },
-    "check": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 }
+    "check": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 },
+    "prepareGeneration": { "maxP95Ms": 45000, "maxStructuredContentBytes": 524288 },
+    "applyGeneration": { "maxP95Ms": 60000, "maxStructuredContentBytes": 524288 },
+    "rollbackGeneration": { "maxP95Ms": 30000, "maxStructuredContentBytes": 0 }
   }
 }

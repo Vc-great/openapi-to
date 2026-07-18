@@ -13,4 +13,22 @@ describe('MCP timeout options', () => {
   it('accepts the documented timeout boundaries', () => {
     expect(resolveMcpServerOptions({ workspaceRoot: process.cwd(), timeouts: { validateMs: MIN_TOOL_TIMEOUT_MS, generationMs: MAX_TOOL_TIMEOUT_MS } }).timeouts).toMatchObject({ validateMs: MIN_TOOL_TIMEOUT_MS, generationMs: MAX_TOOL_TIMEOUT_MS })
   })
+
+  it('requires trusted config for the operator-only write grant', () => {
+    expect(() => resolveMcpServerOptions({ workspaceRoot: process.cwd(), allowWrite: true })).toThrow(/configPath/)
+    expect(resolveMcpServerOptions({ workspaceRoot: process.cwd(), configPath: 'package.json', allowWrite: true }).allowWrite).toBe(true)
+  })
+
+  it.each([
+    { planTtlMs: 999 },
+    { maxPlans: 0 },
+    { maxPlanBytes: 1 },
+    { maxTotalPlanBytes: Number.POSITIVE_INFINITY },
+    { maxFiles: -1 },
+    { maxBytes: 0 },
+    { lockWaitMs: 99 },
+    { commitTimeoutMs: MAX_TOOL_TIMEOUT_MS + 1 },
+  ])('rejects unsafe controlled-write option $write', (write) => {
+    expect(() => resolveMcpServerOptions({ workspaceRoot: process.cwd(), write })).toThrow(/must be an integer/)
+  })
 })

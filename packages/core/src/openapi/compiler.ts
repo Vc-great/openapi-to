@@ -41,6 +41,10 @@ export async function compileOpenAPI(input: OpenAPIInput, options: SourceLoaderO
     references: {
       externalReferenceCount: references.externalReferenceCount,
       loadedSources: references.loadedSources,
+      sourceSnapshots: [loaded.snapshot ? { ...loaded.snapshot, isRoot: true } : undefined, ...references.sourceSnapshots]
+        .filter((snapshot): snapshot is NonNullable<typeof snapshot> => snapshot !== undefined)
+        .filter((snapshot, index, snapshots) => snapshots.findIndex((candidate) => candidate.uri === snapshot.uri) === index)
+        .sort((left, right) => left.uri.localeCompare(right.uri)),
     },
   }
 }

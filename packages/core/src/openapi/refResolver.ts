@@ -2,7 +2,7 @@ import { sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
 import { throwIfAborted } from '../execution.ts'
 import { setImmediate as yieldToEventLoop } from 'node:timers/promises'
 import type { CompatibleOpenAPIDocument, RemoteSourceOptions } from '../types'
-import { loadOpenAPIDocument, type LoadedSource } from './sourceLoader.ts'
+import { loadOpenAPIDocument, type LoadedSource, type SourceSnapshot } from './sourceLoader.ts'
 
 export interface ResolveReferencesOptions {
   remote?: RemoteSourceOptions
@@ -18,6 +18,7 @@ export interface ResolvedReferences {
   diagnostics: Diagnostic[]
   externalReferenceCount: number
   loadedSources: string[]
+  sourceSnapshots: SourceSnapshot[]
 }
 
 type DocumentRecord = { document: Record<string, unknown>; baseUri: string; source: string }
@@ -69,6 +70,7 @@ export async function resolveOpenAPIReferences(
   const sourceCache = options.cache ?? new Map<string, Promise<LoadedSource>>()
   const documentCache = new Map<string, Promise<DocumentRecord | undefined>>()
   const loadedSources = new Set<string>([baseUri])
+  const sourceSnapshots = new Map<string, SourceSnapshot>()
   const rootUri = new URL(baseUri)
   rootUri.hash = ''
   const rootKey = rootUri.toString()
@@ -93,6 +95,7 @@ export async function resolveOpenAPIReferences(
     const pending = (async () => {
       const loaded = await loadOpenAPIDocument(normalized, { remote: options.remote, localFileRoot: options.localFileRoot, cache: sourceCache, debug: options.debug, signal: options.signal })
       loadedSources.add(loaded.source)
+      if (loaded.snapshot) sourceSnapshots.set(loaded.snapshot.uri, loaded.snapshot)
       for (const diagnostic of loaded.diagnostics) {
         addDiagnostic({ ...diagnostic, location: { ...diagnostic.location, path: refPath } })
       }
@@ -210,5 +213,6 @@ export async function resolveOpenAPIReferences(
     diagnostics: sortDiagnostics(diagnostics),
     externalReferenceCount,
     loadedSources: [...loadedSources].sort(),
+    sourceSnapshots: [...sourceSnapshots.values()].sort((left, right) => left.uri.localeCompare(right.uri)),
   }
 }

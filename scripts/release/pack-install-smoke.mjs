@@ -27,6 +27,10 @@ const forbiddenTarballPaths = [
 	/(^|\/)ownership-manifest/i,
 	/\.log$/,
 	/\.map$/,
+	/(^|\/)\.openapi-to-transaction(?:\.json|\/|$)/,
+	/(^|\/)\.openapi-to-write\.lock(\/|$)/,
+	/(^|\/)tool-selection-cases\.json$/,
+	/(^|\/)performance-baseline\.json$/,
 ];
 
 function run(command, args, cwd, options = {}) {
@@ -169,6 +173,16 @@ paths:
 `;
 	await writeFile(join(installationDirectory, "openapi.yaml"), minimumDocument);
 	await writeFile(
+		join(installationDirectory, "openapi.config.cjs"),
+		`module.exports = {
+  servers: [{ name: "smoke", input: { path: "./openapi.yaml" }, output: { dir: "generated", clean: true } }],
+  plugins: [{ name: "release-write-smoke", hooks: { buildStart(ctx) {
+    ctx.addArtifact({ kind: "text", path: "client.txt", content: "release smoke\\n" });
+  } } }]
+};
+`,
+	);
+	await writeFile(
 		join(installationDirectory, "esm-smoke.mjs"),
 		`import {
   compileOpenAPI,
@@ -224,7 +238,7 @@ const diagnostic: Diagnostic = { code: "SMOKE", severity: "info", message: "smok
 declare const artifact: GeneratedArtifact;
 declare const manifest: GenerationManifest;
 declare const generation: GenerationResult;
-const mcpOptions: OpenapiToMcpServerOptions = { workspaceRoot: "." };
+const mcpOptions: OpenapiToMcpServerOptions = { workspaceRoot: ".", configPath: "openapi.config.cjs", allowWrite: true };
 void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, artifact, manifest, generation, createOpenapiToMcpServer, mcpOptions];
 `,
 	);
@@ -238,7 +252,8 @@ await server.close();
 	);
 	await writeFile(
 		join(installationDirectory, "mcp-stdio-smoke.mjs"),
-		`import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+		`import { access, readFile } from "node:fs/promises";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 const transport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd()], stderr: "pipe" });
 const client = new Client({ name: "release-smoke", version: "1.0.0" });
@@ -248,6 +263,29 @@ if (tools.tools.map(({ name }) => name).join(",") !== "openapi_validate,openapi_
 const result = await client.callTool({ name: "openapi_validate", arguments: { source: "openapi.yaml" } });
 if (result.isError || result.structuredContent?.success !== true) throw new Error("MCP validate smoke failed");
 await client.close();
+
+const writeStderr = [];
+const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs", "--allow-write"], stderr: "pipe" });
+writeTransport.stderr?.on("data", (chunk) => writeStderr.push(String(chunk)));
+const writeClient = new Client({ name: "release-write-smoke", version: "1.0.0" });
+await writeClient.connect(writeTransport);
+const writeTools = await writeClient.listTools();
+if (writeTools.tools.length !== 7 || !writeTools.tools.some(({ name }) => name === "openapi_prepare_generation") || !writeTools.tools.some(({ name }) => name === "openapi_apply_generation")) throw new Error("Unexpected controlled-write MCP tool matrix");
+const prepared = await writeClient.callTool({ name: "openapi_prepare_generation", arguments: { targets: ["smoke"] } });
+const plan = prepared.structuredContent?.plan;
+if (prepared.isError || !plan || plan.summary.added !== 1) throw new Error("MCP Prepare smoke failed");
+try { await access(".OpenAPI/generated"); throw new Error("Prepare wrote the output directory"); } catch (error) { if (!(error && error.code === "ENOENT")) throw error; }
+const applied = await writeClient.callTool({ name: "openapi_apply_generation", arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash } });
+if (applied.isError || applied.structuredContent?.applied !== true) throw new Error("MCP Apply smoke failed");
+if (await readFile(".OpenAPI/generated/client.txt", "utf8") !== "release smoke\\n") throw new Error("MCP Apply wrote unexpected bytes");
+const ownership = JSON.parse(await readFile(".OpenAPI/generated/.openapi-to-manifest.json", "utf8"));
+if (ownership.version !== 2 || ownership.files.length !== 1) throw new Error("MCP Apply ownership manifest failed");
+const replay = await writeClient.callTool({ name: "openapi_apply_generation", arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash } });
+if (!replay.isError || !replay.structuredContent?.diagnostics?.some(({ code }) => code === "MCP_PLAN_ALREADY_USED")) throw new Error("MCP Apply replay was not rejected");
+const current = await writeClient.callTool({ name: "openapi_check_generation", arguments: { targets: ["smoke"] } });
+if (current.structuredContent?.outdated !== false) throw new Error("MCP Apply output is not current");
+if (writeStderr.join("").includes(plan.token)) throw new Error("MCP token leaked to stderr");
+await writeClient.close();
 `,
 	);
 	await writeFile(
@@ -323,7 +361,7 @@ await client.close();
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
-				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "validate-json", "inspect-json"],
+				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-prepare-apply", "mcp-token-replay", "validate-json", "inspect-json"],
 			},
 			null,
 			2,

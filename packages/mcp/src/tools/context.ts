@@ -1,6 +1,8 @@
 import type { McpLogger } from '../logger.ts'
 import type { ResolvedMcpServerOptions } from '../options.ts'
 import type { GenerationLock } from '../generation/generation-lock.ts'
+import type { GenerationPlanStore } from '../generation/plan-store.ts'
+import type { InternalGenerationWritePlan } from '../generation/write-plan.ts'
 import type { TrustedConfigProvider } from '../generation/trusted-config.ts'
 import { McpRequestCancelledError, McpToolTimeoutError } from '../errors.ts'
 
@@ -26,6 +28,7 @@ export interface ToolContext {
   logger: McpLogger
   trustedConfig: TrustedConfigProvider
   generationLock: GenerationLock
+  generationPlans?: GenerationPlanStore<InternalGenerationWritePlan>
 }
 
 function timeoutForTool(context: ToolContext, tool: string): number {

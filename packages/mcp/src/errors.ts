@@ -1,4 +1,13 @@
-import { isOpenapiOperationCancelled, type Diagnostic } from '@openapi-to/core'
+import {
+  isOpenapiOperationCancelled,
+  OutputCommitTimeoutError,
+  OutputPreconditionChangedError,
+  OutputRecoveryRequiredError,
+  OutputTransactionRollbackError,
+  OutputTransactionRolledBackError,
+  OutputWriteLockedError,
+  type Diagnostic,
+} from '@openapi-to/core'
 import type { ToolExecutionContext } from './tools/context.ts'
 
 export class McpToolError extends Error {
@@ -13,6 +22,13 @@ export class McpToolError extends Error {
 
 export function safeExecutionDiagnostic(error: unknown, execution?: ToolExecutionContext): Diagnostic {
   if (error instanceof McpToolError && error.diagnostics[0]) return error.diagnostics[0]
+  if (error instanceof OutputWriteLockedError) return { code: 'MCP_WRITE_LOCKED', severity: 'error', message: 'Another CLI or MCP process currently holds the output write lock.', hint: 'Wait for that writer to finish, then prepare a new plan if output state changed.' }
+  if (error instanceof OutputRecoveryRequiredError) return { code: 'MCP_WRITE_RECOVERY_REQUIRED', severity: 'error', message: 'An incomplete or unsafe generation transaction requires recovery before another Apply.', hint: 'Do not delete the journal manually; follow the documented recovery procedure.' }
+  if (error instanceof OutputPreconditionChangedError) return { code: 'MCP_PLAN_FILE_CHANGED', severity: 'error', message: 'A planned output path changed before the transaction could commit.', hint: 'Prepare and review a new plan.' }
+  if (error instanceof OutputTransactionRollbackError) return { code: 'MCP_WRITE_ROLLBACK_FAILED', severity: 'error', message: 'The write transaction failed and automatic rollback could not prove complete restoration.', hint: 'Stop writers and follow the transaction journal recovery procedure.' }
+  if (error instanceof OutputTransactionRolledBackError && error.originalError instanceof OutputCommitTimeoutError) return { code: 'MCP_WRITE_COMMIT_TIMEOUT', severity: 'error', message: 'The transaction commit deadline expired and the writer restored the prior output state.', hint: 'Verify output storage health and prepare a new plan before retrying.' }
+  if (error instanceof OutputTransactionRolledBackError) return { code: 'MCP_WRITE_APPLY_FAILED', severity: 'error', message: 'The Apply transaction failed after commit began and restored the prior output state.', hint: 'Review storage health and prepare a new plan before trying again.' }
+  if (error instanceof OutputCommitTimeoutError) return { code: 'MCP_WRITE_COMMIT_TIMEOUT', severity: 'error', message: 'The transaction commit deadline expired and the writer rolled back the Apply.', hint: 'Verify output storage health and prepare a new plan before retrying.' }
   if (execution?.timedOut || error instanceof McpToolTimeoutError) {
     return { code: 'MCP_TOOL_TIMEOUT', severity: 'error', message: 'The MCP Server time limit expired before the tool completed.', hint: 'Narrow the request or ask the server operator to review the startup timeout policy.' }
   }

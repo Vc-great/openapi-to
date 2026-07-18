@@ -1,10 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import { checkGenerationInputSchema, checkGenerationOutputSchema, checkGenerationTool } from './check-generation.ts'
+import { applyGenerationInputSchema, applyGenerationOutputSchema, applyGenerationTool } from './apply-generation.ts'
 import type { ToolContext } from './context.ts'
 import { diffInputSchema, diffOutputSchema, diffTool } from './diff.ts'
 import { generateDryRunInputSchema, generateDryRunOutputSchema, generateDryRunTool } from './generate-dry-run.ts'
 import { inspectInputSchema, inspectOutputSchema, inspectTool } from './inspect.ts'
+import { prepareGenerationInputSchema, prepareGenerationOutputSchema, prepareGenerationTool } from './prepare-generation.ts'
 import { validateInputSchema, validateOutputSchema, validateTool } from './validate.ts'
 
 const READ_ONLY_ANNOTATIONS = {
@@ -73,8 +75,35 @@ export function registerReadOnlyTools(server: McpServer, context: ToolContext): 
   )
 }
 
+export function registerControlledWriteTools(server: McpServer, context: ToolContext): void {
+  server.registerTool(
+    'openapi_prepare_generation',
+    {
+      title: 'Prepare Controlled OpenAPI Generation',
+      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Executes the startup-trusted generator and creates a short-lived in-memory plan token, but writes, deletes, and creates no Workspace files or ownership manifest. Current release supports exactly one target/output root per plan. Do not call Apply until the user explicitly confirms this returned plan hash.',
+      inputSchema: prepareGenerationInputSchema,
+      outputSchema: prepareGenerationOutputSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    (input, extra) => prepareGenerationTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_apply_generation',
+    {
+      title: 'Apply Confirmed OpenAPI Generation Plan',
+      description: 'Use only after the user explicitly confirms one unexpired openapi_prepare_generation result and its exact plan hash. Applies that same one-time plan through a locked transaction; it may create, replace, and delete only startup-configured managed generated files. It cannot accept targets, paths, content, force, or skip-validation overrides. Never use for preview, freshness checks, ambiguous requests, or automatic retry after a stale plan.',
+      inputSchema: applyGenerationInputSchema,
+      outputSchema: applyGenerationOutputSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    },
+    (input, extra) => applyGenerationTool(context, input, extra),
+  )
+}
+
 export * from './validate.ts'
 export * from './inspect.ts'
 export * from './diff.ts'
 export * from './generate-dry-run.ts'
 export * from './check-generation.ts'
+export * from './prepare-generation.ts'
+export * from './apply-generation.ts'

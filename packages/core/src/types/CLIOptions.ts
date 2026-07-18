@@ -20,4 +20,6 @@ export type CLIOptions = {
   localFileRoot?: string
   /** Cancels only this build invocation. */
   signal?: AbortSignal
+  /** @internal A shared transaction lock held by a trusted writer such as MCP Apply. */
+  outputWriteLock?: import('../artifacts/transaction.ts').OutputWriteLock
 }

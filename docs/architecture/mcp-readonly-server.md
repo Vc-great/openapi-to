@@ -1,6 +1,6 @@
 # Read-only MCP server architecture
 
-Status: accepted for the P2 MVP (2026-07-18).
+Status: accepted for the P2 read-only foundation (2026-07-18), retained unchanged by the separately gated P3 controlled-write extension.
 
 ## Decision
 
@@ -54,7 +54,7 @@ Without config: `openapi_validate`, `openapi_inspect`, `openapi_diff`. With conf
 
 All results use stable schemas, a short text summary, bounded `structuredContent`, sorted diagnostics/changes/artifacts, totals and omitted counts, and `MCP_RESULT_TRUNCATED` warnings. Expected execution failures return `isError: true`; invalid tool arguments and MCP lifecycle failures remain protocol-level errors. Sources, diagnostics, causes, and logs redact Workspace prefixes, URL credentials/query strings, authorization/cookie/token-like values, stack/config/document/generated bodies, and binary content.
 
-No write tool is included because MCP Hosts may invoke tools autonomously and the existing Core writer can overwrite or delete managed files. Any future write capability needs separate explicit authorization, approval semantics, recovery behavior, and a new threat model; it is not an additive flag on this server.
+The five tools in this ADR remain read-only. P3 adds a separate operator-gated Prepare/Apply protocol with explicit authorization, plan binding, revalidation, filesystem locking, rollback, and crash recovery; see [controlled MCP generation write architecture](./mcp-controlled-write.md). It does not turn any existing tool into a writer or add a direct-write shortcut.
 
 ## Protocol smoke evidence
 

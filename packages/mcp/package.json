@@ -1,7 +1,7 @@
 {
   "name": "@openapi-to/mcp",
   "version": "3.2.2",
-  "description": "Read-only MCP adapter for openapi-to",
+  "description": "Bounded stdio MCP adapter with read-only analysis and controlled two-phase generation writes",
   "keywords": ["openapi", "mcp", "codex", "stdio"],
   "license": "MIT",
   "sideEffects": false,

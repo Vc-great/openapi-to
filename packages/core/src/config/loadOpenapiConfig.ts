@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { lstat, open, realpath } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -21,6 +22,19 @@ export interface LoadOpenapiConfigOptions {
 export interface LoadedOpenapiConfig {
   config: OpenapiToConfig
   filepath: string
+  sources: ConfigSourceSnapshot[]
+}
+
+export interface ConfigSourceSnapshot {
+  path: string
+  sha256: string
+  bytes: number
+  identity: {
+    device: string
+    inode: string
+    size: string
+    modifiedNanoseconds: string
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -32,7 +46,7 @@ function isOutsideRoot(root: string, candidate: string): boolean {
   return relativePath === '..' || relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)
 }
 
-async function createBundledLoader(localFileRoot?: string, signal?: AbortSignal): Promise<Loader> {
+async function createBundledLoader(sources: Map<string, ConfigSourceSnapshot>, localFileRoot?: string, signal?: AbortSignal): Promise<Loader> {
   const canonicalRoot = localFileRoot ? await realpath(path.resolve(localFileRoot)) : undefined
   return async (configFile: string) => {
     throwIfAborted(signal)
@@ -56,6 +70,17 @@ async function createBundledLoader(localFileRoot?: string, signal?: AbortSignal)
                   throw new Error('Config source changed while it was being loaded.')
                 }
                 throwIfAborted(signal)
+                sources.set(canonicalPath, {
+                  path: canonicalPath,
+                  sha256: createHash('sha256').update(contents).digest('hex'),
+                  bytes: Buffer.byteLength(contents),
+                  identity: {
+                    device: opened.dev.toString(),
+                    inode: opened.ino.toString(),
+                    size: opened.size.toString(),
+                    modifiedNanoseconds: opened.mtimeNs.toString(),
+                  },
+                })
                 const extension = path.extname(canonicalPath).toLowerCase()
                 const loader = extension === '.ts' ? 'ts' : extension === '.tsx' ? 'tsx' : extension === '.jsx' ? 'jsx' : extension === '.json' ? 'json' : 'js'
                 return { contents, loader }
@@ -79,7 +104,8 @@ export async function loadOpenapiConfig(options: LoadOpenapiConfigOptions = {}):
   throwIfAborted(options.signal)
   const cwd = path.resolve(options.cwd ?? process.cwd())
   const moduleName = options.moduleName ?? 'openapi'
-  const loader = await createBundledLoader(options.localFileRoot, options.signal)
+  const sources = new Map<string, ConfigSourceSnapshot>()
+  const loader = await createBundledLoader(sources, options.localFileRoot, options.signal)
   const explorer = cosmiconfig(moduleName, {
     cache: false,
     searchPlaces: ['js', 'cjs', 'ts'].map((extension) => `${folderName}/${moduleName}.config.${extension}`),
@@ -88,5 +114,9 @@ export async function loadOpenapiConfig(options: LoadOpenapiConfigOptions = {}):
   const result = options.configPath ? await explorer.load(path.resolve(cwd, options.configPath)) : await explorer.search(cwd)
   throwIfAborted(options.signal)
   if (!result || result.isEmpty || !isRecord(result.config)) throw new Error('OpenAPI configuration is not defined or does not export an object.')
-  return { config: result.config as OpenapiToConfig, filepath: result.filepath }
+  return {
+    config: result.config as OpenapiToConfig,
+    filepath: result.filepath,
+    sources: [...sources.values()].sort((left, right) => left.path.localeCompare(right.path)),
+  }
 }

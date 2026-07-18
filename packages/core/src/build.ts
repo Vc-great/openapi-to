@@ -1,8 +1,10 @@
 import converter from 'do-swagger2openapi'
 
-import { ArtifactComparisonChangedError, compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts, type GenerationManifest, type GenerationResult } from './artifacts/index.ts'
+import { version } from '../package.json'
+
+import { ArtifactComparisonChangedError, acquireOutputWriteLock, compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts, type GenerationManifest, type GenerationResult, type OutputWriteLock } from './artifacts/index.ts'
 import { DiagnosticError, hasDiagnosticErrors, sortDiagnostics, type Diagnostic } from './diagnostics.ts'
-import { compileOpenAPI, loadOpenAPIDocument } from './openapi/index.ts'
+import { compileOpenAPI, loadOpenAPIDocument, type OpenAPICompilation } from './openapi/index.ts'
 import { PluginManager } from './pluginManager'
 
 import type { Logger } from './logger.ts'
@@ -22,6 +24,7 @@ export async function swagger2ToOpenapi3(openapiDocument: OpenAPIAllDocument): P
 
 export interface BuildResult {
   pluginManager: PluginManager
+  compilation: OpenAPICompilation
   generationResult?: GenerationResult
   diagnostics: Diagnostic[]
   error?: Error
@@ -53,7 +56,7 @@ export async function build(
   let diagnostics = [...compilation.diagnostics]
   if (!compilation.document || hasDiagnosticErrors(diagnostics)) {
     const error = new DiagnosticError('OpenAPI compilation failed.', diagnostics)
-    return { pluginManager, diagnostics: sortDiagnostics(diagnostics), error }
+    return { pluginManager, compilation, diagnostics: sortDiagnostics(diagnostics), error }
   }
 
   let execution: Awaited<ReturnType<PluginManager['execute']>>
@@ -63,7 +66,7 @@ export async function build(
     if (isOpenapiOperationCancelled(error)) throw error
     diagnostics.push({ code: 'PLUGIN_EXECUTION_FAILED', severity: 'error', message: 'Plugin execution failed.', cause: error instanceof Error ? error.message : undefined })
     const diagnosticError = new DiagnosticError('Plugin execution failed.', diagnostics)
-    return { pluginManager, diagnostics: sortDiagnostics(diagnostics), error: diagnosticError }
+    return { pluginManager, compilation, diagnostics: sortDiagnostics(diagnostics), error: diagnosticError }
   }
   diagnostics.push(...execution.diagnostics)
   const artifacts = sortGeneratedArtifacts([...execution.sourceFiles.map((sourceFile) => sourceFileToArtifact(sourceFile)), ...execution.artifacts])
@@ -74,6 +77,7 @@ export async function build(
     const error = new DiagnosticError('Generation failed.', diagnostics)
     return {
       pluginManager,
+      compilation,
       diagnostics: sortDiagnostics(diagnostics),
       generationResult: { artifacts, diagnostics: sortDiagnostics(diagnostics), manifest: emptyManifest(openapiToSingleConfig.output.dir), written: false },
       error,
@@ -83,13 +87,24 @@ export async function build(
   const formatted = await formatMaterializedArtifacts(materialized.artifacts, openapiToSingleConfig.output.format, { signal: CLIOptions.signal })
   diagnostics.push(...formatted.diagnostics)
   let manifest: GenerationManifest
+  const writing = !CLIOptions.dryRun && !CLIOptions.check
+  let outputWriteLock: OutputWriteLock | undefined = CLIOptions.outputWriteLock
+  let ownsOutputWriteLock = false
   try {
-    manifest = await compareArtifacts(formatted.artifacts, openapiToSingleConfig.output.dir, openapiToSingleConfig.output.clean === true, { signal: CLIOptions.signal })
+    if (writing && !outputWriteLock) {
+      outputWriteLock = await acquireOutputWriteLock(openapiToSingleConfig.output.dir, { signal: CLIOptions.signal })
+      ownsOutputWriteLock = true
+    }
+    manifest = await compareArtifacts(formatted.artifacts, openapiToSingleConfig.output.dir, openapiToSingleConfig.output.clean === true, {
+      signal: CLIOptions.signal,
+      outputWriteLock,
+    })
   } catch (error) {
     if (isOpenapiOperationCancelled(error)) throw error
     diagnostics.push({ code: error instanceof ArtifactComparisonChangedError ? 'OUTPUT_CHANGED_DURING_COMPARE' : 'OUTPUT_COMPARE_FAILED', severity: 'error', message: error instanceof ArtifactComparisonChangedError ? 'Generated output changed during comparison; the check result was discarded.' : 'Unable to compare generated artifacts with existing output.', location: { source: openapiToSingleConfig.output.dir }, cause: error instanceof Error ? error.message : undefined })
     const diagnosticError = new DiagnosticError('Output comparison failed.', diagnostics)
-    return { pluginManager, diagnostics: sortDiagnostics(diagnostics), error: diagnosticError }
+    if (ownsOutputWriteLock) await outputWriteLock?.release({ removeEmptyRoot: true }).catch(() => undefined)
+    return { pluginManager, compilation, diagnostics: sortDiagnostics(diagnostics), error: diagnosticError }
   }
 
   let written = false
@@ -97,15 +112,16 @@ export async function build(
     diagnostics.push({ code: 'GENERATED_OUTPUT_OUTDATED', severity: 'error', message: 'Generated output is not up to date.', location: { source: openapiToSingleConfig.output.dir }, hint: 'Run openapi generate to update generated files.' })
   } else if (!CLIOptions.dryRun && !CLIOptions.check) {
     try {
-      await writeArtifacts(formatted.artifacts, manifest)
+      await writeArtifacts(formatted.artifacts, manifest, { signal: CLIOptions.signal, lock: outputWriteLock, generatorVersion: version })
       written = true
     } catch (error) {
       diagnostics.push({ code: 'OUTPUT_WRITE_FAILED', severity: 'error', message: 'Unable to write generated artifacts.', location: { source: openapiToSingleConfig.output.dir }, cause: error instanceof Error ? error.message : undefined })
     }
   }
+  if (ownsOutputWriteLock) await outputWriteLock?.release({ removeEmptyRoot: !written })
   pluginManager.filesCreated = materialized.artifacts.length
   diagnostics = sortDiagnostics(diagnostics)
   const generationResult: GenerationResult = { artifacts, diagnostics, manifest, written }
   const error = hasDiagnosticErrors(diagnostics) ? new DiagnosticError('Generation failed.', diagnostics) : undefined
-  return { pluginManager, generationResult, diagnostics, error }
+  return { pluginManager, compilation, generationResult, diagnostics, error }
 }

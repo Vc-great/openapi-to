@@ -14,6 +14,16 @@ The protected assets are Workspace confidentiality/integrity, stdio framing, mod
 | Plugin console pollution | Bin redirects console log/info/debug to stderr without replacing stdout writes | A malicious plugin can deliberately write `process.stdout`; trusted-plugin review remains required |
 | Concurrency/state leakage | Call-local compiler state; per-instance generation queue; cancellation-safe release | Legacy third-party plugins may maintain their own global state |
 | Timeout/cancellation leaks | Invocation AbortSignal, abortable fetch/formatter/queue, `finally` timer/listener cleanup | Non-cooperative synchronous third-party plugin code cannot be preempted safely in-process |
-| Check race on output/manifest | Path checks and stable file reads; inconsistency fails instead of returning current | Concurrent external writers can still force a safe failure |
+| Check race on output/manifest | Path checks, stable file reads, and active-writer detection; inconsistency fails instead of returning current | Concurrent external writers can still force a safe failure |
+| Plan tampering, replay, or confusion | Per-Server random HMAC key, constant-time verification, full plan/Workspace binding, TTL, exact approved hash, once-only consumption | Server cannot independently prove a human confirmation action |
+| Cross-Server/Workspace token | Random process nonce/secret and Workspace hash; plans are per-instance memory only | Restart intentionally invalidates outstanding plans |
+| Stale config/source/ref/remote/output | Apply re-generates under lock and compares complete deterministic plan plus fresh content/identity snapshots | Non-cooperative trusted plugins and hostile same-user races cannot be fully eliminated |
+| Unexpected user-file overwrite | Added path must remain absent; modified path must match prepared hash; no caller-supplied paths/content/force | Same-user replacement after the last check can force failure/recovery |
+| Managed deletion | Exact Prepare deletion set, current ownership membership, regular non-linked file, unchanged hash | A corrupted historical manifest causes safe failure and may need recovery |
+| Concurrent CLI/MCP writers | Shared per-output filesystem lock plus under-lock hash validation | Network filesystems may not provide local lock/rename semantics |
+| Crash during commit | Checksummed relative journal, same-root stage/backup, phase-aware startup recovery | Power-loss durability depends on OS/filesystem fsync and rename guarantees |
+| Rollback failure | Byte/hash-verified reverse rollback and high-severity recovery-required diagnostic | Manual restore may be required if backups or roots were externally changed |
+| Lock or journal hijack | Reject symlink/type/size/schema/root/hash/identity mismatch; never trust PID/journal alone | Same-user attackers can deny service; journal checksum is not a persistent MAC |
+| Model calls Apply without approval | Tool absent without startup grant; Prepare/Apply split; exact token/hash; conservative annotations and Host approval guidance | Host policy is the final human-confirmation boundary |
 
-There is no HTTP listener, authentication, multi-tenancy, Tasks, background work, API execution, dynamic plugin injection, or write Tool in this release.
+There is no HTTP listener, authentication, multi-tenancy, Tasks, background work, API execution, dynamic plugin injection, direct-write Tool, OpenAPI/config modification, or arbitrary file-write surface in this release.

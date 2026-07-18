@@ -8,6 +8,7 @@ import {
   type Diagnostic,
   type GenerationManifestEntry,
   type OpenapiToConfigServer,
+  type OutputWriteLock,
 } from '@openapi-to/core'
 import { formatOpenapiToConfig } from '@openapi-to/core/utils'
 
@@ -20,6 +21,7 @@ import type { TrustedConfigProvider } from './trusted-config.ts'
 export interface GenerationExecution {
   signal?: AbortSignal
   progress?: (stage: string, progress: number, total?: number) => Promise<void>
+  outputWriteLock?: OutputWriteLock
 }
 
 export interface PreparedTarget {
@@ -61,6 +63,17 @@ export async function prepareTargets(provider: TrustedConfigProvider, requested:
   return { configPath: loaded.displayPath, config: loaded.config, targets: selected.map((name) => targets.find((target) => target.name === name) as PreparedTarget) }
 }
 
+export async function validateConfiguredOutputRoots(provider: TrustedConfigProvider, options: ResolvedMcpServerOptions): Promise<string[]> {
+  const prepared = await prepareTargets(provider, undefined)
+  if (prepared.targets.length === 0) throw new McpToolError('MCP_CONFIG_LOAD_FAILED', 'Controlled write requires at least one configured generation target.')
+  const roots: string[] = []
+  for (const target of prepared.targets) {
+    const single = formatOpenapiToConfig(options.workspaceRoot, { ...target.server, name: target.name }, prepared.config)
+    roots.push(await resolveWorkspacePath(options.workspaceRoot, single.output.dir, { mustExist: false }))
+  }
+  return [...new Set(roots)].sort(compareText)
+}
+
 export async function executeGeneration(
   provider: TrustedConfigProvider,
   options: ResolvedMcpServerOptions,
@@ -85,6 +98,7 @@ export async function executeGeneration(
       check: mode === 'check',
       localFileRoot: options.workspaceRoot,
       signal: execution.signal,
+      outputWriteLock: execution.outputWriteLock,
     })
     diagnostics.push(...result.diagnostics)
     const generated = result.generationResult?.artifacts ?? []
