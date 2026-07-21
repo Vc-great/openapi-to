@@ -3,6 +3,9 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // Avoid an ambient localhost DNS dependency in restricted CI/agent sandboxes.
+  // Vitest's internal Vite server remains bound to numeric loopback only.
+  server: { host: '127.0.0.1' },
   test: {
     globals: true,
     // Repository Agent scripts use Node's built-in test runner, not Vitest.

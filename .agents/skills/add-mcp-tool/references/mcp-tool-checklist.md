@@ -30,6 +30,7 @@
 
 ## Tests and release
 
+- Package/root script: place the test in the correct package-owned `test:*` layer and expose only a short root `test:mcp:*` route; missing files or zero collected tests fail.
 - Unit: schemas, success/error, ordering, sanitization, limits, target/config/remote policy.
 - Security: relative/absolute inside, traversal, transitive ref, symlink entry/ref/output/config, Windows drive/UNC, case conflict, missing file, URL redaction.
 - stdio subprocess: initialize, list, schemas, annotations, call, structured content, error, stderr, clean close, no stdout pollution.
@@ -37,7 +38,9 @@
 - Safety races: source/config/ref/output/manifest replacement fails closed; document residual TOCTOU limits.
 - Evaluation: fixed licensed local small/medium/large/pathological corpus, multi-run machine-readable benchmark, bounded stress test, and real Codex selection/argument/no-call rates.
 - Matrix: 3 tools without config; 5 with fixed trusted config.
+- Doctor: update the synthetic 3/5/7 matrix, schemas/annotations, core call, cleanup, and stable JSON report without persisting tokens or output bodies.
+- CI: keep a named Node 20 stdio E2E job plus Linux/Windows/macOS built-bin smoke; do not depend only on Quality's indirect root Vitest discovery.
 - Determinism: repeat results byte-stably without time/random/temp paths.
-- Run official Inspector using its current help; run Codex smoke with current official config fields.
+- Run official Inspector through the authenticated localhost foreground launcher for Tool discovery and user-visible results. Keep failpoint/crash/cancellation synchronization in automated tests. Run Codex smoke with current official config fields when policy permits.
 - Check package exports/bin/files/engines, project references, package-surface script, tarball install smoke, fixed Changesets group, and SemVer.
 - Never add a write tool without separate explicit user authorization.

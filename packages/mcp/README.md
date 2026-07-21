@@ -46,4 +46,27 @@ MCP cancellation is propagated to remote fetch, reference loading, compiler chec
 
 Operational logs remain on stderr. `--log-format text|json` selects text or newline-delimited JSON and `--log-level debug|info|warn|error|silent` controls verbosity. Logs contain bounded counts and duration, never Tool arguments, documents, generated content, credentials, query strings, headers, environment variables, or config source.
 
-See [controlled-write architecture](../../docs/architecture/mcp-controlled-write.md), [operations](../../docs/mcp-operations.md), [recovery](../../docs/mcp-write-recovery.md), [threat model](../../docs/mcp-threat-model.md), and [limitations](../../docs/mcp-limitations.md).
+## Repository verification
+
+When developing this monorepo, run the maintained MCP entry points from the
+repository root:
+
+```sh
+pnpm test:mcp:all
+pnpm mcp:check
+pnpm --silent mcp:check -- --json
+pnpm mcp:inspect
+pnpm mcp:inspect -- --allow-write
+```
+
+The package manifest owns the unit, integration, stdio, controlled-write,
+recovery, E2E, and performance layers; root scripts only route to them. Doctor
+uses a synthetic OS-temporary Workspace and the official SDK against the built
+bin. Inspector is a repository-only authenticated localhost launcher, defaults
+to read-only, and requires the operator to opt into its synthetic write fixture.
+Use pnpm's `--silent` flag when consuming Doctor JSON from stdout so the package
+manager does not add a lifecycle banner. `--json --output <path>` writes the same
+sanitized report directly to a file for CI. Neither repository helper is
+included in the published tarball.
+
+See [controlled-write architecture](../../docs/architecture/mcp-controlled-write.md), [operations](../../docs/mcp-operations.md), [test strategy](../../docs/testing/mcp-testing.md), [Inspector guide](../../docs/testing/mcp-inspector.md), [recovery](../../docs/mcp-write-recovery.md), [threat model](../../docs/mcp-threat-model.md), and [limitations](../../docs/mcp-limitations.md).
