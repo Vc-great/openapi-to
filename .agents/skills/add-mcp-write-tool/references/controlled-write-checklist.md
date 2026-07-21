@@ -40,11 +40,15 @@
 
 ## Cancellation, protocol, and release
 
+- [ ] Package/root scripts route Prepare/Apply coverage through `test:write`, transaction/cancellation/lock/crash coverage through `test:recovery`, and the unique complete gate through `test:all`; no group silently collects zero tests.
 - [ ] Waiting/regenerating/staging cancellation releases queue/lock and follows the documented plan-consumption rule.
 - [ ] Commit cancellation is deferred through success/rollback; independent commit timeout rolls back.
 - [ ] Protocol errors are limited to unknown Tool/Schema/lifecycle; expected plan/write failures use `isError` structured diagnostics.
 - [ ] stdout is MCP-only; stderr audit events are bounded/redacted and never contain full token/artifacts.
 - [ ] Official SDK Client subprocess, current Inspector, and real Codex safety evaluation pass.
+- [ ] Repository Doctor proves the built-bin 3/5/7 matrix, Prepare no-write, Apply/current/unchanged, and replay rejection without logging or persisting the plan token.
+- [ ] Named Node 20 stdio/write and transaction-safety CI jobs pass; built-bin smoke runs on Linux, Windows, and macOS.
+- [ ] Inspector covers user-visible schemas, annotations, confirmation summaries, replay/stale/deletion/progress/errors; automated tests retain failpoint rollback, byte-identical cancellation, SIGKILL recovery, journal recovery, and lock competition.
 - [ ] Prepare/Apply timing, plan memory, staging/commit/rollback, output size, and stress are measured in temporary Workspaces.
 - [ ] Package surface, packed ESM/CJS/types/bin, install/write smoke, Node 20 gate, Changeset, docs, AGENTS, and tarball exclusions pass.
 - [ ] No HTTP, Tasks, background jobs, LLM/Claude content, commit/push/tag/publish, or unrelated feature was added.

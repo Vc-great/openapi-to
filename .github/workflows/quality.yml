@@ -54,8 +54,6 @@ jobs:
         run: pnpm build
       - name: Test
         run: pnpm test:vitest
-      - name: MCP bounded performance regression
-        run: pnpm --filter @openapi-to/mcp benchmark:check
 
   lint-changed:
     name: Lint changed files

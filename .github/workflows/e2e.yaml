@@ -1,89 +1,151 @@
-name: e2e
+name: E2E
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 3 * * 2'
+
 jobs:
   common:
-      name: Build and test
-      timeout-minutes: 30
-      strategy:
-        fail-fast: true
-        matrix:
-          os: [ubuntu-latest, windows-latest,macos-latest]
-          node-version: [20]
-          installer: ['pnpm run']
-      runs-on: ${{ matrix.os }}
-      continue-on-error: ${{ matrix.experimental || false }}
-
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 2
-
-        - name: Setup
-          uses: ./.github/setup
-
-        - name: Build
-          run: ${{ matrix.installer }} build
-
-        - name: Install e2e dependencies
-          run: pnpm install --frozen-lockfile --prefer-offline
-          working-directory: ./e2e/common
-
-        - name: E2e  openapi-to init
-          working-directory: ./e2e/common
-          run:  ${{ matrix.installer }} init
-
-        - name: E2e  openapi-to edit plugins
-          working-directory: ./e2e/common
-          run: ${{ matrix.installer }} editPlugins
-
-        - name: openapi-to generate
-          working-directory: ./e2e/common
-          env:
-            NODE_OPTIONS: "--max_old_space_size=4096"
-          run:  ${{ matrix.installer }} generate
-
-  moudle:
-    name: Build and test
+    name: CLI CommonJS E2E (${{ matrix.os }})
+    if: github.event_name == 'push'
     timeout-minutes: 30
     strategy:
       fail-fast: true
       matrix:
-        os: [ ubuntu-latest, windows-latest,macos-latest ]
-        node-version: [ 20 ]
-        installer: [ 'pnpm run' ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental || false }}
-
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-
       - name: Setup
         uses: ./.github/setup
-
       - name: Build
-        run: ${{ matrix.installer }} build
+        run: pnpm run build
+      - name: Install e2e dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+        working-directory: ./e2e/common
+      - name: Initialize openapi-to
+        run: pnpm run init
+        working-directory: ./e2e/common
+      - name: Configure plugins
+        run: pnpm run editPlugins
+        working-directory: ./e2e/common
+      - name: Generate
+        run: pnpm run generate
+        working-directory: ./e2e/common
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
 
+  module:
+    name: CLI ESM E2E (${{ matrix.os }})
+    if: github.event_name == 'push'
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Build
+        run: pnpm run build
       - name: Install e2e dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
         working-directory: ./e2e/module
-
-      - name: E2e  openapi-to init
+      - name: Initialize openapi-to
+        run: pnpm run init
         working-directory: ./e2e/module
-        run: ${{ matrix.installer }} init
-
-      - name: E2e  openapi-to edit plugins
+      - name: Configure plugins
+        run: pnpm run editPlugins
         working-directory: ./e2e/module
-        run: ${{ matrix.installer }} editPlugins
-
-      - name: openapi-to generate
+      - name: Generate
+        run: pnpm run generate
         working-directory: ./e2e/module
         env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
-        run: ${{ matrix.installer }} generate
+          NODE_OPTIONS: '--max_old_space_size=4096'
+
+  mcp-stdio-e2e:
+    name: MCP stdio E2E
+    if: github.event_name != 'schedule'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Test built-bin stdio and controlled-write protocol
+        run: pnpm test:mcp:stdio
+      - name: Run MCP Doctor
+        run: pnpm mcp:check -- --json --output "${{ runner.temp }}/mcp-doctor.json"
+      - name: Upload sanitized MCP Doctor report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-doctor-node20
+          path: ${{ runner.temp }}/mcp-doctor.json
+          if-no-files-found: error
+          retention-days: 14
+
+  mcp-cross-platform:
+    name: MCP cross-platform smoke (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup Node 20 and pnpm
+        uses: ./.github/setup
+      - name: Initialize, list tools, validate, and close
+        run: pnpm test:mcp:smoke
+
+  mcp-transaction-safety:
+    name: MCP transaction safety
+    if: github.event_name != 'schedule'
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Test rollback, recovery, cancellation, and locks
+        run: pnpm test:mcp:recovery
+
+  mcp-performance:
+    name: MCP performance and bounded stress
+    if: github.event_name != 'pull_request'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Run benchmark regression and bounded stress
+        run: pnpm test:mcp:performance

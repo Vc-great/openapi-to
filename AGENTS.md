@@ -39,7 +39,7 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 - `packages/core/src/pluginManager/` and `packages/core/src/OpenAPIContext/` — plugin dependency stages, Hook scheduling, the legacy OpenAPI context, `ctx.setSourceFiles()` compatibility, `ctx.addArtifact()`, and `ctx.addDiagnostic()`.
 - `packages/cli/` — text and machine-readable command presentation for `init`, `generate`/`g`, `validate`, `inspect`, and `diff`. Both `openapi` and `openapi-to` binaries point to the same entrypoint.
 - `packages/openapi/` — the published `openapi-to` aggregate package and `bin/openapi.js`; it re-exports core configuration and official plugin factories.
-- `packages/mcp/` — the independently published read-only stdio MCP adapter. It calls Core public APIs directly and is intentionally not re-exported by `openapi-to`.
+- `packages/mcp/` — the independently published stdio MCP adapter. Its five analysis/generation-check Tools are read-only; operator-gated controlled writes use the existing Prepare/Apply pair. It calls Core public APIs directly and is intentionally not re-exported by `openapi-to`.
 - `packages/plugin-ts-type/` — TypeScript model and operation type generation.
 - `packages/plugin-zod/` — Zod schema generation.
 - `packages/plugin-ts-request/` — request service generation; depends on the type plugin and may depend on Zod.
@@ -175,6 +175,9 @@ JSON mode emits exactly one JSON document on stdout. Diagnostics, progress, debu
 - Server deadlines are startup authority with validated lower/upper bounds; Tool arguments may never extend them. Use only stable standard progress notifications with a client-supplied token, keep progress coarse/monotonic/content-free, and do not introduce experimental Tasks.
 - Preserve TOCTOU fail-closed checks around local source/config/output/manifest reads. Do not claim total race elimination; use opened handles or revalidation where practical and never return `current` after detected inconsistency.
 - Keep operational logs on stderr in bounded text or NDJSON form. Never log Tool arguments, whole diagnostics, documents, generated bodies, headers, environment, or secrets.
+- Do not rely on the full-repository Vitest run as the only MCP evidence. The package manifest owns the `test:unit`, `test:integration`, `test:stdio`, `test:write`, `test:recovery`, `test:performance`, `test:e2e`, and `test:all` layers; root `test:mcp:*` scripts only route to them. A test group must fail when a declared file is missing or when Vitest collects zero tests.
+- Every Tool registration/schema change updates the real built-bin stdio E2E and repository Doctor. Every controlled-write change updates the write E2E; transaction, cancellation, lock, failpoint, or journal changes also run recovery. Use Inspector for user-visible discovery/schema/annotation/result flows, not internal failpoint, SIGKILL, or commit-critical synchronization.
+- Never add a production Tool, public argument, environment switch, or packed failpoint solely to make tests or Inspector easier. Repository-only Doctor/Inspector launchers must remain outside the published package and must preserve localhost authentication, foreground lifecycle, and temporary-Workspace cleanup.
 - Do not add Streamable HTTP, auth, Resources, Prompts, Sampling, Elicitation, Apps UI, tasks, LLM calls, chat, or additional write Tools as incidental MCP work. This project uses Codex only; do not create Claude Code files.
 - Use `.agents/skills/add-mcp-tool/SKILL.md` for MCP Tool changes and `.agents/skills/add-mcp-write-tool/SKILL.md` for controlled-write protocol changes. Verify with an official SDK Client over a real stdio subprocess, current MCP Inspector help/smoke, Codex safety evaluation, package surface, and pack-install write smoke.
 
@@ -196,6 +199,14 @@ First confirm each command exists in the current `package.json`. Replace `<packa
 - `pnpm --filter <package-name> typecheck`
 - `pnpm --filter <package-name> build` when exports or emitted declarations can change.
 - Test direct dependents when their imported types, metadata, or runtime behavior can change.
+
+### MCP changes
+
+- Run the narrow affected layer first through `pnpm test:mcp:<layer>`; do not invoke an undocumented file glob as the maintained interface.
+- Run `pnpm test:mcp:stdio` and `pnpm mcp:check` for Tool names, schemas, annotations, stdio, server startup, or result-envelope changes.
+- Run `pnpm test:mcp:write` for Prepare/Apply changes and `pnpm test:mcp:recovery` for transaction, lock, rollback, cancellation, crash, or recovery changes.
+- Run `pnpm test:mcp:all`, package typecheck/build, package surface, and pack-install smoke before declaring the MCP package release-ready.
+- Run `pnpm mcp:inspect` only from a persistent foreground PTY when manual user-visible interaction evidence is required. Inspector is not an automated safety gate and is never run in CI.
 
 ### Core or OpenAPI behavior
 

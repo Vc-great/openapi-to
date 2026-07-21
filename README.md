@@ -83,6 +83,25 @@ pnpm release:smoke
 
 `release:smoke` packs every public workspace package and verifies ESM, CJS, declarations, the `openapi`/`openapi-to` aliases, and machine-readable CLI output in a temporary consumer. It does not publish.
 
+## MCP verification
+
+The repository exposes stable, package-owned MCP gates instead of relying only
+on indirect full-suite discovery:
+
+```shell
+pnpm test:mcp:all
+pnpm mcp:check
+pnpm mcp:inspect                 # safe read-only fixture
+pnpm mcp:inspect -- --allow-write # explicit synthetic Prepare/Apply fixture
+```
+
+`mcp:check` runs the built stdio Server through the official MCP SDK and reports
+the 3/5/7 Tool matrices plus controlled-write health. `mcp:inspect` is a
+foreground, authenticated localhost launcher for manual review; it is never an
+automated failpoint or crash-recovery gate. See the
+[MCP test strategy](docs/testing/mcp-testing.md) and
+[Inspector guide](docs/testing/mcp-inspector.md).
+
 OpenAPI 3.2 support is intentionally incremental. `$self` participates in reference base resolution and the document, info, paths, components, and standard operations remain readable. New 3.2 fields such as `query`, `additionalOperations`, `querystring`, streaming `itemSchema`/encoding fields, and tag hierarchy are inspected and diagnosed, but existing TypeScript generators do not yet emit code from them. The first-stage diff engine covers paths, operations, parameters, request/response schemas, component properties, required state, enums, and types; less certain schema-composition changes are reported as warnings rather than claimed as definitive compatibility results.
 ## Example
 ```typescript twoslash [single]

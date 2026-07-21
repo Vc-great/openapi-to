@@ -31,6 +31,9 @@ const forbiddenTarballPaths = [
 	/(^|\/)\.openapi-to-write\.lock(\/|$)/,
 	/(^|\/)tool-selection-cases\.json$/,
 	/(^|\/)performance-baseline\.json$/,
+	/(^|\/)(?:doctor|inspect|run-doctor|run-test-group)\.mjs$/,
+	/(^|\/)(?:mcp-doctor|inspector)-(?:report|config)\.json$/i,
+	/(^|\/)(?:staging|backup)(\/|$)/i,
 ];
 
 function run(command, args, cwd, options = {}) {
@@ -100,6 +103,9 @@ try {
 		const archiveStat = await stat(archive);
 		const filePaths = result.files.map(({ path }) => path).sort();
 		const forbidden = filePaths.filter((path) => forbiddenTarballPaths.some((pattern) => pattern.test(path)));
+		if (result.name === "@openapi-to/mcp" && filePaths.some((path) => path.startsWith("scripts/"))) {
+			forbidden.push(...filePaths.filter((path) => path.startsWith("scripts/")));
+		}
 		if (forbidden.length > 0) {
 			throw new Error(`${result.name} tarball contains forbidden files: ${forbidden.join(", ")}`);
 		}
@@ -255,14 +261,33 @@ await server.close();
 		`import { access, readFile } from "node:fs/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+const analysisTools = ["openapi_validate", "openapi_inspect", "openapi_diff"];
+const configuredTools = [...analysisTools, "openapi_generate_dry_run", "openapi_check_generation"];
+const writeToolNames = [...configuredTools, "openapi_prepare_generation", "openapi_apply_generation"];
+function assertToolMatrix(listed, expected) {
+  if (listed.map(({ name }) => name).join(",") !== expected.join(",")) throw new Error("Unexpected packed MCP tool matrix");
+  for (const tool of listed) {
+    if (!tool.title || !tool.description || tool.inputSchema?.type !== "object" || tool.outputSchema?.type !== "object") throw new Error("Packed MCP schema metadata is incomplete");
+    const write = tool.name === "openapi_apply_generation";
+    if (tool.annotations?.readOnlyHint !== !write || tool.annotations?.destructiveHint !== write || tool.annotations?.idempotentHint !== (write ? false : tool.name !== "openapi_prepare_generation")) throw new Error("Packed MCP annotations are incorrect");
+  }
+}
 const transport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd()], stderr: "pipe" });
 const client = new Client({ name: "release-smoke", version: "1.0.0" });
 await client.connect(transport);
 const tools = await client.listTools();
-if (tools.tools.map(({ name }) => name).join(",") !== "openapi_validate,openapi_inspect,openapi_diff") throw new Error("Unexpected no-config MCP tool matrix");
+assertToolMatrix(tools.tools, analysisTools);
 const result = await client.callTool({ name: "openapi_validate", arguments: { source: "openapi.yaml" } });
 if (result.isError || result.structuredContent?.success !== true) throw new Error("MCP validate smoke failed");
 await client.close();
+
+const configuredTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs"], stderr: "pipe" });
+const configuredClient = new Client({ name: "release-configured-smoke", version: "1.0.0" });
+await configuredClient.connect(configuredTransport);
+const configured = await configuredClient.listTools();
+assertToolMatrix(configured.tools, configuredTools);
+if (configured.tools.some(({ name }) => name === "openapi_prepare_generation" || name === "openapi_apply_generation")) throw new Error("Packed MCP exposed write tools without --allow-write");
+await configuredClient.close();
 
 const writeStderr = [];
 const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs", "--allow-write"], stderr: "pipe" });
@@ -270,7 +295,7 @@ writeTransport.stderr?.on("data", (chunk) => writeStderr.push(String(chunk)));
 const writeClient = new Client({ name: "release-write-smoke", version: "1.0.0" });
 await writeClient.connect(writeTransport);
 const writeTools = await writeClient.listTools();
-if (writeTools.tools.length !== 7 || !writeTools.tools.some(({ name }) => name === "openapi_prepare_generation") || !writeTools.tools.some(({ name }) => name === "openapi_apply_generation")) throw new Error("Unexpected controlled-write MCP tool matrix");
+assertToolMatrix(writeTools.tools, writeToolNames);
 const prepared = await writeClient.callTool({ name: "openapi_prepare_generation", arguments: { targets: ["smoke"] } });
 const plan = prepared.structuredContent?.plan;
 if (prepared.isError || !plan || plan.summary.added !== 1) throw new Error("MCP Prepare smoke failed");
@@ -284,7 +309,11 @@ const replay = await writeClient.callTool({ name: "openapi_apply_generation", ar
 if (!replay.isError || !replay.structuredContent?.diagnostics?.some(({ code }) => code === "MCP_PLAN_ALREADY_USED")) throw new Error("MCP Apply replay was not rejected");
 const current = await writeClient.callTool({ name: "openapi_check_generation", arguments: { targets: ["smoke"] } });
 if (current.structuredContent?.outdated !== false) throw new Error("MCP Apply output is not current");
+const unchanged = await writeClient.callTool({ name: "openapi_prepare_generation", arguments: { targets: ["smoke"] } });
+const unchangedSummary = unchanged.structuredContent?.plan?.summary;
+if (unchanged.isError || !unchangedSummary || unchangedSummary.added !== 0 || unchangedSummary.modified !== 0 || unchangedSummary.deleted !== 0) throw new Error("MCP second Prepare was not unchanged");
 if (writeStderr.join("").includes(plan.token)) throw new Error("MCP token leaked to stderr");
+if (writeStderr.join("").includes(unchanged.structuredContent.plan.token)) throw new Error("MCP second plan token leaked to stderr");
 await writeClient.close();
 `,
 	);
@@ -361,7 +390,7 @@ await writeClient.close();
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
-				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-prepare-apply", "mcp-token-replay", "validate-json", "inspect-json"],
+				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-tool-matrix-3-5-7", "mcp-schemas-annotations", "mcp-prepare-apply", "mcp-token-replay", "mcp-current", "mcp-prepare-unchanged", "validate-json", "inspect-json"],
 			},
 			null,
 			2,

@@ -67,6 +67,9 @@ for (const directory of packageDirectories) {
 	if (manifest.engines?.node !== ">=20") failures.push(`${manifest.name}: engines.node must be >=20`);
 	if (manifest.private === true) failures.push(`${manifest.name}: public release package is marked private`);
 	if (!Array.isArray(manifest.files)) failures.push(`${manifest.name}: package files allowlist is missing`);
+	if (manifest.name === "@openapi-to/mcp" && manifest.files.some((path) => path === "scripts" || path.startsWith("scripts/"))) {
+		failures.push("@openapi-to/mcp: repository-only Doctor/Inspector/test scripts must not be published");
+	}
 	if (!manifest.exports) failures.push(`${manifest.name}: exports map is missing`);
 	if (manifest.publishConfig?.access !== "public") failures.push(`${manifest.name}: publishConfig.access must be public`);
 

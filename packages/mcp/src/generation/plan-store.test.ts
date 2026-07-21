@@ -1,6 +1,4 @@
-import { setTimeout as delay } from 'node:timers/promises'
-
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { GenerationPlanStore, type StoredGenerationPlan } from './plan-store.ts'
 
 interface TestPlan extends StoredGenerationPlan {
@@ -26,15 +24,20 @@ describe('GenerationPlanStore', () => {
     store.clear()
   })
 
-  it('expires plans and makes tokens from another Server instance invalid', async () => {
+  it('expires plans and makes tokens from another Server instance invalid', () => {
+    vi.useFakeTimers()
     const left = createStore()
     const right = createStore()
-    const created = add(left, 'b')
-    expect(() => right.verify(created.plan.planId, created.token, created.plan.planHash)).toThrow(/does not exist/i)
-    await delay(25)
-    expect(() => left.verify(created.plan.planId, created.token, created.plan.planHash)).toThrow(/expired/i)
-    left.clear()
-    right.clear()
+    try {
+      const created = add(left, 'b')
+      expect(() => right.verify(created.plan.planId, created.token, created.plan.planHash)).toThrow(/does not exist/i)
+      vi.advanceTimersByTime(21)
+      expect(() => left.verify(created.plan.planId, created.token, created.plan.planHash)).toThrow(/expired/i)
+    } finally {
+      left.clear()
+      right.clear()
+      vi.useRealTimers()
+    }
   })
 
   it('enforces per-plan and total/count limits with deterministic LRU eviction', () => {
