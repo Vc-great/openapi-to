@@ -262,7 +262,7 @@ await server.close();
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 const analysisTools = ["openapi_validate", "openapi_inspect", "openapi_diff"];
-const configuredTools = [...analysisTools, "openapi_generate_dry_run", "openapi_check_generation"];
+const configuredTools = [...analysisTools, "openapi_list_targets", "openapi_search_operations", "openapi_get_operation", "openapi_generate_dry_run", "openapi_check_generation"];
 const writeToolNames = [...configuredTools, "openapi_prepare_generation", "openapi_apply_generation"];
 function assertToolMatrix(listed, expected) {
   if (listed.map(({ name }) => name).join(",") !== expected.join(",")) throw new Error("Unexpected packed MCP tool matrix");
@@ -390,7 +390,7 @@ await writeClient.close();
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
-				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-tool-matrix-3-5-7", "mcp-schemas-annotations", "mcp-prepare-apply", "mcp-token-replay", "mcp-current", "mcp-prepare-unchanged", "validate-json", "inspect-json"],
+				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-tool-matrix-3-8-10", "mcp-schemas-annotations", "mcp-prepare-apply", "mcp-token-replay", "mcp-current", "mcp-prepare-unchanged", "validate-json", "inspect-json"],
 			},
 			null,
 			2,

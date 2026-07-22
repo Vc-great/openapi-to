@@ -1,12 +1,14 @@
 # MCP operations guide
 
-`@openapi-to/mcp` requires Node.js 20 or newer and uses stdio only. Install with `pnpm add -D @openapi-to/mcp`, then launch `openapi-to-mcp --workspace-root .`. Without config it registers validate, inspect, and first-stage diff. Adding operator-trusted `--config .OpenAPI/openapi.config.ts` also registers generation dry-run and check. Adding `--allow-write` registers Prepare and Apply only after all configured output roots pass Workspace validation.
+`@openapi-to/mcp` requires Node.js 20 or newer and uses stdio only. Install with `pnpm add -D @openapi-to/mcp`, then launch `openapi-to-mcp --workspace-root .`. Without config it registers validate, inspect, and first-stage diff. Adding operator-trusted `--config .OpenAPI/openapi.config.ts` also registers target listing, operation search, bounded operation contract reading, generation dry-run, and check. Adding `--allow-write` registers Prepare and Apply only after all configured output roots pass Workspace validation. The complete matrices are 3 tools without config, 8 with trusted config, and 10 with controlled write.
 
 The Workspace is canonicalized once. Local entries, transitive `$ref`, config imports, output roots, ownership manifests, and checked generated files must remain inside it. Remote loading denies private/reserved networks by default; only the operator may add `--allow-host` or the security-lowering `--allow-private-network`.
 
 Server deadlines are configured in milliseconds with `--validate-timeout-ms`, `--inspect-timeout-ms`, `--diff-timeout-ms`, and `--generation-timeout-ms`. Values must be integers from 100 to 600000. Client cancellation and Server timeout are distinct (`MCP_REQUEST_CANCELLED` versus `MCP_TOOL_TIMEOUT`); remote HTTP timeout is a third limit. Cancellation propagates through compiler, plugins, artifacts, comparison, and queue waits.
 
 Results are deterministic and bounded by diagnostics, operations/changes, artifacts, text, and preview limits. Totals remain accurate when arrays are truncated. Dry-run/Prepare default to no preview; binary bodies are never returned. Check reports `outdated` as an expected business result with `isError: true`, not a protocol failure. Dry-run/check never invoke the writer.
+
+For large specifications, call `openapi_list_targets` when target discovery is needed, then `openapi_search_operations`, then `openapi_get_operation`. These Tools accept only startup-trusted target names, not a caller-supplied source/config/path. Successful target compilations and catalogs live for the Server process; concurrent first calls share one compilation, failed compilation can retry, and restart is the refresh mechanism. Search defaults to eight candidates and contract reading applies Schema depth/count/property/example and byte limits. See [Operation Catalog architecture](./architecture/operation-catalog.md).
 
 ## Controlled-write runbook
 

@@ -9,7 +9,7 @@ release smoke to discover MCP regressions indirectly.
 | `pnpm test:mcp:unit` | Pure and filesystem-bounded contracts | schemas/options, results, diagnostics, limits, tokens, plan storage, paths, config caching, and logging |
 | `pnpm test:mcp:integration` | Server/application integration | registration, structured results, errors, concurrency, cancellation, timeouts, and generation serialization |
 | `pnpm test:mcp:smoke` | Minimal cross-platform stdio smoke | initialize, list, validate/config matrix, stdout/stderr, and clean close |
-| `pnpm test:mcp:stdio` | Real built-bin protocol E2E | official SDK `Client` plus `StdioClientTransport`, 3/5/7 tool matrices, schemas, annotations, calls, lifecycle, stdout, and stderr |
+| `pnpm test:mcp:stdio` | Real built-bin protocol E2E | official SDK `Client` plus `StdioClientTransport`, 3/8/10 tool matrices, schemas, annotations, calls, lifecycle, stdout, and stderr |
 | `pnpm test:mcp:write` | Controlled-write E2E | Prepare read-only behavior, Apply, stale/tampered/replayed plans, managed deletion, unmanaged preservation, and current state |
 | `pnpm test:mcp:recovery` | Destructive-failure safety | rollback failpoints, cancellation phases, SIGKILL recovery, journals, and CLI/MCP or multi-Server locking |
 | `pnpm test:mcp:e2e` | MCP process and transaction E2E | stdio, controlled write, and Core transaction recovery evidence |
@@ -17,7 +17,7 @@ release smoke to discover MCP regressions indirectly.
 | `pnpm test:mcp:all` | Complete maintained MCP gate | all unique unit/integration/E2E/recovery tests plus the bounded performance gate |
 
 `pnpm test:mcp` remains the package-only compatibility entry and now runs the
-74-test MCP inventory. The package manifest is authoritative; root scripts only
+80-test MCP inventory. The package manifest is authoritative; root scripts only
 route to it. The test-group
 runner uses repository-relative explicit files, checks every file exists, and
 does not use `--passWithNoTests`, so a stale group cannot silently pass with zero
@@ -36,7 +36,8 @@ entry runs the unique union rather than multiplying identical files.
 | `packages/mcp/src/result.test.ts` | 2 | Unit | no | no | bounded result protocol | no | 3 ms |
 | `packages/mcp/src/security/workspace.test.ts` | 3 | Unit/security | no | yes | output confinement | symlink escape | 14 ms |
 | `packages/mcp/src/tools/limits.test.ts` | 4 | Unit/service | no | no | artifact/preview bounds | cancellation/listener cleanup | 58 ms |
-| `packages/mcp/src/tools/schema.test.ts` | 7 | Unit/schema | no | no | all seven bounded input/output schemas | authority-field rejection | under 10 ms |
+| `packages/mcp/src/tools/schema.test.ts` | 10 | Unit/schema | no | no | all ten bounded input/output schemas | authority-field rejection | under 10 ms |
+| `packages/mcp/src/catalog/trusted-target-registry.test.ts` | 2 | Unit/cache | no | yes | trusted target compilation/catalog cache | concurrent first load, retry, target isolation | platform-dependent |
 | `packages/mcp/src/server.integration.test.ts` | 3 | stdio integration | yes | yes | read-only generation only | queue failure recovery | 3.7 s |
 | `packages/mcp/src/lifecycle.integration.test.ts` | 3 | stdio lifecycle | child process (no SDK calls) | no | no | EOF, SIGINT, SIGTERM | 1.4 s |
 | `packages/mcp/src/hardening.integration.test.ts` | 6 | stdio hardening | yes | yes | dry-run/check | active/queued cancel, timeout, disconnect | 7.2 s |
@@ -44,7 +45,7 @@ entry runs the unique union rather than multiplying identical files.
 | `packages/core/src/artifacts/transaction.test.ts` | 18 | writer recovery | subprocess for SIGKILL case | yes | shared transaction writer | failpoints, rollback, crash, journal, lock | platform-dependent |
 
 Before P3.5, the 12 MCP files contained 67 tests. The productized inventory now
-contains 13 MCP files and 74 tests: 43 unit/service/schema tests and 31
+contains 14 MCP files and 80 tests: 48 unit/service/schema tests and 32
 real-process integration tests. The root Vitest configuration already discovered the original tests, and
 the Quality workflow already ran them indirectly. Before P3.5, however, the E2E
 workflow had no named MCP job and the package used a single permissive

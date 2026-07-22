@@ -54,7 +54,7 @@ Usage:
 
 Options:
   --allow-write  Register the existing controlled Prepare/Apply tools for the synthetic fixture.
-                 Omit this flag for the default five-tool read-only session.
+                 Omit this flag for the default eight-tool read-only session.
   -h, --help     Show this help.
 
 The launcher accepts no command, config, Workspace, host, port, or authentication overrides.
@@ -408,7 +408,7 @@ paths:
 }
 
 function printChecklist({ allowWrite, clientPort, proxyPort, fixture }) {
-	const expectedTools = allowWrite ? 7 : 5;
+	const expectedTools = allowWrite ? 10 : 8;
 	const mode = allowWrite ? "controlled-write" : "read-only";
 	process.stdout.write(`\nSynthetic ${mode} Inspector session\n`);
 	process.stdout.write(`  Workspace: ${fixture.root}\n`);
@@ -429,6 +429,9 @@ function printChecklist({ allowWrite, clientPort, proxyPort, fixture }) {
 		"Call openapi_validate with source 'openapi.yaml'; expect a successful OpenAPI 3.1 result.",
 		"Call openapi_inspect with source 'openapi.yaml' and includeOperations true; expect listPets.",
 		"Call openapi_diff with before 'before.yaml' and after 'after.yaml'; review the bounded breaking/non-breaking summary.",
+		"Call openapi_list_targets; expect only fixture metadata, with no source path, URL, headers, or config body.",
+		"Call openapi_search_operations with target 'fixture' and query 'list pets'; expect one lightweight listPets candidate.",
+		"Call openapi_get_operation with target 'fixture', operationKey 'listPets', and detail 'contract'; review the bounded 200 response contract.",
 		"Call openapi_generate_dry_run with targets ['fixture']; expect client.txt added and old-managed.txt deleted.",
 		"Call openapi_check_generation with targets ['fixture']; expect outdated=true and confirm dry-run/check changed no files.",
 	];
@@ -445,7 +448,7 @@ function printChecklist({ allowWrite, clientPort, proxyPort, fixture }) {
 				"If controlled-write testing is intended, stop here and rerun this fixed launcher with the explicit --allow-write flag.",
 				"Press Ctrl-C; confirm the launcher removes the temporary Workspace and releases both localhost listeners.",
 			];
-	process.stdout.write("Manual 12-step checklist:\n");
+	process.stdout.write(`Manual ${common.length + modeSpecific.length}-step checklist:\n`);
 	for (const [index, step] of [...common, ...modeSpecific].entries()) {
 		process.stdout.write(`  ${index + 1}. ${step}\n`);
 	}

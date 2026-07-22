@@ -4,6 +4,7 @@ import type { GenerationLock } from '../generation/generation-lock.ts'
 import type { GenerationPlanStore } from '../generation/plan-store.ts'
 import type { InternalGenerationWritePlan } from '../generation/write-plan.ts'
 import type { TrustedConfigProvider } from '../generation/trusted-config.ts'
+import type { TrustedTargetCatalogRegistry } from '../catalog/trusted-target-registry.ts'
 import { McpRequestCancelledError, McpToolTimeoutError } from '../errors.ts'
 
 export interface McpHandlerExtra {
@@ -27,13 +28,14 @@ export interface ToolContext {
   options: ResolvedMcpServerOptions
   logger: McpLogger
   trustedConfig: TrustedConfigProvider
+  targetCatalogs?: TrustedTargetCatalogRegistry
   generationLock: GenerationLock
   generationPlans?: GenerationPlanStore<InternalGenerationWritePlan>
 }
 
 function timeoutForTool(context: ToolContext, tool: string): number {
   if (tool === 'openapi_validate') return context.options.timeouts.validateMs
-  if (tool === 'openapi_inspect') return context.options.timeouts.inspectMs
+  if (['openapi_inspect', 'openapi_list_targets', 'openapi_search_operations', 'openapi_get_operation'].includes(tool)) return context.options.timeouts.inspectMs
   if (tool === 'openapi_diff') return context.options.timeouts.diffMs
   return context.options.timeouts.generationMs
 }

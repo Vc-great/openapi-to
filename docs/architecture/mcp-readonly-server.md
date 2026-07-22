@@ -1,8 +1,10 @@
 # Read-only MCP server architecture
 
-Status: accepted for the P2 read-only foundation (2026-07-18), retained unchanged by the separately gated P3 controlled-write extension.
+Status: accepted for the P2 read-only foundation (2026-07-18), extended by the Phase 1 trusted-target Operation Catalog. The configured read-only matrix is now eight Tools; historical P2 evidence below retains its original five-Tool wording.
 
 ## Decision
+
+Phase 1 adds fixed target-list, operation-search, and single-contract Tools to the five-Tool P2 configured-mode foundation. See [Operation Catalog and bounded contract discovery](./operation-catalog.md) for the current 3/8/10 matrix and limits.
 
 Publish an independent `@openapi-to/mcp` package that exposes five bounded read-only MCP Tools over stdio. The server uses `@modelcontextprotocol/sdk` **1.29.0**, the npm `latest` stable release verified on 2026-07-18. The official SDK repository states that v1.x remains the production recommendation while v2 packages and APIs are prerelease. The package pins 1.29.0 in `package.json` and `pnpm-lock.yaml`; it uses Zod **3.25.76**, the newest SDK-compatible Zod 3 release, so adding MCP does not introduce a second Zod major beside the repository's existing Zod 3 consumers.
 
@@ -50,7 +52,7 @@ The configuration Promise is created once per server and cached, including failu
 
 ## Read-only tools and state
 
-Without config: `openapi_validate`, `openapi_inspect`, `openapi_diff`. With config: those plus `openapi_generate_dry_run` and `openapi_check_generation`. Analysis calls use independent compile state and may run concurrently. Generation calls use one `GenerationLock` per server instance; the `finally` release prevents a failed call from blocking the queue, and instances share no lock.
+Without config: `openapi_validate`, `openapi_inspect`, `openapi_diff`. With config: those plus `openapi_list_targets`, `openapi_search_operations`, `openapi_get_operation`, `openapi_generate_dry_run`, and `openapi_check_generation`. Catalog calls share a process-local, target-isolated compile Promise cache; other analysis calls use independent compile state and may run concurrently. Generation calls use one `GenerationLock` per server instance; the `finally` release prevents a failed call from blocking the queue, and instances share no lock.
 
 All results use stable schemas, a short text summary, bounded `structuredContent`, sorted diagnostics/changes/artifacts, totals and omitted counts, and `MCP_RESULT_TRUNCATED` warnings. Expected execution failures return `isError: true`; invalid tool arguments and MCP lifecycle failures remain protocol-level errors. Sources, diagnostics, causes, and logs redact Workspace prefixes, URL credentials/query strings, authorization/cookie/token-like values, stack/config/document/generated bodies, and binary content.
 

@@ -104,6 +104,9 @@ measurements.toolsList = { timingMs: summary(toolsList) }
 
 const connected = await connect(true)
 const cases = [
+  ['catalogSearch', 'openapi_search_operations', { target: 'evaluation', query: 'enterprise resource 42', limit: 8 }],
+  ['catalogGetOperation', 'openapi_get_operation', { target: 'evaluation', operationKey: 'getEnterpriseResource42', detail: 'contract', schemaDepth: 2 }],
+  ['catalogListTargets', 'openapi_list_targets', {}],
   ['validate', 'openapi_validate', { source: large }],
   ['inspect', 'openapi_inspect', { source: large, includeOperations: true }],
   ['diff', 'openapi_diff', { before: medium, after: large }],
@@ -124,6 +127,9 @@ for (const [id, name, argumentsValue] of cases) {
     sizes.push(Buffer.byteLength(JSON.stringify(structured)))
     diagnostics = structured.truncated?.totalDiagnostics ?? structured.diagnostics?.length ?? 0
     artifactsOrChanges = structured.truncated?.totalArtifacts ?? structured.truncated?.totalChanges ?? 0
+    if (id === 'catalogSearch' && (structured.success !== true || structured.items?.length > 8 || JSON.stringify(structured.items).includes('properties'))) throw new Error('Catalog search benchmark returned an invalid or unbounded candidate set.')
+    if (id === 'catalogGetOperation' && (structured.success !== true || structured.operation?.operationKey !== 'getEnterpriseResource42' || sizes.at(-1) > 256 * 1024)) throw new Error('Catalog contract benchmark returned an invalid or oversized result.')
+    if (id === 'catalogListTargets' && (structured.success !== true || structured.targets?.length !== 1)) throw new Error('Catalog target discovery benchmark returned an unexpected result.')
     if (id === 'generateDryRun' && (structured.success !== true || artifactsOrChanges !== 250)) throw new Error('Generation benchmark did not produce the expected 250-artifact dry-run plan.')
     if (id === 'check' && (structured.outdated !== true || artifactsOrChanges !== 250)) throw new Error('Check benchmark did not report the expected 250 added artifacts.')
     const pid = connected.transport._process?.pid

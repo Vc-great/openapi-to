@@ -93,7 +93,7 @@ describe.sequential('controlled-write stdio tools', () => {
     await Promise.all(clients.splice(0).map((client) => client.close().catch(() => undefined)))
   })
 
-  it('keeps the five-tool matrix without the operator write grant', async () => {
+  it('keeps the eight-tool matrix without the operator write grant', async () => {
     const root = await fixtureWorkspace()
     const connected = await connect(root, false)
     clients.push(connected.client)
@@ -101,6 +101,9 @@ describe.sequential('controlled-write stdio tools', () => {
       'openapi_validate',
       'openapi_inspect',
       'openapi_diff',
+      'openapi_list_targets',
+      'openapi_search_operations',
+      'openapi_get_operation',
       'openapi_generate_dry_run',
       'openapi_check_generation',
     ])
@@ -191,6 +194,9 @@ describe.sequential('controlled-write stdio tools', () => {
       'openapi_validate',
       'openapi_inspect',
       'openapi_diff',
+      'openapi_list_targets',
+      'openapi_search_operations',
+      'openapi_get_operation',
       'openapi_generate_dry_run',
       'openapi_check_generation',
       'openapi_prepare_generation',

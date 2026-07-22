@@ -8,6 +8,7 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const repositoryRoot = path.resolve(packageRoot, '../..')
 
 const unitFiles = [
+  'packages/mcp/src/catalog/trusted-target-registry.test.ts',
   'packages/mcp/src/generation/generation-lock.test.ts',
   'packages/mcp/src/generation/plan-store.test.ts',
   'packages/mcp/src/generation/trusted-config.test.ts',
@@ -54,16 +55,16 @@ const e2eFiles = unique([...integrationFiles, ...coreRecoveryFiles])
 const allVitestFiles = unique([...allMcpFiles, ...coreRecoveryFiles])
 
 const groups = {
-  test: { build: 'write', files: allMcpFiles, expectedTests: 74, timeoutMs: 300_000 },
-  unit: { build: 'core', files: unitFiles, expectedTests: 43, timeoutMs: 120_000 },
-  integration: { build: 'write', files: integrationFiles, expectedTests: 31, timeoutMs: 240_000 },
-  smoke: { build: 'write', files: smokeFiles, expectedTests: 3, timeoutMs: 120_000 },
-  stdio: { build: 'write', files: stdioFiles, expectedTests: 25, timeoutMs: 240_000 },
+  test: { build: 'write', files: allMcpFiles, expectedTests: 80, timeoutMs: 300_000 },
+  unit: { build: 'core', files: unitFiles, expectedTests: 48, timeoutMs: 120_000 },
+  integration: { build: 'write', files: integrationFiles, expectedTests: 32, timeoutMs: 240_000 },
+  smoke: { build: 'write', files: smokeFiles, expectedTests: 4, timeoutMs: 120_000 },
+  stdio: { build: 'write', files: stdioFiles, expectedTests: 26, timeoutMs: 240_000 },
   write: { build: 'write', files: writeFiles, expectedTests: 19, timeoutMs: 180_000 },
   recovery: { build: 'write', files: recoveryFiles, expectedTests: 43, timeoutMs: 360_000 },
   performance: { build: 'mcp', files: [], expectedTests: 0, scripts: performanceScripts, timeoutMs: 360_000 },
-  e2e: { build: 'write', files: e2eFiles, expectedTests: 49, timeoutMs: 480_000 },
-  all: { build: 'write', files: allVitestFiles, expectedTests: 92, scripts: performanceScripts, timeoutMs: 600_000 },
+  e2e: { build: 'write', files: e2eFiles, expectedTests: 50, timeoutMs: 480_000 },
+  all: { build: 'write', files: allVitestFiles, expectedTests: 98, scripts: performanceScripts, timeoutMs: 600_000 },
 }
 
 function fail(message) {

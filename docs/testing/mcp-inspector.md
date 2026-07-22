@@ -8,7 +8,7 @@ pnpm mcp:inspect -- --allow-write
 ```
 
 The default is the safer read-only mode. `--allow-write` is an explicit operator
-grant and starts a synthetic seven-Tool fixture. The launcher does not accept an
+grant and starts a synthetic ten-Tool fixture. The launcher does not accept an
 arbitrary Workspace, config, command, plugin, environment override, or remote
 source. It builds the package, creates an OS-temporary synthetic Workspace,
 chooses unused high localhost ports, writes only the trusted synthetic OpenAPI
@@ -31,10 +31,11 @@ the child, removes the temporary fixture/config, and releases its listeners.
 
 ## Manual checklist
 
-In read-only mode, confirm exactly five Tools: the three analysis Tools plus
-generation dry-run and check. In write-enabled mode:
+In read-only configured mode, confirm exactly eight Tools: the three source
+analysis Tools, target listing, operation search, bounded operation contract
+reading, generation dry-run, and check. In write-enabled mode:
 
-1. Confirm exactly seven Tools and the displayed Server name/version.
+1. Confirm exactly ten Tools and the displayed Server name/version.
 2. Review every Tool input/output schema and annotation.
 3. Call Prepare and review added/modified/deleted counts.
 4. Confirm Prepare made no Workspace or ownership-manifest change.

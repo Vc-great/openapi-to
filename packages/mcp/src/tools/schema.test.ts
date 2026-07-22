@@ -13,6 +13,12 @@ import {
   prepareGenerationOutputSchema,
   validateInputSchema,
   validateOutputSchema,
+  listTargetsInputSchema,
+  listTargetsOutputSchema,
+  searchOperationsInputSchema,
+  searchOperationsOutputSchema,
+  getOperationInputSchema,
+  getOperationOutputSchema,
 } from './index.ts'
 
 const diagnostics = {
@@ -22,6 +28,30 @@ const diagnostics = {
 }
 
 const cases = [
+  {
+    name: 'list-targets',
+    input: listTargetsInputSchema,
+    validInput: {},
+    invalidInput: 'targets',
+    output: listTargetsOutputSchema,
+    validOutput: { schemaVersion: 1, tool: 'openapi_list_targets', success: false, targets: [], ...diagnostics },
+  },
+  {
+    name: 'search-operations',
+    input: searchOperationsInputSchema,
+    validInput: { target: 'backend', query: 'GET /users', limit: 8 },
+    invalidInput: { query: '', limit: 1000 },
+    output: searchOperationsOutputSchema,
+    validOutput: { schemaVersion: 1, tool: 'openapi_search_operations', success: false, query: 'users', totalMatches: 0, items: [], ...diagnostics },
+  },
+  {
+    name: 'get-operation',
+    input: getOperationInputSchema,
+    validInput: { target: 'backend', operationKey: 'getUser', detail: 'contract', schemaDepth: 2 },
+    invalidInput: { operationKey: '', schemaDepth: 100 },
+    output: getOperationOutputSchema,
+    validOutput: { schemaVersion: 1, tool: 'openapi_get_operation', success: false, found: false, detail: 'contract', ...diagnostics },
+  },
   {
     name: 'validate',
     input: validateInputSchema,

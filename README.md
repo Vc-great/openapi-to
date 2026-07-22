@@ -96,7 +96,7 @@ pnpm mcp:inspect -- --allow-write # explicit synthetic Prepare/Apply fixture
 ```
 
 `mcp:check` runs the built stdio Server through the official MCP SDK and reports
-the 3/5/7 Tool matrices plus controlled-write health. `mcp:inspect` is a
+the 3/8/10 Tool matrices plus controlled-write health. `mcp:inspect` is a
 foreground, authenticated localhost launcher for manual review; it is never an
 automated failpoint or crash-recovery gate. See the
 [MCP test strategy](docs/testing/mcp-testing.md) and

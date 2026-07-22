@@ -125,7 +125,20 @@ paths:
   /ping:
     get:
       operationId: ping
-      responses: { "200": { description: ok } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PingResponse" }
+components:
+  schemas:
+    PingResponse:
+      type: object
+      properties:
+        alpha: { type: string }
+        beta: { type: string }
+        gamma: { type: string }
 `
     await writeFile(path.join(root, 'openapi.yaml'), spec)
     await writeFile(path.join(root, 'fail.yaml'), spec)
@@ -170,9 +183,40 @@ module.exports = {
       'openapi_validate',
       'openapi_inspect',
       'openapi_diff',
+      'openapi_list_targets',
+      'openapi_search_operations',
+      'openapi_get_operation',
       'openapi_generate_dry_run',
       'openapi_check_generation',
     ])
+
+    const targets = await connected.client.callTool({ name: 'openapi_list_targets', arguments: {} })
+    expect(targets.isError).not.toBe(true)
+    expect((structured(targets).targets as Array<Record<string, unknown>>).map(({ name }) => name)).toEqual(['conflict', 'escape', 'fail', 'main', 'second'])
+    expect(JSON.stringify(targets)).not.toContain('openapi.yaml')
+
+    const targetRequired = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { query: 'ping' } })
+    expect(targetRequired.isError).toBe(true)
+    expect((structured(targetRequired).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_TARGET_REQUIRED')
+    const search = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { target: 'main', query: 'ping', limit: 8 } })
+    expect(search.isError).not.toBe(true)
+    expect(structured(search)).toMatchObject({ success: true, target: 'main', totalMatches: 1, items: [expect.objectContaining({ operationKey: 'ping', method: 'GET', path: '/ping' })] })
+    expect(JSON.stringify(search)).not.toContain('"openapi"')
+    const noSearchResults = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { target: 'main', query: 'definitely absent' } })
+    expect(structured(noSearchResults)).toMatchObject({ success: true, totalMatches: 0, items: [] })
+    const contract = await connected.client.callTool({ name: 'openapi_get_operation', arguments: { target: 'main', operationKey: 'ping', detail: 'contract', schemaDepth: 1 } })
+    expect(contract.isError).not.toBe(true)
+    expect(structured(contract)).toMatchObject({ success: true, found: true, operation: { operationKey: 'ping', responses: [expect.objectContaining({ status: '200', success: true })] } })
+    expect(JSON.stringify(contract)).not.toContain('"openapi"')
+    const boundedContract = await connected.client.callTool({ name: 'openapi_get_operation', arguments: { target: 'main', operationKey: 'ping', maxPropertiesPerSchema: 1, maxSchemas: 1 } })
+    expect(structured(boundedContract)).toMatchObject({ success: true, truncated: { contract: true, reasons: expect.arrayContaining(['maxPropertiesPerSchema']) } })
+    expect((((structured(boundedContract).operation as { schemas: Array<{ properties: unknown[] }> }).schemas[0]?.properties) ?? [])).toHaveLength(1)
+    const missingOperation = await connected.client.callTool({ name: 'openapi_get_operation', arguments: { target: 'main', operationKey: 'missing' } })
+    expect(missingOperation.isError).toBe(true)
+    expect((structured(missingOperation).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('OPERATION_NOT_FOUND')
+    const unknownCatalogTarget = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { target: 'unknown', query: 'ping' } })
+    expect(unknownCatalogTarget.isError).toBe(true)
+    expect((structured(unknownCatalogTarget).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_UNKNOWN_TARGET')
 
     const outputRoot = path.join(root, '.OpenAPI/generated')
     const ownership = path.join(outputRoot, '.openapi-to-manifest.json')
@@ -247,12 +291,37 @@ module.exports = {
     await writeFile(path.join(root, 'bad.config.ts'), 'throw new Error("secret token=do-not-return")\n')
     const connected = await connect(root, 'bad.config.ts')
     clients.push(connected.client)
-    expect((await connected.client.listTools()).tools).toHaveLength(5)
+    expect((await connected.client.listTools()).tools).toHaveLength(8)
     const result = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: {} })
     expect(result.isError).toBe(true)
     expect((structured(result).diagnostics as Array<{ code: string; message: string }>)).toEqual([
       expect.objectContaining({ code: 'MCP_CONFIG_LOAD_FAILED' }),
     ])
     expect(JSON.stringify(result)).not.toContain('do-not-return')
+  })
+
+  it('keeps trusted catalog sources inside Workspace and preserves remote and secret boundaries', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-catalog-security-'))
+    await mkdir(path.join(root, '.OpenAPI'))
+    const outside = path.join(path.dirname(root), `${path.basename(root)}-outside.yaml`)
+    await writeFile(outside, 'openapi: 3.1.0\ninfo: { title: Outside, version: "1" }\npaths: {}\n')
+    await writeFile(
+      path.join(root, '.OpenAPI/openapi.config.js'),
+      `module.exports = { servers: [
+        { name: 'escape', input: { path: '../${path.basename(outside)}' }, output: { dir: 'escape' } },
+        { name: 'private', input: { path: 'http://127.0.0.1/openapi.yaml', remote: { headers: { Authorization: 'Bearer catalog-secret-token' } } }, output: { dir: 'private' } }
+      ], plugins: [] }\n`,
+    )
+    const connected = await connect(root, '.OpenAPI/openapi.config.js')
+    clients.push(connected.client)
+    const escaped = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { target: 'escape', query: 'anything' } })
+    expect(escaped.isError).toBe(true)
+    expect((structured(escaped).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_WORKSPACE_PATH_OUTSIDE_ROOT')
+    const remote = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { target: 'private', query: 'anything' } })
+    expect(remote.isError).toBe(true)
+    expect((structured(remote).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('REMOTE_SOURCE_BLOCKED')
+    const listed = await connected.client.callTool({ name: 'openapi_list_targets', arguments: {} })
+    expect(JSON.stringify([escaped, remote, listed])).not.toContain('catalog-secret-token')
+    expect(JSON.stringify(listed)).not.toContain('127.0.0.1')
   })
 })

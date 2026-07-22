@@ -4,13 +4,13 @@ Status: accepted for P3 (2026-07-18).
 
 ## Decision and authority
 
-`@openapi-to/mcp` keeps its five read-only tools and adds exactly two operator-gated tools:
+`@openapi-to/mcp` keeps its eight configured-mode read-only tools and adds exactly two operator-gated tools:
 
 ```text
 openapi_prepare_generation -> review -> openapi_apply_generation
 ```
 
-Both tools are registered only when startup includes a Workspace-local trusted config and `--allow-write`, after every configured output root has passed the Workspace boundary. A Tool argument can neither grant write authority nor select config, plugins, output roots, content, delete policy, environment, shell, `force`, or validation bypasses. Without `--allow-write`, a configured Server still exposes exactly the original five tools.
+Both tools are registered only when startup includes a Workspace-local trusted config and `--allow-write`, after every configured output root has passed the Workspace boundary. A Tool argument can neither grant write authority nor select config, plugins, output roots, content, delete policy, environment, shell, `force`, or validation bypasses. Without `--allow-write`, a configured Server exposes exactly eight read-only tools.
 
 This release restricts each plan to one configured target and one output root. That makes the transaction boundary explainable and avoids claiming cross-filesystem atomicity. Multi-target Prepare fails with `MCP_WRITE_SINGLE_TARGET_REQUIRED`; it never applies only the first target.
 

@@ -8,6 +8,9 @@ import { generateDryRunInputSchema, generateDryRunOutputSchema, generateDryRunTo
 import { inspectInputSchema, inspectOutputSchema, inspectTool } from './inspect.ts'
 import { prepareGenerationInputSchema, prepareGenerationOutputSchema, prepareGenerationTool } from './prepare-generation.ts'
 import { validateInputSchema, validateOutputSchema, validateTool } from './validate.ts'
+import { getOperationInputSchema, getOperationOutputSchema, getOperationTool } from './get-operation.ts'
+import { listTargetsInputSchema, listTargetsOutputSchema, listTargetsTool } from './list-targets.ts'
+import { searchOperationsInputSchema, searchOperationsOutputSchema, searchOperationsTool } from './search-operations.ts'
 
 const READ_ONLY_ANNOTATIONS = {
   readOnlyHint: true,
@@ -15,6 +18,8 @@ const READ_ONLY_ANNOTATIONS = {
   idempotentHint: true,
   openWorldHint: true,
 } as const
+
+const TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS = { ...READ_ONLY_ANNOTATIONS, openWorldHint: false } as const
 
 export function registerReadOnlyTools(server: McpServer, context: ToolContext): void {
   server.registerTool(
@@ -51,6 +56,39 @@ export function registerReadOnlyTools(server: McpServer, context: ToolContext): 
     (input, extra) => diffTool(context, input, extra),
   )
   if (!context.trustedConfig.configured) return
+  server.registerTool(
+    'openapi_list_targets',
+    {
+      title: 'List Trusted OpenAPI Targets',
+      description: 'Use before operation search when the startup-trusted configuration has multiple targets. Returns only target names, local/remote source type, bounded counts, generation availability, and diagnostic summaries. Never returns source locations, URLs, headers, secrets, configuration bodies, or OpenAPI documents.',
+      inputSchema: listTargetsInputSchema,
+      outputSchema: listTargetsOutputSchema,
+      annotations: TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => listTargetsTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_search_operations',
+    {
+      title: 'Search Trusted OpenAPI Operations',
+      description: 'Use to find a small ranked set of operations in one startup-trusted target by operation identity, method/path, tags, parameters, schema names, summary, or description. Returns lightweight summaries only; never returns a full OpenAPI document, full operation object, or schema body, and never generates or writes files.',
+      inputSchema: searchOperationsInputSchema,
+      outputSchema: searchOperationsOutputSchema,
+      annotations: TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => searchOperationsTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_get_operation',
+    {
+      title: 'Read Trusted OpenAPI Operation Contract',
+      description: 'Use after openapi_search_operations to read one selected operation by stable operationKey. Returns summary or a bounded request/response contract with depth-, count-, property-, example-, and byte-limited related schema summaries. Never returns the full OpenAPI document or components.schemas and never generates or writes files.',
+      inputSchema: getOperationInputSchema,
+      outputSchema: getOperationOutputSchema,
+      annotations: TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => getOperationTool(context, input, extra),
+  )
   server.registerTool(
     'openapi_generate_dry_run',
     {
@@ -107,3 +145,6 @@ export * from './generate-dry-run.ts'
 export * from './check-generation.ts'
 export * from './prepare-generation.ts'
 export * from './apply-generation.ts'
+export * from './list-targets.ts'
+export * from './search-operations.ts'
+export * from './get-operation.ts'

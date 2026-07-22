@@ -27,6 +27,9 @@
   "thresholds": {
     "serverStartup": { "maxP95Ms": 5000, "maxStructuredContentBytes": 0 },
     "toolsList": { "maxP95Ms": 2000, "maxStructuredContentBytes": 0 },
+    "catalogSearch": { "maxP95Ms": 15000, "maxStructuredContentBytes": 262144 },
+    "catalogGetOperation": { "maxP95Ms": 5000, "maxStructuredContentBytes": 262144 },
+    "catalogListTargets": { "maxP95Ms": 5000, "maxStructuredContentBytes": 262144 },
     "validate": { "maxP95Ms": 15000, "maxStructuredContentBytes": 262144 },
     "inspect": { "maxP95Ms": 15000, "maxStructuredContentBytes": 262144 },
     "diff": { "maxP95Ms": 30000, "maxStructuredContentBytes": 262144 },

@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 import { version } from '../package.json'
 import { GenerationLock } from './generation/generation-lock.ts'
+import { TrustedTargetCatalogRegistry } from './catalog/trusted-target-registry.ts'
 import { GenerationPlanStore } from './generation/plan-store.ts'
 import { validateConfiguredOutputRoots } from './generation/service.ts'
 import { TrustedConfigProvider } from './generation/trusted-config.ts'
@@ -14,6 +15,7 @@ export function createOpenapiToMcpServer(options: OpenapiToMcpServerOptions): Mc
   const resolved = resolveMcpServerOptions(options)
   const logger = createStderrLogger({ format: resolved.logFormat, level: resolved.logLevel })
   const trustedConfig = new TrustedConfigProvider(resolved.workspaceRoot, resolved.configPath)
+  const targetCatalogs = resolved.configPath ? new TrustedTargetCatalogRegistry(trustedConfig, resolved) : undefined
   const generationPlans = resolved.allowWrite
     ? new GenerationPlanStore<InternalGenerationWritePlan>({
         ttlMs: resolved.write.planTtlMs,
@@ -35,6 +37,7 @@ export function createOpenapiToMcpServer(options: OpenapiToMcpServerOptions): Mc
     options: resolved,
     logger,
     trustedConfig,
+    ...(targetCatalogs ? { targetCatalogs } : {}),
     generationLock: new GenerationLock(),
     ...(generationPlans ? { generationPlans } : {}),
   }
@@ -50,6 +53,7 @@ export function createOpenapiToMcpServer(options: OpenapiToMcpServerOptions): Mc
   const close = server.close.bind(server)
   server.close = async () => {
     generationPlans?.clear()
+    targetCatalogs?.clear()
     await close()
   }
   return server

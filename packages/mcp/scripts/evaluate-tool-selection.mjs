@@ -12,7 +12,7 @@ const cases = caseIndex >= 0 ? allCases.filter(({ id }) => id === process.argv[c
 const codex = process.env.OPENAPI_TO_CODEX_BIN || '/Applications/ChatGPT.app/Contents/Resources/codex'
 const bin = path.join(packageRoot, 'bin/openapi-to-mcp.js')
 const config = 'packages/mcp/src/evaluation/fixtures/generation/openapi.config.cjs'
-const toolNames = ['openapi_validate', 'openapi_inspect', 'openapi_diff', 'openapi_generate_dry_run', 'openapi_check_generation', 'openapi_prepare_generation', 'openapi_apply_generation']
+const toolNames = ['openapi_validate', 'openapi_inspect', 'openapi_diff', 'openapi_list_targets', 'openapi_search_operations', 'openapi_get_operation', 'openapi_generate_dry_run', 'openapi_check_generation', 'openapi_prepare_generation', 'openapi_apply_generation']
 
 function runCase(testCase) {
   return new Promise((resolve, reject) => {

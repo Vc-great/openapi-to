@@ -34,6 +34,8 @@ const callMany = async (count, name, argumentsValue) => {
 await callMany(100, 'openapi_validate', { source: fixture })
 await callMany(100, 'openapi_inspect', { source: fixture })
 await callMany(50, 'openapi_diff', { before: fixture, after: fixture })
+await callMany(100, 'openapi_search_operations', { target: 'evaluation', query: 'enterprise resource 42', limit: 8 })
+await callMany(50, 'openapi_get_operation', { target: 'evaluation', operationKey: 'getEnterpriseResource42', detail: 'contract' })
 await callMany(10, 'openapi_generate_dry_run', { targets: ['evaluation'] })
 await callMany(10, 'openapi_check_generation', { targets: ['evaluation'] })
 await Promise.all(Array.from({ length: 20 }, () => client.callTool({ name: 'openapi_validate', arguments: { source: fixture } }, undefined, { timeout: 120_000 })))
@@ -81,5 +83,5 @@ try {
 }
 const rssGrowthBytesApprox = rssBefore !== null && rssAfter !== null ? rssAfter - rssBefore : null
 const success = rssGrowthBytesApprox === null || rssGrowthBytesApprox < 512 * 1024 * 1024
-process.stdout.write(`${JSON.stringify({ schemaVersion: 1, success, calls: { validate: 120, inspect: 100, diff: 50, dryRun: 10, check: 10, prepare: writeCalls, apply: writeCalls }, durationMs: Math.round(performance.now() - started), stderrBytes, rssBefore, rssAfter, rssGrowthBytesApprox })}\n`)
+process.stdout.write(`${JSON.stringify({ schemaVersion: 1, success, calls: { validate: 120, inspect: 100, diff: 50, searchOperations: 100, getOperation: 50, dryRun: 10, check: 10, prepare: writeCalls, apply: writeCalls }, durationMs: Math.round(performance.now() - started), stderrBytes, rssBefore, rssAfter, rssGrowthBytesApprox })}\n`)
 if (!success) process.exitCode = 1

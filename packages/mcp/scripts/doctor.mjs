@@ -17,12 +17,16 @@ const sourceSentinel = 'doctor-source-body-sentinel'
 const generatedSentinel = 'doctor-generated-body-sentinel'
 
 const analysisTools = ['openapi_validate', 'openapi_inspect', 'openapi_diff']
-const configuredTools = [...analysisTools, 'openapi_generate_dry_run', 'openapi_check_generation']
+const catalogTools = ['openapi_list_targets', 'openapi_search_operations', 'openapi_get_operation']
+const configuredTools = [...analysisTools, ...catalogTools, 'openapi_generate_dry_run', 'openapi_check_generation']
 const writeTools = [...configuredTools, 'openapi_prepare_generation', 'openapi_apply_generation']
 const expectedInputProperties = {
   openapi_validate: ['failOnWarning', 'source'],
   openapi_inspect: ['includeOperations', 'source'],
   openapi_diff: ['after', 'before'],
+  openapi_list_targets: [],
+  openapi_search_operations: ['includeDeprecated', 'limit', 'methods', 'query', 'tags', 'target'],
+  openapi_get_operation: ['detail', 'includeExamples', 'maxBytes', 'maxPropertiesPerSchema', 'maxSchemas', 'operationKey', 'schemaDepth', 'target'],
   openapi_generate_dry_run: ['includePreview', 'targets'],
   openapi_check_generation: ['targets'],
   openapi_prepare_generation: ['includePreview', 'targets'],
@@ -32,6 +36,9 @@ const expectedRequiredProperties = {
   openapi_validate: ['source'],
   openapi_inspect: ['source'],
   openapi_diff: ['after', 'before'],
+  openapi_list_targets: [],
+  openapi_search_operations: ['query'],
+  openapi_get_operation: ['operationKey'],
   openapi_generate_dry_run: [],
   openapi_check_generation: [],
   openapi_prepare_generation: [],
@@ -49,18 +56,21 @@ const checkDefinitions = [
   ['inspect', 'Inspect returns the expected bounded shape'],
   ['diff', 'Diff reports the synthetic contract addition'],
   ['close-3', 'No-config stdio server closes cleanly'],
-  ['matrix-5', 'Configured server exposes the five-tool contract'],
+  ['matrix-8', 'Configured server exposes the eight-tool contract'],
+  ['list-targets', 'Trusted target discovery returns bounded metadata'],
+  ['search-operations', 'Operation search returns lightweight candidates'],
+  ['get-operation', 'Operation contract reading returns one bounded contract'],
   ['dry-run', 'Dry-run reports artifacts without writing'],
   ['check-outdated', 'Check reports the absent output as outdated'],
-  ['close-5', 'Configured stdio server closes cleanly'],
+  ['close-8', 'Configured stdio server closes cleanly'],
   ['read-only-no-write', 'Configured read-only tools preserve persistent workspace bytes'],
-  ['matrix-7', 'Write-enabled server exposes the seven-tool contract'],
+  ['matrix-10', 'Write-enabled server exposes the ten-tool contract'],
   ['prepare-no-write', 'Prepare returns a plan without writing'],
   ['apply', 'Apply commits the reviewed plan exactly once'],
   ['replay', 'Apply replay is rejected'],
   ['check-current', 'Check reports applied output as current'],
   ['prepare-unchanged', 'A second Prepare reports only unchanged artifacts'],
-  ['close-7', 'Write-enabled stdio server closes cleanly'],
+  ['close-10', 'Write-enabled stdio server closes cleanly'],
   ['redaction', 'Tool results redact paths and bodies; logs redact plan tokens'],
   ['temporary-cleanup', 'Synthetic workspace is removed'],
   ['report-output', 'Optional JSON report output is written'],
@@ -166,6 +176,7 @@ function annotationFor(name) {
   if (name === 'openapi_apply_generation') {
     return { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false }
   }
+  if (catalogTools.includes(name)) return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
 }
 
@@ -458,13 +469,27 @@ async function runDoctor(checks, state) {
 
     let readOnlyBefore
     let configured
-    await runCheck(checks, 'matrix-5', async () => {
+    await runCheck(checks, 'matrix-8', async () => {
       readOnlyBefore = await snapshotTree(workspaceRoot)
       configured = await connect({ config: true })
       assertServerIdentity(configured, state)
       const tools = await listTools(configured)
       state.toolMatrices.configured = tools.length
       assertToolContracts(tools, configuredTools)
+    })
+    await runCheck(checks, 'list-targets', async () => {
+      const value = successful(await callTool(configured, 'openapi_list_targets', {}), 'openapi_list_targets')
+      assert(value.targets?.length === 1 && value.targets[0]?.name === 'doctor' && value.targets[0]?.operationCount === 1, 'Target discovery returned unexpected bounded metadata.')
+    })
+    await runCheck(checks, 'search-operations', async () => {
+      const value = successful(await callTool(configured, 'openapi_search_operations', { target: 'doctor', query: 'list pets' }), 'openapi_search_operations')
+      assert(value.items?.length === 1 && value.items[0]?.operationKey === 'listPets' && value.items[0]?.path === '/pets', 'Operation search returned unexpected candidates.')
+      assert(!JSON.stringify(value).includes(sourceSentinel), 'Operation search leaked the OpenAPI document body.')
+    })
+    await runCheck(checks, 'get-operation', async () => {
+      const value = successful(await callTool(configured, 'openapi_get_operation', { target: 'doctor', operationKey: 'listPets', detail: 'contract' }), 'openapi_get_operation')
+      assert(value.found === true && value.operation?.responses?.[0]?.status === '200', 'Operation contract lookup returned an unexpected result.')
+      assert(!JSON.stringify(value).includes(sourceSentinel), 'Operation contract lookup leaked the OpenAPI document body.')
     })
     await runCheck(checks, 'dry-run', async () => {
       const value = successful(await callTool(configured, 'openapi_generate_dry_run', { targets: ['doctor'] }), 'openapi_generate_dry_run')
@@ -477,14 +502,14 @@ async function runDoctor(checks, state) {
       assert(result.isError === true && value.success === false && value.outdated === true, 'Check did not report absent generated output as outdated.')
       assert(value.truncated?.totalChanges === 2, 'Check returned an unexpected change count.')
     })
-    await runCheck(checks, 'close-5', () => closeConnection(configured))
+    await runCheck(checks, 'close-8', () => closeConnection(configured))
     await runCheck(checks, 'read-only-no-write', async () => {
       assert(equalValues(await snapshotTree(workspaceRoot), readOnlyBefore), 'A configured read-only tool modified the workspace.')
       assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'A configured read-only tool created the output root.')
     })
 
     let writeEnabled
-    await runCheck(checks, 'matrix-7', async () => {
+    await runCheck(checks, 'matrix-10', async () => {
       writeEnabled = await connect({ config: true, allowWrite: true })
       assertServerIdentity(writeEnabled, state)
       const tools = await listTools(writeEnabled)
@@ -545,7 +570,7 @@ async function runDoctor(checks, state) {
       )
       planTokens.push(value.plan.token)
     })
-    await runCheck(checks, 'close-7', () => closeConnection(writeEnabled))
+    await runCheck(checks, 'close-10', () => closeConnection(writeEnabled))
     await runCheck(checks, 'redaction', async () => {
       const serializedPayloads = JSON.stringify(payloads)
       const serializedLogs = Buffer.concat(stderrChunks).toString('utf8')
