@@ -76,10 +76,10 @@ export async function runPluginsByTags(
         const firstOperation = operations?.[0]
         if (!operations || !firstOperation) continue
         const matchedTag = find(firstOperation.accessor.operation.getTags(), (tag) => camelCase(tag.name) === tagName)
-        if (!matchedTag) {
+        if (!matchedTag && tagName !== 'default') {
           throw new Error(`Tag with name "${tagName}" not found`)
         }
-        const tagData: HookTagObject = { ...matchedTag }
+        const tagData: HookTagObject = matchedTag ? { ...matchedTag } : { name: 'default' }
         concurrentTagStartTasks.push(await executePluginHooks(stage, 'tagStart', (plugin) => plugin.hooks.tagStart?.(tagData, ctx), failedPluginNamesSet, diagnostics, signal))
 
         // 添加操作钩子并发任务（所有操作并发执行）

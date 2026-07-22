@@ -1,11 +1,19 @@
 import { z } from 'zod'
 
-import { safeExecutionDiagnostic } from '../errors.ts'
-import { executeGeneration, generationSucceeded, manifestHash } from '../generation/service.ts'
+import { McpToolError, safeExecutionDiagnostic } from '../errors.ts'
+import { executeGeneration, executeSelectiveGeneration, generationSucceeded, manifestHash } from '../generation/service.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
-export const generateDryRunInputSchema = z.object({ targets: z.array(z.string().min(1).max(200)).max(100).optional(), includePreview: z.boolean().optional() })
+const generationScopeSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('full') }),
+  z.object({ type: z.literal('operations'), operationKeys: z.array(z.string().min(1).max(500)).max(100) }),
+])
+export const generateDryRunInputSchema = z.object({
+  targets: z.array(z.string().min(1).max(200)).max(100).optional(),
+  scope: generationScopeSchema.optional(),
+  includePreview: z.boolean().optional(),
+})
 const artifactSchema = z.object({
   path: z.string(), kind: z.string(), bytes: z.number().int(), sha256: z.string().optional(),
   status: z.enum(['added', 'modified', 'deleted', 'unchanged']), preview: z.string().optional(), previewTruncated: z.boolean().optional(),
@@ -13,6 +21,16 @@ const artifactSchema = z.object({
 export const generateDryRunOutputSchema = z.object({
   schemaVersion: z.literal(1), tool: z.literal('openapi_generate_dry_run'), success: z.boolean(), mode: z.literal('dry-run').optional(),
   config: z.object({ path: z.string(), targets: z.array(z.string()) }).optional(),
+  scope: z.object({
+    type: z.literal('operations'),
+    requestedOperationKeys: z.array(z.string()),
+    resolvedOperationKeys: z.array(z.string()),
+  }).optional(),
+  projection: z.object({
+    operationCount: z.number().int(), pathCount: z.number().int(), schemaCount: z.number().int(), parameterCount: z.number().int(),
+    requestBodyCount: z.number().int(), responseCount: z.number().int(), headerCount: z.number().int(), securitySchemeCount: z.number().int(),
+    callbackCount: z.number().int(), linkCount: z.number().int(), exampleCount: z.number().int(), projectionHash: z.string().optional(),
+  }).optional(),
   servers: z.array(z.object({
     name: z.string(), source: z.string().optional(), outputRoot: z.string().optional(),
     manifest: z.object({ artifactCount: z.number().int(), totalBytes: z.number().int(), hash: z.string().optional(), artifacts: z.array(artifactSchema) }),
@@ -30,7 +48,19 @@ export async function generateDryRunTool(context: ToolContext, input: z.infer<ty
   return loggedToolCall(context, tool, extra, async (execution) => {
     try {
       return await context.generationLock.run(async () => {
-        const run = await executeGeneration(context.trustedConfig, context.options, input.targets, 'dry-run', execution)
+        if (input.scope?.type === 'operations' && !context.targetCatalogs) {
+          throw new McpToolError('MCP_CONFIG_LOAD_FAILED', 'Selective generation requires a startup-trusted target registry.')
+        }
+        const run = input.scope?.type === 'operations'
+          ? await executeSelectiveGeneration(
+              context.trustedConfig,
+              context.options,
+              context.targetCatalogs as NonNullable<ToolContext['targetCatalogs']>,
+              input.targets,
+              input.scope,
+              execution,
+            )
+          : await executeGeneration(context.trustedConfig, context.options, input.targets, 'dry-run', execution)
         let previewBytes = 0
         let omittedPreviewBytes = 0
         let totalArtifacts = 0
@@ -90,6 +120,8 @@ export async function generateDryRunTool(context: ToolContext, input: z.infer<ty
             success,
             mode: 'dry-run',
             config: { path: run.configPath, targets: run.targets },
+            ...(run.selection ? { scope: { type: 'operations' as const, ...run.selection } } : {}),
+            ...(run.projection ? { projection: { ...run.projection.stats, ...(run.projection.projectionHash ? { projectionHash: run.projection.projectionHash } : {}) } } : {}),
             servers,
             diagnostics: finalBounded.diagnostics,
             diagnosticSummary: finalBounded.summary,

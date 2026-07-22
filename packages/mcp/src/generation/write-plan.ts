@@ -5,6 +5,7 @@ import path from 'node:path'
 import {
   acquireOutputWriteLock,
   commitOutputTransaction,
+  OPERATION_SELECTION_MANIFEST_VERSION,
   snapshotOutputFile,
   type ConfigSourceSnapshot,
   type FileIdentity,
@@ -16,6 +17,8 @@ import {
   OutputTransactionRollbackError,
   OutputTransactionRolledBackError,
   type SourceSnapshot,
+  type OperationSelectionMutation,
+  type OpenAPIProjectionStats,
 } from '@openapi-to/core'
 
 import { version } from '../../package.json'
@@ -23,8 +26,10 @@ import { McpToolError } from '../errors.ts'
 import type { McpLogger } from '../logger.ts'
 import type { ResolvedMcpServerOptions } from '../options.ts'
 import { workspaceRelative } from '../security/workspace.ts'
-import { executeGeneration, generationSucceeded, type GenerationExecution, type GenerationRun } from './service.ts'
+import type { TrustedTargetCatalogRegistry } from '../catalog/trusted-target-registry.ts'
+import { executeGeneration, executeSelectiveGeneration, generationSucceeded, type GenerationExecution, type GenerationRun } from './service.ts'
 import type { GenerationPlanStore, StoredGenerationPlan } from './plan-store.ts'
+import { prepareOperationSelection, type PreparedOperationSelection } from './selection-state.ts'
 import type { TrustedConfigProvider } from './trusted-config.ts'
 
 interface DirectorySnapshot {
@@ -53,8 +58,24 @@ interface PlanArtifact {
   bytes: number
 }
 
+interface SelectivePlanBinding {
+  selectionManifestVersion: typeof OPERATION_SELECTION_MANIFEST_VERSION
+  selectionOwner: string
+  selectionFileIdentity: string
+  previousSelectionExists: boolean
+  previousSelectionHash: string
+  requestedOperationKeys: string[]
+  newlyAddedOperationKeys: string[]
+  alreadySelectedOperationKeys: string[]
+  desiredOperationKeys: string[]
+  desiredSelectionHash: string
+  projectionHash: string
+  projection: OpenAPIProjectionStats
+}
+
 interface DeterministicGenerationPlan {
   schemaVersion: 1
+  kind: 'full' | 'selective'
   generatorVersion: string
   workspace: DirectorySnapshot
   config: {
@@ -73,9 +94,11 @@ interface DeterministicGenerationPlan {
     artifacts: PlanArtifact[]
     manifest: GenerationManifest
   }
+  selection?: SelectivePlanBinding
 }
 
 export interface InternalGenerationWritePlan extends StoredGenerationPlan {
+  kind: 'full' | 'selective'
   deterministic: DeterministicGenerationPlan
 }
 
@@ -116,6 +139,11 @@ function stableValue(value: unknown, seen = new WeakSet<object>()): unknown {
 
 function stableJSON(value: unknown): string {
   return JSON.stringify(stableValue(value))
+}
+
+/** @internal Deterministic semantic plan hash used by focused binding tests. */
+export function hashDeterministicGenerationPlan(plan: DeterministicGenerationPlan): string {
+  return hash(stableJSON(plan))
 }
 
 async function directorySnapshot(directory: string, workspaceRoot: string): Promise<DirectorySnapshot> {
@@ -213,6 +241,17 @@ async function deterministicPlan(
   execution: GenerationExecution,
 ): Promise<{ deterministic: DeterministicGenerationPlan; run: GenerationRun }> {
   const run = await executeGeneration(provider, options, requested, 'dry-run', execution)
+  return deterministicPlanFromRun(provider, options, run, execution, 'full')
+}
+
+async function deterministicPlanFromRun(
+  provider: TrustedConfigProvider,
+  options: ResolvedMcpServerOptions,
+  run: GenerationRun,
+  execution: GenerationExecution,
+  kind: 'full' | 'selective',
+  selection?: SelectivePlanBinding,
+): Promise<{ deterministic: DeterministicGenerationPlan; run: GenerationRun }> {
   if (!generationSucceeded(run)) throw new McpToolError('MCP_TOOL_EXECUTION_FAILED', 'Generation failed while preparing the controlled write plan.')
   if (run.servers.length !== 1 || run.targets.length !== 1) {
     throw new McpToolError('MCP_WRITE_SINGLE_TARGET_REQUIRED', 'Controlled write currently requires exactly one configured target and one output root per plan.')
@@ -229,6 +268,7 @@ async function deterministicPlan(
   const workspace = await directorySnapshot(options.workspaceRoot, options.workspaceRoot)
   const deterministic: DeterministicGenerationPlan = {
     schemaVersion: 1,
+    kind,
     generatorVersion: version,
     workspace,
     config: {
@@ -249,6 +289,7 @@ async function deterministicPlan(
       artifacts: planArtifacts(artifacts),
       manifest: generationResult.manifest,
     },
+    ...(selection ? { selection } : {}),
   }
   return { deterministic, run }
 }
@@ -262,11 +303,12 @@ export async function prepareGenerationWritePlan(
 ): Promise<PreparedGenerationPlan> {
   const { deterministic, run } = await deterministicPlan(provider, options, requested, execution)
   const serialized = stableJSON(deterministic)
-  const planHash = hash(serialized)
+  const planHash = hashDeterministicGenerationPlan(deterministic)
   const outputRoot = run.servers[0]?.result.generationResult?.manifest.outputRoot
   if (!outputRoot) throw new McpToolError('MCP_TOOL_EXECUTION_FAILED', 'Generation did not establish an output root.')
   const created = store.create({
     schemaVersion: 1,
+    kind: 'full',
     planHash,
     workspaceHash: deterministic.workspace.realPathHash,
     target: deterministic.target,
@@ -275,6 +317,72 @@ export async function prepareGenerationWritePlan(
     deterministic,
   })
   return { stored: created.plan, token: created.token, run }
+}
+
+export async function prepareSelectiveGenerationWritePlan(
+  provider: TrustedConfigProvider,
+  store: GenerationPlanStore<InternalGenerationWritePlan>,
+  options: ResolvedMcpServerOptions,
+  registry: TrustedTargetCatalogRegistry,
+  requested: string[] | undefined,
+  mutation: OperationSelectionMutation,
+  execution: GenerationExecution = {},
+): Promise<PreparedGenerationPlan & { selection: PreparedOperationSelection }> {
+  const selection = await prepareOperationSelection(provider, options, registry, requested, mutation, execution.signal)
+  const run = await executeSelectiveGeneration(
+    provider,
+    options,
+    registry,
+    [selection.target.name],
+    { type: 'operations', operationKeys: selection.merge.desiredOperationKeys },
+    execution,
+    'prepare',
+  )
+  const projectionHash = run.projection?.projectionHash
+  if (!projectionHash || !run.projection) {
+    throw new McpToolError('MCP_TOOL_EXECUTION_FAILED', 'Selective Prepare did not produce a complete projected compilation identity.')
+  }
+  const binding: SelectivePlanBinding = {
+    selectionManifestVersion: OPERATION_SELECTION_MANIFEST_VERSION,
+    selectionOwner: selection.selectionOwner,
+    selectionFileIdentity: selection.selectionFileIdentity,
+    previousSelectionExists: selection.previousSelectionExists,
+    previousSelectionHash: selection.previousSelectionHash,
+    requestedOperationKeys: selection.merge.requestedOperationKeys,
+    newlyAddedOperationKeys: selection.merge.newlyAddedOperationKeys,
+    alreadySelectedOperationKeys: selection.merge.alreadySelectedOperationKeys,
+    desiredOperationKeys: selection.merge.desiredOperationKeys,
+    desiredSelectionHash: selection.desiredSelectionHash,
+    projectionHash,
+    projection: run.projection.stats,
+  }
+  const { deterministic } = await deterministicPlanFromRun(provider, options, run, execution, 'selective', binding)
+  const serialized = stableJSON(deterministic)
+  const planHash = hashDeterministicGenerationPlan(deterministic)
+  const outputRoot = run.servers[0]?.result.generationResult?.manifest.outputRoot
+  if (!outputRoot) throw new McpToolError('MCP_TOOL_EXECUTION_FAILED', 'Selective generation did not establish an output root.')
+  const created = store.create({
+    schemaVersion: 1,
+    kind: 'selective',
+    planHash,
+    workspaceHash: deterministic.workspace.realPathHash,
+    target: deterministic.target,
+    outputRoot,
+    byteSize: Buffer.byteLength(serialized),
+    deterministic,
+  })
+  return { stored: created.plan, token: created.token, run, selection }
+}
+
+export function assertGenerationPlanApplySupported(
+  store: GenerationPlanStore<InternalGenerationWritePlan>,
+  input: { planId: string; token: string; approvedPlanHash: string },
+): InternalGenerationWritePlan {
+  const plan = store.verify(input.planId, input.token, input.approvedPlanHash)
+  if (plan.kind === 'selective') {
+    throw new McpToolError('SELECTIVE_APPLY_NOT_ENABLED', 'Selective generation plans are review-only in this release and cannot be applied.')
+  }
+  return plan
 }
 
 function stalePlanDiagnostic(prepared: DeterministicGenerationPlan, current: DeterministicGenerationPlan): McpToolError {
@@ -308,7 +416,7 @@ export async function applyGenerationWritePlan(
   logger: McpLogger,
   execution: GenerationExecution = {},
 ): Promise<AppliedGenerationPlan> {
-  const located = store.verify(input.planId, input.token, input.approvedPlanHash)
+  const located = assertGenerationPlanApplySupported(store, input)
   let lock: OutputWriteLock | undefined
   const started = performance.now()
   try {
@@ -320,7 +428,7 @@ export async function applyGenerationWritePlan(
     logger.info('generation_apply_started', { planId: plan.planId, planHashPrefix: plan.planHash.slice(0, 12), targetCount: 1 })
     const { deterministic: current, run } = await deterministicPlan(provider, options, [plan.target], { ...execution, outputWriteLock: lock })
     if (!plan.deterministic.output.identity.exists && lock.rootCreated) current.output.identity = plan.deterministic.output.identity
-    const currentHash = hash(stableJSON(current))
+    const currentHash = hashDeterministicGenerationPlan(current)
     if (currentHash !== plan.planHash) throw stalePlanDiagnostic(plan.deterministic, current)
     await revalidateLocalSources(options.workspaceRoot, current.sources)
     const refreshedConfig = await provider.get(execution.signal)

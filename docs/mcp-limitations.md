@@ -2,6 +2,7 @@
 
 - Transport is stdio only. Streamable HTTP, OAuth, API keys, and multi-tenancy are not implemented.
 - The configured-mode eight Tools are read-only. Controlled writes exist only through operator-enabled Prepare/Apply; there is no direct write, OpenAPI/config edit, arbitrary path/content, or business API execution.
+- Persistent selection currently supports additive, single-target Selective Prepare only. Selected plans are review-only, return no token, and cannot Apply; remove/replace/migration and atomic selection writes are deferred to Phase 2 B2.
 - OpenAPI 3.2 is compatible-read with diagnosed generator gaps, not complete generation support.
 - Diff is a deterministic first-stage ruleset, not a complete compatibility proof or breaking-change oracle.
 - Config and plugins are trusted operator-selected executable code. Tool callers cannot change them; edits require a Server restart because the load result is cached.

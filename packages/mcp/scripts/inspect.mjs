@@ -433,11 +433,13 @@ function printChecklist({ allowWrite, clientPort, proxyPort, fixture }) {
 		"Call openapi_search_operations with target 'fixture' and query 'list pets'; expect one lightweight listPets candidate.",
 		"Call openapi_get_operation with target 'fixture', operationKey 'listPets', and detail 'contract'; review the bounded 200 response contract.",
 		"Call openapi_generate_dry_run with targets ['fixture']; expect client.txt added and old-managed.txt deleted.",
+		"Call openapi_generate_dry_run with targets ['fixture'] and scope { type: 'operations', operationKeys: ['listPets'] }; expect one projected operation, a stable projection hash, and no OpenAPI document body.",
 		"Call openapi_check_generation with targets ['fixture']; expect outdated=true and confirm dry-run/check changed no files.",
 	];
 	const modeSpecific = allowWrite
 		? [
 				"Call openapi_prepare_generation with targets ['fixture']; review the exact plan and conspicuous managed deletion.",
+				"Before full Apply, call openapi_prepare_generation with targets ['fixture'] and selection { type: 'add', operationKeys: ['listPets'] }; confirm kind=selective, applySupported=false, no token, a bounded selection/projection summary, and no Workspace changes.",
 				"Before approval, confirm old-managed.txt and user-owned.txt still exist and client.txt does not; Prepare wrote nothing.",
 				"After explicit human approval, call openapi_apply_generation with only the returned planId, token, and approvedPlanHash; confirm old-managed.txt is gone, client.txt exists, and user-owned.txt is byte-identical.",
 				"Confirm check is current, a new Prepare is unchanged, replay of the consumed plan is rejected, then press Ctrl-C and verify the temporary Workspace and both listeners are removed.",

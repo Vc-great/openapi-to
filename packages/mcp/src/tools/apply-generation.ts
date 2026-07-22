@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { OutputTransactionRolledBackError, OutputTransactionRollbackError } from '@openapi-to/core'
 
 import { safeExecutionDiagnostic } from '../errors.ts'
-import { applyGenerationWritePlan } from '../generation/write-plan.ts'
+import { applyGenerationWritePlan, assertGenerationPlanApplySupported } from '../generation/write-plan.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
@@ -40,6 +40,9 @@ export async function applyGenerationTool(context: ToolContext, input: z.infer<t
   return loggedToolCall(context, tool, extra, async (execution) => {
     try {
       if (!context.generationPlans) throw new Error('Controlled write plan storage is unavailable.')
+      // Reject review-only selective plans before entering the per-Server
+      // generation queue or acquiring the destination filesystem lock.
+      assertGenerationPlanApplySupported(context.generationPlans as NonNullable<ToolContext['generationPlans']>, input)
       return await context.generationLock.run(async () => {
         await execution.progress('Validating prepared plan', 5)
         const applied = await applyGenerationWritePlan(

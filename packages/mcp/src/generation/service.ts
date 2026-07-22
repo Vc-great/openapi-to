@@ -2,13 +2,17 @@ import { createHash } from 'node:crypto'
 
 import {
   build,
+  buildFromCompilation,
   formatMaterializedArtifacts,
   hasDiagnosticErrors,
   materializeArtifacts,
+  projectOpenAPICompilation,
   type Diagnostic,
   type GenerationManifestEntry,
+  type OperationGenerationScope,
   type OpenapiToConfigServer,
   type OutputWriteLock,
+  type OpenAPIProjectionStats,
 } from '@openapi-to/core'
 import { formatOpenapiToConfig } from '@openapi-to/core/utils'
 
@@ -17,6 +21,7 @@ import type { ResolvedMcpServerOptions } from '../options.ts'
 import { sanitizeSourceDisplay } from '../security/source.ts'
 import { resolveWorkspacePath, workspaceRelative } from '../security/workspace.ts'
 import type { TrustedConfigProvider } from './trusted-config.ts'
+import type { TrustedTargetCatalogRegistry } from '../catalog/trusted-target-registry.ts'
 
 export interface GenerationExecution {
   signal?: AbortSignal
@@ -34,6 +39,14 @@ export interface GenerationRun {
   targets: string[]
   servers: GenerationServerRun[]
   diagnostics: Diagnostic[]
+  selection?: {
+    requestedOperationKeys: string[]
+    resolvedOperationKeys: string[]
+  }
+  projection?: {
+    stats: OpenAPIProjectionStats
+    projectionHash?: string
+  }
 }
 
 export interface GenerationServerRun {
@@ -118,6 +131,78 @@ export async function executeGeneration(
     targets: prepared.targets.map(({ name }) => name),
     servers,
     diagnostics,
+  }
+}
+
+export async function executeSelectiveGeneration(
+  provider: TrustedConfigProvider,
+  options: ResolvedMcpServerOptions,
+  registry: TrustedTargetCatalogRegistry,
+  requested: string[] | undefined,
+  scope: OperationGenerationScope,
+  execution: GenerationExecution = {},
+  purpose: 'preview' | 'prepare' = 'preview',
+): Promise<GenerationRun> {
+  await execution.progress?.('Loading trusted configuration', 5)
+  const prepared = await prepareTargets(provider, requested, execution.signal)
+  if (prepared.targets.length !== 1) {
+    throw new McpToolError(
+      'SELECTIVE_GENERATION_SINGLE_TARGET_REQUIRED',
+      'Selective generation requires exactly one startup-configured target.',
+      'Call openapi_list_targets, then pass one target name.',
+    )
+  }
+  const [target] = prepared.targets
+  if (!target) throw new McpToolError('MCP_UNKNOWN_TARGET', 'The selected trusted target was not found.')
+  await execution.progress?.('Reusing cached target compilation', 15)
+  const cached = await registry.get(target.name, execution.signal)
+  if (!cached.catalog || !cached.compilation.document || !cached.success) {
+    return { configPath: prepared.configPath, targets: [target.name], servers: [], diagnostics: cached.diagnostics }
+  }
+  const projected = projectOpenAPICompilation(cached.compilation, cached.catalog, scope, {
+    target: target.name,
+    sourceHash: cached.sourceHash,
+    signal: execution.signal,
+  })
+  const base: GenerationRun = {
+    configPath: prepared.configPath,
+    targets: [target.name],
+    servers: [],
+    diagnostics: projected.diagnostics,
+    selection: projected.selection,
+    projection: { stats: projected.stats, ...(projected.projectionHash ? { projectionHash: projected.projectionHash } : {}) },
+  }
+  if (!projected.success || !projected.compilation) return base
+
+  await execution.progress?.('Executing plugins against projected compilation', 50)
+  const single = formatOpenapiToConfig(options.workspaceRoot, { ...target.server, name: target.name }, prepared.config)
+  single.input = { ...single.input, remote: options.remote }
+  const safeOutput = await resolveWorkspacePath(options.workspaceRoot, single.output.dir, { mustExist: false })
+  // An ad-hoc selective preview must never propose deletion of unselected
+  // managed artifacts. Selective Prepare instead generates the complete desired
+  // persisted selection and therefore preserves the trusted cleanup setting.
+  single.output = purpose === 'preview'
+    ? { ...single.output, dir: safeOutput, clean: false }
+    : { ...single.output, dir: safeOutput }
+  const result = await buildFromCompilation(single, projected.compilation, {
+    json: true,
+    dryRun: true,
+    localFileRoot: options.workspaceRoot,
+    signal: execution.signal,
+  })
+  const generated = result.generationResult?.artifacts ?? []
+  const materialized = materializeArtifacts(generated, safeOutput, { signal: execution.signal })
+  const formatted = await formatMaterializedArtifacts(materialized.artifacts, single.output.format, { signal: execution.signal })
+  return {
+    ...base,
+    servers: [{
+      name: target.name,
+      source: sanitizeSourceDisplay(options.workspaceRoot, single.input.path),
+      outputRoot: workspaceRelative(options.workspaceRoot, safeOutput),
+      result,
+      materialized: formatted.artifacts,
+    }],
+    diagnostics: result.diagnostics,
   }
 }
 

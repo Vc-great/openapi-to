@@ -51,6 +51,16 @@ export async function build(
     debug: CLIOptions.debug,
     signal: CLIOptions.signal,
   })
+  return buildFromCompilation(openapiToSingleConfig, compilation, CLIOptions, _logger)
+}
+
+/** Execute the existing plugin/artifact pipeline with an already compiled in-memory document. */
+export async function buildFromCompilation(
+  openapiToSingleConfig: OpenapiToSingleConfig,
+  compilation: OpenAPICompilation,
+  CLIOptions: CLIOptions = {},
+  _logger?: Logger,
+): Promise<BuildResult> {
   const placeholderDocument = (compilation.document ?? { openapi: '3.1.0', info: { title: 'invalid', version: '0' }, paths: {} }) as OpenAPIDocument
   const pluginManager = new PluginManager(openapiToSingleConfig, placeholderDocument, CLIOptions.signal)
   let diagnostics = [...compilation.diagnostics]

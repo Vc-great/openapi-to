@@ -13,9 +13,11 @@ Without `--config`, the server exposes `openapi_validate`, `openapi_inspect`, an
 openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts
 ```
 
-The configuration is executable trusted project code selected only by the server operator and cached for the server lifetime. Tool callers cannot replace it, change the Workspace, select plugins, or relax remote-network policy. Every local OpenAPI input and transitive local `$ref` is confined to the real Workspace. Dry-run/check execute plugins but never write generated files, ownership manifests, snapshots, or caches.
+The configuration is executable trusted project code selected only by the server operator and cached for the server lifetime. Tool callers cannot replace it, change the Workspace, select plugins, or relax remote-network policy. Every local OpenAPI input and transitive local `$ref` is confined to the real Workspace. Dry-run/check execute plugins but never write generated files, ownership manifests, snapshots, plans, or caches.
 
 The catalog Tools compile each trusted target once per Server process, build a lightweight operation index, then search and read one bounded contract by stable `operationKey`. Search returns at most eight candidates by default. Contract Schema summaries default to depth 2, 20 Schemas, 50 properties per Schema, no examples, and a 128 KiB Core budget beneath the MCP total-result budget. Restart the Server to observe trusted config or OpenAPI changes. See [Operation Catalog architecture](../../docs/architecture/operation-catalog.md).
+
+`openapi_generate_dry_run` also accepts `scope: { type: 'operations', operationKeys: [...] }` for exactly one trusted target. Core projects the cached compilation to the exact selected operations and their transitive named component closure, then runs the existing plugins. The response contains bounded selection, projection, and artifact summaries—not the projected OpenAPI document. Omit `scope` (or use `{ type: 'full' }`) for the unchanged full-target preview. Selective preview remains ephemeral. See [projected compilation architecture](../../docs/architecture/projected-compilation.md).
 
 ## Controlled generation writes
 
@@ -29,6 +31,8 @@ openapi-to-mcp \
 ```
 
 This registers `openapi_prepare_generation` and `openapi_apply_generation`, for ten tools total. Prepare executes generation and stores a short-lived complete plan binding config, sources and local `$ref` files, remote response hashes, Workspace/output identity, ownership manifest, planned files, artifact hashes, generator version, and one target. It does not create an output directory or write a file. Apply accepts only `planId`, `token`, and `approvedPlanHash`; it re-generates, revalidates every bound precondition, rejects drift, then commits through the shared Core lock/journal/rollback writer.
+
+Prepare also accepts `selection: { type: 'add', operationKeys: [...] }`. It reads the internally derived `.OpenAPI/selections/<owner>.json`, fails closed on ambiguous bootstrap/history drift, unions previous and requested keys, and generates the complete desired projection. Selection, projection, and artifacts enter the plan hash. The returned selective plan is review-only: `applySupported` is false, no token is returned, and Apply rejects it before the generation queue or filesystem lock. Prepare does not write selection, artifacts, ownership, locks, staging, or journals. Only `add` is supported; full Prepare/Apply remains unchanged. See [persistent operation selection](../../docs/architecture/persistent-operation-selection.md).
 
 The default plan lifetime is five minutes, with at most 20 in-memory plans. Tokens use a per-process HMAC key, are one-time, and become invalid on Server restart. This release intentionally limits one plan to exactly one configured target/output root. There is no `force`, stale-plan override, dynamic config, caller-supplied path/content, or direct write tool.
 

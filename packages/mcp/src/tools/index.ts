@@ -93,7 +93,7 @@ export function registerReadOnlyTools(server: McpServer, context: ToolContext): 
     'openapi_generate_dry_run',
     {
       title: 'Preview OpenAPI Generation',
-      description: 'Use to preview which configured generation artifacts would be added, modified, deleted, or unchanged. Unlike generation check, this returns the bounded plan and optional bounded text previews. It never writes files, manifests, snapshots, or caches and uses only startup-trusted config.',
+      description: 'Use to preview which configured generation artifacts would be added, modified, deleted, or unchanged. Omit scope (or use full) for the existing full preview; after operation search and contract review, use an operations scope with exact operationKeys to preview artifacts from an in-memory projected compilation for exactly one trusted target. Returns bounded summaries and optional bounded text previews; it never writes files, manifests, plans, snapshots, or caches.',
       inputSchema: generateDryRunInputSchema,
       outputSchema: generateDryRunOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
@@ -118,7 +118,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_prepare_generation',
     {
       title: 'Prepare Controlled OpenAPI Generation',
-      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Executes the startup-trusted generator and creates a short-lived in-memory plan token, but writes, deletes, and creates no Workspace files or ownership manifest. Current release supports exactly one target/output root per plan. Do not call Apply until the user explicitly confirms this returned plan hash.',
+      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Without selection it preserves the existing full plan/token flow. With selection { type: add, operationKeys } it unions exact keys with trusted persisted project selection, generates the complete desired projection, and returns a review-only plan with applySupported false and no token. Prepare never writes selection, generated files, locks, staging, or ownership manifests. Exactly one trusted target/output root is supported; callers cannot choose paths, config, plugins, cleanup, or content.',
       inputSchema: prepareGenerationInputSchema,
       outputSchema: prepareGenerationOutputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -129,7 +129,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_apply_generation',
     {
       title: 'Apply Confirmed OpenAPI Generation Plan',
-      description: 'Use only after the user explicitly confirms one unexpired openapi_prepare_generation result and its exact plan hash. Applies that same one-time plan through a locked transaction; it may create, replace, and delete only startup-configured managed generated files. It cannot accept targets, paths, content, force, or skip-validation overrides. Never use for preview, freshness checks, ambiguous requests, or automatic retry after a stale plan.',
+      description: 'Use only after the user explicitly confirms one unexpired full openapi_prepare_generation result with applySupported true and its exact plan hash/token. Review-only selective plans are rejected before generation or filesystem locks. A supported full plan is revalidated and committed through the existing locked transaction; callers cannot pass targets, paths, content, force, or safety overrides.',
       inputSchema: applyGenerationInputSchema,
       outputSchema: applyGenerationOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },

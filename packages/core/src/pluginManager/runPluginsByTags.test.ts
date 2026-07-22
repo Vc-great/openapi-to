@@ -1,4 +1,5 @@
 //@ts-nocheck
+// biome-ignore-all lint/suspicious/noExplicitAny: This legacy hook-runner test intentionally uses a minimal structural mock.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { runPluginsByTags } from './runPluginsByTags'
 import type { PluginDefinition } from './types'
@@ -84,5 +85,20 @@ describe('runPluginsByTags', () => {
     const plugin2 = createMockPlugin('p2', { buildStart: vi.fn(() => calls.push('p2')) })
     await runPluginsByTags([[plugin1], [plugin2]], context)
     expect(calls).toEqual(['p1', 'p2'])
+  })
+
+  it('runs untagged operations through the stable default tag', async () => {
+    openAPIHelper.operationsByTag = {
+      default: [{ accessor: { operation: { getTags: () => [] } } }],
+    }
+    const tagNames: string[] = []
+    const operations: string[] = []
+    const plugin = createMockPlugin('untagged', {
+      tagStart: vi.fn((tag) => tagNames.push(tag.name)),
+      operation: vi.fn(() => operations.push('operation')),
+    })
+    await runPluginsByTags([[plugin]], context)
+    expect(tagNames).toEqual(['default'])
+    expect(operations).toEqual(['operation'])
   })
 })

@@ -33,7 +33,7 @@ User asks for a user-resource trend page
   -> AI compares the bounded candidates
   -> openapi_get_operation(target="backend", operationKey="getUserResourceTrend")
   -> AI confirms request and response shapes
-  -> Phase 1 still uses the existing full-generation workflow when generation is requested
+  -> Phase 2A may pass the confirmed operationKey to selective dry-run
 ```
 
 One-interface-per-Tool is intentionally rejected: Tool metadata would grow with the document, inflate every model context, and turn operation identity changes into protocol surface changes. The three fixed catalog Tool descriptions do not grow with operation count.
@@ -50,4 +50,4 @@ The MCP registry extends the existing process-lifetime trusted-config state. Its
 
 ## Phase boundary
 
-Phase 1 remains read-only discovery. It does not implement operation selection for generation, OpenAPI projection, a complete Schema dependency closure, selective dry-run, selection manifests, or generated-file writes. Existing code generation remains full-target generation. Search and contract reading never generate, repair, delete, or write code.
+The catalog itself remains read-only discovery. Phase 2A consumes its exact keys for [projected selective dry-run](./projected-compilation.md), without changing search or contract results. Selection manifests, selective Prepare/Apply, and generated-file writes remain outside this phase. Default code generation remains full-target generation.

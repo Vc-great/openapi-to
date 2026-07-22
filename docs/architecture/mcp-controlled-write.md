@@ -30,6 +30,8 @@ Artifact bodies are not copied into plan storage. Apply must re-run generation a
 
 The external response is only a bounded review summary. Its change list may be truncated; the internal plan never is. Preview is off by default, text-only, and bounded. Binary content is never returned.
 
+Phase 2 B1 adds a second, review-only plan kind to the same Prepare Tool. An additive selection mutation loads the fixed trusted selection owner, unions previous and requested operation keys, reuses the cached target compilation, and generates the complete desired projected artifact set. The deterministic payload additionally binds selection identity/hashes, normalized additions/desired keys, and projection identity. It returns `applySupported: false` without a token. Apply rejects a valid selective plan before the generation queue and output lock without consuming it. No selected write or transaction path exists until B2; the full plan/token/Apply protocol below is unchanged.
+
 ## Token and in-memory store
 
 Each Server instance creates a random 256-bit secret and process nonce. A token is the canonical Base64URL encoding of HMAC-SHA256 over the plan ID, complete deterministic plan hash, Workspace hash, expiry, and Server nonce. Verification compares the exact, Schema-bounded canonical encoding in constant time, so alternate encodings of the same MAC are rejected. `planId` is only a lookup key and has no authorization value.

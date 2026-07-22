@@ -32,6 +32,8 @@ function structured(result: Awaited<ReturnType<Client['callTool']>>): Record<str
   return result.structuredContent as Record<string, unknown>
 }
 
+type DryRunServer = { manifest: { hash?: string } }
+
 describe.sequential('stdio MCP server', () => {
   const clients: Client[] = []
   afterEach(async () => {
@@ -131,6 +133,26 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PingResponse" }
+  /pong:
+    post:
+      operationId: pong
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PongResponse" }
+  /missing:
+    get:
+      responses: { "204": { description: empty } }
+  /dup-a:
+    get:
+      operationId: duplicateFixture
+      responses: { "200": { description: ok } }
+  /dup-b:
+    get:
+      operationId: duplicateFixture
+      responses: { "200": { description: ok } }
 components:
   schemas:
     PingResponse:
@@ -139,6 +161,10 @@ components:
         alpha: { type: string }
         beta: { type: string }
         gamma: { type: string }
+    PongResponse:
+      type: object
+      properties:
+        pong: { type: boolean }
 `
     await writeFile(path.join(root, 'openapi.yaml'), spec)
     await writeFile(path.join(root, 'fail.yaml'), spec)
@@ -223,8 +249,49 @@ module.exports = {
     const dryRun = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'], configPath: '../untrusted.js', allowPrivateNetwork: true } })
     expect(dryRun.isError).not.toBe(true)
     expect(structured(dryRun)).toMatchObject({ success: true, mode: 'dry-run', config: { path: '.OpenAPI/openapi.config.js', targets: ['main'] } })
+    const explicitFull = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'], scope: { type: 'full' } } })
+    expect(explicitFull.isError).not.toBe(true)
+    expect((structured(explicitFull).servers as DryRunServer[])[0]?.manifest.hash).toBe((structured(dryRun).servers as DryRunServer[])[0]?.manifest.hash)
     await expect(access(outputRoot)).rejects.toThrow()
     await expect(access(ownership)).rejects.toThrow()
+
+    const selective = await connected.client.callTool({
+      name: 'openapi_generate_dry_run',
+      arguments: { targets: ['main'], scope: { type: 'operations', operationKeys: ['ping'] } },
+    })
+    expect(selective.isError).not.toBe(true)
+    expect(structured(selective)).toMatchObject({
+      success: true,
+      scope: { type: 'operations', requestedOperationKeys: ['ping'], resolvedOperationKeys: ['ping'] },
+      projection: { operationCount: 1, pathCount: 1, schemaCount: 1, projectionHash: expect.any(String) },
+    })
+    expect(JSON.stringify(selective)).not.toContain('"openapi"')
+    await expect(access(outputRoot)).rejects.toThrow()
+    await expect(access(ownership)).rejects.toThrow()
+
+    const reordered = await connected.client.callTool({
+      name: 'openapi_generate_dry_run',
+      arguments: { targets: ['main'], scope: { type: 'operations', operationKeys: ['pong', 'ping', 'ping'] } },
+    })
+    const sorted = await connected.client.callTool({
+      name: 'openapi_generate_dry_run',
+      arguments: { targets: ['main'], scope: { type: 'operations', operationKeys: ['ping', 'pong'] } },
+    })
+    expect(structured(reordered)).toMatchObject({ scope: { requestedOperationKeys: ['ping', 'pong'], resolvedOperationKeys: ['ping', 'pong'] }, projection: { operationCount: 2, pathCount: 2, schemaCount: 2 } })
+    expect((structured(reordered).projection as { projectionHash: string }).projectionHash).toBe((structured(sorted).projection as { projectionHash: string }).projectionHash)
+    expect((structured(reordered).servers as DryRunServer[])[0]?.manifest.hash).toBe((structured(sorted).servers as DryRunServer[])[0]?.manifest.hash)
+
+    for (const [argumentsValue, code] of [
+      [{ targets: ['main'], scope: { type: 'operations', operationKeys: [] } }, 'EMPTY_OPERATION_SELECTION'],
+      [{ targets: ['main'], scope: { type: 'operations', operationKeys: ['unknown'] } }, 'UNKNOWN_OPERATION_KEY'],
+      [{ targets: ['main', 'second'], scope: { type: 'operations', operationKeys: ['ping'] } }, 'SELECTIVE_GENERATION_SINGLE_TARGET_REQUIRED'],
+      [{ targets: ['main'], scope: { type: 'operations', operationKeys: ['GET /missing'] } }, 'SELECTIVE_GENERATION_OPERATION_ID_REQUIRED'],
+      [{ targets: ['main'], scope: { type: 'operations', operationKeys: ['GET /dup-a'] } }, 'SELECTIVE_GENERATION_DUPLICATE_OPERATION_ID'],
+    ] as const) {
+      const rejected = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: argumentsValue })
+      expect(rejected.isError).toBe(true)
+      expect((structured(rejected).diagnostics as Array<{ code: string }>).map(({ code: diagnosticCode }) => diagnosticCode)).toContain(code)
+    }
 
     const multiple = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['second', 'main'] } })
     expect(structured(multiple)).toMatchObject({ success: true, config: { targets: ['main', 'second'] } })

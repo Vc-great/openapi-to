@@ -27,9 +27,9 @@ const expectedInputProperties = {
   openapi_list_targets: [],
   openapi_search_operations: ['includeDeprecated', 'limit', 'methods', 'query', 'tags', 'target'],
   openapi_get_operation: ['detail', 'includeExamples', 'maxBytes', 'maxPropertiesPerSchema', 'maxSchemas', 'operationKey', 'schemaDepth', 'target'],
-  openapi_generate_dry_run: ['includePreview', 'targets'],
+  openapi_generate_dry_run: ['includePreview', 'scope', 'targets'],
   openapi_check_generation: ['targets'],
-  openapi_prepare_generation: ['includePreview', 'targets'],
+  openapi_prepare_generation: ['includePreview', 'selection', 'targets'],
   openapi_apply_generation: ['approvedPlanHash', 'planId', 'token'],
 }
 const expectedRequiredProperties = {
@@ -65,6 +65,7 @@ const checkDefinitions = [
   ['close-8', 'Configured stdio server closes cleanly'],
   ['read-only-no-write', 'Configured read-only tools preserve persistent workspace bytes'],
   ['matrix-10', 'Write-enabled server exposes the ten-tool contract'],
+  ['selective-prepare-no-write', 'Selective Prepare binds desired selection without writing and remains non-applyable'],
   ['prepare-no-write', 'Prepare returns a plan without writing'],
   ['apply', 'Apply commits the reviewed plan exactly once'],
   ['replay', 'Apply replay is rejected'],
@@ -495,6 +496,16 @@ async function runDoctor(checks, state) {
       const value = successful(await callTool(configured, 'openapi_generate_dry_run', { targets: ['doctor'] }), 'openapi_generate_dry_run')
       assert(value.mode === 'dry-run' && value.truncated?.totalArtifacts === 2, 'Dry-run returned an unexpected artifact plan.')
       assert(value.servers?.[0]?.summary?.added === 2, 'Dry-run returned an unexpected change summary.')
+      const selective = successful(
+        await callTool(configured, 'openapi_generate_dry_run', {
+          targets: ['doctor'],
+          scope: { type: 'operations', operationKeys: ['listPets'] },
+        }),
+        'openapi_generate_dry_run',
+      )
+      assert(selective.scope?.resolvedOperationKeys?.[0] === 'listPets', 'Selective dry-run did not resolve the requested operation.')
+      assert(selective.projection?.operationCount === 1 && typeof selective.projection?.projectionHash === 'string', 'Selective dry-run omitted its bounded projection summary.')
+      assert(!JSON.stringify(selective).includes(sourceSentinel), 'Selective dry-run leaked the OpenAPI document body.')
     })
     await runCheck(checks, 'check-outdated', async () => {
       const result = await callTool(configured, 'openapi_check_generation', { targets: ['doctor'] })
@@ -517,6 +528,23 @@ async function runDoctor(checks, state) {
       assertToolContracts(tools, writeTools)
     })
     let plan
+    await runCheck(checks, 'selective-prepare-no-write', async () => {
+      const beforePrepare = await snapshotTree(workspaceRoot)
+      const value = successful(
+        await callTool(writeEnabled, 'openapi_prepare_generation', {
+          targets: ['doctor'],
+          selection: { type: 'add', operationKeys: ['listPets'] },
+        }),
+        'openapi_prepare_generation',
+      )
+      assert(value.plan?.kind === 'selective' && value.plan?.applySupported === false, 'Selective Prepare did not return a review-only plan.')
+      assert(value.plan?.token === undefined, 'Selective Prepare exposed an Apply token.')
+      assert(value.plan?.selection?.desiredOperationKeys?.[0] === 'listPets', 'Selective Prepare omitted the desired selection summary.')
+      assert(value.plan?.projection?.operationCount === 1 && typeof value.plan?.projection?.projectionHash === 'string', 'Selective Prepare omitted projection binding.')
+      assert(equalValues(await snapshotTree(workspaceRoot), beforePrepare), 'Selective Prepare modified workspace bytes.')
+      assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'Selective Prepare created the output root.')
+      assert(await missing(path.join(workspaceRoot, '.OpenAPI/selections')), 'Selective Prepare created the selection directory.')
+    })
     await runCheck(checks, 'prepare-no-write', async () => {
       const beforePrepare = await snapshotTree(workspaceRoot)
       const result = await callTool(writeEnabled, 'openapi_prepare_generation', { targets: ['doctor'] })
