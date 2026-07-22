@@ -11,6 +11,8 @@ Each configured output root may temporarily contain:
 - `.openapi-to-transaction/<transaction-id>/stage/` — verified future bytes;
 - `.openapi-to-transaction/<transaction-id>/backup/` — pre-Apply managed bytes and manifest.
 
+Full writes use journal schema v1. The B2a Core foundation uses schema v2 only when trusted controlled state files participate. In that case each allowed state parent may also contain `.openapi-to-state-transaction/<transaction-id>/{stage,backup}/`. Journal v2 stores only Workspace-relative identities and hashes; recovery requires the original startup-trusted Workspace and allowed state roots. Selective MCP Apply remains disabled, so these state directories currently occur only in direct Core transaction tests or future trusted Core callers.
+
 Staging is pre-commit. Backup and committing may have moved managed files. Committed means the new files and manifest were switched, but cleanup may not have completed.
 
 ## Automatic behavior
@@ -19,9 +21,9 @@ The next CLI write or MCP Apply acquires the lock before recovery:
 
 1. A live lock owner causes a bounded wait and then `MCP_WRITE_LOCKED`.
 2. A dead/stale owner record can be removed safely; PID liveness is only a lock-retention signal, never a substitute for hashes.
-3. A staging journal is cleaned without touching formal output.
-4. A backup/committing journal is rolled back in reverse order after every backup/target hash is validated.
-5. A committed journal is cleaned only after every target and ownership-manifest hash matches the committed state.
+3. A v1 staging journal is cleaned; v2 staging rolls back and removes any newly created empty state directories without changing old formal state.
+4. A backup/committing journal is rolled back in reverse order after every output, ownership, and controlled-state backup/target hash is validated.
+5. A committed journal is cleaned only after every output, ownership-manifest, and journal-v2 state hash matches the committed state.
 6. A missing, changed, symlinked, oversized, wrong-root, or invalid journal/backup fails with `MCP_WRITE_RECOVERY_REQUIRED`.
 
 No new Apply proceeds while recovery is unproven.
@@ -29,7 +31,7 @@ No new Apply proceeds while recovery is unproven.
 ## Operator procedure for recovery-required state
 
 1. Stop every MCP Server, Codex session, CLI generate, editor generator, and CI job targeting the output root.
-2. Preserve a byte-for-byte copy of the output root, including dotfiles, on the same trusted machine for investigation.
+2. Preserve a byte-for-byte copy of the output root, including dotfiles, and any trusted controlled-state transaction directory named by the relative journal identities on the same trusted machine for investigation.
 3. Inspect stderr for `generation_recovery_required`, `MCP_WRITE_RECOVERY_REQUIRED`, or `MCP_WRITE_ROLLBACK_FAILED`. Logs intentionally omit file bodies, tokens, config, and OpenAPI content.
 4. Verify that the output root is the configured Workspace-local directory and has not become a symlink, mount replacement, or unexpected hard link.
 5. Treat the journal's relative paths and hashes as evidence, not instructions to run arbitrary commands. Do not edit it to bypass validation.

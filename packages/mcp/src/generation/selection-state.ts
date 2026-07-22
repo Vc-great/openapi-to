@@ -10,6 +10,7 @@ import {
   hashOperationSelection,
   mergeOperationSelection,
   parseOperationSelectionManifest,
+  serializeOperationSelectionManifest,
   type FileIdentity,
   type OperationCatalog,
   type OperationSelectionManifestV1,
@@ -108,7 +109,7 @@ async function readSelectionFile(
     }
     throw error
   }
-  if (!before.isFile() || before.isSymbolicLink()) {
+  if (!before.isFile() || before.isSymbolicLink() || before.nlink > 1) {
     throw new McpToolError('SELECTION_STATE_INCONSISTENT', 'Selection state is not a regular file.')
   }
   if (before.size > DEFAULT_MAX_SELECTION_BYTES) {
@@ -278,7 +279,7 @@ export async function prepareOperationSelection(
   if (merge.desiredOperationKeys.length > DEFAULT_MAX_SELECTION_OPERATIONS) {
     throw new McpToolError('SELECTION_MANIFEST_TOO_LARGE', `Desired selection exceeds the ${DEFAULT_MAX_SELECTION_OPERATIONS} operation limit.`)
   }
-  const desiredSelectionBytes = `${JSON.stringify(merge.manifest, null, 2)}\n`
+  const desiredSelectionBytes = serializeOperationSelectionManifest(merge.manifest)
   if (new TextEncoder().encode(desiredSelectionBytes).byteLength > DEFAULT_MAX_SELECTION_BYTES) {
     throw new McpToolError('SELECTION_MANIFEST_TOO_LARGE', `Desired selection exceeds the ${DEFAULT_MAX_SELECTION_BYTES} byte limit.`)
   }

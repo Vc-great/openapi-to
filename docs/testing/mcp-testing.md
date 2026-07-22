@@ -17,7 +17,7 @@ release smoke to discover MCP regressions indirectly.
 | `pnpm test:mcp:all` | Complete maintained MCP gate | all unique unit/integration/E2E/recovery tests plus the bounded performance gate |
 
 `pnpm test:mcp` remains the package-only compatibility entry and now runs the
-102-test MCP inventory. The package manifest is authoritative; root scripts only
+103-test MCP inventory. The package manifest is authoritative; root scripts only
 route to it. The test-group
 runner uses repository-relative explicit files, checks every file exists, and
 does not use `--passWithNoTests`, so a stale group cannot silently pass with zero
@@ -38,16 +38,17 @@ entry runs the unique union rather than multiplying identical files.
 | `packages/mcp/src/tools/limits.test.ts` | 4 | Unit/service | no | no | artifact/preview bounds | cancellation/listener cleanup | 58 ms |
 | `packages/mcp/src/tools/schema.test.ts` | 11 | Unit/schema | no | no | all ten bounded input/output schemas, additive selection only | authority-field rejection | under 10 ms |
 | `packages/mcp/src/catalog/trusted-target-registry.test.ts` | 2 | Unit/cache | no | yes | trusted target compilation/catalog cache | concurrent first load, retry, target isolation | platform-dependent |
-| `packages/mcp/src/generation/selection-state.test.ts` | 17 | Unit/service | no | yes | manifest, bootstrap, union, plan binding, Apply refusal | symlink/size/drift and zero-write checks | platform-dependent |
+| `packages/mcp/src/generation/selection-state.test.ts` | 18 | Unit/service | no | yes | manifest, bootstrap, physical/final-byte plan binding, Apply refusal | symlink/hard-link/size/drift and zero-write checks | platform-dependent |
 | `packages/mcp/src/server.integration.test.ts` | 4 | stdio integration | yes | yes | read-only generation and catalog | queue/cache failure recovery | platform-dependent |
 | `packages/mcp/src/lifecycle.integration.test.ts` | 3 | stdio lifecycle | child process (no SDK calls) | no | no | EOF, SIGINT, SIGTERM | 1.4 s |
 | `packages/mcp/src/hardening.integration.test.ts` | 6 | stdio hardening | yes | yes | dry-run/check | active/queued cancel, timeout, disconnect | 7.2 s |
 | `packages/mcp/src/controlled-write.integration.test.ts` | 23 | controlled-write stdio | yes | yes | full Prepare/Apply plus review-only Selective Prepare | cancellation and cross-process locks | platform-dependent |
-| `packages/core/src/artifacts/transaction.test.ts` | 18 | writer recovery | subprocess for SIGKILL case | yes | shared transaction writer | failpoints, rollback, crash, journal, lock | platform-dependent |
+| `packages/core/src/artifacts/transaction.test.ts` | 19 | writer recovery | subprocess for SIGKILL case | yes | shared transaction writer | failpoints, rollback, crash, journal, lock | platform-dependent |
+| `packages/core/src/artifacts/generation-state-transaction.test.ts` | 34 | state writer recovery | subprocess for SIGKILL cases | yes | artifacts + ownership + controlled state | journal v2, output/ownership/state failpoints, rollback, committed cleanup, first-create and crash recovery | platform-dependent; cross-device case conditional |
 
 Before P3.5, the 12 MCP files contained 67 tests. The current inventory now
-contains 15 MCP files and 102 tests: 66 unit/service/schema tests and 36
-real-process integration tests. The complete unique gate adds the 18 Core transaction tests for 120 tests total. The root Vitest configuration already discovered the original tests, and
+contains 15 MCP files and 103 tests: 67 unit/service/schema tests and 36
+real-process integration tests. The complete unique gate adds 53 Core transaction tests for 156 tests total. The root Vitest configuration already discovered the original tests, and
 the Quality workflow already ran them indirectly. Before P3.5, however, the E2E
 workflow had no named MCP job and the package used a single permissive
 `--passWithNoTests` command. Release smoke separately packed and installed the
@@ -75,7 +76,7 @@ Node 20 jobs so MCP status is visible on the CI page:
 - **MCP stdio E2E** runs the built binary, controlled-write E2E, and Doctor;
 - **MCP cross-platform smoke** runs on Linux, Windows, and macOS;
 - **MCP transaction safety** proves rollback, cancellation, crash recovery, and
-  lock behavior on Linux;
+  lock behavior on Linux, including journal v2 state recovery and the cross-device fail-closed case;
 - **MCP performance and bounded stress** runs on `main`, the weekly schedule,
   and manual dispatch, not on every pull request.
 

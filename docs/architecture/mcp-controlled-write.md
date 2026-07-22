@@ -30,7 +30,7 @@ Artifact bodies are not copied into plan storage. Apply must re-run generation a
 
 The external response is only a bounded review summary. Its change list may be truncated; the internal plan never is. Preview is off by default, text-only, and bounded. Binary content is never returned.
 
-Phase 2 B1 adds a second, review-only plan kind to the same Prepare Tool. An additive selection mutation loads the fixed trusted selection owner, unions previous and requested operation keys, reuses the cached target compilation, and generates the complete desired projected artifact set. The deterministic payload additionally binds selection identity/hashes, normalized additions/desired keys, and projection identity. It returns `applySupported: false` without a token. Apply rejects a valid selective plan before the generation queue and output lock without consuming it. No selected write or transaction path exists until B2; the full plan/token/Apply protocol below is unchanged.
+Phase 2 B1 adds a second, review-only plan kind to the same Prepare Tool. An additive selection mutation loads the fixed trusted selection owner, unions previous and requested operation keys, reuses the cached target compilation, and generates the complete desired projected artifact set. B2a additionally binds the previous selection physical snapshot and exact desired serialized-byte hash/length beside the semantic hashes. It returns `applySupported: false` without a token. Apply rejects a valid selective plan before the generation queue and output lock without consuming it. The new Core [generation state transaction](./generation-state-transaction.md) is tested directly but is not called by selective MCP paths; the full plan/token/Apply protocol below is unchanged.
 
 ## Token and in-memory store
 
@@ -59,6 +59,8 @@ The version-2 ownership manifest is stable and contains only generator name/vers
 ## Crash recovery and cancellation
 
 The journal is `.openapi-to-transaction.json`; staged/backed-up bytes are under `.openapi-to-transaction/<transaction-id>`. It records only schema, transaction/output identity, phase, relative operations, before/after hashes, and created directories. Its checksum detects accidental or unsophisticated modification; because it is not MACed across restarts, same-user journal tampering is not considered cryptographically preventable. Recovery still validates schema, confinement, symlinks, target/backup hashes, and output-root identity before moving anything.
+
+No-state full writes continue to emit journal schema v1. Core journal schema v2 is reserved for trusted controlled state files and adds only Workspace-root identity plus bounded relative state operations. State stage/backup storage remains beside the controlled target, and a device mismatch fails closed. This B2a compatibility extension does not change full Apply's public protocol or grant a new MCP write path.
 
 On lock acquisition, staging-only journals are cleaned, backup/committing journals are rolled back, and committed journals are verified then cleaned. Unsafe or unverifiable state returns `MCP_WRITE_RECOVERY_REQUIRED`; it is never ignored.
 

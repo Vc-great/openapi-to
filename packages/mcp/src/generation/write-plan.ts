@@ -62,6 +62,7 @@ interface SelectivePlanBinding {
   selectionManifestVersion: typeof OPERATION_SELECTION_MANIFEST_VERSION
   selectionOwner: string
   selectionFileIdentity: string
+  selectionFileSnapshot: OutputFileSnapshot
   previousSelectionExists: boolean
   previousSelectionHash: string
   requestedOperationKeys: string[]
@@ -69,6 +70,8 @@ interface SelectivePlanBinding {
   alreadySelectedOperationKeys: string[]
   desiredOperationKeys: string[]
   desiredSelectionHash: string
+  desiredSelectionBytesSha256: string
+  desiredSelectionBytes: number
   projectionHash: string
   projection: OpenAPIProjectionStats
 }
@@ -346,6 +349,12 @@ export async function prepareSelectiveGenerationWritePlan(
     selectionManifestVersion: OPERATION_SELECTION_MANIFEST_VERSION,
     selectionOwner: selection.selectionOwner,
     selectionFileIdentity: selection.selectionFileIdentity,
+    selectionFileSnapshot: {
+      exists: selection.selectionFileSnapshot.exists,
+      ...(selection.selectionFileSnapshot.sha256 ? { sha256: selection.selectionFileSnapshot.sha256 } : {}),
+      ...(selection.selectionFileSnapshot.bytes === undefined ? {} : { bytes: selection.selectionFileSnapshot.bytes }),
+      ...(selection.selectionFileSnapshot.identity ? { identity: selection.selectionFileSnapshot.identity } : {}),
+    },
     previousSelectionExists: selection.previousSelectionExists,
     previousSelectionHash: selection.previousSelectionHash,
     requestedOperationKeys: selection.merge.requestedOperationKeys,
@@ -353,6 +362,8 @@ export async function prepareSelectiveGenerationWritePlan(
     alreadySelectedOperationKeys: selection.merge.alreadySelectedOperationKeys,
     desiredOperationKeys: selection.merge.desiredOperationKeys,
     desiredSelectionHash: selection.desiredSelectionHash,
+    desiredSelectionBytesSha256: hash(selection.desiredSelectionBytes),
+    desiredSelectionBytes: Buffer.byteLength(selection.desiredSelectionBytes),
     projectionHash,
     projection: run.projection.stats,
   }

@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises'
+import { access, link, mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -160,6 +160,15 @@ describe('trusted persistent operation selection state', () => {
       .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_STATE_INCONSISTENT' }] })
   })
 
+  it.runIf(process.platform !== 'win32')('rejects hard-linked selection state', async () => {
+    const context = await fixture()
+    const initial = await prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
+    await persistSelection(initial)
+    await link(initial.selectionFile, path.join(path.dirname(initial.selectionFile), 'alias.json'))
+    await expect(prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['createUser'] }))
+      .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_STATE_INCONSISTENT' }] })
+  })
+
   it('fails historical drift without automatically deleting or renaming operations', async () => {
     const context = await fixture()
     const initial = await prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
@@ -212,6 +221,9 @@ describe('selective write-plan binding', () => {
           requestedOperationKeys: ['createUser', 'getUser'],
           desiredOperationKeys: ['createUser', 'getUser'],
           previousSelectionExists: false,
+          selectionFileSnapshot: { exists: false },
+          desiredSelectionBytes: expect.any(Number),
+          desiredSelectionBytesSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
           projection: { operationCount: 2 },
         },
         output: { artifacts: [{ path: 'createUser.txt' }, { path: 'getUser.txt' }] },
@@ -245,7 +257,7 @@ describe('selective write-plan binding', () => {
     }
   })
 
-  it('excludes non-semantic selection metadata while binding requested additions', async () => {
+  it('binds the exact prior physical snapshot and desired serialized bytes', async () => {
     const context = await fixture()
     const initial = await prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
     await mkdir(path.dirname(initial.selectionFile), { recursive: true })
@@ -256,7 +268,9 @@ describe('selective write-plan binding', () => {
       await writeFile(initial.selectionFile, serializeOperationSelectionManifest({ ...initial.merge.manifest, metadata: { updatedAt: '2030-01-01T00:00:00Z', lastAppliedSpecHash: 'changed-audit-only' } }))
       const metadataChanged = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['createUser'] })
       const requestChanged = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser', 'createUser'] })
-      expect(metadataChanged.stored.planHash).toBe(first.stored.planHash)
+      expect(metadataChanged.stored.planHash).not.toBe(first.stored.planHash)
+      expect(metadataChanged.stored.deterministic.selection?.selectionFileSnapshot).not.toEqual(first.stored.deterministic.selection?.selectionFileSnapshot)
+      expect(metadataChanged.stored.deterministic.selection?.desiredSelectionBytesSha256).not.toBe(first.stored.deterministic.selection?.desiredSelectionBytesSha256)
       expect(requestChanged.selection.merge.desiredOperationKeys).toEqual(first.selection.merge.desiredOperationKeys)
       expect(requestChanged.stored.planHash).not.toBe(first.stored.planHash)
     } finally {

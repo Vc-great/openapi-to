@@ -1,6 +1,6 @@
 # Persistent operation selection and Selective Prepare
 
-Status: Phase 2 B1 implemented; selected Apply remains disabled.
+Status: Phase 2 B2a transaction foundation implemented; selected Apply remains disabled.
 
 ## State meaning and identity
 
@@ -37,7 +37,7 @@ Callers may pass only a trusted target name. They cannot pass this path, an outp
 
 Operations are unique and sorted by code-point lexical order, independent of request order. Version, target, owner, and sorted operations form the semantic SHA-256 hash. Metadata, timestamps, PIDs, random values, and machine paths do not affect it. Unknown fields are rejected. Core exports creation, parsing, strict validation, normalization, additive merge, deterministic serialization, and semantic hashing helpers.
 
-The file is limited to 1 MiB, 5,000 operations, and 500 UTF-8 bytes per key. Reads are bounded and stable, reject symlinks and Workspace escape, and compare file identity before/after reading. Corrupt JSON, unsupported versions, duplicate/empty/invalid keys, target/owner mismatch, and concurrent read drift fail closed. Prepare never creates the directory or writes the file.
+The file is limited to 1 MiB, 5,000 operations, and 500 UTF-8 bytes per key. Reads are bounded and stable, reject symlinks, hard links, and Workspace escape, and compare file identity before/after reading. Corrupt JSON, unsupported versions, duplicate/empty/invalid keys, target/owner mismatch, and concurrent read drift fail closed. Prepare never creates the directory or writes the file.
 
 ## Bootstrap and drift
 
@@ -68,7 +68,7 @@ trusted target
 
 `openapi_prepare_generation` remains full generation when `selection` is omitted. With `selection: { type: "add", operationKeys: [...] }`, it requires one trusted target, reuses the Phase 1 compiled target cache, and invokes the Phase 2A projection with all desired keys. The trusted target's existing `output.clean` controls comparison; the caller cannot change it. Because add never shrinks desired selection, artifacts for prior operations remain expected and are not deleted merely because the latest request named one new operation.
 
-The deterministic plan binds `kind=selective`, manifest version, selection owner/file identity, prior existence and semantic hash, normalized requested/new/already-selected/desired keys, desired semantic hash, projection hash/stats, and the existing full plan's Workspace/config/source/reference/remote/output/ownership/file/generator/plugin/artifact/delete bindings. Equivalent request order and audit-only metadata produce the same semantic plan hash; selection, projection, artifact, source, config, ownership, or output semantic changes change it. External arrays return at most 50 keys per category with totals and explicit truncation; the internal plan remains complete.
+The deterministic plan binds `kind=selective`, manifest version, selection owner/file identity, the prior physical snapshot and semantic hash, normalized requested/new/already-selected/desired keys, desired semantic hash, exact desired serialized-byte SHA-256/length, projection hash/stats, and the existing full plan's Workspace/config/source/reference/remote/output/ownership/file/generator/plugin/artifact/delete bindings. Equivalent request order produces the same plan for unchanged disk state. Audit metadata remains outside the semantic operation hash, but a physical-file or final-byte change now deliberately changes the transaction plan binding. External arrays return at most 50 keys per category with totals and explicit truncation; the internal plan remains complete.
 
 ## Apply boundary and lifecycle
 
@@ -76,18 +76,18 @@ Selective Prepare returns `kind: "selective"`, `applySupported: false`, and no t
 
 Full Prepare still returns its token, and full Apply retains its existing revalidation, shared lock, atomic artifact/ownership transaction, rollback, recovery, cancellation, expiry, and replay behavior. Restart clears all plans and refreshes trusted config/catalog state. B1 adds no file watcher and no write permission.
 
-## Current boundary and B2
+## Current boundary and B2b
 
-B1 supports add only. It does not support remove, replace, clear, prune, automatic full-output migration, selected Apply, selection writes, selected ownership writes, selected rollback, or selected crash recovery. Generated output remains under the existing trusted `.OpenAPI/<output.dir>` location; nothing migrates to `src/api/generated`.
+B2a adds the reusable Core transaction/journal/rollback/recovery foundation for generated artifacts, ownership, and controlled state files. It does not connect that writer to MCP selective plans. Add remains the only selection mutation; remove, replace, clear, prune, automatic full-output migration, selected Apply, and actual selection writes remain disabled. Generated output remains under the existing trusted `.OpenAPI/<output.dir>` location; nothing migrates to `src/api/generated`.
 
-B2 is limited to:
+B2b is limited to:
 
 ```text
 selected plan revalidation
   -> selection drift validation
-  -> destination lock
-  -> atomic artifact write
-  -> atomic ownership manifest write
-  -> atomic selection manifest write
-  -> rollback and crash recovery
+  -> exact desired selection regeneration
+  -> projection/artifact revalidation
+  -> selected plan token
+  -> invoke generation state transaction
+  -> controlled selective Apply
 ```

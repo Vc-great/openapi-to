@@ -7,6 +7,15 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import {
+  acquireOutputWriteLock,
+  commitGenerationStateTransaction,
+  compareArtifacts,
+  materializeArtifacts,
+  OutputTransactionRolledBackError,
+  snapshotOutputFile,
+  writeArtifacts,
+} from '@openapi-to/core'
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = path.resolve(packageRoot, '../..')
@@ -177,6 +186,99 @@ try {
 } finally {
   await rm(writeRoot, { recursive: true, force: true })
 }
+const stateTransactionRoot = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-state-transaction-stress-'))
+let stateTransactionCommits = 0
+let stateTransactionRollbacks = 0
+let maxStateJournalBytes = 0
+let maxStateStagedBytes = 0
+let maxStateBackupBytes = 0
+try {
+  const outputRoot = path.join(stateTransactionRoot, 'generated')
+  const selectionRoot = path.join(stateTransactionRoot, '.OpenAPI', 'selections')
+  const selectionFile = path.join(selectionRoot, 'stress.json')
+  await mkdir(selectionRoot, { recursive: true })
+  await writeFile(selectionFile, '{"iteration":-1}\n')
+  let materialized = materializeArtifacts(
+    Array.from({ length: 100 }, (_, index) => ({ kind: 'text', path: `client-${index}.txt`, content: `stable-${index}\n` })),
+    outputRoot,
+  ).artifacts
+  await writeArtifacts(materialized, await compareArtifacts(materialized, outputRoot, true), { generatorVersion: 'stress' })
+  const recoveryContext = { workspaceRoot: stateTransactionRoot, allowedStateRoots: ['.OpenAPI/selections'] }
+  for (let index = 0; index < 20; index += 1) {
+    const desiredArtifacts = materializeArtifacts(
+      Array.from({ length: 100 }, (_, artifactIndex) => ({ kind: 'text', path: `client-${artifactIndex}.txt`, content: `commit-${index}-${artifactIndex}\n` })),
+      outputRoot,
+    ).artifacts
+    const desiredBytes = new TextEncoder().encode(`${JSON.stringify({ iteration: index })}\n`)
+    const manifest = await compareArtifacts(desiredArtifacts, outputRoot, true)
+    const lock = await acquireOutputWriteLock(outputRoot, { recoveryContext })
+    try {
+      const result = await commitGenerationStateTransaction(lock, desiredArtifacts, manifest, [{
+        id: 'selection',
+        workspaceRelativePath: '.OpenAPI/selections/stress.json',
+        expectedBefore: await snapshotOutputFile(selectionFile),
+        desiredBytes,
+        desiredSha256: createHash('sha256').update(desiredBytes).digest('hex'),
+        maxBytes: 4096,
+      }], { recoveryContext, generatorVersion: 'stress' })
+      maxStateJournalBytes = Math.max(maxStateJournalBytes, result.journalBytes)
+      maxStateStagedBytes = Math.max(maxStateStagedBytes, result.stagedBytes)
+      maxStateBackupBytes = Math.max(maxStateBackupBytes, result.backupBytes)
+      stateTransactionCommits += 1
+      materialized = desiredArtifacts
+    } finally {
+      await lock.release()
+    }
+  }
+  for (let index = 0; index < 20; index += 1) {
+    const desiredArtifacts = materializeArtifacts(
+      Array.from({ length: 100 }, (_, artifactIndex) => ({ kind: 'text', path: `client-${artifactIndex}.txt`, content: `rollback-${index}-${artifactIndex}\n` })),
+      outputRoot,
+    ).artifacts
+    const before = await readFile(selectionFile, 'utf8')
+    const beforeArtifact = await readFile(path.join(outputRoot, 'client-0.txt'), 'utf8')
+    const desiredBytes = new TextEncoder().encode(`${JSON.stringify({ rollback: index })}\n`)
+    const manifest = await compareArtifacts(desiredArtifacts, outputRoot, true)
+    const lock = await acquireOutputWriteLock(outputRoot, { recoveryContext })
+    try {
+      try {
+        await commitGenerationStateTransaction(lock, desiredArtifacts, manifest, [{
+          id: 'selection',
+          workspaceRelativePath: '.OpenAPI/selections/stress.json',
+          expectedBefore: await snapshotOutputFile(selectionFile),
+          desiredBytes,
+          desiredSha256: createHash('sha256').update(desiredBytes).digest('hex'),
+          maxBytes: 4096,
+        }], { recoveryContext, generatorVersion: 'stress', testFailpoint: 'state-after-rename' })
+        throw new Error('State rollback stress unexpectedly committed.')
+      } catch (error) {
+        if (error instanceof Error && error.message === 'State rollback stress unexpectedly committed.') throw error
+        if (!(error instanceof OutputTransactionRolledBackError)) throw error
+      }
+      if (await readFile(selectionFile, 'utf8') !== before) throw new Error(`State rollback stress changed bytes at iteration ${index}.`)
+      if (await readFile(path.join(outputRoot, 'client-0.txt'), 'utf8') !== beforeArtifact) throw new Error(`Artifact rollback stress changed bytes at iteration ${index}.`)
+      stateTransactionRollbacks += 1
+    } finally {
+      await lock.release()
+    }
+  }
+  for (const internal of ['.openapi-to-write.lock', '.openapi-to-transaction.json', '.openapi-to-transaction']) {
+    try {
+      await access(path.join(outputRoot, internal))
+      throw new Error(`State transaction stress leaked ${internal}.`)
+    } catch (error) {
+      if (error instanceof Error && !('code' in error && error.code === 'ENOENT')) throw error
+    }
+  }
+  try {
+    await access(path.join(selectionRoot, '.openapi-to-state-transaction'))
+    throw new Error('State transaction stress leaked state transaction storage.')
+  } catch (error) {
+    if (error instanceof Error && !('code' in error && error.code === 'ENOENT')) throw error
+  }
+} finally {
+  await rm(stateTransactionRoot, { recursive: true, force: true })
+}
 const rssGrowthBytesApprox = rssBefore !== null && rssAfter !== null ? rssAfter - rssBefore : null
 const success = (rssGrowthBytesApprox === null || rssGrowthBytesApprox < 512 * 1024 * 1024)
   && (selectivePrepareRssGrowthBytesApprox === null || selectivePrepareRssGrowthBytesApprox < 512 * 1024 * 1024)
@@ -197,6 +299,14 @@ process.stdout.write(`${JSON.stringify({
     rssGrowthBytesApprox: selectivePrepareRssGrowthBytesApprox,
     repeatedPlanHashStable: selectivePrepareCalls === 100,
     filesystemWrites: 0,
+  },
+  stateTransaction: {
+    artifactCount: 100,
+    commits: stateTransactionCommits,
+    rollbacks: stateTransactionRollbacks,
+    maxJournalBytes: maxStateJournalBytes,
+    maxStagedBytes: maxStateStagedBytes,
+    maxBackupBytes: maxStateBackupBytes,
   },
   durationMs: Math.round(performance.now() - started), stderrBytes, rssBefore, rssAfter, rssGrowthBytesApprox,
 })}\n`)

@@ -2,7 +2,7 @@
 
 - Transport is stdio only. Streamable HTTP, OAuth, API keys, and multi-tenancy are not implemented.
 - The configured-mode eight Tools are read-only. Controlled writes exist only through operator-enabled Prepare/Apply; there is no direct write, OpenAPI/config edit, arbitrary path/content, or business API execution.
-- Persistent selection currently supports additive, single-target Selective Prepare only. Selected plans are review-only, return no token, and cannot Apply; remove/replace/migration and atomic selection writes are deferred to Phase 2 B2.
+- Persistent selection currently supports additive, single-target Selective Prepare only. Selected plans are review-only, return no token, and cannot Apply. Core now has the B2a three-state transaction foundation, but MCP does not invoke it; remove/replace/migration and controlled selected Apply are deferred to B2b.
 - OpenAPI 3.2 is compatible-read with diagnosed generator gaps, not complete generation support.
 - Diff is a deterministic first-stage ruleset, not a complete compatibility proof or breaking-change oracle.
 - Config and plugins are trusted operator-selected executable code. Tool callers cannot change them; edits require a Server restart because the load result is cached.
@@ -14,5 +14,6 @@
 - One controlled-write plan supports exactly one configured target/output root. Cross-root database-style atomicity is not claimed.
 - Plan tokens prove Server/Workspace/plan continuity, not that a human personally clicked approval; the Host owns final confirmation policy.
 - Filesystem transactions use same-root staging, rename, fsync, rollback, and recovery journals. Power loss and network filesystems retain platform-specific durability/atomicity risk.
+- Controlled sidecar state uses journal v2 and same-parent stage/backup. Output/state device mismatches fail with `SELECTIVE_STATE_CROSS_DEVICE_UNSUPPORTED`; copy/delete fallback is intentionally absent.
 - Journal checksums detect corruption but are not persistent secret MACs; a malicious same-user process remains in the residual threat model and unsafe recovery fails closed.
 - No telemetry, Resources, Prompts, Sampling, Elicitation, MCP Apps UI, LLM call, or chat interface is included.
