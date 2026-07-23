@@ -27,6 +27,8 @@ export interface GenerationExecution {
   signal?: AbortSignal
   progress?: (stage: string, progress: number, total?: number) => Promise<void>
   outputWriteLock?: OutputWriteLock
+  /** @internal Core transaction fault injection for repository tests only. */
+  transactionFailpoint?: import('@openapi-to/core').TransactionFailpoint
 }
 
 export interface PreparedTarget {
@@ -141,7 +143,7 @@ export async function executeSelectiveGeneration(
   requested: string[] | undefined,
   scope: OperationGenerationScope,
   execution: GenerationExecution = {},
-  purpose: 'preview' | 'prepare' = 'preview',
+  purpose: 'preview' | 'prepare' | 'apply' = 'preview',
 ): Promise<GenerationRun> {
   await execution.progress?.('Loading trusted configuration', 5)
   const prepared = await prepareTargets(provider, requested, execution.signal)
@@ -155,7 +157,9 @@ export async function executeSelectiveGeneration(
   const [target] = prepared.targets
   if (!target) throw new McpToolError('MCP_UNKNOWN_TARGET', 'The selected trusted target was not found.')
   await execution.progress?.('Reusing cached target compilation', 15)
-  const cached = await registry.get(target.name, execution.signal)
+  const cached = purpose === 'apply'
+    ? await registry.getCurrent(target.name, execution.signal)
+    : await registry.get(target.name, execution.signal)
   if (!cached.catalog || !cached.compilation.document || !cached.success) {
     return { configPath: prepared.configPath, targets: [target.name], servers: [], diagnostics: cached.diagnostics }
   }
@@ -189,6 +193,7 @@ export async function executeSelectiveGeneration(
     dryRun: true,
     localFileRoot: options.workspaceRoot,
     signal: execution.signal,
+    outputWriteLock: execution.outputWriteLock,
   })
   const generated = result.generationResult?.artifacts ?? []
   const materialized = materializeArtifacts(generated, safeOutput, { signal: execution.signal })

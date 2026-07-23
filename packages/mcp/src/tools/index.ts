@@ -118,7 +118,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_prepare_generation',
     {
       title: 'Prepare Controlled OpenAPI Generation',
-      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Without selection it preserves the existing full plan/token flow. With selection { type: add, operationKeys } it unions exact keys with trusted persisted project selection, generates the complete desired projection, and returns a review-only plan with applySupported false and no token. Prepare never writes selection, generated files, locks, staging, or ownership manifests. Exactly one trusted target/output root is supported; callers cannot choose paths, config, plugins, cleanup, or content.',
+      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Without selection it preserves the existing full plan/token flow. With selection { type: add, operationKeys } it unions exact keys with trusted persisted project selection, generates the complete desired projection, and returns a bounded applyable plan plus one-time token. Prepare never writes selection, generated files, locks, staging, or ownership manifests. Exactly one trusted target/output root is supported; callers cannot choose paths, config, plugins, cleanup, or content.',
       inputSchema: prepareGenerationInputSchema,
       outputSchema: prepareGenerationOutputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -129,7 +129,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_apply_generation',
     {
       title: 'Apply Confirmed OpenAPI Generation Plan',
-      description: 'Use only after the user explicitly confirms one unexpired full openapi_prepare_generation result with applySupported true and its exact plan hash/token. Review-only selective plans are rejected before generation or filesystem locks. A supported full plan is revalidated and committed through the existing locked transaction; callers cannot pass targets, paths, content, force, or safety overrides.',
+      description: 'Use only after the user explicitly confirms one unexpired openapi_prepare_generation result with applySupported true and its exact plan hash/token. Full plans keep the existing transaction path. Selective plans revalidate trusted source, config, selection, projection, complete artifacts, output, and ownership before atomically committing generated artifacts, ownership, and frozen selection state. Callers cannot pass targets, paths, content, force, or safety overrides.',
       inputSchema: applyGenerationInputSchema,
       outputSchema: applyGenerationOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },

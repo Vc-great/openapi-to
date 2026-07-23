@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import type { BigIntStats } from 'node:fs'
 import { lstat, open, opendir } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -50,6 +51,20 @@ export interface PreparedOperationSelection {
   merge: OperationSelectionMergeResult
 }
 
+export interface ExpectedOperationSelectionState {
+  target: string
+  selectionOwner: string
+  selectionFileIdentity: string
+  selectionFileSnapshot: OutputFileSnapshot
+  previousSelectionHash: string
+}
+
+export interface RevalidatedOperationSelectionState {
+  selectionFile: string
+  snapshot: SelectionFileSnapshot
+  semanticHash: string
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
@@ -58,12 +73,19 @@ function hash(value: string | Uint8Array): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
-function fileIdentity(metadata: Awaited<ReturnType<typeof lstat>>): FileIdentity {
+function snapshotsEqual(left: OutputFileSnapshot, right: OutputFileSnapshot): boolean {
+  return left.exists === right.exists
+    && left.sha256 === right.sha256
+    && left.bytes === right.bytes
+    && JSON.stringify(left.identity) === JSON.stringify(right.identity)
+}
+
+function fileIdentity(metadata: BigIntStats): FileIdentity {
   return {
     device: metadata.dev.toString(),
     inode: metadata.ino.toString(),
     size: metadata.size.toString(),
-    modifiedNanoseconds: (metadata as unknown as { mtimeNs?: bigint }).mtimeNs?.toString() ?? String(metadata.mtimeMs),
+    modifiedNanoseconds: metadata.mtimeNs.toString(),
   }
 }
 
@@ -92,6 +114,24 @@ async function assertNoSymlinkSegments(workspaceRoot: string, candidate: string)
   }
 }
 
+async function nearestExistingDirectoryDevice(candidate: string): Promise<string> {
+  let current = path.resolve(candidate)
+  while (true) {
+    try {
+      const metadata = await lstat(current, { bigint: true })
+      if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
+        throw new McpToolError('SELECTION_STATE_INCONSISTENT', 'Selective state must be rooted below a real directory.')
+      }
+      return metadata.dev.toString()
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      const parent = path.dirname(current)
+      if (parent === current) throw error
+      current = parent
+    }
+  }
+}
+
 async function readSelectionFile(
   workspaceRoot: string,
   filePath: string,
@@ -100,24 +140,24 @@ async function readSelectionFile(
 ): Promise<{ manifest?: OperationSelectionManifestV1; snapshot: SelectionFileSnapshot }> {
   await resolveWorkspacePath(workspaceRoot, filePath, { mustExist: false })
   await assertNoSymlinkSegments(workspaceRoot, filePath)
-  let before: Awaited<ReturnType<typeof lstat>>
+  let before: BigIntStats
   try {
-    before = await lstat(filePath)
+    before = await lstat(filePath, { bigint: true })
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return { snapshot: { path: workspaceRelative(workspaceRoot, filePath), exists: false } }
     }
     throw error
   }
-  if (!before.isFile() || before.isSymbolicLink() || before.nlink > 1) {
+  if (!before.isFile() || before.isSymbolicLink() || before.nlink > 1n) {
     throw new McpToolError('SELECTION_STATE_INCONSISTENT', 'Selection state is not a regular file.')
   }
-  if (before.size > DEFAULT_MAX_SELECTION_BYTES) {
+  if (before.size > BigInt(DEFAULT_MAX_SELECTION_BYTES)) {
     throw new McpToolError('SELECTION_MANIFEST_TOO_LARGE', `Selection manifest exceeds the ${DEFAULT_MAX_SELECTION_BYTES} byte limit.`)
   }
   const handle = await open(filePath, 'r')
   try {
-    const opened = await handle.stat()
+    const opened = await handle.stat({ bigint: true })
     if (before.dev !== opened.dev || before.ino !== opened.ino) {
       throw new McpToolError('SELECTION_STATE_INCONSISTENT', 'Selection state changed while it was being opened.')
     }
@@ -126,8 +166,8 @@ async function readSelectionFile(
     if (bytesRead > DEFAULT_MAX_SELECTION_BYTES) {
       throw new McpToolError('SELECTION_MANIFEST_TOO_LARGE', `Selection manifest exceeds the ${DEFAULT_MAX_SELECTION_BYTES} byte limit.`)
     }
-    const after = await lstat(filePath)
-    if (after.dev !== opened.dev || after.ino !== opened.ino || after.size !== opened.size || after.mtimeMs !== opened.mtimeMs) {
+    const after = await lstat(filePath, { bigint: true })
+    if (after.dev !== opened.dev || after.ino !== opened.ino || after.size !== opened.size || after.mtimeNs !== opened.mtimeNs) {
       throw new McpToolError('SELECTION_STATE_INCONSISTENT', 'Selection state changed while it was being read.')
     }
     const content = buffer.slice(0, bytesRead)
@@ -154,6 +194,37 @@ async function readSelectionFile(
   } finally {
     await handle.close()
   }
+}
+
+export async function revalidateOperationSelectionState(
+  options: ResolvedMcpServerOptions,
+  expected: ExpectedOperationSelectionState,
+): Promise<RevalidatedOperationSelectionState> {
+  const selectionFile = await resolveWorkspacePath(options.workspaceRoot, expected.selectionFileIdentity, { mustExist: false })
+  let current: Awaited<ReturnType<typeof readSelectionFile>>
+  try {
+    current = await readSelectionFile(options.workspaceRoot, selectionFile, expected.target, expected.selectionOwner)
+  } catch {
+    throw new McpToolError(
+      'SELECTION_CHANGED_SINCE_PREPARE',
+      'Selection state became missing, unsafe, or invalid after Prepare; create and approve a new plan.',
+    )
+  }
+  if (!snapshotsEqual(current.snapshot, expected.selectionFileSnapshot)) {
+    throw new McpToolError(
+      'SELECTION_FILE_SNAPSHOT_MISMATCH',
+      'Selection state changed physically after Prepare; create and approve a new plan.',
+    )
+  }
+  const manifest = current.manifest ?? createEmptyOperationSelection(expected.target, expected.selectionOwner)
+  const semanticHash = hashOperationSelection(manifest)
+  if (semanticHash !== expected.previousSelectionHash) {
+    throw new McpToolError(
+      'SELECTION_SEMANTIC_HASH_MISMATCH',
+      'Selection operations or ownership changed after Prepare; create and approve a new plan.',
+    )
+  }
+  return { selectionFile, snapshot: current.snapshot, semanticHash }
 }
 
 async function outputState(outputRoot: string): Promise<{ exists: boolean; empty: boolean; ownershipExists: boolean }> {
@@ -251,6 +322,16 @@ export async function prepareOperationSelection(
     || outputInsideSelectionDirectory === '' || (!outputInsideSelectionDirectory.startsWith(`..${path.sep}`) && outputInsideSelectionDirectory !== '..' && !path.isAbsolute(outputInsideSelectionDirectory))
   ) {
     throw new McpToolError('SELECTION_STATE_INCONSISTENT', 'The trusted output root overlaps reserved selection state storage.')
+  }
+  const [outputDevice, selectionDevice] = await Promise.all([
+    nearestExistingDirectoryDevice(outputRoot),
+    nearestExistingDirectoryDevice(path.dirname(selectionFile)),
+  ])
+  if (outputDevice !== selectionDevice) {
+    throw new McpToolError(
+      'SELECTIVE_STATE_CROSS_DEVICE_UNSUPPORTED',
+      'Selective Prepare requires generated output and selection state to be committed on the same filesystem device.',
+    )
   }
   const [selection, disk, cached] = await Promise.all([
     readSelectionFile(options.workspaceRoot, selectionFile, target.name, owner),

@@ -1031,7 +1031,7 @@ export async function recoverOutputTransaction(
   return 'rolled-back'
 }
 
-function manifestBytes(artifacts: readonly MaterializedArtifact[], generatorVersion: string): Uint8Array | undefined {
+export function serializeGenerationOwnershipManifest(artifacts: readonly MaterializedArtifact[], generatorVersion: string): Uint8Array | undefined {
   if (artifacts.length === 0) return undefined
   const files = [...artifacts]
     .sort((left, right) => compareText(left.relativePath, right.relativePath))
@@ -1244,7 +1244,7 @@ export async function commitGenerationStateTransaction(
   if (options.expectedOwnershipManifest && !outputSnapshotsEqual(manifestBefore, options.expectedOwnershipManifest)) {
     throw new OutputPreconditionChangedError(ARTIFACT_MANIFEST_FILENAME)
   }
-  const plannedManifest = manifestBytes(artifacts, options.generatorVersion ?? 'unknown')
+  const plannedManifest = serializeGenerationOwnershipManifest(artifacts, options.generatorVersion ?? 'unknown')
   const manifestAfter: OutputFileSnapshot = plannedManifest
     ? { exists: true, sha256: hashBytes(plannedManifest), bytes: plannedManifest.byteLength }
     : { exists: false }

@@ -1,10 +1,10 @@
 # Generation state transaction
 
-Status: Phase 2 B2a foundation implemented; selective Apply remains disabled.
+Status: Phase 2 B2b selective Apply uses the B2a transaction foundation.
 
 ## Why three states belong to one transaction
 
-A selective generation commit will eventually make three related facts durable:
+A selective generation commit makes three related facts durable:
 
 ```text
 generated artifacts
@@ -82,8 +82,8 @@ The state failpoints are `state-stage`, `state-after-stage`, `state-backup`, `st
 
 The first implementation requires the output root and every controlled state target parent to report the same filesystem device identity. A mismatch returns `SELECTIVE_STATE_CROSS_DEVICE_UNSUPPORTED` before staging. It never falls back to copy-and-delete, because that would lose atomic-rename and recovery assumptions. Multi-output transactions remain out of scope.
 
-## B2a boundary
+## MCP selective Apply integration
 
-This Core foundation is not reachable from selective MCP Apply. Selective Prepare remains review-only with `applySupported: false` and no returned token. `openapi_apply_generation` still returns `SELECTIVE_APPLY_NOT_ENABLED` before the generation queue, output lock, token consumption, or transaction writer. Prepare writes no selection, generated artifact, ownership manifest, lock, stage, backup, or journal.
+Selective Prepare remains side-effect free but now issues a one-time token for a complete frozen plan. Selective Apply passes one internally derived `TransactionStateFile` containing the prior physical selection snapshot and exact desired bytes to `commitGenerationStateTransaction()`. It supplies the startup-trusted Workspace and `.OpenAPI/selections` recovery root; no Tool argument can supply those values.
 
-B2a does not add remove, replace, clear, prune, historical full-output bootstrap, output migration, or `src/api/generated` writes. B2b is limited to selected-plan token issuance, physical/semantic drift revalidation, exact desired selection regeneration, projection/artifact revalidation, and invoking this transaction before enabling controlled selective Apply.
+B2b does not add remove, replace, clear, prune, historical full-output bootstrap, output migration, or `src/api/generated` writes. Full plans continue to use journal v1 and `commitOutputTransaction()`; only selective plans with the controlled selection state use journal v2.

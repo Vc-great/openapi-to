@@ -147,7 +147,7 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
               ].some((items) => items.length > selectionLimit),
             }
           : undefined
-        if (boundedSelection?.truncated) diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: 'The external selection summary was truncated; the complete desired selection remains bound in the internal review-only plan.' })
+        if (boundedSelection?.truncated) diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: 'The external selection summary was truncated; the complete desired selection remains bound in the internal applyable plan.' })
         const bounded = truncateDiagnostics(context.options.workspaceRoot, diagnostics, context.options.limits.maxDiagnostics)
         context.logger.info('generation_plan_created', {
           planId: prepared.stored.planId,
@@ -166,9 +166,9 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
             success: true,
             plan: {
               kind: selective ? 'selective' as const : 'full' as const,
-              applySupported: !selective,
+              applySupported: true,
               planId: prepared.stored.planId,
-              ...(!selective ? { token: prepared.token } : {}),
+              token: prepared.token,
               planHash: prepared.stored.planHash,
               createdAt: new Date(prepared.stored.createdAt).toISOString(),
               expiresAt: new Date(prepared.stored.expiresAt).toISOString(),
@@ -195,7 +195,7 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
             truncated: bounded.truncated,
           },
           selective
-            ? `review-only selective plan created for ${allChanges.length} change(s); Apply is not enabled and no selection, generated file, or ownership manifest was written.${deletionNotice}`
+            ? `selective plan created for ${allChanges.length} change(s); no selection, generated file, or ownership manifest was written before explicit Apply approval.${deletionNotice}`
             : `plan created for ${allChanges.length} change(s); no files or ownership manifest were written.${deletionNotice}`,
           context.options.limits,
         )

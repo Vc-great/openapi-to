@@ -60,4 +60,20 @@ describe('TrustedTargetCatalogRegistry', () => {
     expect((await registry.get('broken')).success).toBe(true)
     expect(compilationCount).toBe(2)
   })
+
+  it('keeps discovery cached while allowing Apply to compile the current trusted bytes', async () => {
+    const root = await fixture()
+    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: '.OpenAPI/openapi.config.js' })
+    const provider = new TrustedConfigProvider(root, '.OpenAPI/openapi.config.js')
+    let compilationCount = 0
+    const registry = new TrustedTargetCatalogRegistry(provider, options, async (...args) => {
+      compilationCount += 1
+      return compileOpenAPI(...args)
+    })
+    expect((await registry.get('first')).catalog?.items[0]?.operationKey).toBe('firstOperation')
+    await writeFile(path.join(root, 'first.yaml'), 'openapi: 3.1.0\ninfo: { title: Current, version: "1" }\npaths: { /same: { get: { operationId: currentOperation, responses: { "200": { description: ok } } } } }\n')
+    expect((await registry.get('first')).catalog?.items[0]?.operationKey).toBe('firstOperation')
+    expect((await registry.getCurrent('first')).catalog?.items[0]?.operationKey).toBe('currentOperation')
+    expect(compilationCount).toBe(2)
+  })
 })

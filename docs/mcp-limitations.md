@@ -2,11 +2,11 @@
 
 - Transport is stdio only. Streamable HTTP, OAuth, API keys, and multi-tenancy are not implemented.
 - The configured-mode eight Tools are read-only. Controlled writes exist only through operator-enabled Prepare/Apply; there is no direct write, OpenAPI/config edit, arbitrary path/content, or business API execution.
-- Persistent selection currently supports additive, single-target Selective Prepare only. Selected plans are review-only, return no token, and cannot Apply. Core now has the B2a three-state transaction foundation, but MCP does not invoke it; remove/replace/migration and controlled selected Apply are deferred to B2b.
+- Persistent selection supports additive, single-target controlled Selective Prepare/Apply. Prepare is side-effect free; approved Apply atomically commits projected artifacts, ownership, and the internally derived selection through Core's three-state transaction. Remove/replace/clear/prune, operation-rename migration, historical full-output bootstrap, and alternate destinations remain unsupported.
 - OpenAPI 3.2 is compatible-read with diagnosed generator gaps, not complete generation support.
 - Diff is a deterministic first-stage ruleset, not a complete compatibility proof or breaking-change oracle.
 - Config and plugins are trusted operator-selected executable code. Tool callers cannot change them; edits require a Server restart because the load result is cached.
-- Operation catalogs are process-local snapshots of trusted targets. There is no watcher; restart after config or OpenAPI changes. Search does not select code generation, and generation remains full-target.
+- Operation catalogs are process-local snapshots of trusted targets. There is no watcher; restart after config or OpenAPI changes. Search alone does not select code generation; selective Apply deliberately performs a fresh trusted compilation and uses only the frozen reviewed operation keys.
 - Cancellation is cooperative. Remote I/O, compiler loops, plugin boundaries, formatting, comparison, and queue waits observe it; one long synchronous parser or non-cooperative plugin callback cannot be safely interrupted mid-instruction.
 - Progress is optional, coarse, standard MCP progress only. There are no experimental Tasks or background jobs.
 - Results are deliberately truncated and never include full OpenAPI documents, complete `components.schemas`, unbounded `$ref` expansion, complete generated trees, or binary Base64.

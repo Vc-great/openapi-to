@@ -1,6 +1,6 @@
 # Projected OpenAPI compilation and selective dry-run
 
-Phase 2A adds an in-memory generation scope for previewing one or more operations. Phase 2 B1 now reuses that projection in a review-only Selective Prepare while leaving selected Apply disabled and the default full-target generation path unchanged. See [persistent operation selection](./persistent-operation-selection.md).
+Phase 2A adds an in-memory generation scope for previewing one or more operations. Phase 2 B2b reuses that projection in controlled Selective Prepare/Apply while keeping Prepare side-effect free and the default full-target generation path unchanged. See [persistent operation selection](./persistent-operation-selection.md).
 
 ```text
 startup-trusted target

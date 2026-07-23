@@ -93,6 +93,15 @@ export class TrustedTargetCatalogRegistry {
     return this.waitFor(pending, signal)
   }
 
+  /** Compile the current trusted target without replacing the process-lifetime discovery cache. */
+  async getCurrent(requested: string | undefined, signal?: AbortSignal): Promise<CompiledTargetCatalog> {
+    const target = await this.resolveTargetName(requested, signal)
+    const prepared = await prepareTargets(this.provider, [target], signal)
+    const [selected] = prepared.targets
+    if (!selected) throw new McpToolError('MCP_UNKNOWN_TARGET', `Unknown configured target: ${target}`)
+    return this.waitFor(this.compileTarget(selected, signal), signal)
+  }
+
   async list(signal?: AbortSignal): Promise<CompiledTargetCatalog[]> {
     const names = await this.targetNames(signal)
     return Promise.all(names.map((name) => this.get(name, signal)))

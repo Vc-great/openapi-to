@@ -1,6 +1,6 @@
 # Persistent operation selection and Selective Prepare
 
-Status: Phase 2 B2a transaction foundation implemented; selected Apply remains disabled.
+Status: Phase 2 B2b controlled additive Selective Apply implemented.
 
 ## State meaning and identity
 
@@ -63,7 +63,7 @@ trusted target
   -> projected compilation(desired selection)
   -> complete desired artifacts
   -> output/ownership comparison
-  -> review-only selective plan
+  -> applyable selective plan (Prepare still writes nothing)
 ```
 
 `openapi_prepare_generation` remains full generation when `selection` is omitted. With `selection: { type: "add", operationKeys: [...] }`, it requires one trusted target, reuses the Phase 1 compiled target cache, and invokes the Phase 2A projection with all desired keys. The trusted target's existing `output.clean` controls comparison; the caller cannot change it. Because add never shrinks desired selection, artifacts for prior operations remain expected and are not deleted merely because the latest request named one new operation.
@@ -72,22 +72,20 @@ The deterministic plan binds `kind=selective`, manifest version, selection owner
 
 ## Apply boundary and lifecycle
 
-Selective Prepare returns `kind: "selective"`, `applySupported: false`, and no token. The internal plan remains short-lived in the existing per-Server memory store so its complete binding can be tested and reviewed. If a valid internal selective plan reaches `openapi_apply_generation`, it returns `SELECTIVE_APPLY_NOT_ENABLED` before entering the generation queue, acquiring the output lock, creating staging/journal state, consuming the token, or calling the transaction writer.
+Selective Prepare returns `kind: "selective"`, `applySupported: true`, and a one-time token bound to the selective kind, trusted target/output, selection owner, plan hash, expiry, Workspace, and Server process. The short-lived internal plan also retains the exact desired serialized selection bytes; callers receive only bounded summaries. Prepare still creates no selection, generated output, ownership, lock, stage, backup, or journal.
+
+After explicit approval, Apply revalidates the previous physical snapshot and semantic hash before the output lock. Under the lock it consumes the token, compiles the trusted target afresh, projects exactly the frozen desired operation keys, compares the projection hash/statistics plus every artifact path/kind/order/hash/byte length and desired ownership bytes, then repeats selection validation. Only then does it call `commitGenerationStateTransaction()` with the frozen desired selection bytes. The transaction installs generated artifacts, then ownership, then selection, and verifies all three before success.
 
 Full Prepare still returns its token, and full Apply retains its existing revalidation, shared lock, atomic artifact/ownership transaction, rollback, recovery, cancellation, expiry, and replay behavior. Restart clears all plans and refreshes trusted config/catalog state. B1 adds no file watcher and no write permission.
 
-## Current boundary and B2b
+## Current boundary and next phase
 
-B2a adds the reusable Core transaction/journal/rollback/recovery foundation for generated artifacts, ownership, and controlled state files. It does not connect that writer to MCP selective plans. Add remains the only selection mutation; remove, replace, clear, prune, automatic full-output migration, selected Apply, and actual selection writes remain disabled. Generated output remains under the existing trusted `.OpenAPI/<output.dir>` location; nothing migrates to `src/api/generated`.
+Add remains the only selection mutation. Remove, replace, clear, prune, automatic full-output migration, operation rename migration, and `src/api/generated` destination changes remain disabled. Generated output remains under the existing trusted target output. Selection is written only by a successful approved selective Apply; full Prepare/Apply and full CLI generation keep their established semantics.
 
-B2b is limited to:
+The next phase may consider:
 
 ```text
-selected plan revalidation
-  -> selection drift validation
-  -> exact desired selection regeneration
-  -> projection/artifact revalidation
-  -> selected plan token
-  -> invoke generation state transaction
-  -> controlled selective Apply
+remove/replace/clear selection semantics
+  -> explicit migration policy
+  -> safe ownership reconciliation
 ```

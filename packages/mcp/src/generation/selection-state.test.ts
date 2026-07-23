@@ -11,7 +11,9 @@ import { applyGenerationTool } from '../tools/apply-generation.ts'
 import { GenerationPlanStore } from './plan-store.ts'
 import {
   assertGenerationPlanApplySupported,
+  applyGenerationWritePlan,
   hashDeterministicGenerationPlan,
+  prepareGenerationWritePlan,
   prepareSelectiveGenerationWritePlan,
   type InternalGenerationWritePlan,
 } from './write-plan.ts'
@@ -257,6 +259,54 @@ describe('selective write-plan binding', () => {
     }
   })
 
+  it('binds full and selective tokens to distinct plan kinds and authorization contexts', async () => {
+    const context = await fixture()
+    const plans = store()
+    try {
+      const full = await prepareGenerationWritePlan(context.provider, plans, context.resolved, ['main'])
+      const selective = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
+      expect(full.stored.authorizationContextHash).not.toBe(selective.stored.authorizationContextHash)
+      expect(() => plans.verify(full.stored.planId, selective.token, full.stored.planHash)).toThrow(/token/i)
+      expect(() => plans.verify(selective.stored.planId, full.token, selective.stored.planHash)).toThrow(/token/i)
+      expect(plans.verify(full.stored.planId, full.token, full.stored.planHash).kind).toBe('full')
+      expect(plans.verify(selective.stored.planId, selective.token, selective.stored.planHash).kind).toBe('selective')
+    } finally {
+      plans.clear()
+    }
+  })
+
+  it.each([
+    ['projection', 'SELECTIVE_APPLY_PROJECTION_MISMATCH', (plan: InternalGenerationWritePlan) => {
+      if (!plan.deterministic.selection) throw new Error('Expected a selective projection binding.')
+      plan.deterministic.selection.projectionHash = 'f'.repeat(64)
+    }],
+  ] as const)('rejects selective %s mismatch before transaction commit', async (_kind, expectedCode, mutate) => {
+    const context = await fixture()
+    const plans = store()
+    try {
+      const prepared = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
+      mutate(prepared.stored)
+      const result = await applyGenerationTool({
+        options: context.resolved,
+        trustedConfig: context.provider,
+        generationPlans: plans,
+        targetCatalogs: context.registry,
+        generationLock: { async run(operation: () => Promise<unknown>) { return operation() } } as never,
+        logger: { debug() {}, info() {}, warn() {}, error() {} },
+      }, {
+        planId: prepared.stored.planId,
+        token: prepared.token,
+        approvedPlanHash: prepared.stored.planHash,
+      })
+      expect(result.isError).toBe(true)
+      expect((result.structuredContent?.diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain(expectedCode)
+      await expect(access(path.join(context.root, '.OpenAPI/generated/getUser.txt'))).rejects.toThrow()
+      await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
+    } finally {
+      plans.clear()
+    }
+  })
+
   it('binds the exact prior physical snapshot and desired serialized bytes', async () => {
     const context = await fixture()
     const initial = await prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
@@ -314,13 +364,13 @@ describe('selective write-plan binding', () => {
     }
   })
 
-  it('keeps review-only plans unconsumed and rejects Apply before creating a lock or output', async () => {
+  it('keeps selective plans active after verification and before Apply consumes them', async () => {
     const context = await fixture()
     const plans = store()
     try {
       const prepared = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
       const input = { planId: prepared.stored.planId, token: prepared.token, approvedPlanHash: prepared.stored.planHash }
-      expect(() => assertGenerationPlanApplySupported(plans, input)).toThrowError(expect.objectContaining({ diagnostics: [{ code: 'SELECTIVE_APPLY_NOT_ENABLED', severity: 'error', message: expect.any(String) }] }))
+      expect(assertGenerationPlanApplySupported(plans, input)).toBe(prepared.stored)
       expect(plans.verify(input.planId, input.token, input.approvedPlanHash)).toBe(prepared.stored)
       await expect(access(path.join(context.root, '.OpenAPI/generated'))).rejects.toThrow()
       await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
@@ -331,7 +381,7 @@ describe('selective write-plan binding', () => {
     }
   })
 
-  it('rejects a valid selective plan in the Tool handler before entering the generation queue', async () => {
+  it('applies a valid selective plan through the Tool handler and consumes it once', async () => {
     const context = await fixture()
     const plans = store()
     let queueEntries = 0
@@ -341,17 +391,56 @@ describe('selective write-plan binding', () => {
         options: context.resolved,
         trustedConfig: context.provider,
         generationPlans: plans,
-        generationLock: { async run() { queueEntries += 1; throw new Error('generation queue must not be entered') } } as never,
+        targetCatalogs: context.registry,
+        generationLock: { async run(operation: () => Promise<unknown>) { queueEntries += 1; return operation() } } as never,
         logger: { debug() {}, info() {}, warn() {}, error() {} },
       }, {
         planId: prepared.stored.planId,
         token: prepared.token,
         approvedPlanHash: prepared.stored.planHash,
       })
-      expect(queueEntries).toBe(0)
-      expect(result.isError).toBe(true)
-      expect((result.structuredContent?.diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('SELECTIVE_APPLY_NOT_ENABLED')
-      expect(plans.verify(prepared.stored.planId, prepared.token, prepared.stored.planHash)).toBe(prepared.stored)
+      expect(queueEntries).toBe(1)
+      expect(result.isError).not.toBe(true)
+      expect(result.structuredContent).toMatchObject({ success: true, applied: true, planKind: 'selective', selectionApplied: true, selectedOperationCount: 1 })
+      expect(() => plans.verify(prepared.stored.planId, prepared.token, prepared.stored.planHash)).toThrow(/already/i)
+      expect(await readFile(path.join(context.root, '.OpenAPI/generated/getUser.txt'), 'utf8')).toBe('getUser\n')
+      expect(await readFile(prepared.selection.selectionFile, 'utf8')).toBe(prepared.selection.desiredSelectionBytes)
+    } finally {
+      plans.clear()
+    }
+  })
+
+  it('rolls back all three selective states after a real Apply-path transaction failure', async () => {
+    const context = await fixture()
+    const plans = store()
+    const logger = { debug() {}, info() {}, warn() {}, error() {} }
+    try {
+      const prepared = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
+      await expect(applyGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        { planId: prepared.stored.planId, token: prepared.token, approvedPlanHash: prepared.stored.planHash },
+        logger,
+        { transactionFailpoint: 'state-after-rename' },
+      )).rejects.toMatchObject({ name: 'OutputTransactionRolledBackError' })
+      await expect(access(path.join(context.root, '.OpenAPI/generated/getUser.txt'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.OpenAPI/generated/.openapi-to-manifest.json'))).rejects.toThrow()
+      await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
+      await expect(access(path.join(context.root, '.OpenAPI/generated/.openapi-to-transaction.json'))).rejects.toThrow()
+      expect(() => plans.verify(prepared.stored.planId, prepared.token, prepared.stored.planHash)).toThrow(/already/i)
+
+      const fresh = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
+      const applied = await applyGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        { planId: fresh.stored.planId, token: fresh.token, approvedPlanHash: fresh.stored.planHash },
+        logger,
+      )
+      expect(applied).toMatchObject({ selectionApplied: true, selectedOperationCount: 1 })
     } finally {
       plans.clear()
     }

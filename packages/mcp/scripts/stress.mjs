@@ -56,6 +56,9 @@ let selectivePrepareCalls = 0
 let selectivePrepareOutputBytes = 0
 let selectivePrepareRssGrowthBytesApprox = null
 let selectiveProjectionSchemaCount
+let selectiveCompileMs
+let selectiveApplyMs
+let selectiveTransactionMetrics
 try {
   await mkdir(path.join(selectionRoot, '.OpenAPI/selections'), { recursive: true })
   const largeFixtureRoot = path.join(repositoryRoot, 'packages/mcp/src/evaluation/fixtures/large')
@@ -84,12 +87,19 @@ try {
   selectionTransport.stderr?.on('data', (chunk) => { stderrBytes += chunk.byteLength })
   const selectionClient = new Client({ name: 'openapi-to-selection-stress', version: '1.0.0' })
   await selectionClient.connect(selectionTransport)
+  const compileStarted = performance.now()
+  const listed = await selectionClient.callTool({ name: 'openapi_list_targets', arguments: {} }, undefined, { timeout: 120_000 })
+  if (listed.structuredContent?.success !== true || listed.structuredContent?.targets?.[0]?.operationCount !== 700) {
+    throw new Error('Large selective stress target discovery did not compile the expected 700 operations.')
+  }
+  selectiveCompileMs = Math.round(performance.now() - compileStarted)
   const selectionRssBefore = await (async () => {
     const pid = selectionTransport._process?.pid
     if (!pid) return null
     try { return Number((await execFileAsync('ps', ['-o', 'rss=', '-p', String(pid)])).stdout.trim()) * 1024 } catch { return null }
   })()
   let stablePlanHash
+  let lastPlan
   try {
     for (let index = 0; index < 100; index += 1) {
       const prepared = await selectionClient.callTool({
@@ -99,7 +109,7 @@ try {
       const value = prepared.structuredContent ?? {}
       const plan = value.plan
       if (
-        value.success !== true || plan?.kind !== 'selective' || plan?.applySupported !== false || plan?.token !== undefined
+        value.success !== true || plan?.kind !== 'selective' || plan?.applySupported !== true || typeof plan?.token !== 'string'
         || plan?.selection?.counts?.previous !== 100 || plan?.selection?.counts?.requested !== 1 || plan?.selection?.counts?.desired !== 101
         || plan?.selection?.previousOperationKeys?.length !== 50 || plan?.selection?.desiredOperationKeys?.length !== 50 || plan?.selection?.truncated !== true
         || plan?.projection?.operationCount !== 101 || !Number.isInteger(plan?.projection?.schemaCount)
@@ -126,7 +136,21 @@ try {
       else if (plan.projection.schemaCount !== selectiveProjectionSchemaCount) throw new Error(`Selective Prepare projection schema count drifted at iteration ${index}.`)
       selectivePrepareOutputBytes = Math.max(selectivePrepareOutputBytes, Buffer.byteLength(JSON.stringify(value)))
       selectivePrepareCalls += 1
+      lastPlan = plan
     }
+    const applyStarted = performance.now()
+    const applied = await selectionClient.callTool({
+      name: 'openapi_apply_generation',
+      arguments: { planId: lastPlan.planId, token: lastPlan.token, approvedPlanHash: lastPlan.planHash },
+    }, undefined, { timeout: 120_000 })
+    const appliedValue = applied.structuredContent ?? {}
+    selectiveApplyMs = Math.round(performance.now() - applyStarted)
+    if (
+      appliedValue.success !== true || appliedValue.planKind !== 'selective' || appliedValue.selectionApplied !== true
+      || appliedValue.selectedOperationCount !== 101 || appliedValue.selectionHash !== lastPlan.selection.desiredSelectionHash
+      || appliedValue.projectionHash !== lastPlan.projection.projectionHash
+    ) throw new Error(`Selective Apply stress returned an invalid result: ${JSON.stringify(appliedValue)}`)
+    selectiveTransactionMetrics = appliedValue.transactionMetrics
   } finally {
     const pid = selectionTransport._process?.pid
     const selectionRssAfter = pid ? await (async () => {
@@ -135,13 +159,13 @@ try {
     if (selectionRssBefore !== null && selectionRssAfter !== null) selectivePrepareRssGrowthBytesApprox = selectionRssAfter - selectionRssBefore
     await selectionClient.close()
   }
-  if ((await readFile(selectionFile, 'utf8')) !== selectionBytes) throw new Error('Selective Prepare stress modified the persisted selection file.')
+  const persistedSelection = JSON.parse(await readFile(selectionFile, 'utf8'))
+  if (persistedSelection.operations.length !== 101 || !persistedSelection.operations.includes('getEnterpriseResource100')) throw new Error('Selective Apply stress did not persist the complete desired selection.')
   if ((await readdir(path.join(selectionRoot, '.OpenAPI/selections'))).length !== 1) throw new Error('Selective Prepare stress created unexpected selection state.')
-  try {
-    await access(path.join(selectionRoot, '.OpenAPI/generated'))
-    throw new Error('Selective Prepare stress created the output root.')
-  } catch (error) {
-    if (error instanceof Error && !('code' in error && error.code === 'ENOENT')) throw error
+  const generatedEntries = await readdir(path.join(selectionRoot, '.OpenAPI/generated'))
+  if (generatedEntries.length !== 102 || !generatedEntries.includes('.openapi-to-manifest.json')) throw new Error('Selective Apply stress committed an unexpected generated file set.')
+  for (const internal of ['.openapi-to-write.lock', '.openapi-to-transaction.json', '.openapi-to-transaction']) {
+    if (generatedEntries.includes(internal)) throw new Error(`Selective Apply stress leaked ${internal}.`)
   }
 } finally {
   await rm(selectionRoot, { recursive: true, force: true })
@@ -285,7 +309,7 @@ const success = (rssGrowthBytesApprox === null || rssGrowthBytesApprox < 512 * 1
 process.stdout.write(`${JSON.stringify({
   schemaVersion: 1,
   success,
-  calls: { validate: 120, inspect: 100, diff: 50, searchOperations: 100, getOperation: 50, dryRun: 10, check: 10, selectivePrepare: selectivePrepareCalls, prepare: writeCalls, apply: writeCalls },
+  calls: { validate: 120, inspect: 100, diff: 50, searchOperations: 100, getOperation: 50, dryRun: 10, check: 10, selectivePrepare: selectivePrepareCalls, selectiveApply: 1, prepare: writeCalls, apply: writeCalls + 1 },
   selectivePrepare: {
     documentOperations: 700,
     documentSchemas: 301,
@@ -298,7 +322,10 @@ process.stdout.write(`${JSON.stringify({
     maxStructuredContentBytes: selectivePrepareOutputBytes,
     rssGrowthBytesApprox: selectivePrepareRssGrowthBytesApprox,
     repeatedPlanHashStable: selectivePrepareCalls === 100,
-    filesystemWrites: 0,
+    compileMs: selectiveCompileMs,
+    applyMs: selectiveApplyMs,
+    transactionMetrics: selectiveTransactionMetrics,
+    filesystemWrites: 1,
   },
   stateTransaction: {
     artifactCount: 100,

@@ -11,7 +11,7 @@ Each configured output root may temporarily contain:
 - `.openapi-to-transaction/<transaction-id>/stage/` — verified future bytes;
 - `.openapi-to-transaction/<transaction-id>/backup/` — pre-Apply managed bytes and manifest.
 
-Full writes use journal schema v1. The B2a Core foundation uses schema v2 only when trusted controlled state files participate. In that case each allowed state parent may also contain `.openapi-to-state-transaction/<transaction-id>/{stage,backup}/`. Journal v2 stores only Workspace-relative identities and hashes; recovery requires the original startup-trusted Workspace and allowed state roots. Selective MCP Apply remains disabled, so these state directories currently occur only in direct Core transaction tests or future trusted Core callers.
+Full writes use journal schema v1. Selective MCP Apply uses schema v2 because trusted controlled selection state participates. Each allowed state parent may temporarily contain `.openapi-to-state-transaction/<transaction-id>/{stage,backup}/`. Journal v2 stores only Workspace-relative identities and hashes; recovery requires the original startup-trusted Workspace and `.OpenAPI/selections` root. Normal successful Apply or automatic recovery removes these directories.
 
 Staging is pre-commit. Backup and committing may have moved managed files. Committed means the new files and manifest were switched, but cleanup may not have completed.
 
