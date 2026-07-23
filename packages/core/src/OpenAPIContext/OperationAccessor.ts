@@ -3,7 +3,6 @@ import {
 	camelCase,
 	filter,
 	head,
-	isBoolean,
 	some,
 } from "lodash-es";
 
@@ -14,6 +13,7 @@ import type {
 	ParameterObjectWithRef,
 	ReferenceObject,
 } from "./types.ts";
+import { selectSuccessResponseStatusCode } from "./responseStatus.ts";
 
 type OperationTSType = {
 	pathParams: string | undefined;
@@ -41,7 +41,7 @@ type OperationRequest = {
 };
 
 export class OperationAccessor {
-	private static _instances = new Map<string, OperationAccessor>();
+	private static _instances = new WeakMap<Operation, OperationAccessor>();
 	private _operationType: OperationTSType | undefined;
 	private _operationZodSchema: OperationZodSchema | undefined;
 	private _operationFaker: OperationFaker | undefined;
@@ -199,14 +199,13 @@ export class OperationAccessor {
 	}
 
 	getResponseContentType(): string[] {
-		const getResponseStatusCodes = head(
-			this.operation
-				.getResponseStatusCodes()
-				.filter((code) => code.startsWith("2")),
+		const successCode = selectSuccessResponseStatusCode(
+			this.operation.getResponseStatusCodes(),
 		);
-		const successResponse = this.operation.getResponseByStatusCode(200);
+		if (!successCode) return [];
+		const successResponse = this.operation.getResponseByStatusCode(successCode);
 		if (
-			!isBoolean(successResponse) &&
+			typeof successResponse !== "boolean" &&
 			successResponse &&
 			"content" in successResponse &&
 			successResponse.content
@@ -224,15 +223,10 @@ export class OperationAccessor {
 	 * @returns OperationAccessor 实例
 	 */
 	public static getInstance(operation: Operation): OperationAccessor {
-		const operationId = `${operation.path}-${operation.method}`;
-
-		if (!OperationAccessor._instances.has(operationId)) {
-			OperationAccessor._instances.set(
-				operationId,
-				new OperationAccessor(operation),
-			);
-		}
-
-		return OperationAccessor._instances.get(operationId)!;
+		const cached = OperationAccessor._instances.get(operation);
+		if (cached) return cached;
+		const accessor = new OperationAccessor(operation);
+		OperationAccessor._instances.set(operation, accessor);
+		return accessor;
 	}
 }

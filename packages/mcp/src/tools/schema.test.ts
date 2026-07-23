@@ -13,6 +13,12 @@ import {
   prepareGenerationOutputSchema,
   validateInputSchema,
   validateOutputSchema,
+  listTargetsInputSchema,
+  listTargetsOutputSchema,
+  searchOperationsInputSchema,
+  searchOperationsOutputSchema,
+  getOperationInputSchema,
+  getOperationOutputSchema,
 } from './index.ts'
 
 const diagnostics = {
@@ -22,6 +28,30 @@ const diagnostics = {
 }
 
 const cases = [
+  {
+    name: 'list-targets',
+    input: listTargetsInputSchema,
+    validInput: {},
+    invalidInput: 'targets',
+    output: listTargetsOutputSchema,
+    validOutput: { schemaVersion: 1, tool: 'openapi_list_targets', success: false, targets: [], ...diagnostics },
+  },
+  {
+    name: 'search-operations',
+    input: searchOperationsInputSchema,
+    validInput: { target: 'backend', query: 'GET /users', limit: 8 },
+    invalidInput: { query: '', limit: 1000 },
+    output: searchOperationsOutputSchema,
+    validOutput: { schemaVersion: 1, tool: 'openapi_search_operations', success: false, query: 'users', totalMatches: 0, items: [], ...diagnostics },
+  },
+  {
+    name: 'get-operation',
+    input: getOperationInputSchema,
+    validInput: { target: 'backend', operationKey: 'getUser', detail: 'contract', schemaDepth: 2 },
+    invalidInput: { operationKey: '', schemaDepth: 100 },
+    output: getOperationOutputSchema,
+    validOutput: { schemaVersion: 1, tool: 'openapi_get_operation', success: false, found: false, detail: 'contract', ...diagnostics },
+  },
   {
     name: 'validate',
     input: validateInputSchema,
@@ -49,7 +79,7 @@ const cases = [
   {
     name: 'dry-run',
     input: generateDryRunInputSchema,
-    validInput: { targets: ['sdk'], includePreview: false },
+    validInput: { targets: ['sdk'], scope: { type: 'operations', operationKeys: ['getUser'] }, includePreview: false },
     invalidInput: { targets: [''] },
     output: generateDryRunOutputSchema,
     validOutput: { schemaVersion: 1, tool: 'openapi_generate_dry_run', success: false, ...diagnostics },
@@ -65,7 +95,7 @@ const cases = [
   {
     name: 'prepare',
     input: prepareGenerationInputSchema,
-    validInput: { targets: ['sdk'] },
+    validInput: { targets: ['sdk'], selection: { type: 'add', operationKeys: ['getUser'] } },
     invalidInput: { targets: ['sdk'], configPath: 'untrusted.cjs' },
     output: prepareGenerationOutputSchema,
     validOutput: { schemaVersion: 1, tool: 'openapi_prepare_generation', success: false, ...diagnostics },
@@ -101,5 +131,15 @@ describe('MCP Tool schemas', () => {
     expect(input.safeParse(invalidInput).success).toBe(false)
     expect(output.safeParse(validOutput).success).toBe(true)
     expect(output.safeParse({ ...validOutput, tool: 'wrong_tool' }).success).toBe(false)
+  })
+
+  it('keeps full Prepare compatible while allowing only bounded add mutations', () => {
+    expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'] }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'add', operationKeys: [] } }).success).toBe(true)
+    for (const selection of [
+      { type: 'remove', operationKeys: ['getUser'] },
+      { type: 'replace', operationKeys: ['getUser'] },
+      { type: 'add', operationKeys: ['getUser'], path: 'selection.json' },
+    ]) expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection }).success).toBe(false)
   })
 })

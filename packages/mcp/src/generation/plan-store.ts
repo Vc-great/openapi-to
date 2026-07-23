@@ -4,8 +4,10 @@ import { McpToolError } from '../errors.ts'
 
 export interface StoredGenerationPlan {
   schemaVersion: 1
+  kind: 'full' | 'selective'
   planId: string
   planHash: string
+  authorizationContextHash: string
   createdAt: number
   expiresAt: number
   workspaceHash: string
@@ -112,7 +114,10 @@ export class GenerationPlanStore<T extends StoredGenerationPlan> {
         schemaVersion: 1,
         processNonce: this.processNonce,
         planId: plan.planId,
+        kind: plan.kind,
         planHash: plan.planHash,
+        authorizationContextHash: plan.authorizationContextHash,
+        target: plan.target,
         workspaceHash: plan.workspaceHash,
         expiresAt: plan.expiresAt,
       }))

@@ -1,12 +1,16 @@
 import { z } from 'zod'
 
 import { safeExecutionDiagnostic } from '../errors.ts'
-import { prepareGenerationWritePlan } from '../generation/write-plan.ts'
+import { prepareGenerationWritePlan, prepareSelectiveGenerationWritePlan } from '../generation/write-plan.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
 export const prepareGenerationInputSchema = z.object({
   targets: z.array(z.string().min(1).max(200)).max(100).optional(),
+  selection: z.object({
+    type: z.literal('add'),
+    operationKeys: z.array(z.string().min(1).max(500)).max(500),
+  }).strict().optional(),
   includePreview: z.boolean().optional(),
 }).strict()
 
@@ -27,8 +31,10 @@ export const prepareGenerationOutputSchema = z.object({
   tool: z.literal('openapi_prepare_generation'),
   success: z.boolean(),
   plan: z.object({
+    kind: z.enum(['full', 'selective']),
+    applySupported: z.boolean(),
     planId: z.string(),
-    token: z.string(),
+    token: z.string().optional(),
     planHash: z.string(),
     createdAt: z.string(),
     expiresAt: z.string(),
@@ -37,7 +43,24 @@ export const prepareGenerationOutputSchema = z.object({
       added: z.number().int(), modified: z.number().int(), deleted: z.number().int(), unchanged: z.number().int(), totalBytesAfter: z.number().int(),
     }),
     changes: z.array(preparedChangeSchema),
-    truncated: z.object({ changes: z.boolean(), returned: z.number().int(), total: z.number().int(), omitted: z.number().int() }),
+    selection: z.object({
+      previousOperationKeys: z.array(z.string()),
+      requestedOperationKeys: z.array(z.string()),
+      newlyAddedOperationKeys: z.array(z.string()),
+      alreadySelectedOperationKeys: z.array(z.string()),
+      desiredOperationKeys: z.array(z.string()),
+      previousSelectionHash: z.string(),
+      desiredSelectionHash: z.string(),
+      previousSelectionExists: z.boolean(),
+      counts: z.object({ previous: z.number().int(), requested: z.number().int(), newlyAdded: z.number().int(), alreadySelected: z.number().int(), desired: z.number().int() }),
+      truncated: z.boolean(),
+    }).optional(),
+    projection: z.object({
+      projectionHash: z.string(), operationCount: z.number().int(), pathCount: z.number().int(), schemaCount: z.number().int(),
+      parameterCount: z.number().int(), requestBodyCount: z.number().int(), responseCount: z.number().int(), headerCount: z.number().int(),
+      securitySchemeCount: z.number().int(), callbackCount: z.number().int(), linkCount: z.number().int(), exampleCount: z.number().int(),
+    }).optional(),
+    truncated: z.object({ changes: z.boolean(), returned: z.number().int(), total: z.number().int(), omitted: z.number().int(), selection: z.boolean().optional() }),
   }).optional(),
   diagnostics: z.array(diagnosticSchema),
   diagnosticSummary: diagnosticSummarySchema,
@@ -51,7 +74,20 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
       if (!context.generationPlans) throw new Error('Controlled write plan storage is unavailable.')
       return await context.generationLock.run(async () => {
         await execution.progress('Preparing generation plan', 5)
-        const prepared = await prepareGenerationWritePlan(context.trustedConfig, context.generationPlans as NonNullable<ToolContext['generationPlans']>, context.options, input.targets, execution)
+        if (input.selection && !context.targetCatalogs) throw new Error('Selective Prepare requires a startup-trusted target registry.')
+        const selectivePrepared = input.selection
+          ? await prepareSelectiveGenerationWritePlan(
+              context.trustedConfig,
+              context.generationPlans as NonNullable<ToolContext['generationPlans']>,
+              context.options,
+              context.targetCatalogs as NonNullable<ToolContext['targetCatalogs']>,
+              input.targets,
+              input.selection,
+              execution,
+            )
+          : undefined
+        const prepared = selectivePrepared
+          ?? await prepareGenerationWritePlan(context.trustedConfig, context.generationPlans as NonNullable<ToolContext['generationPlans']>, context.options, input.targets, execution)
         const server = prepared.run.servers[0]
         const manifest = server?.result.generationResult?.manifest
         if (!server || !manifest) throw new Error('Prepared generation plan is incomplete.')
@@ -83,6 +119,35 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
         })
         const diagnostics = [...prepared.run.diagnostics]
         if (changes.length < allChanges.length) diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: `The plan summary omitted ${allChanges.length - changes.length} changes; the complete internal plan remains applyable.` })
+        const selective = selectivePrepared?.selection
+        const selectionLimit = Math.min(50, context.options.limits.maxChanges)
+        const boundedSelection = selective
+          ? {
+              previousOperationKeys: selective.merge.previousOperationKeys.slice(0, selectionLimit),
+              requestedOperationKeys: selective.merge.requestedOperationKeys.slice(0, selectionLimit),
+              newlyAddedOperationKeys: selective.merge.newlyAddedOperationKeys.slice(0, selectionLimit),
+              alreadySelectedOperationKeys: selective.merge.alreadySelectedOperationKeys.slice(0, selectionLimit),
+              desiredOperationKeys: selective.merge.desiredOperationKeys.slice(0, selectionLimit),
+              previousSelectionHash: selective.previousSelectionHash,
+              desiredSelectionHash: selective.desiredSelectionHash,
+              previousSelectionExists: selective.previousSelectionExists,
+              counts: {
+                previous: selective.merge.previousOperationKeys.length,
+                requested: selective.merge.requestedOperationKeys.length,
+                newlyAdded: selective.merge.newlyAddedOperationKeys.length,
+                alreadySelected: selective.merge.alreadySelectedOperationKeys.length,
+                desired: selective.merge.desiredOperationKeys.length,
+              },
+              truncated: [
+                selective.merge.previousOperationKeys,
+                selective.merge.requestedOperationKeys,
+                selective.merge.newlyAddedOperationKeys,
+                selective.merge.alreadySelectedOperationKeys,
+                selective.merge.desiredOperationKeys,
+              ].some((items) => items.length > selectionLimit),
+            }
+          : undefined
+        if (boundedSelection?.truncated) diagnostics.push({ code: 'MCP_RESULT_TRUNCATED', severity: 'warning', message: 'The external selection summary was truncated; the complete desired selection remains bound in the internal applyable plan.' })
         const bounded = truncateDiagnostics(context.options.workspaceRoot, diagnostics, context.options.limits.maxDiagnostics)
         context.logger.info('generation_plan_created', {
           planId: prepared.stored.planId,
@@ -100,6 +165,8 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
           {
             success: true,
             plan: {
+              kind: selective ? 'selective' as const : 'full' as const,
+              applySupported: true,
               planId: prepared.stored.planId,
               token: prepared.token,
               planHash: prepared.stored.planHash,
@@ -111,13 +178,25 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
                 totalBytesAfter: server.materialized.reduce((total, artifact) => total + artifact.content.byteLength, 0),
               },
               changes,
-              truncated: { changes: changes.length < allChanges.length, returned: changes.length, total: allChanges.length, omitted: allChanges.length - changes.length },
+              ...(boundedSelection ? { selection: boundedSelection } : {}),
+              ...(selective && prepared.run.projection?.projectionHash
+                ? { projection: { projectionHash: prepared.run.projection.projectionHash, ...prepared.run.projection.stats } }
+                : {}),
+              truncated: {
+                changes: changes.length < allChanges.length,
+                returned: changes.length,
+                total: allChanges.length,
+                omitted: allChanges.length - changes.length,
+                ...(boundedSelection ? { selection: boundedSelection.truncated } : {}),
+              },
             },
             diagnostics: bounded.diagnostics,
             diagnosticSummary: bounded.summary,
             truncated: bounded.truncated,
           },
-          `plan created for ${allChanges.length} change(s); no files or ownership manifest were written.${deletionNotice}`,
+          selective
+            ? `selective plan created for ${allChanges.length} change(s); no selection, generated file, or ownership manifest was written before explicit Apply approval.${deletionNotice}`
+            : `plan created for ${allChanges.length} change(s); no files or ownership manifest were written.${deletionNotice}`,
           context.options.limits,
         )
       }, execution.signal)

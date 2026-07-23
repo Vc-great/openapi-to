@@ -17,21 +17,28 @@ const sourceSentinel = 'doctor-source-body-sentinel'
 const generatedSentinel = 'doctor-generated-body-sentinel'
 
 const analysisTools = ['openapi_validate', 'openapi_inspect', 'openapi_diff']
-const configuredTools = [...analysisTools, 'openapi_generate_dry_run', 'openapi_check_generation']
+const catalogTools = ['openapi_list_targets', 'openapi_search_operations', 'openapi_get_operation']
+const configuredTools = [...analysisTools, ...catalogTools, 'openapi_generate_dry_run', 'openapi_check_generation']
 const writeTools = [...configuredTools, 'openapi_prepare_generation', 'openapi_apply_generation']
 const expectedInputProperties = {
   openapi_validate: ['failOnWarning', 'source'],
   openapi_inspect: ['includeOperations', 'source'],
   openapi_diff: ['after', 'before'],
-  openapi_generate_dry_run: ['includePreview', 'targets'],
+  openapi_list_targets: [],
+  openapi_search_operations: ['includeDeprecated', 'limit', 'methods', 'query', 'tags', 'target'],
+  openapi_get_operation: ['detail', 'includeExamples', 'maxBytes', 'maxPropertiesPerSchema', 'maxSchemas', 'operationKey', 'schemaDepth', 'target'],
+  openapi_generate_dry_run: ['includePreview', 'scope', 'targets'],
   openapi_check_generation: ['targets'],
-  openapi_prepare_generation: ['includePreview', 'targets'],
+  openapi_prepare_generation: ['includePreview', 'selection', 'targets'],
   openapi_apply_generation: ['approvedPlanHash', 'planId', 'token'],
 }
 const expectedRequiredProperties = {
   openapi_validate: ['source'],
   openapi_inspect: ['source'],
   openapi_diff: ['after', 'before'],
+  openapi_list_targets: [],
+  openapi_search_operations: ['query'],
+  openapi_get_operation: ['operationKey'],
   openapi_generate_dry_run: [],
   openapi_check_generation: [],
   openapi_prepare_generation: [],
@@ -49,18 +56,24 @@ const checkDefinitions = [
   ['inspect', 'Inspect returns the expected bounded shape'],
   ['diff', 'Diff reports the synthetic contract addition'],
   ['close-3', 'No-config stdio server closes cleanly'],
-  ['matrix-5', 'Configured server exposes the five-tool contract'],
+  ['matrix-8', 'Configured server exposes the eight-tool contract'],
+  ['list-targets', 'Trusted target discovery returns bounded metadata'],
+  ['search-operations', 'Operation search returns lightweight candidates'],
+  ['get-operation', 'Operation contract reading returns one bounded contract'],
   ['dry-run', 'Dry-run reports artifacts without writing'],
   ['check-outdated', 'Check reports the absent output as outdated'],
-  ['close-5', 'Configured stdio server closes cleanly'],
+  ['close-8', 'Configured stdio server closes cleanly'],
   ['read-only-no-write', 'Configured read-only tools preserve persistent workspace bytes'],
-  ['matrix-7', 'Write-enabled server exposes the seven-tool contract'],
+  ['matrix-10', 'Write-enabled server exposes the ten-tool contract'],
+  ['selective-prepare-no-write', 'Selective Prepare binds desired selection and token without writing'],
+  ['selective-apply', 'Selective Apply atomically commits generated output, ownership, and selection'],
+  ['selective-replay', 'Selective Apply replay is rejected'],
   ['prepare-no-write', 'Prepare returns a plan without writing'],
   ['apply', 'Apply commits the reviewed plan exactly once'],
   ['replay', 'Apply replay is rejected'],
   ['check-current', 'Check reports applied output as current'],
   ['prepare-unchanged', 'A second Prepare reports only unchanged artifacts'],
-  ['close-7', 'Write-enabled stdio server closes cleanly'],
+  ['close-10', 'Write-enabled stdio server closes cleanly'],
   ['redaction', 'Tool results redact paths and bodies; logs redact plan tokens'],
   ['temporary-cleanup', 'Synthetic workspace is removed'],
   ['report-output', 'Optional JSON report output is written'],
@@ -166,6 +179,7 @@ function annotationFor(name) {
   if (name === 'openapi_apply_generation') {
     return { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false }
   }
+  if (catalogTools.includes(name)) return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
 }
 
@@ -458,7 +472,7 @@ async function runDoctor(checks, state) {
 
     let readOnlyBefore
     let configured
-    await runCheck(checks, 'matrix-5', async () => {
+    await runCheck(checks, 'matrix-8', async () => {
       readOnlyBefore = await snapshotTree(workspaceRoot)
       configured = await connect({ config: true })
       assertServerIdentity(configured, state)
@@ -466,10 +480,34 @@ async function runDoctor(checks, state) {
       state.toolMatrices.configured = tools.length
       assertToolContracts(tools, configuredTools)
     })
+    await runCheck(checks, 'list-targets', async () => {
+      const value = successful(await callTool(configured, 'openapi_list_targets', {}), 'openapi_list_targets')
+      assert(value.targets?.length === 1 && value.targets[0]?.name === 'doctor' && value.targets[0]?.operationCount === 1, 'Target discovery returned unexpected bounded metadata.')
+    })
+    await runCheck(checks, 'search-operations', async () => {
+      const value = successful(await callTool(configured, 'openapi_search_operations', { target: 'doctor', query: 'list pets' }), 'openapi_search_operations')
+      assert(value.items?.length === 1 && value.items[0]?.operationKey === 'listPets' && value.items[0]?.path === '/pets', 'Operation search returned unexpected candidates.')
+      assert(!JSON.stringify(value).includes(sourceSentinel), 'Operation search leaked the OpenAPI document body.')
+    })
+    await runCheck(checks, 'get-operation', async () => {
+      const value = successful(await callTool(configured, 'openapi_get_operation', { target: 'doctor', operationKey: 'listPets', detail: 'contract' }), 'openapi_get_operation')
+      assert(value.found === true && value.operation?.responses?.[0]?.status === '200', 'Operation contract lookup returned an unexpected result.')
+      assert(!JSON.stringify(value).includes(sourceSentinel), 'Operation contract lookup leaked the OpenAPI document body.')
+    })
     await runCheck(checks, 'dry-run', async () => {
       const value = successful(await callTool(configured, 'openapi_generate_dry_run', { targets: ['doctor'] }), 'openapi_generate_dry_run')
       assert(value.mode === 'dry-run' && value.truncated?.totalArtifacts === 2, 'Dry-run returned an unexpected artifact plan.')
       assert(value.servers?.[0]?.summary?.added === 2, 'Dry-run returned an unexpected change summary.')
+      const selective = successful(
+        await callTool(configured, 'openapi_generate_dry_run', {
+          targets: ['doctor'],
+          scope: { type: 'operations', operationKeys: ['listPets'] },
+        }),
+        'openapi_generate_dry_run',
+      )
+      assert(selective.scope?.resolvedOperationKeys?.[0] === 'listPets', 'Selective dry-run did not resolve the requested operation.')
+      assert(selective.projection?.operationCount === 1 && typeof selective.projection?.projectionHash === 'string', 'Selective dry-run omitted its bounded projection summary.')
+      assert(!JSON.stringify(selective).includes(sourceSentinel), 'Selective dry-run leaked the OpenAPI document body.')
     })
     await runCheck(checks, 'check-outdated', async () => {
       const result = await callTool(configured, 'openapi_check_generation', { targets: ['doctor'] })
@@ -477,19 +515,74 @@ async function runDoctor(checks, state) {
       assert(result.isError === true && value.success === false && value.outdated === true, 'Check did not report absent generated output as outdated.')
       assert(value.truncated?.totalChanges === 2, 'Check returned an unexpected change count.')
     })
-    await runCheck(checks, 'close-5', () => closeConnection(configured))
+    await runCheck(checks, 'close-8', () => closeConnection(configured))
     await runCheck(checks, 'read-only-no-write', async () => {
       assert(equalValues(await snapshotTree(workspaceRoot), readOnlyBefore), 'A configured read-only tool modified the workspace.')
       assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'A configured read-only tool created the output root.')
     })
 
     let writeEnabled
-    await runCheck(checks, 'matrix-7', async () => {
+    await runCheck(checks, 'matrix-10', async () => {
       writeEnabled = await connect({ config: true, allowWrite: true })
       assertServerIdentity(writeEnabled, state)
       const tools = await listTools(writeEnabled)
       state.toolMatrices.writeEnabled = tools.length
       assertToolContracts(tools, writeTools)
+    })
+    let selectivePlan
+    await runCheck(checks, 'selective-prepare-no-write', async () => {
+      const beforePrepare = await snapshotTree(workspaceRoot)
+      const value = successful(
+        await callTool(writeEnabled, 'openapi_prepare_generation', {
+          targets: ['doctor'],
+          selection: { type: 'add', operationKeys: ['listPets'] },
+        }),
+        'openapi_prepare_generation',
+      )
+      selectivePlan = value.plan
+      assert(selectivePlan?.kind === 'selective' && selectivePlan?.applySupported === true, 'Selective Prepare did not return an applyable plan.')
+      assert(typeof selectivePlan?.token === 'string' && typeof selectivePlan?.planHash === 'string', 'Selective Prepare omitted its Apply binding.')
+      planTokens.push(selectivePlan.token)
+      assert(value.plan?.selection?.desiredOperationKeys?.[0] === 'listPets', 'Selective Prepare omitted the desired selection summary.')
+      assert(value.plan?.projection?.operationCount === 1 && typeof value.plan?.projection?.projectionHash === 'string', 'Selective Prepare omitted projection binding.')
+      assert(equalValues(await snapshotTree(workspaceRoot), beforePrepare), 'Selective Prepare modified workspace bytes.')
+      assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'Selective Prepare created the output root.')
+      assert(await missing(path.join(workspaceRoot, '.OpenAPI/selections')), 'Selective Prepare created the selection directory.')
+    })
+    await runCheck(checks, 'selective-apply', async () => {
+      const value = successful(
+        await callTool(writeEnabled, 'openapi_apply_generation', {
+          planId: selectivePlan.planId,
+          token: selectivePlan.token,
+          approvedPlanHash: selectivePlan.planHash,
+        }),
+        'openapi_apply_generation',
+      )
+      assert(value.applied === true && value.planKind === 'selective' && value.selectionApplied === true, 'Selective Apply omitted its committed state result.')
+      assert(value.selectedOperationCount === 1 && value.selectionHash === selectivePlan.selection.desiredSelectionHash, 'Selective Apply returned an unexpected selection identity.')
+      assert(value.projectionHash === selectivePlan.projection.projectionHash, 'Selective Apply returned an unexpected projection identity.')
+      const outputRoot = path.join(workspaceRoot, '.OpenAPI/generated')
+      const selectionDirectory = path.join(workspaceRoot, '.OpenAPI/selections')
+      const selectionFiles = await readdir(selectionDirectory)
+      assert(selectionFiles.length === 1, 'Selective Apply did not commit exactly one derived selection manifest.')
+      const selection = JSON.parse(await readFile(path.join(selectionDirectory, selectionFiles[0]), 'utf8'))
+      assert(equalValues(selection.operations, ['listPets']), 'Selective Apply committed unexpected selection operations.')
+      const ownership = JSON.parse(await readFile(path.join(outputRoot, '.openapi-to-manifest.json'), 'utf8'))
+      assert(ownership.files?.length === 2, 'Selective Apply committed an unexpected ownership manifest.')
+      assert((await readFile(path.join(outputRoot, 'client.txt'), 'utf8')) === `${generatedSentinel}\n`, 'Selective Apply committed unexpected generated bytes.')
+      assert(
+        equalValues((await readdir(outputRoot)).sort(), ['.openapi-to-manifest.json', 'client.txt', 'metadata.json']),
+        'Selective Apply left transaction internals or unexpected files in the output root.',
+      )
+    })
+    await runCheck(checks, 'selective-replay', async () => {
+      const result = await callTool(writeEnabled, 'openapi_apply_generation', {
+        planId: selectivePlan.planId,
+        token: selectivePlan.token,
+        approvedPlanHash: selectivePlan.planHash,
+      })
+      const value = structured(result, 'openapi_apply_generation')
+      assert(result.isError === true && value.diagnostics?.some(({ code }) => code === 'MCP_PLAN_ALREADY_USED'), 'Selective Apply replay was not rejected as already used.')
     })
     let plan
     await runCheck(checks, 'prepare-no-write', async () => {
@@ -497,11 +590,10 @@ async function runDoctor(checks, state) {
       const result = await callTool(writeEnabled, 'openapi_prepare_generation', { targets: ['doctor'] })
       const value = successful(result, 'openapi_prepare_generation')
       plan = value.plan
-      assert(plan?.summary?.added === 2 && plan?.summary?.deleted === 0, 'Prepare returned an unexpected change summary.')
+      assert(plan?.summary?.added === 0 && plan?.summary?.modified === 0 && plan?.summary?.deleted === 0 && plan?.summary?.unchanged === 2, 'Full Prepare changed after selective output became current.')
       assert(typeof plan.planId === 'string' && typeof plan.token === 'string' && typeof plan.planHash === 'string', 'Prepare omitted plan binding fields.')
       planTokens.push(plan.token)
-      assert(equalValues(await snapshotTree(workspaceRoot), beforePrepare), 'Prepare modified workspace bytes.')
-      assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'Prepare created the output root.')
+      assert(equalValues(await snapshotTree(workspaceRoot), beforePrepare), 'Full Prepare changed the selectively applied workspace.')
     })
     await runCheck(checks, 'apply', async () => {
       const value = successful(
@@ -512,7 +604,7 @@ async function runDoctor(checks, state) {
         }),
         'openapi_apply_generation',
       )
-      assert(value.applied === true && value.summary?.added === 2 && value.summary?.modified === 0 && value.summary?.deleted === 0, 'Apply returned an unexpected transaction summary.')
+      assert(value.applied === true && value.planKind === 'full' && value.summary?.added === 0 && value.summary?.modified === 0 && value.summary?.deleted === 0 && value.summary?.unchanged === 2, 'Full Apply no-op returned an unexpected transaction summary.')
       const outputRoot = path.join(workspaceRoot, '.OpenAPI/generated')
       assert((await readFile(path.join(outputRoot, 'client.txt'), 'utf8')) === `${generatedSentinel}\n`, 'Apply wrote unexpected generated bytes.')
       assert(equalValues(JSON.parse(await readFile(path.join(outputRoot, 'metadata.json'), 'utf8')), { stable: true }), 'Apply wrote unexpected JSON bytes.')
@@ -545,7 +637,7 @@ async function runDoctor(checks, state) {
       )
       planTokens.push(value.plan.token)
     })
-    await runCheck(checks, 'close-7', () => closeConnection(writeEnabled))
+    await runCheck(checks, 'close-10', () => closeConnection(writeEnabled))
     await runCheck(checks, 'redaction', async () => {
       const serializedPayloads = JSON.stringify(payloads)
       const serializedLogs = Buffer.concat(stderrChunks).toString('utf8')

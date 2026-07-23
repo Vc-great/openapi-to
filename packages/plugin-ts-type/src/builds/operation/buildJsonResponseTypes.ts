@@ -1,5 +1,4 @@
-import type { OperationWrapper } from "@openapi-to/core";
-import { OpenAPIV3 } from "openapi-types";
+import { classifyResponseStatusCodes, type OperationWrapper } from "@openapi-to/core";
 import type { StatementStructures } from "ts-morph";
 import {
 	buildDefaultSuccessType,
@@ -16,10 +15,8 @@ export function buildJsonResponseTypes(
 
 	const allStatusCodes =
 		operation.accessor.operation.getResponseStatusCodes?.() ?? [];
-	const successCodes = allStatusCodes.filter((code) =>
-		/^2\d{2}$|^300$/.test(code),
-	);
-	const errorCodes = allStatusCodes.filter((code) => /^[3-5]\d{2}$/.test(code));
+	const { success: successCodes, error: errorCodes } =
+		classifyResponseStatusCodes(allStatusCodes);
 
 	const responseObjects: JsonResponseObject[] = [...successCodes, ...errorCodes]
 		.map((code) => ({

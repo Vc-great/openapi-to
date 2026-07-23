@@ -8,7 +8,7 @@ pnpm mcp:inspect -- --allow-write
 ```
 
 The default is the safer read-only mode. `--allow-write` is an explicit operator
-grant and starts a synthetic seven-Tool fixture. The launcher does not accept an
+grant and starts a synthetic ten-Tool fixture. The launcher does not accept an
 arbitrary Workspace, config, command, plugin, environment override, or remote
 source. It builds the package, creates an OS-temporary synthetic Workspace,
 chooses unused high localhost ports, writes only the trusted synthetic OpenAPI
@@ -31,21 +31,22 @@ the child, removes the temporary fixture/config, and releases its listeners.
 
 ## Manual checklist
 
-In read-only mode, confirm exactly five Tools: the three analysis Tools plus
-generation dry-run and check. In write-enabled mode:
+In read-only configured mode, confirm exactly eight Tools: the three source
+analysis Tools, target listing, operation search, bounded operation contract
+reading, generation dry-run, and check. In write-enabled mode:
 
-1. Confirm exactly seven Tools and the displayed Server name/version.
+1. Confirm exactly ten Tools and the displayed Server name/version.
 2. Review every Tool input/output schema and annotation.
-3. Call Prepare and review added/modified/deleted counts.
-4. Confirm Prepare made no Workspace or ownership-manifest change.
-5. Apply the exact returned plan only after explicit review.
-6. Confirm check reports `current`.
-7. Prepare again and confirm the plan is unchanged.
-8. Replay the used token and confirm `MCP_PLAN_ALREADY_USED`.
-9. Review the prepared managed deletion before applying it.
-10. Confirm the unmanaged synthetic file is byte-identical afterward.
+3. Call selective Prepare with one exact operation key; review previous/requested/new/desired counts, projection, changes, hash, and token.
+4. Confirm Prepare made no selection, generated-output, ownership, lock, stage, backup, or journal change.
+5. Apply only the exact returned selective plan after explicit review.
+6. Confirm generated artifacts, ownership, and selection appeared together and no transaction internals remain.
+7. Replay the selective token and confirm `MCP_PLAN_ALREADY_USED`.
+8. Prepare/apply a full plan and confirm the established full behavior is unchanged.
+9. Confirm check reports `current` and a subsequent Prepare is unchanged.
+10. Review managed deletion and confirm the unmanaged synthetic file is byte-identical afterward.
 11. Observe coarse progress without ordinary stdout text.
-12. Inspect a structured stale/tamper/common-error result.
+12. Inspect structured selection/output/ownership/projection/artifact drift and tamper errors.
 
 Do not copy plan, Proxy, or session tokens into validation documents. Record only
 sanitized input/result summaries and normalized Workspace hashes.

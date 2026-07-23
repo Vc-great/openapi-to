@@ -39,15 +39,14 @@ vi.mock('@/builds/buildOperationTypes.ts', () => ({
 }))
 
 vi.mock('@/EnumRegistry.ts', () => ({
-  enumRegistry: {
+  EnumRegistry: vi.fn(() => ({
     adds: vi.fn(),
     getAll: vi.fn(() => [
       { name: 'TestEnum', values: ['Value1', 'Value2'] },
       { name: 'StatusEnum', values: ['Active', 'Inactive'] },
     ]),
     getEnumValueName: vi.fn((val, name) => `${name}${val}`),
-  },
-  EnumRegistry: vi.fn(),
+  })),
 }))
 
 vi.mock('@/collect/collectEnumFormOperation.ts', () => ({
@@ -128,8 +127,17 @@ vi.mock('@openapi-to/core/utils', () => ({
 }))
 
 describe('definePlugin', () => {
-  let plugin: any
-  let mockCtx: any
+  type HookName = 'buildStart' | 'tagStart' | 'operation' | 'tagEnd' | 'componentsSchemas' | 'componentsParameters' | 'componentsRequestBodies' | 'componentsResponses' | 'buildEnd'
+  type TestPlugin = { name: string; hooks: Record<HookName, (...args: unknown[]) => unknown> }
+  interface MockContext {
+    openapiToSingleConfig: { output: { dir: string }; typeOutput: { dir: string } }
+    openapiHelper: { formatterName: ReturnType<typeof vi.fn> }
+    store: Map<unknown, unknown>
+    setSourceFiles: ReturnType<typeof vi.fn>
+    paths: { outputPath: string; typesPath: string }
+  }
+  let plugin: TestPlugin
+  let mockCtx: MockContext
 
   beforeEach(() => {
     // 重置模拟函数
@@ -143,6 +151,7 @@ describe('definePlugin', () => {
       openapiHelper: {
         formatterName: vi.fn((name) => name),
       },
+      store: new Map(),
       setSourceFiles: vi.fn(),
       paths: {
         outputPath: '/test/output',
@@ -150,7 +159,7 @@ describe('definePlugin', () => {
       },
     }
 
-    plugin = definePlugin()
+    plugin = definePlugin() as unknown as TestPlugin
   })
 
   it('should have the correct name', () => {

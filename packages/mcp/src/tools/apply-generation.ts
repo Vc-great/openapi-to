@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { OutputTransactionRolledBackError, OutputTransactionRollbackError } from '@openapi-to/core'
 
 import { safeExecutionDiagnostic } from '../errors.ts'
-import { applyGenerationWritePlan } from '../generation/write-plan.ts'
+import { applyGenerationWritePlan, assertGenerationPlanApplySupported } from '../generation/write-plan.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
 
@@ -20,6 +20,19 @@ export const applyGenerationOutputSchema = z.object({
   tool: z.literal('openapi_apply_generation'),
   success: z.boolean(),
   applied: z.boolean(),
+  planKind: z.enum(['full', 'selective']).optional(),
+  target: z.string().optional(),
+  selectionApplied: z.boolean().optional(),
+  selectedOperationCount: z.number().int().optional(),
+  selectionHash: z.string().optional(),
+  projectionHash: z.string().optional(),
+  transactionMetrics: z.object({
+    stagingMs: z.number().int().nonnegative(),
+    commitMs: z.number().int().nonnegative(),
+    stagedBytes: z.number().int().nonnegative(),
+    backupBytes: z.number().int().nonnegative(),
+    journalBytes: z.number().int().nonnegative(),
+  }).optional(),
   planId: z.string().optional(),
   planHash: z.string().optional(),
   transactionId: z.string().optional(),
@@ -40,12 +53,15 @@ export async function applyGenerationTool(context: ToolContext, input: z.infer<t
   return loggedToolCall(context, tool, extra, async (execution) => {
     try {
       if (!context.generationPlans) throw new Error('Controlled write plan storage is unavailable.')
+      assertGenerationPlanApplySupported(context.generationPlans as NonNullable<ToolContext['generationPlans']>, input)
+      if (!context.targetCatalogs) throw new Error('Selective Apply requires a startup-trusted target registry.')
       return await context.generationLock.run(async () => {
         await execution.progress('Validating prepared plan', 5)
         const applied = await applyGenerationWritePlan(
           context.trustedConfig,
           context.generationPlans as NonNullable<ToolContext['generationPlans']>,
           context.options,
+          context.targetCatalogs as NonNullable<ToolContext['targetCatalogs']>,
           input,
           context.logger,
           execution,
@@ -63,6 +79,13 @@ export async function applyGenerationTool(context: ToolContext, input: z.infer<t
           {
             success: true,
             applied: true,
+            planKind: applied.plan.kind,
+            target: applied.plan.target,
+            selectionApplied: applied.selectionApplied,
+            ...(applied.selectedOperationCount === undefined ? {} : { selectedOperationCount: applied.selectedOperationCount }),
+            ...(applied.selectionHash ? { selectionHash: applied.selectionHash } : {}),
+            ...(applied.projectionHash ? { projectionHash: applied.projectionHash } : {}),
+            transactionMetrics: applied.transactionMetrics,
             planId: applied.plan.planId,
             planHash: applied.plan.planHash,
             transactionId: applied.transactionId,

@@ -1,8 +1,8 @@
-import { find, head, isEmpty, upperFirst } from 'lodash-es'
+import { find, head, upperFirst } from 'lodash-es'
 
 export interface EnumItem {
   name: string
-  enumValue: any[]
+  enumValue: unknown[]
   description?: string
   extend?: string
 }
@@ -10,7 +10,7 @@ export interface EnumItem {
 export class EnumRegistry {
   private enums: Map<string, EnumItem[]> = new Map()
 
-  add(name: string, schemaENum: any[], description?: string) {
+  add(name: string, schemaENum: unknown[], description?: string) {
     const existing = this.enums.get(JSON.stringify(schemaENum))
     const enumName = this.addSuffix(name)
     if (existing && existing[0]?.name === enumName) {
@@ -40,7 +40,7 @@ export class EnumRegistry {
     return Array.from(this.enums.values()).flat()
   }
 
-  getName(schemaEnum: any[]): string {
+  getName(schemaEnum: unknown[]): string {
     const enumItem = this.enums.get(JSON.stringify(schemaEnum))
     //enumItem 不存在 报错
     if (!enumItem) {
@@ -49,7 +49,7 @@ export class EnumRegistry {
     return upperFirst(enumItem[0]?.name)
   }
 
-  getEnumValueName(schemaEnum: any[], name: string): string {
+  getEnumValueName(schemaEnum: unknown[], name: string): string {
     const enums = this.enums.get(JSON.stringify(schemaEnum))
     const enumItem = find(enums, ['name', this.addSuffix(name)]) || head(enums)
     //enumItem 不存在 报错
@@ -71,5 +71,3 @@ export class EnumRegistry {
     this.enums.clear()
   }
 }
-
-export const enumRegistry = new EnumRegistry()

@@ -16,6 +16,7 @@ import {
   OutputRecoveryRequiredError,
   OutputTransactionRolledBackError,
   snapshotOutputFile,
+  STATE_TRANSACTION_DIRECTORY,
   writeArtifacts,
   writeArtifactsTransaction,
   type TransactionFailpoint,
@@ -60,6 +61,7 @@ describe.sequential('transactional artifact writer', () => {
     'rename-middle',
     'delete-first',
     'manifest-temp',
+    'manifest-backup',
     'manifest-rename',
     'cleanup',
   ]
@@ -80,6 +82,7 @@ describe.sequential('transactional artifact writer', () => {
     expect(await readFile(path.join(prepared.root, 'added.txt'), 'utf8')).toBe('added\n')
     expect(await readFile(path.join(prepared.root, 'user.txt'), 'utf8')).toBe('unmanaged\n')
     await expect(access(path.join(prepared.root, 'deleted.txt'))).rejects.toThrow()
+    await expect(access(path.join(prepared.root, STATE_TRANSACTION_DIRECTORY))).rejects.toThrow()
   })
 
   it('defers cancellation after commit starts and completes a consistent transaction', async () => {
@@ -126,6 +129,7 @@ describe.sequential('transactional artifact writer', () => {
     })
     expect(result.signal).toBe('SIGKILL')
     await expect(access(path.join(root, OUTPUT_TRANSACTION_JOURNAL))).resolves.toBeUndefined()
+    expect(JSON.parse(await readFile(path.join(root, OUTPUT_TRANSACTION_JOURNAL), 'utf8'))).toMatchObject({ schemaVersion: 1 })
     const lock = await acquireOutputWriteLock(root, { staleLockMs: 0 })
     await lock.release()
     expect(await fileState(root)).toEqual(before)

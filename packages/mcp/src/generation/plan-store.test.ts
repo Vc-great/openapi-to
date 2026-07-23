@@ -10,7 +10,17 @@ function createStore(overrides: Partial<ConstructorParameters<typeof GenerationP
 }
 
 function add(store: GenerationPlanStore<TestPlan>, marker: string, byteSize = 100) {
-  return store.create({ schemaVersion: 1, planHash: marker.padEnd(64, '0'), workspaceHash: 'workspace', target: 'main', outputRoot: '/workspace/output', byteSize, marker })
+  return store.create({
+    schemaVersion: 1,
+    kind: 'full',
+    planHash: marker.padEnd(64, '0'),
+    authorizationContextHash: `authorization-${marker}`,
+    workspaceHash: 'workspace',
+    target: 'main',
+    outputRoot: '/workspace/output',
+    byteSize,
+    marker,
+  })
 }
 
 describe('GenerationPlanStore', () => {

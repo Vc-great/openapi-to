@@ -8,7 +8,7 @@ export * from './execution.ts'
 
 export { PackageManager } from './PackageManager.ts'
 
-export { build, requestRemoteData, swagger2ToOpenapi3 } from './build.ts'
+export { build, buildFromCompilation, requestRemoteData, swagger2ToOpenapi3 } from './build.ts'
 export type { BuildResult } from './build.ts'
 export * from './constants.ts'
 export * from './config/index.ts'
@@ -20,5 +20,6 @@ export * from './openapi/index.ts'
 
 export * from './OpenAPIContext/OpenAPIHelper.ts'
 export * from './OpenAPIContext/OperationAccessor.ts'
+export * from './OpenAPIContext/responseStatus.ts'
 export * from './pluginManager/index.ts'
 export type * from './types'

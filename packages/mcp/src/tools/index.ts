@@ -8,6 +8,9 @@ import { generateDryRunInputSchema, generateDryRunOutputSchema, generateDryRunTo
 import { inspectInputSchema, inspectOutputSchema, inspectTool } from './inspect.ts'
 import { prepareGenerationInputSchema, prepareGenerationOutputSchema, prepareGenerationTool } from './prepare-generation.ts'
 import { validateInputSchema, validateOutputSchema, validateTool } from './validate.ts'
+import { getOperationInputSchema, getOperationOutputSchema, getOperationTool } from './get-operation.ts'
+import { listTargetsInputSchema, listTargetsOutputSchema, listTargetsTool } from './list-targets.ts'
+import { searchOperationsInputSchema, searchOperationsOutputSchema, searchOperationsTool } from './search-operations.ts'
 
 const READ_ONLY_ANNOTATIONS = {
   readOnlyHint: true,
@@ -15,6 +18,8 @@ const READ_ONLY_ANNOTATIONS = {
   idempotentHint: true,
   openWorldHint: true,
 } as const
+
+const TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS = { ...READ_ONLY_ANNOTATIONS, openWorldHint: false } as const
 
 export function registerReadOnlyTools(server: McpServer, context: ToolContext): void {
   server.registerTool(
@@ -52,10 +57,43 @@ export function registerReadOnlyTools(server: McpServer, context: ToolContext): 
   )
   if (!context.trustedConfig.configured) return
   server.registerTool(
+    'openapi_list_targets',
+    {
+      title: 'List Trusted OpenAPI Targets',
+      description: 'Use before operation search when the startup-trusted configuration has multiple targets. Returns only target names, local/remote source type, bounded counts, generation availability, and diagnostic summaries. Never returns source locations, URLs, headers, secrets, configuration bodies, or OpenAPI documents.',
+      inputSchema: listTargetsInputSchema,
+      outputSchema: listTargetsOutputSchema,
+      annotations: TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => listTargetsTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_search_operations',
+    {
+      title: 'Search Trusted OpenAPI Operations',
+      description: 'Use to find a small ranked set of operations in one startup-trusted target by operation identity, method/path, tags, parameters, schema names, summary, or description. Returns lightweight summaries only; never returns a full OpenAPI document, full operation object, or schema body, and never generates or writes files.',
+      inputSchema: searchOperationsInputSchema,
+      outputSchema: searchOperationsOutputSchema,
+      annotations: TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => searchOperationsTool(context, input, extra),
+  )
+  server.registerTool(
+    'openapi_get_operation',
+    {
+      title: 'Read Trusted OpenAPI Operation Contract',
+      description: 'Use after openapi_search_operations to read one selected operation by stable operationKey. Returns summary or a bounded request/response contract with depth-, count-, property-, example-, and byte-limited related schema summaries. Never returns the full OpenAPI document or components.schemas and never generates or writes files.',
+      inputSchema: getOperationInputSchema,
+      outputSchema: getOperationOutputSchema,
+      annotations: TRUSTED_CONFIG_READ_ONLY_ANNOTATIONS,
+    },
+    (input, extra) => getOperationTool(context, input, extra),
+  )
+  server.registerTool(
     'openapi_generate_dry_run',
     {
       title: 'Preview OpenAPI Generation',
-      description: 'Use to preview which configured generation artifacts would be added, modified, deleted, or unchanged. Unlike generation check, this returns the bounded plan and optional bounded text previews. It never writes files, manifests, snapshots, or caches and uses only startup-trusted config.',
+      description: 'Use to preview which configured generation artifacts would be added, modified, deleted, or unchanged. Omit scope (or use full) for the existing full preview; after operation search and contract review, use an operations scope with exact operationKeys to preview artifacts from an in-memory projected compilation for exactly one trusted target. Returns bounded summaries and optional bounded text previews; it never writes files, manifests, plans, snapshots, or caches.',
       inputSchema: generateDryRunInputSchema,
       outputSchema: generateDryRunOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
@@ -80,7 +118,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_prepare_generation',
     {
       title: 'Prepare Controlled OpenAPI Generation',
-      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Executes the startup-trusted generator and creates a short-lived in-memory plan token, but writes, deletes, and creates no Workspace files or ownership manifest. Current release supports exactly one target/output root per plan. Do not call Apply until the user explicitly confirms this returned plan hash.',
+      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Without selection it preserves the existing full plan/token flow. With selection { type: add, operationKeys } it unions exact keys with trusted persisted project selection, generates the complete desired projection, and returns a bounded applyable plan plus one-time token. Prepare never writes selection, generated files, locks, staging, or ownership manifests. Exactly one trusted target/output root is supported; callers cannot choose paths, config, plugins, cleanup, or content.',
       inputSchema: prepareGenerationInputSchema,
       outputSchema: prepareGenerationOutputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -91,7 +129,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_apply_generation',
     {
       title: 'Apply Confirmed OpenAPI Generation Plan',
-      description: 'Use only after the user explicitly confirms one unexpired openapi_prepare_generation result and its exact plan hash. Applies that same one-time plan through a locked transaction; it may create, replace, and delete only startup-configured managed generated files. It cannot accept targets, paths, content, force, or skip-validation overrides. Never use for preview, freshness checks, ambiguous requests, or automatic retry after a stale plan.',
+      description: 'Use only after the user explicitly confirms one unexpired openapi_prepare_generation result with applySupported true and its exact plan hash/token. Full plans keep the existing transaction path. Selective plans revalidate trusted source, config, selection, projection, complete artifacts, output, and ownership before atomically committing generated artifacts, ownership, and frozen selection state. Callers cannot pass targets, paths, content, force, or safety overrides.',
       inputSchema: applyGenerationInputSchema,
       outputSchema: applyGenerationOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
@@ -107,3 +145,6 @@ export * from './generate-dry-run.ts'
 export * from './check-generation.ts'
 export * from './prepare-generation.ts'
 export * from './apply-generation.ts'
+export * from './list-targets.ts'
+export * from './search-operations.ts'
+export * from './get-operation.ts'

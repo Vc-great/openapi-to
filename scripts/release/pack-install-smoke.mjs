@@ -258,11 +258,11 @@ await server.close();
 	);
 	await writeFile(
 		join(installationDirectory, "mcp-stdio-smoke.mjs"),
-		`import { access, readFile } from "node:fs/promises";
+		`import { access, readFile, readdir } from "node:fs/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 const analysisTools = ["openapi_validate", "openapi_inspect", "openapi_diff"];
-const configuredTools = [...analysisTools, "openapi_generate_dry_run", "openapi_check_generation"];
+const configuredTools = [...analysisTools, "openapi_list_targets", "openapi_search_operations", "openapi_get_operation", "openapi_generate_dry_run", "openapi_check_generation"];
 const writeToolNames = [...configuredTools, "openapi_prepare_generation", "openapi_apply_generation"];
 function assertToolMatrix(listed, expected) {
   if (listed.map(({ name }) => name).join(",") !== expected.join(",")) throw new Error("Unexpected packed MCP tool matrix");
@@ -296,15 +296,20 @@ const writeClient = new Client({ name: "release-write-smoke", version: "1.0.0" }
 await writeClient.connect(writeTransport);
 const writeTools = await writeClient.listTools();
 assertToolMatrix(writeTools.tools, writeToolNames);
-const prepared = await writeClient.callTool({ name: "openapi_prepare_generation", arguments: { targets: ["smoke"] } });
+const prepared = await writeClient.callTool({ name: "openapi_prepare_generation", arguments: { targets: ["smoke"], selection: { type: "add", operationKeys: ["ping"] } } });
 const plan = prepared.structuredContent?.plan;
-if (prepared.isError || !plan || plan.summary.added !== 1) throw new Error("MCP Prepare smoke failed");
+if (prepared.isError || !plan || plan.kind !== "selective" || plan.applySupported !== true || typeof plan.token !== "string" || plan.summary.added !== 1) throw new Error("MCP selective Prepare smoke failed");
 try { await access(".OpenAPI/generated"); throw new Error("Prepare wrote the output directory"); } catch (error) { if (!(error && error.code === "ENOENT")) throw error; }
+try { await access(".OpenAPI/selections"); throw new Error("Prepare wrote the selection directory"); } catch (error) { if (!(error && error.code === "ENOENT")) throw error; }
 const applied = await writeClient.callTool({ name: "openapi_apply_generation", arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash } });
-if (applied.isError || applied.structuredContent?.applied !== true) throw new Error("MCP Apply smoke failed");
+if (applied.isError || applied.structuredContent?.applied !== true || applied.structuredContent?.planKind !== "selective" || applied.structuredContent?.selectionApplied !== true || applied.structuredContent?.selectedOperationCount !== 1) throw new Error("MCP selective Apply smoke failed");
 if (await readFile(".OpenAPI/generated/client.txt", "utf8") !== "release smoke\\n") throw new Error("MCP Apply wrote unexpected bytes");
 const ownership = JSON.parse(await readFile(".OpenAPI/generated/.openapi-to-manifest.json", "utf8"));
 if (ownership.version !== 2 || ownership.files.length !== 1) throw new Error("MCP Apply ownership manifest failed");
+const selectionFiles = await readdir(".OpenAPI/selections");
+if (selectionFiles.length !== 1) throw new Error("MCP selective Apply wrote an unexpected selection file set");
+const selection = JSON.parse(await readFile(".OpenAPI/selections/" + selectionFiles[0], "utf8"));
+if (selection.target !== "smoke" || selection.operations?.join(",") !== "ping") throw new Error("MCP selective Apply wrote unexpected selection state");
 const replay = await writeClient.callTool({ name: "openapi_apply_generation", arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash } });
 if (!replay.isError || !replay.structuredContent?.diagnostics?.some(({ code }) => code === "MCP_PLAN_ALREADY_USED")) throw new Error("MCP Apply replay was not rejected");
 const current = await writeClient.callTool({ name: "openapi_check_generation", arguments: { targets: ["smoke"] } });
@@ -390,7 +395,7 @@ await writeClient.close();
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
-				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-tool-matrix-3-5-7", "mcp-schemas-annotations", "mcp-prepare-apply", "mcp-token-replay", "mcp-current", "mcp-prepare-unchanged", "validate-json", "inspect-json"],
+				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-tool-matrix-3-8-10", "mcp-schemas-annotations", "mcp-selective-prepare-apply", "mcp-three-state-commit", "mcp-token-replay", "mcp-current", "mcp-full-prepare-unchanged", "validate-json", "inspect-json"],
 			},
 			null,
 			2,

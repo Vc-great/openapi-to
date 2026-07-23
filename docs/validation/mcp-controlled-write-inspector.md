@@ -5,6 +5,8 @@ Inspector: `@modelcontextprotocol/inspector` 0.22.0
 Node.js: 24.8.0 (local acceptance host; package engine remains `>=20`)  
 Server package: `@openapi-to/mcp` 3.2.2
 
+Historical note: this acceptance record predates the three Phase 1 catalog Tools. The current configured/write matrices are eight and ten; the seven-Tool observation below records the 2026-07-18 run and is not the current registry contract.
+
 ## Method
 
 The Inspector Web UI was started with its authenticated local Proxy enabled and

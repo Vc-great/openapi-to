@@ -1,6 +1,5 @@
 import { buildSchemaPropertiesTypes } from '@/builds/components/buildSchemaPropertiesTypes.ts'
 
-import { enumRegistry } from '@/EnumRegistry.ts'
 import type { SchemaObjectAndJSONSchema } from '@/types.ts'
 import { getUpperFirstRefAlias } from '@/utils/getUpperFirstRefAlias.ts'
 import { generateObjectType } from '@openapi-to/core/utils'
@@ -79,8 +78,6 @@ export function resolveBaseType(schema: Schema, propertyName: string, parentName
   const type = 'type' in schema ? schema.type : ''
   const numberTypes = ['int32', 'int64', 'float', 'double', 'integer', 'long', 'number', 'int']
   const stringTypes = ['string', 'email', 'password', 'url', 'byte', 'binary']
-  const dateTypes = ['Date', 'date', 'dateTime', 'date-time', 'datetime']
-
   switch (type) {
     case 'boolean':
       return 'boolean'

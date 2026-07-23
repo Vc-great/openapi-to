@@ -8,8 +8,10 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const repositoryRoot = path.resolve(packageRoot, '../..')
 
 const unitFiles = [
+  'packages/mcp/src/catalog/trusted-target-registry.test.ts',
   'packages/mcp/src/generation/generation-lock.test.ts',
   'packages/mcp/src/generation/plan-store.test.ts',
+  'packages/mcp/src/generation/selection-state.test.ts',
   'packages/mcp/src/generation/trusted-config.test.ts',
   'packages/mcp/src/logger.test.ts',
   'packages/mcp/src/options.test.ts',
@@ -35,11 +37,16 @@ const stdioFiles = [
 const smokeFiles = ['packages/mcp/src/server.integration.test.ts']
 const writeFiles = ['packages/mcp/src/controlled-write.integration.test.ts']
 const recoveryFiles = [
+  'packages/core/src/artifacts/generation-state-transaction.test.ts',
   'packages/core/src/artifacts/transaction.test.ts',
   'packages/mcp/src/controlled-write.integration.test.ts',
+  'packages/mcp/src/generation/selection-state.test.ts',
   'packages/mcp/src/hardening.integration.test.ts',
 ]
-const coreRecoveryFiles = ['packages/core/src/artifacts/transaction.test.ts']
+const coreRecoveryFiles = [
+  'packages/core/src/artifacts/generation-state-transaction.test.ts',
+  'packages/core/src/artifacts/transaction.test.ts',
+]
 const performanceScripts = [
   { file: 'packages/mcp/scripts/benchmark.mjs', args: ['--iterations', '2', '--check'] },
   { file: 'packages/mcp/scripts/stress.mjs', args: [] },
@@ -54,16 +61,16 @@ const e2eFiles = unique([...integrationFiles, ...coreRecoveryFiles])
 const allVitestFiles = unique([...allMcpFiles, ...coreRecoveryFiles])
 
 const groups = {
-  test: { build: 'write', files: allMcpFiles, expectedTests: 74, timeoutMs: 300_000 },
-  unit: { build: 'core', files: unitFiles, expectedTests: 43, timeoutMs: 120_000 },
-  integration: { build: 'write', files: integrationFiles, expectedTests: 31, timeoutMs: 240_000 },
-  smoke: { build: 'write', files: smokeFiles, expectedTests: 3, timeoutMs: 120_000 },
-  stdio: { build: 'write', files: stdioFiles, expectedTests: 25, timeoutMs: 240_000 },
-  write: { build: 'write', files: writeFiles, expectedTests: 19, timeoutMs: 180_000 },
-  recovery: { build: 'write', files: recoveryFiles, expectedTests: 43, timeoutMs: 360_000 },
+  test: { build: 'write', files: allMcpFiles, expectedTests: 120, timeoutMs: 300_000 },
+  unit: { build: 'core', files: unitFiles, expectedTests: 71, timeoutMs: 120_000 },
+  integration: { build: 'write', files: integrationFiles, expectedTests: 49, timeoutMs: 240_000 },
+  smoke: { build: 'write', files: smokeFiles, expectedTests: 4, timeoutMs: 120_000 },
+  stdio: { build: 'write', files: stdioFiles, expectedTests: 43, timeoutMs: 240_000 },
+  write: { build: 'write', files: writeFiles, expectedTests: 36, timeoutMs: 180_000 },
+  recovery: { build: 'write', files: recoveryFiles, expectedTests: 116, timeoutMs: 360_000 },
   performance: { build: 'mcp', files: [], expectedTests: 0, scripts: performanceScripts, timeoutMs: 360_000 },
-  e2e: { build: 'write', files: e2eFiles, expectedTests: 49, timeoutMs: 480_000 },
-  all: { build: 'write', files: allVitestFiles, expectedTests: 92, scripts: performanceScripts, timeoutMs: 600_000 },
+  e2e: { build: 'write', files: e2eFiles, expectedTests: 102, timeoutMs: 480_000 },
+  all: { build: 'write', files: allVitestFiles, expectedTests: 173, scripts: performanceScripts, timeoutMs: 600_000 },
 }
 
 function fail(message) {

@@ -1,5 +1,4 @@
 import path from "node:path";
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import {
 	formatterModuleSpecifier,
@@ -28,7 +27,7 @@ import {
 } from "@/collect/collectRefsFromDocument.ts";
 import { collectRefsFromOperation } from "@/collect/collectRefsFromOperation.ts";
 import { collectRefsFromSchema } from "@/collect/collectRefsFromSchemas.ts";
-import { enumRegistry } from "@/EnumRegistry.ts";
+import { EnumRegistry } from "@/EnumRegistry.ts";
 import { getOperationTSTypeName } from "@/templates/operationTypeNameTemplate.ts";
 import { getDataReturnType } from "@/utils/getDataReturnType.ts";
 import { getRefFilePath } from "@/utils/getRefFilePath.ts";
@@ -36,37 +35,48 @@ import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
 import { buildOperationTypes } from "./builds/buildOperationTypes.ts";
 import type { PluginConfig } from "./types.ts";
 
-const stateMap = new WeakMap<
-	OpenapiToSingleConfig,
-	{
-		project: Project;
-		componentFolderPath: string;
-		operationFileNameOfTag: Set<string>;
-	}
->();
+interface PluginState {
+	project: Project;
+	componentFolderPath: string;
+	operationFileNameOfTag: Set<string>;
+	enumRegistry: EnumRegistry;
+}
+
+const pluginStateKey = Symbol("@openapi-to/plugin-ts-type/state");
+
+function getState(store: Map<unknown, unknown>): PluginState {
+	const state = store.get(pluginStateKey);
+	if (!state) throw new Error("Type plugin state was not initialized.");
+	return state as PluginState;
+}
 
 export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 	return {
 		name: pluginEnum.TsType,
 		hooks: {
 			buildStart: async (ctx) => {
-				stateMap.set(ctx.openapiToSingleConfig, {
+				ctx.store.set(pluginStateKey, {
 					project: new Project(),
 					componentFolderPath: path.join(
 						ctx.openapiToSingleConfig.output.dir,
 						"types",
 					),
 					operationFileNameOfTag: new Set(),
+					enumRegistry: new EnumRegistry(),
 				});
 			},
-			tagStart: async (tagData, ctx) => {
-				const state = stateMap.get(ctx.openapiToSingleConfig);
+			tagStart: async (_tagData, ctx) => {
+				const state = getState(ctx.store);
 				//tag开始时，清空当前tag的operation记录
 				state?.operationFileNameOfTag.clear();
 			},
 			operation: async (operation, ctx) => {
-				const { project, componentFolderPath, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const {
+					project,
+					componentFolderPath,
+					operationFileNameOfTag,
+					enumRegistry,
+				} = getState(ctx.store);
 				const fileName = `${kebabCase(operation.accessor.operationName)}.types.ts`;
 				const filePath = path.join(
 					ctx.openapiToSingleConfig.output.dir,
@@ -125,12 +135,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					operationSourceFile,
 				);
 			},
-			tagEnd: async (tagData, ctx) => {},
+			tagEnd: async () => {},
 			componentsSchemas: async (schemas, ctx) => {
-				const { project, componentFolderPath, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
-				for (const schemaName in schemas) {
-					const schema = schemas[schemaName]!;
+				const { project, componentFolderPath, enumRegistry } = getState(
+					ctx.store,
+				);
+				for (const [schemaName, schema] of Object.entries(schemas)) {
 
 					const formatterSchemaName =
 						ctx.openapiHelper.formatterName(schemaName);
@@ -191,8 +201,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsParameters(parameters, ctx) {
-				const { project, componentFolderPath, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentFolderPath, enumRegistry } = getState(
+					ctx.store,
+				);
 				enumRegistry.adds(collectEnumsFromComponentParameters(parameters));
 
 				const refs = collectRefsFromComponentParameters(parameters);
@@ -239,8 +250,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				});
 			},
 			componentsRequestBodies(requestBodies, ctx) {
-				const { project, componentFolderPath, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentFolderPath, enumRegistry } = getState(
+					ctx.store,
+				);
 				// components.requestBodies
 				for (const [requestBodyName, requestObject] of Object.entries(
 					requestBodies,
@@ -291,8 +303,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsResponses(responses, ctx) {
-				const { project, componentFolderPath, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentFolderPath, enumRegistry } = getState(
+					ctx.store,
+				);
 				// components.responses
 				forEach(responses, (response, responseName) => {
 					const formatterResponse =
@@ -347,8 +360,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				});
 			},
 			buildEnd: async (ctx) => {
-				const { project, componentFolderPath, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentFolderPath, enumRegistry } = getState(
+					ctx.store,
+				);
 				const enumVariableStatements = buildEnum(enumRegistry.getAll());
 				const filePath = path.join(componentFolderPath, "enum.model.ts");
 				const enumSourceFile = project.createSourceFile(filePath, "", {

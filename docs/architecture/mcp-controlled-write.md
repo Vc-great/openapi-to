@@ -4,13 +4,13 @@ Status: accepted for P3 (2026-07-18).
 
 ## Decision and authority
 
-`@openapi-to/mcp` keeps its five read-only tools and adds exactly two operator-gated tools:
+`@openapi-to/mcp` keeps its eight configured-mode read-only tools and adds exactly two operator-gated tools:
 
 ```text
 openapi_prepare_generation -> review -> openapi_apply_generation
 ```
 
-Both tools are registered only when startup includes a Workspace-local trusted config and `--allow-write`, after every configured output root has passed the Workspace boundary. A Tool argument can neither grant write authority nor select config, plugins, output roots, content, delete policy, environment, shell, `force`, or validation bypasses. Without `--allow-write`, a configured Server still exposes exactly the original five tools.
+Both tools are registered only when startup includes a Workspace-local trusted config and `--allow-write`, after every configured output root has passed the Workspace boundary. A Tool argument can neither grant write authority nor select config, plugins, output roots, content, delete policy, environment, shell, `force`, or validation bypasses. Without `--allow-write`, a configured Server exposes exactly eight read-only tools.
 
 This release restricts each plan to one configured target and one output root. That makes the transaction boundary explainable and avoids claiming cross-filesystem atomicity. Multi-target Prepare fails with `MCP_WRITE_SINGLE_TARGET_REQUIRED`; it never applies only the first target.
 
@@ -30,9 +30,11 @@ Artifact bodies are not copied into plan storage. Apply must re-run generation a
 
 The external response is only a bounded review summary. Its change list may be truncated; the internal plan never is. Preview is off by default, text-only, and bounded. Binary content is never returned.
 
+Phase 2 B2b enables the second plan kind in the same Prepare/Apply pair. An additive selection mutation loads the fixed trusted selection owner, unions previous and requested operation keys, reuses the cached target compilation for review, and generates the complete desired projected artifact set. The plan binds the previous selection physical/semantic identity, exact desired bytes, projection, artifacts, and desired ownership bytes. Prepare returns `applySupported: true` plus a kind/target/output/selection-owner-bound one-time token, but still writes nothing. Apply recompiles the trusted target without using the process catalog cache, regenerates the frozen complete desired key set, and invokes Core's [generation state transaction](./generation-state-transaction.md). The full plan/token/Apply protocol remains compatible.
+
 ## Token and in-memory store
 
-Each Server instance creates a random 256-bit secret and process nonce. A token is the canonical Base64URL encoding of HMAC-SHA256 over the plan ID, complete deterministic plan hash, Workspace hash, expiry, and Server nonce. Verification compares the exact, Schema-bounded canonical encoding in constant time, so alternate encodings of the same MAC are rejected. `planId` is only a lookup key and has no authorization value.
+Each Server instance creates a random 256-bit secret and process nonce. A token is the canonical Base64URL encoding of HMAC-SHA256 over the plan ID, plan kind, complete deterministic plan hash, authorization-context hash, trusted target, Workspace hash, expiry, and Server nonce. The authorization context binds the trusted output identity and, for selective plans, the internally derived selection owner. Verification compares the exact, Schema-bounded canonical encoding in constant time, so alternate encodings of the same MAC are rejected. `planId` is only a lookup key and has no authorization value.
 
 Plans live only in a per-Server memory store. Defaults are a five-minute TTL, 20 plans, 4 MiB metadata per plan, and 32 MiB total metadata. The store has deterministic LRU eviction, periodic unref'ed cleanup, once-only consumption, and zeroes its secret on Server close. Restart, expiry, eviction, another Server, another Workspace, a changed plan hash, or a modified token invalidates Apply. Tokens and secrets never enter logs, generated files, manifests, or disk journals.
 
@@ -40,9 +42,9 @@ The Server can prove that Apply uses the same plan hash returned by Prepare. It 
 
 ## Apply validation and regeneration
 
-Apply accepts only `planId`, `token`, and `approvedPlanHash`. It verifies the plan, waits for the per-Server generation queue and output filesystem lock, then consumes the token. Under the lock it reloads current sources through the cached trusted config, re-runs full generation, and compares the complete deterministic payload. It also re-reads local source/config snapshots immediately before commit.
+Apply accepts only `planId`, `token`, and `approvedPlanHash`. It verifies the plan, waits for the per-Server generation queue and output filesystem lock, then consumes the token. Full plans follow the established regeneration path. Selective plans physically and semantically revalidate selection before the lock, compile the trusted target afresh, project exactly the frozen desired keys (never a current-disk union), compare projection statistics/hash plus complete ordered artifact and ownership bytes, and revalidate selection again under the lock immediately before commit. Local source/config snapshots are also re-read immediately before commit.
 
-Config, source, `$ref`, output-root, ownership manifest, managed-file, artifact, generator, or plugin drift is a safe stale-plan failure requiring a new Prepare. An added target path must still be absent; modified/deleted paths must have the prepared hash; deleted files must still be regular, unchanged entries from the current ownership manifest. No automatic re-planning or force path exists.
+Config, source, `$ref`, selection, output-root, ownership manifest, managed-file, projection, artifact order/body, generator, or plugin drift is a safe stale-plan failure requiring a new Prepare. An added target path must still be absent; modified/deleted paths must have the prepared hash; deleted files must still be regular, unchanged entries from the current ownership manifest. Selection drift detected before the output lock does not consume the token; after consumption, regeneration/transaction failure is not retryable with that plan. No automatic re-planning or force path exists.
 
 ## Shared transaction writer
 
@@ -57,6 +59,8 @@ The version-2 ownership manifest is stable and contains only generator name/vers
 ## Crash recovery and cancellation
 
 The journal is `.openapi-to-transaction.json`; staged/backed-up bytes are under `.openapi-to-transaction/<transaction-id>`. It records only schema, transaction/output identity, phase, relative operations, before/after hashes, and created directories. Its checksum detects accidental or unsophisticated modification; because it is not MACed across restarts, same-user journal tampering is not considered cryptographically preventable. Recovery still validates schema, confinement, symlinks, target/backup hashes, and output-root identity before moving anything.
+
+No-state full writes continue to emit journal schema v1. Selective Apply uses Core journal schema v2 for trusted controlled state files; it adds only Workspace-root identity plus bounded relative state operations. State stage/backup storage remains beside the controlled target, and a device mismatch fails closed during Prepare preflight or transaction validation. This does not change full Apply's public protocol or add a Tool.
 
 On lock acquisition, staging-only journals are cleaned, backup/committing journals are rolled back, and committed journals are verified then cleaned. Unsafe or unverifiable state returns `MCP_WRITE_RECOVERY_REQUIRED`; it is never ignored.
 
