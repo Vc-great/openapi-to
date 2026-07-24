@@ -1,11 +1,12 @@
 # Getting started
 
-`openapi-to` has two local entrypoints:
+`openapi-to` is the single recommended installation entrypoint:
 
-- `openapi-to` installs the `openapi` and `openapi-to` CLI aliases and exports Core plus the official generator plugins.
-- `@openapi-to/mcp` installs the independent `openapi-to-mcp` stdio server.
+- It installs the `openapi` and `openapi-to` CLI aliases.
+- It exports Core plus all official generator plugins.
+- It installs the `openapi-to-mcp` stdio server command.
 
-Both require Node.js 20 or newer. This repository is pinned to pnpm 10.14.0.
+Node.js 20 or newer is required. This repository is pinned to pnpm 10.14.0.
 
 ## CLI
 
@@ -34,10 +35,9 @@ See the [CLI generation guide](./cli.md) for a complete multi-document example a
 
 ## MCP server
 
-Install the MCP package in the Workspace that the Host will open:
+The same aggregate installation provides the MCP command; no additional MCP package installation is required:
 
 ```sh
-pnpm add -D @openapi-to/mcp
 pnpm exec openapi-to-mcp --help
 ```
 
@@ -70,7 +70,7 @@ All Hosts share the same [security boundary](./mcp-security.md) and [troubleshoo
 
 ## Repository development
 
-From a checkout, install and build before launching the source bin:
+Repository maintainers can install and build a source checkout before launching the source bin. This is a development/debugging workflow, not the recommended user installation:
 
 ```sh
 pnpm install

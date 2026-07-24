@@ -308,16 +308,21 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	const aggregate = await readJson(join(root, "packages/openapi/package.json"));
 	if (
 		aggregate.bin?.openapi !== "bin/openapi.js" ||
-		aggregate.bin?.["openapi-to"] !== "bin/openapi.js"
+		aggregate.bin?.["openapi-to"] !== "bin/openapi.js" ||
+		aggregate.bin?.["openapi-to-mcp"] !== "bin/openapi-to-mcp.js"
 	) {
 		failures.push(
-			"openapi-to must publish openapi and openapi-to as aliases of bin/openapi.js",
+			"openapi-to must publish its two CLI aliases and the openapi-to-mcp wrapper",
 		);
 	}
 	const rootReadme = await readFile(join(root, "README.md"), "utf8");
-	if (!rootReadme.includes("`openapi` and `openapi-to` binaries are aliases")) {
+	if (
+		!rootReadme.includes(
+			"`openapi` and `openapi-to` are CLI aliases; `openapi-to-mcp` starts the stdio MCP server",
+		)
+	) {
 		failures.push(
-			"README must state that openapi and openapi-to are binary aliases",
+			"README must state the aggregate package's three binary entrypoints",
 		);
 	}
 

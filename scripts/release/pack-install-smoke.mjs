@@ -173,10 +173,15 @@ const temporaryRoot = await mkdtemp(
 );
 const tarballDirectory = join(temporaryRoot, "tarballs");
 const installationDirectory = join(temporaryRoot, "consumer");
+const aggregateInstallationDirectory = join(
+	temporaryRoot,
+	"aggregate-only-consumer",
+);
 await writeFile(join(temporaryRoot, ".keep"), "release smoke workspace\n");
 await Promise.all([
 	mkdir(tarballDirectory, { recursive: true }),
 	mkdir(installationDirectory, { recursive: true }),
+	mkdir(aggregateInstallationDirectory, { recursive: true }),
 	mkdir(join(installationDirectory, ".OpenAPI"), { recursive: true }),
 ]);
 
@@ -243,6 +248,91 @@ try {
 		});
 	}
 
+	const packedOverrides = Object.fromEntries(
+		packed
+			.map(({ name, archive }) => [name, `file:${archive}`])
+			.sort(([left], [right]) =>
+				left < right ? -1 : left > right ? 1 : 0,
+			),
+	);
+	const aggregateArchive = packed.find(
+		({ name }) => name === "openapi-to",
+	)?.archive;
+	if (!aggregateArchive)
+		throw new Error("Packed aggregate openapi-to archive is missing");
+
+	await writeFile(
+		join(aggregateInstallationDirectory, "package.json"),
+		JSON.stringify(
+			{
+				name: "openapi-to-aggregate-only-release-smoke",
+				private: true,
+				type: "module",
+				devDependencies: {
+					"openapi-to": `file:${aggregateArchive}`,
+				},
+				pnpm: {
+					overrides: packedOverrides,
+				},
+			},
+			null,
+			2,
+		),
+	);
+	pnpm(
+		["install", "--ignore-scripts", "--prefer-offline"],
+		aggregateInstallationDirectory,
+	);
+	await writeFile(
+		join(aggregateInstallationDirectory, "mcp-aggregate-stdio-smoke.mjs"),
+		`import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
+const aggregateRequire = createRequire(import.meta.url);
+const aggregateEntry = aggregateRequire.resolve("openapi-to");
+const mcpRequire = createRequire(aggregateEntry);
+const mcpManifest = mcpRequire.resolve("@openapi-to/mcp/package.json");
+const sdkRequire = createRequire(mcpManifest);
+const { Client } = await import(pathToFileURL(sdkRequire.resolve("@modelcontextprotocol/sdk/client/index.js")));
+const { StdioClientTransport } = await import(pathToFileURL(sdkRequire.resolve("@modelcontextprotocol/sdk/client/stdio.js")));
+const stderr = [];
+const transport = new StdioClientTransport({ command: process.argv[2], args: [...process.argv.slice(3), "--workspace-root", process.cwd()], stderr: "pipe" });
+transport.stderr?.on("data", (chunk) => stderr.push(String(chunk)));
+const client = new Client({ name: "aggregate-only-release-smoke", version: "1.0.0" });
+await client.connect(transport);
+const tools = await client.listTools();
+if (tools.tools.map(({ name }) => name).join(",") !== "openapi_validate,openapi_inspect,openapi_diff") throw new Error("Aggregate-only MCP tool matrix is not 3");
+await client.close();
+if (stderr.join("").includes("Unable to start server")) throw new Error("Aggregate-only MCP server reported a startup failure");
+`,
+	);
+	const aggregateOnlyOpenapi = binPath(
+		aggregateInstallationDirectory,
+		"openapi",
+	);
+	const aggregateOnlyOpenapiTo = binPath(
+		aggregateInstallationDirectory,
+		"openapi-to",
+	);
+	const aggregateOnlyMcp = binPath(
+		aggregateInstallationDirectory,
+		"openapi-to-mcp",
+	);
+	if (process.platform !== "win32") {
+		await Promise.all(
+			[aggregateOnlyOpenapi, aggregateOnlyOpenapiTo, aggregateOnlyMcp].map(
+				(path) => chmod(path, 0o755),
+			),
+		);
+	}
+	pnpm(["exec", "openapi", "--help"], aggregateInstallationDirectory);
+	pnpm(["exec", "openapi-to", "--version"], aggregateInstallationDirectory);
+	pnpm(["exec", "openapi-to-mcp", "--help"], aggregateInstallationDirectory);
+	run(
+		process.execPath,
+		["mcp-aggregate-stdio-smoke.mjs", aggregateOnlyMcp],
+		aggregateInstallationDirectory,
+	);
+
 	await writeFile(
 		join(installationDirectory, "package.json"),
 		JSON.stringify(
@@ -263,13 +353,7 @@ try {
 					zod: "3.25.76",
 				},
 				pnpm: {
-					overrides: Object.fromEntries(
-						packed
-							.map(({ name, archive }) => [name, `file:${archive}`])
-							.sort(([left], [right]) =>
-								left < right ? -1 : left > right ? 1 : 0,
-							),
-					),
+					overrides: packedOverrides,
 				},
 			},
 			null,
@@ -279,6 +363,27 @@ try {
 	pnpm(
 		["install", "--ignore-scripts", "--prefer-offline"],
 		installationDirectory,
+	);
+	const independentMcpBin = join(
+		installationDirectory,
+		"node_modules",
+		"@openapi-to",
+		"mcp",
+		"bin",
+		"openapi-to-mcp.js",
+	);
+	run(process.execPath, [independentMcpBin, "--help"], installationDirectory);
+	run(
+		process.execPath,
+		[
+			join(
+				aggregateInstallationDirectory,
+				"mcp-aggregate-stdio-smoke.mjs",
+			),
+			process.execPath,
+			independentMcpBin,
+		],
+		aggregateInstallationDirectory,
 	);
 
 	const minimumDocument = `openapi: 3.0.3
@@ -352,6 +457,7 @@ paths:
   pluginSWR,
   pluginMSW,
 } from "openapi-to";
+import { runMcpCli } from "@openapi-to/mcp/cli";
 import { definePlugin as swrPackage } from "@openapi-to/plugin-swr";
 import { definePlugin as mswPackage } from "@openapi-to/plugin-msw";
 const document = {
@@ -367,6 +473,7 @@ const difference = diffOpenAPIDocuments(compilation.document, compilation.docume
 if (difference.breaking || difference.changes.length !== 0) throw new Error("diff failed");
 if (pluginSWR !== swrPackage || pluginMSW !== mswPackage || pluginSWR === pluginMSW) throw new Error("plugin identity failed");
 if (pluginSWR().name !== "SWR" || pluginMSW().name !== "MSW") throw new Error("plugin name failed");
+if (typeof runMcpCli !== "function") throw new Error("MCP CLI ESM export missing");
 `,
 	);
 	await writeFile(
@@ -375,10 +482,12 @@ if (pluginSWR().name !== "SWR" || pluginMSW().name !== "MSW") throw new Error("p
 const swr = require("@openapi-to/plugin-swr");
 const msw = require("@openapi-to/plugin-msw");
 const mcp = require("@openapi-to/mcp");
+const mcpCli = require("@openapi-to/mcp/cli");
 if (typeof openapiTo.compileOpenAPI !== "function") throw new Error("CJS core export missing");
 if (openapiTo.pluginSWR !== swr.definePlugin || openapiTo.pluginMSW !== msw.definePlugin) throw new Error("CJS plugin identity failed");
 if (openapiTo.pluginSWR === openapiTo.pluginMSW) throw new Error("CJS plugins collapsed");
 if (typeof mcp.createOpenapiToMcpServer !== "function") throw new Error("MCP CJS export missing");
+if (typeof mcpCli.runMcpCli !== "function") throw new Error("MCP CLI CJS export missing");
 `,
 	);
 	await writeFile(
@@ -396,13 +505,14 @@ if (typeof mcp.createOpenapiToMcpServer !== "function") throw new Error("MCP CJS
   type OutputBase,
 	} from "openapi-to";
 import { createOpenapiToMcpServer, type OpenapiToMcpServerOptions } from "@openapi-to/mcp";
+import { runMcpCli } from "@openapi-to/mcp/cli";
 const diagnostic: Diagnostic = { code: "SMOKE", severity: "info", message: "smoke" };
 const outputBase: OutputBase = "workspace";
 declare const artifact: GeneratedArtifact;
 declare const manifest: GenerationManifest;
 declare const generation: GenerationResult;
 const mcpOptions: OpenapiToMcpServerOptions = { workspaceRoot: ".", configPath: "openapi.config.cjs", allowWrite: true };
-void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, outputBase, artifact, manifest, generation, createOpenapiToMcpServer, mcpOptions];
+void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, outputBase, artifact, manifest, generation, createOpenapiToMcpServer, runMcpCli, mcpOptions];
 `,
 	);
 	await writeFile(
@@ -784,6 +894,9 @@ await writeClient.close();
 					"openapi-bin",
 					"openapi-to-bin",
 					"openapi-to-mcp-bin",
+					"aggregate-only-install",
+					"aggregate-only-mcp-stdio",
+					"independent-mcp-bin-stdio",
 					"mcp-stdio",
 					"mcp-tool-matrix-3-8-10",
 					"mcp-schemas-annotations",

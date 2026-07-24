@@ -30,6 +30,11 @@
 			"import": "./dist/index.js",
 			"require": "./dist/index.cjs"
 		},
+		"./cli": {
+			"types": "./dist/cli.d.ts",
+			"import": "./dist/cli.js",
+			"require": "./dist/cli.cjs"
+		},
 		"./package.json": "./package.json"
 	},
 	"bin": {

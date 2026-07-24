@@ -38,9 +38,9 @@ Options:
 The server uses stdio: stdin/stdout are reserved for MCP JSON-RPC and logs go to stderr.
 `
 
-async function main(): Promise<void> {
+async function main(args: string[]): Promise<void> {
   const parsed = parseArgs({
-    args: process.argv.slice(2),
+    args,
     allowPositionals: false,
     options: {
       'workspace-root': { type: 'string' },
@@ -120,7 +120,11 @@ async function main(): Promise<void> {
   await server.connect(transport)
 }
 
-main().catch(() => {
-  process.stderr.write('[openapi-to-mcp] ERROR Unable to start server.\n')
-  process.exitCode = 1
-})
+export async function runMcpCli(args: string[]): Promise<void> {
+  try {
+    await main(args)
+  } catch {
+    process.stderr.write('[openapi-to-mcp] ERROR Unable to start server.\n')
+    process.exitCode = 1
+  }
+}

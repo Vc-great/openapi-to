@@ -1,6 +1,6 @@
 # Generic MCP stdio Host
 
-Any MCP Host that supports local stdio processes can launch `@openapi-to/mcp`. The Host owns process lifecycle, MCP initialization, Tool discovery, cancellation, and final Tool approval.
+Any MCP Host that supports local stdio processes can launch the `openapi-to-mcp` command installed by `openapi-to`. The Host owns process lifecycle, MCP initialization, Tool discovery, cancellation, and final Tool approval.
 
 ## Prerequisites and installation
 
@@ -8,10 +8,10 @@ Any MCP Host that supports local stdio processes can launch `@openapi-to/mcp`. T
 - A Host with MCP stdio support
 - A trusted local Workspace
 
-Install the server:
+Install the aggregate package:
 
 ```sh
-pnpm add -D @openapi-to/mcp
+pnpm add -D openapi-to
 ```
 
 The conceptual process definition is:
@@ -38,7 +38,7 @@ Native Windows process definition:
 }
 ```
 
-For a source checkout after `pnpm install` and `pnpm build`, use `node packages/mcp/bin/openapi-to-mcp.js --workspace-root .`; on Windows use `node.exe` and `packages\\mcp\\bin\\openapi-to-mcp.js`.
+Repository maintainers debugging a source checkout can run `pnpm install` and `pnpm build`, then use `node packages/mcp/bin/openapi-to-mcp.js --workspace-root .`; on Windows use `node.exe` and `packages\\mcp\\bin\\openapi-to-mcp.js`. This is not the recommended installed-package workflow.
 
 ## Modes
 

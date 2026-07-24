@@ -345,6 +345,9 @@ importers:
       '@openapi-to/core':
         specifier: workspace:*
         version: link:../core
+      '@openapi-to/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@openapi-to/plugin-msw':
         specifier: workspace:*
         version: link:../plugin-msw

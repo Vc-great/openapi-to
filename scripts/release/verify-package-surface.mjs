@@ -13,6 +13,7 @@ const homepage = "https://github.com/Vc-great/openapi-to#readme";
 const expectedAggregateDependencies = [
 	"@openapi-to/cli",
 	"@openapi-to/core",
+	"@openapi-to/mcp",
 	"@openapi-to/plugin-msw",
 	"@openapi-to/plugin-swr",
 	"@openapi-to/plugin-ts-request",
@@ -244,11 +245,37 @@ if (!aggregate) {
 	}
 	if (
 		aggregate.bin?.openapi !== "bin/openapi.js" ||
-		aggregate.bin?.["openapi-to"] !== "bin/openapi.js"
+		aggregate.bin?.["openapi-to"] !== "bin/openapi.js" ||
+		aggregate.bin?.["openapi-to-mcp"] !== "bin/openapi-to-mcp.js"
 	) {
 		failures.push(
-			"openapi-to: openapi and openapi-to must alias bin/openapi.js",
+			"openapi-to: expected openapi/openapi-to CLI aliases and the openapi-to-mcp wrapper",
 		);
+	}
+}
+
+const mcp = publicRecords.find(
+	({ manifest }) => manifest.name === "@openapi-to/mcp",
+)?.manifest;
+if (!mcp) {
+	failures.push("@openapi-to/mcp: package is missing");
+} else {
+	if (mcp.bin?.["openapi-to-mcp"] !== "./bin/openapi-to-mcp.js")
+		failures.push("@openapi-to/mcp: independent bin is missing");
+	if (
+		JSON.stringify(Object.keys(mcp.exports ?? {}).sort()) !==
+		JSON.stringify([".", "./cli", "./package.json"])
+	) {
+		failures.push(
+			"@openapi-to/mcp: exports must contain only the server API, CLI entry, and package metadata",
+		);
+	}
+	if (
+		mcp.exports?.["./cli"]?.types !== "./dist/cli.d.ts" ||
+		mcp.exports?.["./cli"]?.import !== "./dist/cli.js" ||
+		mcp.exports?.["./cli"]?.require !== "./dist/cli.cjs"
+	) {
+		failures.push("@openapi-to/mcp: ./cli export targets are incomplete");
 	}
 }
 
@@ -266,8 +293,12 @@ for (const name of fixedGroup) {
 }
 
 const readme = await readFile(join(repositoryRoot, "README.md"), "utf8");
-if (!readme.includes("`openapi` and `openapi-to` binaries are aliases")) {
-	failures.push("README does not declare the two aggregate bin aliases");
+if (
+	!readme.includes(
+		"`openapi` and `openapi-to` are CLI aliases; `openapi-to-mcp` starts the stdio MCP server",
+	)
+) {
+	failures.push("README does not declare all three aggregate binaries");
 }
 if (!readme.includes("docs/capability-matrix.md"))
 	failures.push("README does not link the capability matrix");

@@ -44,7 +44,8 @@
 	"types": "./dist/index.d.ts",
 	"bin": {
 		"openapi": "bin/openapi.js",
-		"openapi-to": "bin/openapi.js"
+		"openapi-to": "bin/openapi.js",
+		"openapi-to-mcp": "bin/openapi-to-mcp.js"
 	},
 	"files": [
 		"dist",
@@ -65,6 +66,7 @@
 	"dependencies": {
 		"@openapi-to/cli": "workspace:*",
 		"@openapi-to/core": "workspace:*",
+		"@openapi-to/mcp": "workspace:*",
 		"@openapi-to/plugin-swr": "workspace:*",
 		"@openapi-to/plugin-msw": "workspace:*",
 		"@openapi-to/plugin-vue-query": "workspace:*",

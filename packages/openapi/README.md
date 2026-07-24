@@ -1,13 +1,14 @@
 # openapi-to
 
-`openapi-to` is the aggregate package for the OpenAPI compiler, CLI, and official TypeScript generator plugins.
+`openapi-to` is the aggregate package for the OpenAPI compiler, CLI, official TypeScript generator plugins, and local stdio MCP server.
 
 ```sh
 pnpm add -D openapi-to
 pnpm exec openapi --help
+pnpm exec openapi-to-mcp --help
 ```
 
-The package installs `openapi` and `openapi-to` as aliases of the same CLI entrypoint. It exports Core plus:
+The package installs `openapi` and `openapi-to` as aliases of the same CLI entrypoint and installs the separate `openapi-to-mcp` stdio command. It exports Core plus:
 
 - `pluginTSType`
 - `pluginTSRequest`

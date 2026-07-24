@@ -6,7 +6,7 @@ The current version is not compatible with V2.[V2 document](https://github.com/V
 
 # At a glance
 
-`openapi-to` is a TypeScript compiler, CLI, and plugin toolkit for Swagger/OpenAPI documents. The published aggregate includes TypeScript type and request generation, Zod schemas, SWR hooks, Vue Query hooks, and MSW handlers. Faker, NestJS, and React Query generators are not shipped.
+`openapi-to` is a TypeScript compiler, CLI, generator toolkit, and local stdio MCP server for Swagger/OpenAPI documents. The published aggregate includes TypeScript type and request generation, Zod schemas, SWR hooks, Vue Query hooks, MSW handlers, and the MCP runtime. Faker, NestJS, and React Query generators are not shipped.
 
 See the single [capability matrix](docs/capability-matrix.md) for exact package, dialect, CLI, and MCP status. Start with the [getting-started guide](docs/getting-started.md); local AI Host setup is documented for [Codex](docs/codex-mcp.md), [Claude Code](docs/ai-hosts/claude-code.md), [Cursor](docs/ai-hosts/cursor.md), and [generic stdio Hosts](docs/ai-hosts/generic-stdio.md).
 
@@ -20,8 +20,8 @@ See the single [capability matrix](docs/capability-matrix.md) for exact package,
 
 # Quick Start
 ## Install
-```shell [npm]
-npm i openapi-to --save-dev
+```shell
+pnpm add -D openapi-to
 ```
 
 ## Usage 
@@ -34,18 +34,19 @@ npm i openapi-to --save-dev
 }
 ```
 
-## Compiler commands
+## Commands
 
-The `openapi` and `openapi-to` binaries are aliases. Validation and inspection do not require a generation config.
+`openapi` and `openapi-to` are CLI aliases; `openapi-to-mcp` starts the stdio MCP server. Validation and inspection do not require a generation config.
 
 ```shell
-openapi validate ./openapi.yaml
-openapi inspect ./openapi.yaml --json
-openapi diff ./old.yaml ./new.yaml --fail-on-breaking
-openapi generate --dry-run --json
-openapi generate --check --json
-openapi generate --target user-service
-openapi generate --target user-service --target order-service
+pnpm exec openapi init
+pnpm exec openapi validate ./openapi.yaml
+pnpm exec openapi inspect ./openapi.yaml --json
+pnpm exec openapi diff ./old.yaml ./new.yaml --fail-on-breaking
+pnpm exec openapi generate --dry-run --json
+pnpm exec openapi generate --check --json
+pnpm exec openapi-to-mcp --help
+pnpm exec openapi-to-mcp --workspace-root .
 ```
 
 `--json` writes one JSON document to stdout; diagnostics and incidental plugin logs use stderr. `--dry-run` executes plugins and reports the artifact manifest without writing. `--check` performs the same comparison and fails when output is outdated. With `output.clean`, deletion is ownership-based: only files recorded by the previous `.openapi-to-manifest.json` are removed, and unmanaged user files are preserved.
@@ -121,7 +122,7 @@ pnpm verify:package-surface
 pnpm release:smoke
 ```
 
-`release:smoke` packs every public workspace package and verifies ESM, CJS, declarations, the `openapi`/`openapi-to` aliases, and machine-readable CLI output in a temporary consumer. It does not publish.
+`release:smoke` packs every public workspace package and verifies ESM, CJS, declarations, all three aggregate binaries, an aggregate-only installation, real MCP stdio startup, and machine-readable CLI output in temporary consumers. It does not publish.
 
 ## MCP verification
 

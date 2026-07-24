@@ -1,6 +1,6 @@
 # Cursor
 
-Cursor can launch `@openapi-to/mcp` as a local stdio server. Project configuration lives in `.cursor/mcp.json`; user configuration lives in `~/.cursor/mcp.json`, as documented by Cursor's official [MCP guide](https://docs.cursor.com/context/model-context-protocol).
+Cursor can launch the `openapi-to-mcp` command installed by `openapi-to` as a local stdio server. Project configuration lives in `.cursor/mcp.json`; user configuration lives in `~/.cursor/mcp.json`, as documented by Cursor's official [MCP guide](https://docs.cursor.com/context/model-context-protocol).
 
 ## Prerequisites and installation
 
@@ -8,13 +8,13 @@ Cursor can launch `@openapi-to/mcp` as a local stdio server. Project configurati
 - Cursor with MCP support
 - A trusted local Workspace
 
-Install the published server:
+Install the aggregate package:
 
 ```sh
-pnpm add -D @openapi-to/mcp
+pnpm add -D openapi-to
 ```
 
-For repository development, run `pnpm install` and `pnpm build` before launching the source bin.
+Repository maintainers debugging source can run `pnpm install` and `pnpm build` before launching the source bin; this is not the recommended installed-package workflow.
 
 ## Minimal read-only setup
 
@@ -72,7 +72,7 @@ Append `"--allow-write"` to `args` only when the two controlled write Tools are 
 
 ## Source checkout
 
-Use `"command": "node"` with `"args": ["packages/mcp/bin/openapi-to-mcp.js", "--workspace-root", "."]`. On Windows use `node.exe` and `packages\\mcp\\bin\\openapi-to-mcp.js`.
+Maintainers can use `"command": "node"` with `"args": ["packages/mcp/bin/openapi-to-mcp.js", "--workspace-root", "."]`. On Windows use `node.exe` and `packages\\mcp\\bin\\openapi-to-mcp.js`.
 
 ## Doctor, Inspector, errors, and security
 

@@ -26,7 +26,7 @@ This document is the single status reference for shipped `openapi-to` capabiliti
 | NestJS generator | Not supported | None | No official package, aggregate export, or published runtime exists. |
 | React Query generator | Not supported | None | Vue Query is shipped; an official React Query package is not. |
 
-The aggregate `openapi-to` package re-exports Core plus the six official generator factories above. The independently published `@openapi-to/mcp` package is not re-exported by the aggregate.
+The aggregate `openapi-to` package re-exports Core plus the six official generator factories above and depends on the MCP runtime so it can provide the `openapi-to-mcp` command. MCP server internals are not re-exported from the aggregate JavaScript API.
 
 ## OpenAPI inputs
 
@@ -44,7 +44,7 @@ The aggregate `openapi-to` package re-exports Core plus the six official generat
 
 ## CLI
 
-The published `openapi-to` package installs two aliases that execute the same entrypoint: `openapi` and `openapi-to`.
+The published `openapi-to` package installs two CLI aliases that execute the same entrypoint (`openapi` and `openapi-to`) plus the separate `openapi-to-mcp` stdio command.
 
 | Command | Status | Contract |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ Generation supports independent `managed` (default `.OpenAPI/<dir>`) and `worksp
 
 ## MCP
 
-`@openapi-to/mcp` is a local stdio server. It does not add code-generation plugins.
+The aggregate installation provides the local stdio server through its runtime dependency on `@openapi-to/mcp`. The MCP package remains independently publishable as an advanced/internal entrypoint and does not add code-generation plugins.
 
 | Mode | Status | Tools | Writes |
 | --- | --- | --- | --- |

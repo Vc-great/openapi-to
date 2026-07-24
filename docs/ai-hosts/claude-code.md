@@ -1,6 +1,6 @@
 # Claude Code
 
-Claude Code can launch `@openapi-to/mcp` as a local stdio server. The project-scoped `.mcp.json` format and `claude mcp add` commands below follow the official [Claude Code MCP documentation](https://docs.anthropic.com/en/docs/claude-code/mcp).
+Claude Code can launch the `openapi-to-mcp` command installed by `openapi-to` as a local stdio server. The project-scoped `.mcp.json` format and `claude mcp add` commands below follow the official [Claude Code MCP documentation](https://docs.anthropic.com/en/docs/claude-code/mcp).
 
 ## Prerequisites and installation
 
@@ -8,13 +8,13 @@ Claude Code can launch `@openapi-to/mcp` as a local stdio server. The project-sc
 - Claude Code installed and authenticated
 - A trusted local Workspace
 
-Install the published server in that Workspace:
+Install the aggregate package in that Workspace:
 
 ```sh
-pnpm add -D @openapi-to/mcp
+pnpm add -D openapi-to
 ```
 
-For repository development instead, run `pnpm install` and `pnpm build`; launch `node packages/mcp/bin/openapi-to-mcp.js`.
+Repository maintainers debugging source can instead run `pnpm install` and `pnpm build`, then launch `node packages/mcp/bin/openapi-to-mcp.js`.
 
 ## Minimal read-only setup
 
@@ -76,7 +76,7 @@ Keep Claude Code Tool approval enabled for `openapi_apply_generation`. Prepare w
 
 ## Source checkout
 
-POSIX `.mcp.json` command:
+Maintainer-only POSIX `.mcp.json` command:
 
 ```json
 {
