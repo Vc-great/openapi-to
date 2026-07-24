@@ -1,36 +1,36 @@
 {
-  "name": "e2e-module",
-  "version": "0.0.1",
-  "private": true,
-  "description": "",
-  "repository": {
-    "type": "git",
-    "url": "",
-    "directory": "e2e"
-  },
-  "license": "MIT",
-  "author": "",
-  "type": "module",
-  "sideEffects": false,
-  "scripts": {
-    "init": "openapi init",
-    "editPlugins": "node editPlugins.cjs",
-    "generate": "openapi g"
-  },
-  "dependencies": {
-    "@faker-js/faker": "^8.4.1",
-    "@tanstack/vue-query": "^5.70.0",
-    "@types/fs-extra": "^11.0.4",
-    "axios": "1.7.4",
-    "fs-extra": "^11.2.0",
-    "msw": "^2.2.2",
-    "openapi-to": "workspace:*",
-    "swr": "^2.2.5",
-    "vue": "^3.5.13",
-    "zod": "^3.22.4"
-  },
-  "engines": {
-    "node": ">=18",
-    "pnpm": ">=8.3.0"
-  }
+	"name": "e2e-module",
+	"version": "0.0.1",
+	"private": true,
+	"description": "",
+	"repository": {
+		"type": "git",
+		"url": "",
+		"directory": "e2e"
+	},
+	"license": "MIT",
+	"author": "",
+	"type": "module",
+	"sideEffects": false,
+	"scripts": {
+		"init": "openapi init",
+		"editPlugins": "node editPlugins.cjs",
+		"generate": "openapi g"
+	},
+	"dependencies": {
+		"@faker-js/faker": "^8.4.1",
+		"@tanstack/vue-query": "^5.70.0",
+		"@types/fs-extra": "^11.0.4",
+		"axios": "1.7.4",
+		"fs-extra": "^11.2.0",
+		"msw": "^2.2.2",
+		"openapi-to": "workspace:*",
+		"swr": "^2.2.5",
+		"vue": "^3.5.13",
+		"zod": "^3.22.4"
+	},
+	"engines": {
+		"node": ">=20",
+		"pnpm": ">=10.7.1"
+	}
 }

@@ -1,9 +1,12 @@
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ExitCode } from '@openapi-to/core'
 import { run, type CLIIO } from './index.ts'
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 
 describe.sequential('CLI machine-readable commands', () => {
   let cwd: string
@@ -60,7 +63,7 @@ describe.sequential('CLI machine-readable commands', () => {
     expect((await run(['node', 'openapi', 'validate', cycle, '--json'], io)).exitCode).toBe(ExitCode.Success)
     expect(JSON.parse(stdout.join('\n')).diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'OPENAPI_REF_CYCLE' })]))
 
-    const openapi32 = path.resolve(cwd, 'packages/core/src/openapi/fixtures/openapi-3.2.yaml')
+    const openapi32 = path.join(repositoryRoot, 'packages/core/src/openapi/fixtures/openapi-3.2.yaml')
     stdout = []
     expect((await run(['node', 'openapi', 'validate', openapi32, '--json', '--fail-on-warning'], io)).exitCode).toBe(ExitCode.OpenAPIError)
     expect(JSON.parse(stdout.join('\n')).diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'OPENAPI_WARNINGS_AS_ERRORS' })]))
@@ -68,10 +71,10 @@ describe.sequential('CLI machine-readable commands', () => {
 
   it('inspects Swagger 2.0 and OpenAPI 3.0/3.1/3.2 with security and external refs', async () => {
     const inputs = [
-      path.resolve(cwd, 'packages/core/mock/swagger2.0.json'),
-      path.resolve(cwd, 'packages/core/mock/openapiV3.json'),
+      path.join(repositoryRoot, 'packages/core/mock/swagger2.0.json'),
+      path.join(repositoryRoot, 'packages/core/mock/openapiV3.json'),
       spec,
-      path.resolve(cwd, 'packages/core/src/openapi/fixtures/openapi-3.2.yaml'),
+      path.join(repositoryRoot, 'packages/core/src/openapi/fixtures/openapi-3.2.yaml'),
     ]
     for (const input of inputs) {
       stdout = []

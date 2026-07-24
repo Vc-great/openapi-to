@@ -88,6 +88,8 @@ jobs:
         uses: ./.github/setup
       - name: Build
         run: pnpm build
+      - name: Verify repository contracts
+        run: pnpm verify:repository-contract
       - name: Verify package surface
         run: pnpm verify:package-surface
       - name: Pack and install packages

@@ -51,9 +51,9 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 - `.github/workflows/` and `.github/setup/action.yml` — CI build, typecheck, test, lint, and cross-platform e2e definitions.
 - `.agents/skills/` — the single authoritative Codex Skill source. Keep each `SKILL.md`, its `agents/openai.yaml`, and directly referenced resources consistent.
 - Package builds emit `dist/`; integration tests may create untracked `packages/*/test-output/`. Never treat those outputs as source.
-- `.changeset/config.json` is the tracked release policy. All nine public runtime packages form one fixed-version group; `packages/config-ts` and `packages/config-tsup` remain private and are not release candidates. A task-specific `.changeset/*.md` is required for user-visible package changes.
+- `.changeset/config.json` is the tracked release policy. All ten public runtime packages form one fixed-version group; `packages/config-ts` and `packages/config-tsup` remain private and are not release candidates. A task-specific `.changeset/*.md` is required for user-visible package changes.
 
-`pnpm-workspace.yaml` mentions `docs`, `examples/*`, and `e2e/*`, but `docs/` and `examples/` are not present in this revision. Do not invent paths or use the root `generate` script as evidence until the relevant workspace exists. Always re-scan for lower-level `AGENTS.md` files and repository Skills because later changes may add narrower rules.
+`docs/` contains tracked documentation but is not a package, `examples/` is not present in this revision, and `e2e/*` contains the CommonJS and ESM smoke workspaces. Do not invent package paths or use an absent examples workspace as evidence. Always re-scan for lower-level `AGENTS.md` files and repository Skills because later changes may add narrower rules.
 
 ## Compiler architecture and representation boundaries
 
@@ -81,7 +81,7 @@ Keep stage ownership singular: plugins must not reimplement `$ref` loading, arti
 
 - Use the pinned package manager from root `packageManager`: pnpm 10.14.0. Development, CI, bins, and every package manifest require Node.js `>=20`; do not claim Node 18 compatibility without first changing the policy and adding a maintained Node 18 CI lane.
 - Use package scripts exactly as declared. `pnpm exec <tool>` invokes a binary and is not evidence that a same-named package script exists.
-- Vitest is the test runner. Turbo coordinates root build/typecheck tasks. Biome is the package linter; dprint/Prettier scripts exist for formatting, but there is no root Markdown-check script.
+- Vitest is the test runner. Turbo coordinates root build/typecheck tasks. Biome is the package linter and formatter; there is no root Markdown formatting framework.
 - Prefer package filtering for focused work: `pnpm --filter <package-name> <script>`. Do not replace a focused validation with an unrelated full-suite run.
 
 ## Change scope

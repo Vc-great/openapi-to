@@ -4,22 +4,19 @@ The current version is not compatible with V2.[V2 document](https://github.com/V
 
 
 
-# At Glance
-openapi-to is a library and toolkit that transforms your Swagger/OpenAPI specification into various client libraries, including:
-+ [x] ts request
-+ [x] ts type
-+ [x] zod
-+ [x] SWR
-+ [x] MSW
-+ [ ] Faker.js
-+ [ ] nestjs
-+ [x] vue-Query
-+ [ ] react-Query
+# At a glance
+
+`openapi-to` is a TypeScript compiler, CLI, and plugin toolkit for Swagger/OpenAPI documents. The published aggregate includes TypeScript type and request generation, Zod schemas, SWR hooks, Vue Query hooks, and MSW handlers. Faker, NestJS, and React Query generators are not shipped.
+
+See the single [capability matrix](docs/capability-matrix.md) for exact package, dialect, CLI, and MCP status. Start with the [getting-started guide](docs/getting-started.md); local AI Host setup is documented for [Codex](docs/codex-mcp.md), [Claude Code](docs/ai-hosts/claude-code.md), [Cursor](docs/ai-hosts/cursor.md), and [generic stdio Hosts](docs/ai-hosts/generic-stdio.md).
 
 # Features
+
 - Works with Node.js 20+.
 - Supports JSON and YAML inputs for Swagger 2.0, OpenAPI 3.0, and OpenAPI 3.1.
-- Recognizes OpenAPI 3.2 in compatibility mode. 3.2-only fields are preserved and reported when existing generators do not consume them.
+- Reads OpenAPI 3.2 in compatibility mode with explicit diagnostics for generator gaps; this is not complete 3.2 generation support.
+- Provides stable `validate`, `inspect`, `diff`, and `generate` CLI contracts with deterministic JSON output and centralized exit codes.
+- Provides a local stdio MCP adapter with default read-only modes and operator-gated Prepare/Apply writes.
 
 # Quick Start
 ## Install
@@ -77,6 +74,7 @@ The repository and all published packages require Node.js 20 or newer and use pn
 pnpm exec changeset status
 pnpm lint:changed
 pnpm build
+pnpm test:release-scripts
 pnpm verify:package-surface
 pnpm release:smoke
 ```
@@ -102,7 +100,7 @@ automated failpoint or crash-recovery gate. See the
 [MCP test strategy](docs/testing/mcp-testing.md) and
 [Inspector guide](docs/testing/mcp-inspector.md).
 
-OpenAPI 3.2 support is intentionally incremental. `$self` participates in reference base resolution and the document, info, paths, components, and standard operations remain readable. New 3.2 fields such as `query`, `additionalOperations`, `querystring`, streaming `itemSchema`/encoding fields, and tag hierarchy are inspected and diagnosed, but existing TypeScript generators do not yet emit code from them. The first-stage diff engine covers paths, operations, parameters, request/response schemas, component properties, required state, enums, and types; less certain schema-composition changes are reported as warnings rather than claimed as definitive compatibility results.
+OpenAPI 3.2 support and the first-stage diff boundary are maintained in the [capability matrix](docs/capability-matrix.md), not duplicated here.
 ## Example
 ```typescript twoslash [single]
 import { defineConfig, pluginTSRequest, pluginTSType, pluginZod } from 'openapi-to'

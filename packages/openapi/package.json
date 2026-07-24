@@ -1,7 +1,7 @@
 {
 	"name": "openapi-to",
 	"version": "3.2.2",
-	"description": "OpenAPI to TypeScript,Axios,request,zod,type,MSW,Faker,nestjs.",
+	"description": "OpenAPI compiler, CLI, and official TypeScript code-generation plugins",
 	"keywords": [
 		"openapi",
 		"generate",
@@ -9,23 +9,32 @@
 		"plugins",
 		"codegen",
 		"cli",
-		"nestjs"
+		"zod",
+		"msw",
+		"swr",
+		"vue-query"
 	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Vc-great/openapi-to.git",
-		"directory": ""
+		"directory": "packages/openapi"
 	},
+	"bugs": {
+		"url": "https://github.com/Vc-great/openapi-to/issues"
+	},
+	"homepage": "https://github.com/Vc-great/openapi-to#readme",
 	"license": "MIT",
-	"author": "",
+	"author": "Vc-great",
 	"sideEffects": false,
 	"type": "module",
 	"exports": {
 		".": {
+			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"require": "./dist/index.cjs"
 		},
 		"./utils": {
+			"types": "./dist/utils.d.ts",
 			"import": "./dist/utils.js",
 			"require": "./dist/utils.cjs"
 		}
@@ -45,15 +54,13 @@
 		"!/**/__tests__/**"
 	],
 	"scripts": {
-		"build": "tsup",
-		"clean": "npx rimraf ./dist",
-		"lint": "bun biome lint .",
-		"lint:fix": "bun biome lint --write --unsafe .",
-		"release": "pnpm publish --no-git-check",
-		"release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
-		"start": "tsup --watch",
-		"test": "vitest --passWithNoTests",
-		"typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+		"build": "pnpm exec tsup",
+		"clean": "pnpm exec rimraf ./dist",
+		"lint": "pnpm exec biome lint .",
+		"lint:fix": "pnpm exec biome lint --write --unsafe .",
+		"start": "pnpm exec tsup --watch",
+		"test": "pnpm exec vitest run --passWithNoTests",
+		"typecheck": "pnpm exec tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
 	},
 	"dependencies": {
 		"@openapi-to/cli": "workspace:*",

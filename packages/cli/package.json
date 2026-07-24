@@ -1,78 +1,80 @@
 {
-  "name": "@openapi-to/cli",
-  "version": "3.2.2",
-  "description": "openapi-to cli",
-  "keywords": [
-    "typescript",
-    "plugins",
-    "openapi",
-    "codegen",
-    "cli"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "",
-    "directory": "packages/cli"
-  },
-  "license": "MIT",
-  "author": "",
-  "sideEffects": false,
-  "type": "module",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.cjs"
-    }
-  },
-  "files": [
-    "dist",
-    "bin",
-    "!dist/**/*.map",
-    "!/**/**.test.**",
-    "!/**/__tests__/**"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "clean": "npx rimraf ./dist",
-    "lint": "bun biome lint .",
-    "lint:fix": "bun biome lint --write --unsafe .",
-    "release": "pnpm publish --no-git-check",
-    "release:canary": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag canary",
-    "release:alpha": "bash ../../.github/canary.sh && pnpm publish --no-git-check -tag alpha",
-    "start": "tsup --watch",
-    "test": "vitest --passWithNoTests",
-    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
-  },
-  "dependencies": {
-    "@openapi-to/core": "workspace:*",
-    "@types/cli-progress": "^3.11.6",
-    "cac": "^6.7.14",
-    "chokidar": "^3.5.3",
-    "cli-progress": "^3.12.0",
-    "execa": "^8.0.1",
-    "lodash": "^4.17.21",
-    "ora": "^7.0.1",
-    "picocolors": "^1.0.0",
-    "pretty-error": "^4.0.0",
-    "string-argv": "^0.3.2",
-    "tinyrainbow": "^1.2.0"
-  },
-  "devDependencies": {
-    "@openapi-to/config-ts": "workspace:*",
-    "@openapi-to/config-tsup": "workspace:*",
-    "@types/lodash": "^4.17.9",
-    "source-map-support": "^0.5.21"
-  },
-  "preferGlobal": true,
-  "engines": {
-    "node": ">=20"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  }
+	"name": "@openapi-to/cli",
+	"version": "3.2.2",
+	"description": "Command-line interface for validating, inspecting, diffing, and generating from OpenAPI documents",
+	"keywords": [
+		"typescript",
+		"plugins",
+		"openapi",
+		"codegen",
+		"cli"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Vc-great/openapi-to.git",
+		"directory": "packages/cli"
+	},
+	"bugs": {
+		"url": "https://github.com/Vc-great/openapi-to/issues"
+	},
+	"homepage": "https://github.com/Vc-great/openapi-to#readme",
+	"license": "MIT",
+	"author": "Vc-great",
+	"sideEffects": false,
+	"type": "module",
+	"main": "dist/index.cjs",
+	"module": "dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.cjs"
+		}
+	},
+	"files": [
+		"dist",
+		"bin",
+		"!dist/**/*.map",
+		"!/**/**.test.**",
+		"!/**/__tests__/**"
+	],
+	"scripts": {
+		"build": "pnpm exec tsup",
+		"clean": "pnpm exec rimraf ./dist",
+		"lint": "pnpm exec biome lint .",
+		"lint:fix": "pnpm exec biome lint --write --unsafe .",
+		"start": "pnpm exec tsup --watch",
+		"test": "pnpm exec vitest run --passWithNoTests",
+		"typecheck": "pnpm exec tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
+	},
+	"dependencies": {
+		"@openapi-to/core": "workspace:*",
+		"@types/cli-progress": "^3.11.6",
+		"cac": "^6.7.14",
+		"chokidar": "^3.5.3",
+		"cli-progress": "^3.12.0",
+		"execa": "^8.0.1",
+		"lodash": "^4.17.21",
+		"ora": "^7.0.1",
+		"picocolors": "^1.0.0",
+		"pretty-error": "^4.0.0",
+		"string-argv": "^0.3.2",
+		"tinyrainbow": "^1.2.0"
+	},
+	"devDependencies": {
+		"@openapi-to/config-ts": "workspace:*",
+		"@openapi-to/config-tsup": "workspace:*",
+		"@types/lodash": "^4.17.9",
+		"source-map-support": "^0.5.21"
+	},
+	"preferGlobal": true,
+	"engines": {
+		"node": ">=20"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	}
 }

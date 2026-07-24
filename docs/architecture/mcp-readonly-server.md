@@ -63,16 +63,19 @@ The five tools in this ADR remain read-only. P3 adds a separate operator-gated P
 MCP Inspector **0.22.0** was checked against its current official CLI help and used against the built stdio bin on 2026-07-18. The successful and expected-error calls were:
 
 ```bash
-npx @modelcontextprotocol/inspector --cli -- \
+npx --yes --package @modelcontextprotocol/inspector@0.22.0 \
+  mcp-inspector --cli -- \
   node packages/mcp/bin/openapi-to-mcp.js --workspace-root . \
   --method tools/list
 
-npx @modelcontextprotocol/inspector --cli -- \
+npx --yes --package @modelcontextprotocol/inspector@0.22.0 \
+  mcp-inspector --cli -- \
   node packages/mcp/bin/openapi-to-mcp.js --workspace-root . \
   --method tools/call --tool-name openapi_validate \
   --tool-arg source=packages/mcp/src/fixtures/valid.yaml
 
-npx @modelcontextprotocol/inspector --cli -- \
+npx --yes --package @modelcontextprotocol/inspector@0.22.0 \
+  mcp-inspector --cli -- \
   node packages/mcp/bin/openapi-to-mcp.js --workspace-root . \
   --method tools/call --tool-name openapi_validate \
   --tool-arg source=../outside.yaml

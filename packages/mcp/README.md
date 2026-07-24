@@ -1,11 +1,13 @@
 # @openapi-to/mcp
 
-`@openapi-to/mcp` is the independent bounded stdio MCP adapter for `openapi-to`. Its eight configured-mode tools are read-only. An operator may additionally enable a two-phase, transaction-backed generation writer; it cannot write without a prior in-memory Prepare plan. Install it as a development dependency for a local Codex workflow, or as a regular dependency when a managed developer environment launches it at runtime.
+`@openapi-to/mcp` is the independent bounded stdio MCP adapter for `openapi-to`. Its eight configured-mode tools are read-only. An operator may additionally enable a two-phase, transaction-backed generation writer; it cannot write without a prior in-memory Prepare plan. Install it as a development dependency for a local Codex, Claude Code, Cursor, or generic stdio Host workflow, or as a regular dependency when a managed developer environment launches it at runtime.
 
 ```sh
 pnpm add -D @openapi-to/mcp
-openapi-to-mcp --workspace-root .
+pnpm exec openapi-to-mcp --workspace-root .
 ```
+
+See [getting started](../../docs/getting-started.md) for package versus source execution and Host-specific configuration. All Hosts share the documented [MCP security boundary](../../docs/mcp-security.md) and [troubleshooting guide](../../docs/troubleshooting.md).
 
 Without `--config`, the server exposes `openapi_validate`, `openapi_inspect`, and `openapi_diff`. Supplying a trusted Workspace-local project configuration adds `openapi_list_targets`, `openapi_search_operations`, `openapi_get_operation`, `openapi_generate_dry_run`, and `openapi_check_generation`:
 

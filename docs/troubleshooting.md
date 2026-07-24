@@ -1,0 +1,65 @@
+# Troubleshooting
+
+## The Host reports “connection closed”
+
+Run the same command from the Workspace first:
+
+```sh
+pnpm exec openapi-to-mcp --help
+```
+
+For a source checkout, run `pnpm build` before `node packages/mcp/bin/openapi-to-mcp.js`. Confirm Node.js is 20 or newer and that the Host starts the process with the intended Workspace as its working directory.
+
+On native Windows, JSON/TOML Hosts may not execute `.cmd` shims directly. Use `command: "cmd.exe"` with `/d /s /c` and a complete `pnpm exec openapi-to-mcp ...` command, or use `node.exe` with the source bin path. Do not copy POSIX `/path/...` examples into a Windows configuration.
+
+## The Host shows no Tools
+
+The process must stay open on stdio. Confirm that no wrapper prints to stdout and that Host configuration uses the stdio `command`/`args` form rather than an HTTP URL. Restart the Host after changing config.
+
+Expected Tool counts are:
+
+- 3 without `--config`
+- 8 with trusted `--config`
+- 10 with trusted `--config` and `--allow-write`
+
+## Configured Tools are missing
+
+The config path must exist inside the Workspace, may not escape through a symlink, and must export a valid project configuration. It is trusted executable code selected at startup and cached for the server lifetime. Restart after changing the config or OpenAPI source.
+
+`--allow-write` without `--config` is rejected. Output roots must also pass Workspace validation before write Tools are registered.
+
+## JSON-RPC is polluted
+
+stdout is reserved for MCP protocol messages. Send diagnostics, banners, debug output, and plugin incidental logging to stderr. When embedding the server, do not use a wrapper that writes its own status line to stdout.
+
+Use `--log-level debug` only while diagnosing and keep logs on stderr. For structured operational logs use `--log-format json`; this is NDJSON on stderr, not Tool-result JSON.
+
+## A local or remote source is rejected
+
+Local sources and transitive local `$ref` values must remain inside the real Workspace. Fix traversal/symlink escapes rather than broadening the Workspace.
+
+Remote inputs allow HTTP(S) only and deny private/reserved addresses by default. The operator may add repeatable `--allow-host <hostname>` values. `--allow-private-network` deliberately lowers the security boundary and should be used only for a trusted internal source.
+
+## Generation check reports outdated
+
+This is an expected business result, not an MCP protocol failure. Review the bounded change summary. In write-enabled mode call Prepare, review its exact hash and changes, then approve the corresponding Apply according to Host policy. Do not automatically Prepare and Apply.
+
+## A plan is expired, stale, or already used
+
+Create a new Prepare plan and review it again. Tokens are short-lived, one-time, process-bound, and plan-bound. Apply rejects changed input/config/reference/output/ownership/artifact state rather than silently adopting it.
+
+## A lock or recovery diagnostic appears
+
+CLI generation and MCP Apply share the output lock. Wait for the active writer or investigate the named stale/recovery state. Do not delete locks, journals, staging, or backups blindly; follow the [recovery guide](./mcp-write-recovery.md).
+
+## Doctor and Inspector
+
+From a repository checkout after `pnpm build`:
+
+```sh
+pnpm mcp:check
+pnpm --silent mcp:check -- --json
+pnpm mcp:inspect
+```
+
+Doctor and Inspector are repository-only and intentionally absent from the npm tarball. Installed-package users should run `openapi-to-mcp --help` and use their Host's Tool-list/status UI. Inspector is interactive and should not run in CI.

@@ -1,71 +1,86 @@
 {
-  "name": "@openapi-to/mcp",
-  "version": "3.2.2",
-  "description": "Bounded stdio MCP adapter with read-only analysis and controlled two-phase generation writes",
-  "keywords": ["openapi", "mcp", "codex", "stdio"],
-  "license": "MIT",
-  "sideEffects": false,
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
-    "./package.json": "./package.json"
-  },
-  "bin": {
-    "openapi-to-mcp": "./bin/openapi-to-mcp.js"
-  },
-  "files": [
-    "dist",
-    "bin",
-    "README.md",
-    "!dist/**/*.map",
-    "!/**/**.test.**",
-    "!/**/__tests__/**"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "clean": "npx rimraf ./dist",
-    "lint": "bun biome lint .",
-    "lint:fix": "bun biome lint --write --unsafe .",
-    "start": "tsup --watch",
-    "test": "node ./scripts/run-test-group.mjs test",
-    "test:unit": "node ./scripts/run-test-group.mjs unit",
-    "test:integration": "node ./scripts/run-test-group.mjs integration",
-    "test:smoke": "node ./scripts/run-test-group.mjs smoke",
-    "test:stdio": "node ./scripts/run-test-group.mjs stdio",
-    "test:write": "node ./scripts/run-test-group.mjs write",
-    "test:recovery": "node ./scripts/run-test-group.mjs recovery",
-    "test:performance": "node ./scripts/run-test-group.mjs performance",
-    "test:e2e": "node ./scripts/run-test-group.mjs e2e",
-    "test:all": "node ./scripts/run-test-group.mjs all",
-    "doctor": "node ./scripts/run-doctor.mjs",
-    "inspect": "node ./scripts/inspect.mjs",
-    "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false",
-    "benchmark": "node ./scripts/benchmark.mjs",
-    "benchmark:check": "node ./scripts/benchmark.mjs --iterations 2 --check",
-    "stress": "node ./scripts/stress.mjs",
-    "evaluate:tools": "node ./scripts/evaluate-tool-selection.mjs"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
-    "@openapi-to/core": "workspace:*",
-    "zod": "3.25.76"
-  },
-  "devDependencies": {
-    "@openapi-to/config-ts": "workspace:*",
-    "@openapi-to/config-tsup": "workspace:*"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  }
+	"name": "@openapi-to/mcp",
+	"version": "3.2.2",
+	"description": "Bounded stdio MCP adapter with read-only analysis and controlled two-phase generation writes",
+	"keywords": [
+		"openapi",
+		"mcp",
+		"codex",
+		"stdio"
+	],
+	"author": "Vc-great",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Vc-great/openapi-to.git",
+		"directory": "packages/mcp"
+	},
+	"bugs": {
+		"url": "https://github.com/Vc-great/openapi-to/issues"
+	},
+	"homepage": "https://github.com/Vc-great/openapi-to#readme",
+	"sideEffects": false,
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		},
+		"./package.json": "./package.json"
+	},
+	"bin": {
+		"openapi-to-mcp": "./bin/openapi-to-mcp.js"
+	},
+	"files": [
+		"dist",
+		"bin",
+		"README.md",
+		"!dist/**/*.map",
+		"!/**/**.test.**",
+		"!/**/__tests__/**"
+	],
+	"scripts": {
+		"build": "pnpm exec tsup",
+		"clean": "pnpm exec rimraf ./dist",
+		"lint": "pnpm exec biome lint .",
+		"lint:fix": "pnpm exec biome lint --write --unsafe .",
+		"start": "pnpm exec tsup --watch",
+		"test": "node ./scripts/run-test-group.mjs test",
+		"test:unit": "node ./scripts/run-test-group.mjs unit",
+		"test:integration": "node ./scripts/run-test-group.mjs integration",
+		"test:smoke": "node ./scripts/run-test-group.mjs smoke",
+		"test:stdio": "node ./scripts/run-test-group.mjs stdio",
+		"test:write": "node ./scripts/run-test-group.mjs write",
+		"test:recovery": "node ./scripts/run-test-group.mjs recovery",
+		"test:performance": "node ./scripts/run-test-group.mjs performance",
+		"test:e2e": "node ./scripts/run-test-group.mjs e2e",
+		"test:all": "node ./scripts/run-test-group.mjs all",
+		"doctor": "node ./scripts/run-doctor.mjs",
+		"inspect": "node ./scripts/inspect.mjs",
+		"typecheck": "pnpm exec tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false",
+		"benchmark": "node ./scripts/benchmark.mjs",
+		"benchmark:check": "node ./scripts/benchmark.mjs --iterations 2 --check",
+		"stress": "node ./scripts/stress.mjs",
+		"evaluate:tools": "node ./scripts/evaluate-tool-selection.mjs"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "1.29.0",
+		"@openapi-to/core": "workspace:*",
+		"zod": "3.25.76"
+	},
+	"devDependencies": {
+		"@openapi-to/config-ts": "workspace:*",
+		"@openapi-to/config-tsup": "workspace:*"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	}
 }

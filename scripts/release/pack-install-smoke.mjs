@@ -1,10 +1,22 @@
-import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+	access,
+	chmod,
+	mkdir,
+	mkdtemp,
+	readFile,
+	rm,
+	stat,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const repositoryRoot = resolve(
+	dirname(fileURLToPath(import.meta.url)),
+	"../..",
+);
 const packageDirectories = [
 	"packages/core",
 	"packages/cli",
@@ -61,7 +73,11 @@ function pnpm(args, cwd) {
 	const executable = process.env.npm_execpath;
 	if (executable) return run(process.execPath, [executable, ...args], cwd);
 	const suffix = process.platform === "win32" ? ".cmd" : "";
-	return run(resolve(repositoryRoot, "node_modules", ".bin", `pnpm${suffix}`), args, cwd);
+	return run(
+		resolve(repositoryRoot, "node_modules", ".bin", `pnpm${suffix}`),
+		args,
+		cwd,
+	);
 }
 
 function parsePackResult(stdout) {
@@ -78,16 +94,24 @@ function exportTargets(value) {
 
 function binPath(installationDirectory, name) {
 	const suffix = process.platform === "win32" ? ".cmd" : "";
-	return join(installationDirectory, "node_modules", ".bin", `${name}${suffix}`);
+	return join(
+		installationDirectory,
+		"node_modules",
+		".bin",
+		`${name}${suffix}`,
+	);
 }
 
-const temporaryRoot = await mkdtemp(join(tmpdir(), "openapi-to-release-smoke-"));
+const temporaryRoot = await mkdtemp(
+	join(tmpdir(), "openapi-to-release-smoke-"),
+);
 const tarballDirectory = join(temporaryRoot, "tarballs");
 const installationDirectory = join(temporaryRoot, "consumer");
 await writeFile(join(temporaryRoot, ".keep"), "release smoke workspace\n");
 await Promise.all([
 	mkdir(tarballDirectory, { recursive: true }),
 	mkdir(installationDirectory, { recursive: true }),
+	mkdir(join(installationDirectory, ".OpenAPI"), { recursive: true }),
 ]);
 
 let succeeded = false;
@@ -95,22 +119,37 @@ try {
 	const packed = [];
 	for (const directory of packageDirectories) {
 		const packageDirectory = join(repositoryRoot, directory);
-		const manifest = JSON.parse(await readFile(join(packageDirectory, "package.json"), "utf8"));
+		const manifest = JSON.parse(
+			await readFile(join(packageDirectory, "package.json"), "utf8"),
+		);
 		const result = parsePackResult(
-			pnpm(["pack", "--json", "--pack-destination", tarballDirectory], packageDirectory).stdout,
+			pnpm(
+				["pack", "--json", "--pack-destination", tarballDirectory],
+				packageDirectory,
+			).stdout,
 		);
 		const archive = result.filename;
 		const archiveStat = await stat(archive);
 		const filePaths = result.files.map(({ path }) => path).sort();
-		const forbidden = filePaths.filter((path) => forbiddenTarballPaths.some((pattern) => pattern.test(path)));
-		if (result.name === "@openapi-to/mcp" && filePaths.some((path) => path.startsWith("scripts/"))) {
-			forbidden.push(...filePaths.filter((path) => path.startsWith("scripts/")));
+		const forbidden = filePaths.filter((path) =>
+			forbiddenTarballPaths.some((pattern) => pattern.test(path)),
+		);
+		if (
+			result.name === "@openapi-to/mcp" &&
+			filePaths.some((path) => path.startsWith("scripts/"))
+		) {
+			forbidden.push(
+				...filePaths.filter((path) => path.startsWith("scripts/")),
+			);
 		}
 		if (forbidden.length > 0) {
-			throw new Error(`${result.name} tarball contains forbidden files: ${forbidden.join(", ")}`);
+			throw new Error(
+				`${result.name} tarball contains forbidden files: ${forbidden.join(", ")}`,
+			);
 		}
 		for (const required of ["package.json"]) {
-			if (!filePaths.includes(required)) throw new Error(`${result.name} tarball is missing ${required}`);
+			if (!filePaths.includes(required))
+				throw new Error(`${result.name} tarball is missing ${required}`);
 		}
 		const packageTargets = [
 			manifest.main,
@@ -122,7 +161,10 @@ try {
 			.filter((target) => typeof target === "string" && !target.includes("*"))
 			.map((target) => target.replace(/^\.\//, ""));
 		for (const target of new Set(packageTargets)) {
-			if (!filePaths.includes(target)) throw new Error(`${result.name} tarball is missing declared target ${target}`);
+			if (!filePaths.includes(target))
+				throw new Error(
+					`${result.name} tarball is missing declared target ${target}`,
+				);
 		}
 		packed.push({
 			name: result.name,
@@ -142,9 +184,11 @@ try {
 				private: true,
 				type: "module",
 				dependencies: Object.fromEntries(
-					packed.map(({ name, archive }) => [name, `file:${archive}`]).sort(([left], [right]) =>
-						left < right ? -1 : left > right ? 1 : 0,
-					),
+					packed
+						.map(({ name, archive }) => [name, `file:${archive}`])
+						.sort(([left], [right]) =>
+							left < right ? -1 : left > right ? 1 : 0,
+						),
 				),
 				devDependencies: {
 					"@modelcontextprotocol/sdk": "1.29.0",
@@ -153,9 +197,11 @@ try {
 				},
 				pnpm: {
 					overrides: Object.fromEntries(
-						packed.map(({ name, archive }) => [name, `file:${archive}`]).sort(([left], [right]) =>
-							left < right ? -1 : left > right ? 1 : 0,
-						),
+						packed
+							.map(({ name, archive }) => [name, `file:${archive}`])
+							.sort(([left], [right]) =>
+								left < right ? -1 : left > right ? 1 : 0,
+							),
 					),
 				},
 			},
@@ -163,7 +209,10 @@ try {
 			2,
 		),
 	);
-	pnpm(["install", "--ignore-scripts", "--prefer-offline"], installationDirectory);
+	pnpm(
+		["install", "--ignore-scripts", "--prefer-offline"],
+		installationDirectory,
+	);
 
 	const minimumDocument = `openapi: 3.0.3
 info:
@@ -178,8 +227,9 @@ paths:
           description: OK
 `;
 	await writeFile(join(installationDirectory, "openapi.yaml"), minimumDocument);
+	await writeFile(join(installationDirectory, "invalid.yaml"), "openapi: [\n");
 	await writeFile(
-		join(installationDirectory, "openapi.config.cjs"),
+		join(installationDirectory, ".OpenAPI/openapi.config.cjs"),
 		`module.exports = {
   servers: [{ name: "smoke", input: { path: "./openapi.yaml" }, output: { dir: "generated", clean: true } }],
   plugins: [{ name: "release-write-smoke", hooks: { buildStart(ctx) {
@@ -281,7 +331,7 @@ const result = await client.callTool({ name: "openapi_validate", arguments: { so
 if (result.isError || result.structuredContent?.success !== true) throw new Error("MCP validate smoke failed");
 await client.close();
 
-const configuredTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs"], stderr: "pipe" });
+const configuredTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/openapi.config.cjs"], stderr: "pipe" });
 const configuredClient = new Client({ name: "release-configured-smoke", version: "1.0.0" });
 await configuredClient.connect(configuredTransport);
 const configured = await configuredClient.listTools();
@@ -290,7 +340,7 @@ if (configured.tools.some(({ name }) => name === "openapi_prepare_generation" ||
 await configuredClient.close();
 
 const writeStderr = [];
-const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs", "--allow-write"], stderr: "pipe" });
+const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/openapi.config.cjs", "--allow-write"], stderr: "pipe" });
 writeTransport.stderr?.on("data", (chunk) => writeStderr.push(String(chunk)));
 const writeClient = new Client({ name: "release-write-smoke", version: "1.0.0" });
 await writeClient.connect(writeTransport);
@@ -345,21 +395,34 @@ await writeClient.close();
 	run(process.execPath, ["mcp-esm-smoke.mjs"], installationDirectory);
 	run(process.execPath, ["cjs-smoke.cjs"], installationDirectory);
 	run(
-		resolve(repositoryRoot, "node_modules", ".bin", process.platform === "win32" ? "tsc.cmd" : "tsc"),
+		resolve(
+			repositoryRoot,
+			"node_modules",
+			".bin",
+			process.platform === "win32" ? "tsc.cmd" : "tsc",
+		),
 		["-p", "tsconfig.json"],
 		installationDirectory,
 	);
 
-	const aggregateVersion = packed.find(({ name }) => name === "openapi-to").version;
+	const aggregateVersion = packed.find(
+		({ name }) => name === "openapi-to",
+	).version;
 	const reportedVersions = {};
 	for (const binary of ["openapi", "openapi-to"]) {
 		const executable = binPath(installationDirectory, binary);
 		if (process.platform !== "win32") await chmod(executable, 0o755);
 		run(executable, ["--help"], installationDirectory);
-		const version = run(executable, ["--version"], installationDirectory).stdout.trim();
+		const version = run(
+			executable,
+			["--version"],
+			installationDirectory,
+		).stdout.trim();
 		reportedVersions[binary] = version;
 		if (!version.startsWith(`openapi/${aggregateVersion} `)) {
-			throw new Error(`${binary} reported ${version}; expected openapi/${aggregateVersion}`);
+			throw new Error(
+				`${binary} reported ${version}; expected openapi/${aggregateVersion}`,
+			);
 		}
 		for (const arguments_ of [
 			["validate", "./openapi.yaml", "--json"],
@@ -370,15 +433,91 @@ await writeClient.close();
 		}
 	}
 	if (reportedVersions.openapi !== reportedVersions["openapi-to"]) {
-		throw new Error(`Bin aliases report different versions: ${JSON.stringify(reportedVersions)}`);
+		throw new Error(
+			`Bin aliases report different versions: ${JSON.stringify(reportedVersions)}`,
+		);
+	}
+	const cliExecutable = binPath(installationDirectory, "openapi");
+	const invalidValidation = run(
+		cliExecutable,
+		["validate", "./invalid.yaml", "--json"],
+		installationDirectory,
+		{ expectedStatus: 3 },
+	);
+	const invalidValidationJson = JSON.parse(invalidValidation.stdout);
+	if (
+		invalidValidationJson.success !== false ||
+		invalidValidationJson.command !== "validate"
+	) {
+		throw new Error(
+			"Packed CLI invalid validation did not return the stable JSON envelope",
+		);
+	}
+	const diffJson = JSON.parse(
+		run(
+			cliExecutable,
+			["diff", "./openapi.yaml", "./openapi.yaml", "--json"],
+			installationDirectory,
+		).stdout,
+	);
+	if (
+		diffJson.command !== "diff" ||
+		diffJson.breaking !== false ||
+		diffJson.changes.length !== 0
+	) {
+		throw new Error("Packed CLI diff JSON smoke failed");
+	}
+	const dryRunJson = JSON.parse(
+		run(
+			cliExecutable,
+			["generate", "--dry-run", "--json"],
+			installationDirectory,
+		).stdout,
+	);
+	if (
+		dryRunJson.command !== "generate" ||
+		dryRunJson.mode !== "dry-run" ||
+		dryRunJson.success !== true
+	) {
+		throw new Error("Packed CLI generate --dry-run JSON smoke failed");
+	}
+	try {
+		await access(join(installationDirectory, ".OpenAPI/generated"));
+		throw new Error("Packed CLI generate --dry-run wrote the output directory");
+	} catch (error) {
+		if (!(error && error.code === "ENOENT")) throw error;
+	}
+	const checkJson = JSON.parse(
+		run(
+			cliExecutable,
+			["generate", "--check", "--json"],
+			installationDirectory,
+			{ expectedStatus: 6 },
+		).stdout,
+	);
+	if (checkJson.command !== "generate" || checkJson.mode !== "check") {
+		throw new Error("Packed CLI generate --check JSON smoke failed");
 	}
 	const mcpExecutable = binPath(installationDirectory, "openapi-to-mcp");
 	if (process.platform !== "win32") await chmod(mcpExecutable, 0o755);
 	run(mcpExecutable, ["--help"], installationDirectory);
-	const mcpVersion = run(mcpExecutable, ["--version"], installationDirectory).stdout.trim();
-	const expectedMcpVersion = packed.find(({ name }) => name === "@openapi-to/mcp").version;
-	if (mcpVersion !== expectedMcpVersion) throw new Error(`openapi-to-mcp reported ${mcpVersion}; expected ${expectedMcpVersion}`);
-	run(process.execPath, ["mcp-stdio-smoke.mjs", mcpExecutable], installationDirectory);
+	const mcpVersion = run(
+		mcpExecutable,
+		["--version"],
+		installationDirectory,
+	).stdout.trim();
+	const expectedMcpVersion = packed.find(
+		({ name }) => name === "@openapi-to/mcp",
+	).version;
+	if (mcpVersion !== expectedMcpVersion)
+		throw new Error(
+			`openapi-to-mcp reported ${mcpVersion}; expected ${expectedMcpVersion}`,
+		);
+	run(
+		process.execPath,
+		["mcp-stdio-smoke.mjs", mcpExecutable],
+		installationDirectory,
+	);
 
 	succeeded = true;
 	process.stdout.write(
@@ -386,7 +525,8 @@ await writeClient.close();
 			{
 				success: true,
 				node: process.version,
-				workspace: process.env.KEEP_RELEASE_SMOKE === "1" ? temporaryRoot : undefined,
+				workspace:
+					process.env.KEEP_RELEASE_SMOKE === "1" ? temporaryRoot : undefined,
 				packages: packed.map(({ name, version, filename, size, files }) => ({
 					name,
 					version,
@@ -395,7 +535,28 @@ await writeClient.close();
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
-				checks: ["esm", "cjs", "types", "openapi-bin", "openapi-to-bin", "openapi-to-mcp-bin", "mcp-stdio", "mcp-tool-matrix-3-8-10", "mcp-schemas-annotations", "mcp-selective-prepare-apply", "mcp-three-state-commit", "mcp-token-replay", "mcp-current", "mcp-full-prepare-unchanged", "validate-json", "inspect-json"],
+				checks: [
+					"esm",
+					"cjs",
+					"types",
+					"openapi-bin",
+					"openapi-to-bin",
+					"openapi-to-mcp-bin",
+					"mcp-stdio",
+					"mcp-tool-matrix-3-8-10",
+					"mcp-schemas-annotations",
+					"mcp-selective-prepare-apply",
+					"mcp-three-state-commit",
+					"mcp-token-replay",
+					"mcp-current",
+					"mcp-full-prepare-unchanged",
+					"validate-json",
+					"validate-error-exit",
+					"inspect-json",
+					"diff-json",
+					"generate-dry-run-json",
+					"generate-check-exit",
+				],
 			},
 			null,
 			2,
@@ -405,6 +566,8 @@ await writeClient.close();
 	if (process.env.KEEP_RELEASE_SMOKE !== "1") {
 		await rm(temporaryRoot, { recursive: true, force: true });
 	} else if (!succeeded) {
-		process.stderr.write(`Release smoke workspace retained at ${temporaryRoot}\n`);
+		process.stderr.write(
+			`Release smoke workspace retained at ${temporaryRoot}\n`,
+		);
 	}
 }
