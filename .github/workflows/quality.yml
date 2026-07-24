@@ -70,10 +70,10 @@ jobs:
         run: pnpm test:release-scripts
       - name: Lint pull request files
         if: github.event_name == 'pull_request'
-        run: pnpm lint:changed -- --base "${{ github.event.pull_request.base.sha }}"
+        run: pnpm lint:changed --base "${{ github.event.pull_request.base.sha }}"
       - name: Lint pushed files
         if: github.event_name == 'push'
-        run: pnpm lint:changed -- --base "${{ github.event.before }}"
+        run: pnpm lint:changed --base "${{ github.event.before }}"
 
   release-smoke:
     name: Package and install smoke

@@ -204,7 +204,7 @@ describe('trusted persistent operation selection state', () => {
     expect(main.selectionFile).not.toBe(second.selectionFile)
     const shared = await fixture({ secondTarget: true, sharedOutput: true })
     await expect(prepareOperationSelection(shared.provider, shared.resolved, shared.registry, ['main'], { type: 'add', operationKeys: ['getUser'] }))
-      .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_STATE_INCONSISTENT' }] })
+      .rejects.toMatchObject({ diagnostics: [{ code: 'CONFIG_OUTPUT_OVERLAP' }] })
   })
 })
 

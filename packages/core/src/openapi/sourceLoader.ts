@@ -150,44 +150,61 @@ function isPrivateIPv4(address: string): boolean {
   )
 }
 
+function mappedIPv4Address(address: string): string | undefined {
+  const suffix = address.toLowerCase().slice('::ffff:'.length)
+  if (isIP(suffix) === 4) return suffix
+  const words = suffix.split(':')
+  if (words.length !== 2) return undefined
+  const high = Number.parseInt(words[0] ?? '', 16)
+  const low = Number.parseInt(words[1] ?? '', 16)
+  if (!Number.isInteger(high) || !Number.isInteger(low) || high < 0 || high > 0xffff || low < 0 || low > 0xffff) {
+    return undefined
+  }
+  return `${high >>> 8}.${high & 0xff}.${low >>> 8}.${low & 0xff}`
+}
+
 export function isPrivateIPAddress(address: string): boolean {
   if (isIP(address) === 4) return isPrivateIPv4(address)
   if (isIP(address) !== 6) return false
   const normalized = address.toLowerCase()
-  if (normalized.startsWith('::ffff:')) return isPrivateIPv4(normalized.slice(7))
+  if (normalized.startsWith('::ffff:')) {
+    const mapped = mappedIPv4Address(normalized)
+    return mapped ? isPrivateIPv4(mapped) : true
+  }
   return normalized === '::' || normalized === '::1' || normalized.startsWith('fc') || normalized.startsWith('fd') || /^fe[89ab]/.test(normalized)
 }
 
 export async function validateRemoteURL(url: URL, options: RemoteSourceOptions = {}, signal?: AbortSignal): Promise<Diagnostic[]> {
   throwIfAborted(signal)
   const source = sanitizedRemoteSource(url)
+  const hostname = url.hostname.startsWith('[') && url.hostname.endsWith(']') ? url.hostname.slice(1, -1) : url.hostname
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return [{ code: 'REMOTE_SOURCE_BLOCKED', severity: 'error', message: `Remote protocol ${url.protocol} is not allowed.`, location: { source } }]
   }
 
-  if (options.allowedHosts?.length && !options.allowedHosts.some((host) => hostMatches(url.hostname, host))) {
-    return [{ code: 'REMOTE_SOURCE_BLOCKED', severity: 'error', message: `Remote host ${url.hostname} is not in allowedHosts.`, location: { source } }]
+  if (options.allowedHosts?.length && !options.allowedHosts.some((host) => hostMatches(hostname, host))) {
+    return [{ code: 'REMOTE_SOURCE_BLOCKED', severity: 'error', message: `Remote host ${hostname} is not in allowedHosts.`, location: { source } }]
   }
 
   if (options.allowPrivateNetwork) return []
-  if (url.hostname.toLowerCase() === 'localhost' || url.hostname.endsWith('.localhost')) {
+  if (hostname.toLowerCase() === 'localhost' || hostname.endsWith('.localhost')) {
     return [{ code: 'REMOTE_SOURCE_BLOCKED', severity: 'error', message: 'Localhost access is blocked by the remote source policy.', location: { source } }]
   }
 
   try {
-    const addresses = await lookup(url.hostname, { all: true, verbatim: true })
+    const addresses = await lookup(hostname, { all: true, verbatim: true })
     throwIfAborted(signal)
     if (addresses.length === 0 || addresses.some(({ address }) => isPrivateIPAddress(address))) {
       return [{
         code: 'REMOTE_SOURCE_BLOCKED',
         severity: 'error',
-        message: `Remote host ${url.hostname} resolves to a private, local, or reserved address.`,
+        message: `Remote host ${hostname} resolves to a private, local, or reserved address.`,
         location: { source },
         hint: 'Set input.remote.allowPrivateNetwork only for trusted internal specifications; consider allowedHosts as an additional restriction.',
       }]
     }
   } catch (error) {
-    return [{ code: 'REMOTE_SOURCE_FAILED', severity: 'error', message: `Unable to resolve remote host ${url.hostname}.`, location: { source }, cause: errorCause(error) }]
+    return [{ code: 'REMOTE_SOURCE_FAILED', severity: 'error', message: `Unable to resolve remote host ${hostname}.`, location: { source }, cause: errorCause(error) }]
   }
   return []
 }

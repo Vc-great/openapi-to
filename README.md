@@ -13,7 +13,7 @@ See the single [capability matrix](docs/capability-matrix.md) for exact package,
 # Features
 
 - Works with Node.js 20+.
-- Supports JSON and YAML inputs for Swagger 2.0, OpenAPI 3.0, and OpenAPI 3.1.
+- Supports local JSON/YAML/YML and policy-constrained HTTP(S) inputs for Swagger 2.0, OpenAPI 3.0, and OpenAPI 3.1.
 - Reads OpenAPI 3.2 in compatibility mode with explicit diagnostics for generator gaps; this is not complete 3.2 generation support.
 - Provides stable `validate`, `inspect`, `diff`, and `generate` CLI contracts with deterministic JSON output and centralized exit codes.
 - Provides a local stdio MCP adapter with default read-only modes and operator-gated Prepare/Apply writes.
@@ -44,6 +44,8 @@ openapi inspect ./openapi.yaml --json
 openapi diff ./old.yaml ./new.yaml --fail-on-breaking
 openapi generate --dry-run --json
 openapi generate --check --json
+openapi generate --target user-service
+openapi generate --target user-service --target order-service
 ```
 
 `--json` writes one JSON document to stdout; diagnostics and incidental plugin logs use stderr. `--dry-run` executes plugins and reports the artifact manifest without writing. `--check` performs the same comparison and fails when output is outdated. With `output.clean`, deletion is ownership-based: only files recorded by the previous `.openapi-to-manifest.json` are removed, and unmanaged user files are preserved.
@@ -65,6 +67,46 @@ input: {
 ```
 
 Compiler library APIs such as `compileOpenAPI`, `resolveOpenAPIReferences`, `validateOpenAPIDocument`, `inspectOpenAPIDocument`, `diffOpenAPIDocuments`, diagnostics, and `GeneratedArtifact` are exported from both `@openapi-to/core` and `openapi-to`. Existing plugins can keep using `ctx.setSourceFiles`; new plugins may use `ctx.addArtifact` and `ctx.addDiagnostic`.
+
+## Microservices and multiple OpenAPI documents
+
+A Target is one independently generated OpenAPI boundary: a stable name, one input, one output root, and one ownership manifest. An Operation is an endpoint inside that Target. Targets may therefore contain identical `operationId` or Schema names without sharing selection or catalog identity. If one microservice publishes public, admin, and internal documents, configure three Targets rather than merging them implicitly.
+
+```ts
+export default defineConfig({
+  servers: [
+    {
+      name: 'user-service',
+      input: { path: './openapi/user.json' },
+      output: {
+        base: 'workspace',
+        dir: 'src/api/generated/user',
+        clean: true,
+      },
+    },
+    {
+      name: 'order-service',
+      input: { path: './openapi/order.yaml' },
+      output: {
+        base: 'workspace',
+        dir: 'src/api/generated/order',
+        clean: true,
+      },
+    },
+    {
+      name: 'payment-service',
+      input: {
+        path: 'https://api.example.com/openapi?service=payment',
+      },
+      output: { dir: 'payment' },
+    },
+  ],
+})
+```
+
+`input.path` parsing uses response content and Content-Type as well as the URL/path suffix, so extensionless and query-bearing HTTP(S) URLs are supported. `output.base` defaults to `managed`: `dir: 'payment'` still writes to `.OpenAPI/payment`. `base: 'workspace'` writes below the Workspace, keeps the ownership manifest in that generated root, and remains generator-managed. Keep hand-written extensions elsewhere, such as `src/api/custom`; generated source is not an eject/scaffold boundary.
+
+`openapi generate` processes all Targets. Repeat `--target` to select services; duplicates are removed and configuration order is preserved. Unknown names and unsafe/overlapping configured outputs fail before any Target writes. Multi-Target CLI generation preflights all selected inputs, then commits each Target independently—it is not a cross-directory global transaction. Whether a generated directory is committed to Git is independent of whether its base is `managed` or `workspace`.
 
 ## Release verification
 
@@ -146,7 +188,7 @@ An array of server configurations. Each configuration defines the input source a
 You can use either input.path, depending on your specific needs.
 
 **input.path**
-Specify your Swagger/OpenAPI file, either as an absolute path or a path relative to the root.
+Specify a local `.json`, `.yaml`, or `.yml` document inside the trusted local-file boundary, or an `http:`/`https:` URL. Format detection is content-aware and does not require a matching extension.
 
 | Type     | string |
 | -------- | ------ |
@@ -169,7 +211,13 @@ export default defineConfig({
 
 **output.dir**
 
-The dir where all generated files will be exported. Directory is in the .OpenAPI folder
+The relative directory below `output.base`.
+
+**output.base**
+
+`'managed' | 'workspace'`, defaulting to `'managed'`. Managed output resolves below `.OpenAPI`; Workspace output resolves below the project root. Both modes are generator-owned, reject traversal, absolute/UNC/drive paths, symlink escapes, protected state, and overlapping Target roots, and store `.openapi-to-manifest.json` inside the resolved output root.
+
+Switching an existing Target from managed to workspace output does not move, copy, or remove the old `.OpenAPI` directory. Verify the new output and remove the old managed output manually if it is no longer needed.
 
 **output.clean**  
 

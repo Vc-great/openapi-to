@@ -4,11 +4,16 @@ import { defineConfig } from 'tsup'
 export default defineConfig([
   {
     ...optionsCJS,
+    clean: false,
     noExternal: [/find-up/],
   },
-  optionsESM,
+  {
+    ...optionsESM,
+    clean: false,
+  },
   {
     ...optionsCJS,
+    clean: false,
     entry: {
       utils: 'src/utils/index.ts',
     },
@@ -17,6 +22,7 @@ export default defineConfig([
   },
   {
     ...optionsESM,
+    clean: false,
     entry: {
       utils: 'src/utils/index.ts',
     },

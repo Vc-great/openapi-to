@@ -229,6 +229,39 @@ describe.sequential('controlled-write stdio tools', () => {
     expect(connected.stderr.join('')).not.toContain(plan.token)
   })
 
+  it('keeps workspace output ownership separate from managed selection state', async () => {
+    const root = await selectiveFixtureWorkspace()
+    const configPath = path.join(root, '.OpenAPI/openapi.config.cjs')
+    await writeFile(
+      configPath,
+      (await readFile(configPath, 'utf8')).replace(
+        "output: { dir: 'generated', clean: true }",
+        "output: { base: 'workspace', dir: 'src/api/generated/main', clean: true }",
+      ),
+    )
+    const connected = await connect(root, true)
+    clients.push(connected.client)
+    const prepared = await connected.client.callTool({
+      name: 'openapi_prepare_generation',
+      arguments: { targets: ['main'], selection: { type: 'add', operationKeys: ['getUser'] } },
+    })
+    expect(prepared.isError).not.toBe(true)
+    const plan = structured(prepared).plan as { planId: string; token: string; planHash: string }
+    await expect(access(path.join(root, 'src/api/generated/main'))).rejects.toThrow()
+    await expect(access(path.join(root, '.OpenAPI/selections'))).rejects.toThrow()
+
+    const applied = await connected.client.callTool({
+      name: 'openapi_apply_generation',
+      arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash },
+    })
+    expect(applied.isError).not.toBe(true)
+    expect(await readFile(path.join(root, 'src/api/generated/main/getUser.txt'), 'utf8')).toBe('getUser\n')
+    await access(path.join(root, 'src/api/generated/main/.openapi-to-manifest.json'))
+    const selectionFiles = await readdir(path.join(root, '.OpenAPI/selections'))
+    expect(selectionFiles.some((name) => name.endsWith('.json'))).toBe(true)
+    await expect(access(path.join(root, 'src/api/generated/main/selections'))).rejects.toThrow()
+  })
+
   it('uses previous union additions as the complete desired generation scope', async () => {
     const root = await selectiveFixtureWorkspace()
     const seeded = await seedSelection(root, ['getUser'])

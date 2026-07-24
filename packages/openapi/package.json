@@ -54,11 +54,11 @@
 		"!/**/__tests__/**"
 	],
 	"scripts": {
-		"build": "pnpm exec tsup",
+		"build": "pnpm run clean && pnpm exec tsup",
 		"clean": "pnpm exec rimraf ./dist",
 		"lint": "pnpm exec biome lint .",
 		"lint:fix": "pnpm exec biome lint --write --unsafe .",
-		"start": "pnpm exec tsup --watch",
+		"start": "pnpm run clean && pnpm exec tsup --watch",
 		"test": "pnpm exec vitest run --passWithNoTests",
 		"typecheck": "pnpm exec tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
 	},

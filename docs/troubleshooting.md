@@ -44,6 +44,14 @@ Remote inputs allow HTTP(S) only and deny private/reserved addresses by default.
 
 This is an expected business result, not an MCP protocol failure. Review the bounded change summary. In write-enabled mode call Prepare, review its exact hash and changes, then approve the corresponding Apply according to Host policy. Do not automatically Prepare and Apply.
 
+With the CLI, `openapi generate --target <name> --check` checks only the selected Target. If a name is unknown, inspect the explicit `servers[].name` values; legacy `server1`, `server2` fallbacks are compatible but are not recommended persistent microservice identities.
+
+## A configured output is rejected
+
+Every Target needs an independent output root. Equal roots and parent/child combinations such as `src/api/generated` plus `src/api/generated/order` are rejected even if only one Target was requested. Also reject the Workspace root, absolute/drive/UNC paths, traversal, symlinks, `.git`, `node_modules`, and `.OpenAPI` selection/transaction/lock state.
+
+`base: 'workspace'` still means generator-managed. Put hand-written code in a separate path such as `src/api/custom`. Changing a Target from the default managed output to workspace output does not migrate or remove the old `.OpenAPI` directory; verify the new result and clean the old directory manually.
+
 ## A plan is expired, stale, or already used
 
 Create a new Prepare plan and review it again. Tokens are short-lived, one-time, process-bound, and plan-bound. Apply rejects changed input/config/reference/output/ownership/artifact state rather than silently adopting it.

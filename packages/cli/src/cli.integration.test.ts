@@ -183,6 +183,154 @@ describe.sequential('CLI machine-readable commands', () => {
     expect(stdout.join('\n')).toBe(firstCheck)
   })
 
+  it('selects named microservice targets in config order across workspace and managed outputs', async () => {
+    const fixtures = path.join(repositoryRoot, 'packages/cli/mock/microservices')
+    await Promise.all([
+      writeFile(path.join(root, 'user-service.json'), await readFile(path.join(fixtures, 'user-service.json'))),
+      writeFile(path.join(root, 'order-service.yaml'), await readFile(path.join(fixtures, 'order-service.yaml'))),
+      writeFile(path.join(root, 'payment-service.yml'), await readFile(path.join(fixtures, 'payment-service.yml'))),
+    ])
+    await writeFile(
+      path.join(root, '.OpenAPI/openapi.config.js'),
+      `module.exports = {
+        servers: [
+          { name: 'user-service', input: { path: './user-service.json' }, output: { base: 'workspace', dir: 'src/api/generated/user', clean: true } },
+          { name: 'order-service', input: { path: './order-service.yaml' }, output: { base: 'workspace', dir: 'src/api/generated/order', clean: true } },
+          { name: 'payment-service', input: { path: './payment-service.yml' }, output: { dir: 'payment', clean: true } }
+        ],
+        plugins: [{
+          name: 'target-fixture',
+          hooks: {
+            buildStart(ctx) {
+              const name = ctx.openapiToSingleConfig.name
+              ctx.addArtifact({
+                kind: 'text',
+                path: ctx.openapiToSingleConfig.output.dir + '/target.txt',
+                content: name + ':' + ctx.openAPIDocument.info.title + '\\n',
+                plugin: 'target-fixture'
+              })
+            }
+          }
+        }]
+      }`,
+    )
+    const userFile = path.join(root, 'src/api/generated/user/target.txt')
+    const orderFile = path.join(root, 'src/api/generated/order/target.txt')
+    const paymentFile = path.join(root, '.OpenAPI/payment/target.txt')
+
+    let result = await run(
+      ['node', 'openapi', 'generate', '--target', 'order-service', '--target', 'user-service', '--dry-run', '--json'],
+      io,
+    )
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n')).servers).toEqual([
+      expect.objectContaining({ name: 'user-service', output: 'src/api/generated/user' }),
+      expect.objectContaining({ name: 'order-service', output: 'src/api/generated/order' }),
+    ])
+    await expect(access(path.join(root, 'src/api/generated'))).rejects.toThrow()
+    await expect(access(path.join(root, '.OpenAPI/payment'))).rejects.toThrow()
+
+    stdout = []
+    result = await run(['node', 'openapi', 'generate', '--json'], io)
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n')).servers.map((server: { name: string }) => server.name)).toEqual([
+      'user-service',
+      'order-service',
+      'payment-service',
+    ])
+    expect(await readFile(userFile, 'utf8')).toBe('user-service:User Service\n')
+    expect(await readFile(orderFile, 'utf8')).toBe('order-service:Order Service\n')
+    expect(await readFile(paymentFile, 'utf8')).toBe('payment-service:Payment Service\n')
+    await Promise.all([
+      access(path.join(root, 'src/api/generated/user/.openapi-to-manifest.json')),
+      access(path.join(root, 'src/api/generated/order/.openapi-to-manifest.json')),
+      access(path.join(root, '.OpenAPI/payment/.openapi-to-manifest.json')),
+    ])
+
+    await writeFile(orderFile, 'order-sentinel\n')
+    await writeFile(paymentFile, 'payment-sentinel\n')
+    stdout = []
+    result = await run(
+      ['node', 'openapi', 'generate', '--target', 'user-service', '--target', 'user-service', '--json'],
+      io,
+    )
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n')).servers).toEqual([
+      expect.objectContaining({ name: 'user-service', output: 'src/api/generated/user' }),
+    ])
+    expect(await readFile(orderFile, 'utf8')).toBe('order-sentinel\n')
+    expect(await readFile(paymentFile, 'utf8')).toBe('payment-sentinel\n')
+
+    stdout = []
+    result = await run(
+      ['node', 'openapi', 'generate', '--target', 'order-service', '--target', 'user-service', '--json'],
+      io,
+    )
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n')).servers.map((server: { name: string }) => server.name)).toEqual([
+      'user-service',
+      'order-service',
+    ])
+    expect(await readFile(paymentFile, 'utf8')).toBe('payment-sentinel\n')
+
+    await writeFile(orderFile, 'outdated-order\n')
+    stdout = []
+    result = await run(['node', 'openapi', 'generate', '--target', 'user-service', '--check', '--json'], io)
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n')).servers).toHaveLength(1)
+
+    const userBeforeUnknown = await readFile(userFile, 'utf8')
+    stdout = []
+    result = await run(
+      ['node', 'openapi', 'generate', '--target', 'user-service', '--target', 'missing-service', '--json'],
+      io,
+    )
+    expect(result.exitCode).toBe(ExitCode.ConfigError)
+    expect(JSON.parse(stdout.join('\n'))).toMatchObject({
+      success: false,
+      diagnostics: [{ code: 'CONFIG_TARGET_UNKNOWN' }],
+      servers: [],
+    })
+    expect(await readFile(userFile, 'utf8')).toBe(userBeforeUnknown)
+    expect(await readFile(orderFile, 'utf8')).toBe('outdated-order\n')
+  })
+
+  it('preflights every configured output and every selected input before any target write', async () => {
+    await writeFile(
+      path.join(root, '.OpenAPI/openapi.config.js'),
+      `module.exports = {
+        servers: [
+          { name: 'valid', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated/valid' } },
+          { name: 'overlap', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated/valid/nested' } }
+        ],
+        plugins: [{ name: 'should-not-run', hooks: { buildStart(ctx) { ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/unexpected.txt', content: 'unexpected', plugin: 'should-not-run' }) } } }]
+      }`,
+    )
+    let result = await run(['node', 'openapi', 'generate', '--target', 'valid', '--json'], io)
+    expect(result.exitCode).toBe(ExitCode.ConfigError)
+    expect(JSON.parse(stdout.join('\n')).diagnostics[0].code).toBe('CONFIG_OUTPUT_OVERLAP')
+    await expect(access(path.join(root, 'src/generated/valid'))).rejects.toThrow()
+
+    await writeFile(
+      path.join(root, '.OpenAPI/openapi.config.js'),
+      `module.exports = {
+        servers: [
+          { name: 'valid', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated/valid' } },
+          { name: 'invalid', input: { path: './missing.yaml' }, output: { base: 'workspace', dir: 'src/generated/invalid' } }
+        ],
+        plugins: [{ name: 'should-not-run', hooks: { buildStart(ctx) { ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/unexpected.txt', content: 'unexpected', plugin: 'should-not-run' }) } } }]
+      }`,
+    )
+    stdout = []
+    result = await run(
+      ['node', 'openapi', 'generate', '--target', 'valid', '--target', 'invalid', '--json'],
+      io,
+    )
+    expect(result.exitCode).toBe(ExitCode.InputError)
+    await expect(access(path.join(root, 'src/generated/valid'))).rejects.toThrow()
+    await expect(access(path.join(root, 'src/generated/invalid'))).rejects.toThrow()
+  })
+
   it('maps input, validation, and plugin failures to stable exit codes', async () => {
     let result = await run(['node', 'openapi', 'validate', '--json'], io)
     expect(result.exitCode).toBe(ExitCode.GeneralError)

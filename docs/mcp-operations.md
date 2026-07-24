@@ -14,6 +14,8 @@ For persistent intent, write-enabled mode extends the existing `openapi_prepare_
 
 For large specifications, call `openapi_list_targets` when target discovery is needed, then `openapi_search_operations`, then `openapi_get_operation`. These Tools accept only startup-trusted target names, not a caller-supplied source/config/path. Successful target compilations and catalogs live for the Server process; concurrent first calls share one compilation, failed compilation can retry, and restart is the refresh mechanism. Search defaults to eight candidates and contract reading applies Schema depth/count/property/example and byte limits. See [Operation Catalog architecture](./architecture/operation-catalog.md).
 
+For a multi-service project, the recommended sequence is `openapi_list_targets` → target-scoped search → target-scoped contract lookup → dry-run or Prepare → review → Apply. Target identity is independent from OpenAPI `info.title`; identical `operationId` or Schema names in different Targets do not share catalog, cache, selection, plan, or ownership identity. Operation-scoped dry-run and selective Prepare/Apply continue to accept exactly one Target. There is no cross-Target search or selective write plan.
+
 ## Controlled-write runbook
 
 Start with `--workspace-root`, trusted `--config`, and `--allow-write`. Optional startup-only controls are:
@@ -36,6 +38,8 @@ Apply re-generates and fails stale rather than adopting new content. Selective A
 Cancellation while queued, regenerating, or staging stops cleanly. Cancellation after commit starts is deferred until commit/rollback finishes. The commit deadline is separate from the MCP generation timeout. `openapi_check_generation` should report current after success.
 
 CLI generate and MCP Apply use the same cross-process output lock. Check/dry-run do not take the exclusive lock; if a writer is active they fail safely instead of claiming a stable current result. See [recovery](./mcp-write-recovery.md) before handling any leftover transaction state.
+
+Configured output may use the default managed base below `.OpenAPI` or `base: 'workspace'` below the project root. The shared Core preflight rejects unsafe or overlapping output roots before generation. Ownership follows the resolved output root; persistent Operation selection remains in `.OpenAPI/selections`. Prepare does not create either location.
 
 Use `--log-format json --log-level warn` for newline-delimited operational stderr logs. stdout is exclusively MCP JSON-RPC. Repository development uses `pnpm test:mcp:all` for the complete bounded gate, `pnpm mcp:check` for a synthetic built-bin health report, and `pnpm mcp:inspect` for foreground authenticated manual review. The package also keeps separate benchmark, stress, and Tool-selection evaluators; repository-only test/Doctor/Inspector scripts are not packed. See the [MCP test strategy](./testing/mcp-testing.md) for the automated/manual boundary.
 

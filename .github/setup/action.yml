@@ -24,9 +24,3 @@ runs:
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile --prefer-offline
-
-    - name: Setup Turbo
-      uses: dtinth/setup-github-actions-caching-for-turbo@v1.2.0
-      with:
-        # Set the prefix for the cache keys.
-        cache-prefix: openapiTo_

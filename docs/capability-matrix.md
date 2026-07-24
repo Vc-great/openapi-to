@@ -32,7 +32,7 @@ The aggregate `openapi-to` package re-exports Core plus the six official generat
 
 | Input/dialect | Status | Actual boundary |
 | --- | --- | --- |
-| JSON and YAML | Stable | Local/object input and policy-constrained HTTP(S) loading are supported. |
+| JSON, YAML, and YML | Stable | Local/object and policy-constrained HTTP(S) loading share content-aware parsing; URL suffixes are only a hint. |
 | Swagger 2.0 | Stable | Converted into the legacy-compatible OpenAPI document before resolution and validation; conversion is diagnosed. |
 | OpenAPI 3.0 | Stable | Read, resolve, validate, normalize, inspect, diff, and generate for the constructs covered by official plugins. |
 | OpenAPI 3.1 | Stable | Read, resolve, validate, normalize, inspect, diff, and generate for the constructs covered by official plugins. This is not a claim that every JSON Schema vocabulary changes every generator. |
@@ -49,12 +49,14 @@ The published `openapi-to` package installs two aliases that execute the same en
 | Command | Status | Contract |
 | --- | --- | --- |
 | `init` | Stable | Creates the project configuration scaffold. |
-| `generate` / `g` | Stable | Write, `--dry-run`, and `--check` modes with deterministic artifact comparison and ownership-based cleanup. |
+| `generate` / `g` | Stable | All-Target or repeatable `--target` selection in config order, plus write, `--dry-run`, and selected-only `--check` with deterministic comparison and ownership cleanup. |
 | `validate` | Stable | Compilation diagnostics and optional warning failure. |
 | `inspect` | Stable | Deterministic bounded document summary. |
 | `diff` | Partial | The command and JSON/exit-code contract are stable; the comparison rules are a deterministic first stage, not a complete breaking-change oracle. |
 | `--json` | Stable | Exactly one JSON document on stdout; diagnostics and incidental logs stay on stderr. |
 | Exit codes | Stable | Central `ExitCode`, `exitCodeForDiagnostics()`, and `process.exitCode` handling. |
+
+Generation supports independent `managed` (default `.OpenAPI/<dir>`) and `workspace` output bases. Both are generator-owned, reject protected/escaping/symlinked/overlapping Target roots, and keep ownership inside each output root. Multi-Target CLI writes have per-Target transaction boundaries, not one cross-root transaction.
 
 ## MCP
 

@@ -6,6 +6,7 @@ export type OpenapiToSingleConfig = {
 	root: string;
 	input: OpenapiToConfigSingleInput;
 	output: OpenapiToConfigSingleOutput;
+	// biome-ignore lint/suspicious/noExplicitAny: Preserve the legacy public plugin array contract.
 	plugins: Array<any>;
 };
 
@@ -27,7 +28,14 @@ export type RemoteSourceOptions = {
 	maxRedirects?: number;
 };
 
+export type OutputBase = "managed" | "workspace";
+
 export type OpenapiToConfigSingleOutput = {
+	/**
+	 * Resolve output below `.OpenAPI` (`managed`, the default) or directly
+	 * below the project Workspace (`workspace`).
+	 */
+	base?: OutputBase;
 	/**
 	 * which is used to output the name of the folder
 	 */
@@ -61,5 +69,6 @@ export type OpenapiToConfig = {
 	 * Array of OpenapiTo plugins to use.
 	 * The plugin/package can forsee some options that you need to pass through.
 	 */
+	// biome-ignore lint/suspicious/noExplicitAny: Preserve the legacy public plugin array contract.
 	plugins: Array<any>;
 };

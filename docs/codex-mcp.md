@@ -45,7 +45,6 @@ args = ["packages/mcp/bin/openapi-to-mcp.js", "--workspace-root", ".", "--config
 cwd = "."
 startup_timeout_sec = 10
 tool_timeout_sec = 120
-default_tools_approval_mode = "writes"
 
 [mcp_servers.openapi_to.tools.openapi_apply_generation]
 approval_mode = "prompt"

@@ -35,4 +35,8 @@ stdin and stdout are MCP JSON-RPC only. Operational logs and redirected incident
 
 Local entries, transitive `$ref`, trusted config imports, output roots, manifests, and selection state are constrained to the real Workspace and checked against traversal and symlink escapes. Remote access is HTTP(S)-only, denies private/reserved networks by default, and applies allowed-host, redirect, timeout, DNS, and response-size policies.
 
+Every configured Target has an independent output root. Core rejects the Workspace root, absolute/drive/UNC paths, `.git`, `node_modules`, reserved `.OpenAPI` control-state paths, symlinked ancestors, equal roots, and parent/child output overlap before generation. Managed output stays below `.OpenAPI`; workspace output remains generator-owned and keeps its ownership manifest in that output root. Selection stays in `.OpenAPI/selections` and cannot overlap output.
+
+Remote URL validation is repeated for every redirect and remote `$ref`. DNS is checked both during policy validation and when connecting, including IPv4-mapped IPv6/private results. Redirects, duration, decompressed bytes, and cancellation are bounded. Diagnostics and operational logs use sanitized URLs without user information or query strings and never include configured headers.
+
 See the detailed [threat model](./mcp-threat-model.md), [controlled-write architecture](./architecture/mcp-controlled-write.md), [recovery guide](./mcp-write-recovery.md), and [limitations](./mcp-limitations.md).

@@ -26,6 +26,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"packages/openapi/README.md",
 	"docs/capability-matrix.md",
 	"docs/getting-started.md",
+	"docs/cli.md",
 	"docs/codex-mcp.md",
 	"docs/mcp-security.md",
 	"docs/troubleshooting.md",
@@ -231,6 +232,22 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		failures.push(
 			"version:canary must parse as `pnpm exec changeset version --snapshot canary`",
 		);
+	}
+	const releaseCheck = rootManifest.scripts?.["release:check"] ?? "";
+	if (!/(?:^|&&\s*)pnpm\s+lint:ci(?:\s*&&|$)/.test(releaseCheck)) {
+		failures.push("release:check must run the full lint:ci gate");
+	}
+	if (/\bpnpm\s+lint:changed\b/.test(releaseCheck)) {
+		failures.push(
+			"release:check must not use the diff-only lint:changed command",
+		);
+	}
+	const lintCi = rootManifest.scripts?.["lint:ci"] ?? "";
+	if (lintCi !== "node scripts/lint-ci.mjs") {
+		failures.push("lint:ci must run the tracked-file lint driver");
+	}
+	if (/(?:--changed|--staged|\blint:changed\b)/.test(lintCi)) {
+		failures.push("lint:ci must not depend on working-tree changes");
 	}
 
 	const publicPackageNames = new Set(

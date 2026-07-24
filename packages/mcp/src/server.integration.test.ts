@@ -169,7 +169,6 @@ components:
     await writeFile(path.join(root, 'openapi.yaml'), spec)
     await writeFile(path.join(root, 'fail.yaml'), spec)
     await writeFile(path.join(root, 'conflict.yaml'), spec)
-    await writeFile(path.join(root, 'escape.yaml'), spec)
     await writeFile(
       path.join(root, '.OpenAPI/openapi.config.js'),
       `let active = 0;
@@ -178,8 +177,7 @@ module.exports = {
     { name: 'main', input: { path: './openapi.yaml' }, output: { dir: 'generated', clean: true } },
     { name: 'second', input: { path: './openapi.yaml' }, output: { dir: 'second' } },
     { name: 'fail', input: { path: './fail.yaml' }, output: { dir: 'failed' } },
-    { name: 'conflict', input: { path: './conflict.yaml' }, output: { dir: 'conflict' } },
-    { name: 'escape', input: { path: './escape.yaml' }, output: { dir: '../../outside' } }
+    { name: 'conflict', input: { path: './conflict.yaml' }, output: { dir: 'conflict' } }
   ],
   plugins: [{ name: 'stdio-fixture', hooks: { async buildStart(ctx) {
     const name = ctx.openapiToSingleConfig.name;
@@ -218,7 +216,7 @@ module.exports = {
 
     const targets = await connected.client.callTool({ name: 'openapi_list_targets', arguments: {} })
     expect(targets.isError).not.toBe(true)
-    expect((structured(targets).targets as Array<Record<string, unknown>>).map(({ name }) => name)).toEqual(['conflict', 'escape', 'fail', 'main', 'second'])
+    expect((structured(targets).targets as Array<Record<string, unknown>>).map(({ name }) => name)).toEqual(['main', 'second', 'fail', 'conflict'])
     expect(JSON.stringify(targets)).not.toContain('openapi.yaml')
 
     const targetRequired = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { query: 'ping' } })
@@ -316,10 +314,6 @@ module.exports = {
     expect(conflict.isError).toBe(true)
     expect((structured(conflict).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('ARTIFACT_PATH_CONFLICT')
 
-    const outputEscape = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['escape'] } })
-    expect(outputEscape.isError).toBe(true)
-    expect((structured(outputEscape).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_WORKSPACE_PATH_OUTSIDE_ROOT')
-
     const concurrent = await Promise.all([
       connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'] } }),
       connected.client.callTool({ name: 'openapi_check_generation', arguments: { targets: ['main'] } }),
@@ -365,6 +359,36 @@ module.exports = {
       expect.objectContaining({ code: 'MCP_CONFIG_LOAD_FAILED' }),
     ])
     expect(JSON.stringify(result)).not.toContain('do-not-return')
+  })
+
+  it('rejects unsafe or overlapping configured output roots before any target generation', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-output-preflight-'))
+    await mkdir(path.join(root, '.OpenAPI'))
+    await writeFile(
+      path.join(root, 'openapi.yaml'),
+      'openapi: 3.1.0\ninfo: { title: Output preflight, version: "1" }\npaths: {}\n',
+    )
+    await writeFile(
+      path.join(root, '.OpenAPI/openapi.config.js'),
+      `module.exports = {
+        servers: [
+          { name: 'safe', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated' } },
+          { name: 'nested', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated/nested' } }
+        ],
+        plugins: [{ name: 'must-not-run', hooks: { buildStart(ctx) { ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/unexpected.txt', content: 'unexpected' }) } } }]
+      }\n`,
+    )
+    const connected = await connect(root, '.OpenAPI/openapi.config.js')
+    clients.push(connected.client)
+    const result = await connected.client.callTool({
+      name: 'openapi_generate_dry_run',
+      arguments: { targets: ['safe'] },
+    })
+    expect(result.isError).toBe(true)
+    expect((structured(result).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain(
+      'CONFIG_OUTPUT_OVERLAP',
+    )
+    await expect(access(path.join(root, 'src/generated'))).rejects.toThrow()
   })
 
   it('keeps trusted catalog sources inside Workspace and preserves remote and secret boundaries', async () => {

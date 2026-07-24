@@ -19,6 +19,8 @@ The configuration is executable trusted project code selected only by the server
 
 The catalog Tools compile each trusted target once per Server process, build a lightweight operation index, then search and read one bounded contract by stable `operationKey`. Search returns at most eight candidates by default. Contract Schema summaries default to depth 2, 20 Schemas, 50 properties per Schema, no examples, and a 128 KiB Core budget beneath the MCP total-result budget. Restart the Server to observe trusted config or OpenAPI changes. See [Operation Catalog architecture](../../docs/architecture/operation-catalog.md).
 
+Target listing follows trusted configuration order. Each Target binds one input, one independent output/ownership root, and its own catalog/selection/plan identity; identical `operationId` or Schema names in different services remain isolated. Outputs may use the default managed `.OpenAPI/<dir>` base or an explicit generator-managed Workspace base. The shared Core preflight rejects unsafe or overlapping roots before generation, while selection state remains in `.OpenAPI/selections`.
+
 `openapi_generate_dry_run` also accepts `scope: { type: 'operations', operationKeys: [...] }` for exactly one trusted target. Core projects the cached compilation to the exact selected operations and their transitive named component closure, then runs the existing plugins. The response contains bounded selection, projection, and artifact summaries—not the projected OpenAPI document. Omit `scope` (or use `{ type: 'full' }`) for the unchanged full-target preview. Selective preview remains ephemeral. See [projected compilation architecture](../../docs/architecture/projected-compilation.md).
 
 ## Controlled generation writes

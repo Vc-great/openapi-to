@@ -28,7 +28,9 @@ pnpm exec openapi generate --dry-run --json
 
 Run `pnpm exec openapi init` to create a starting configuration. Generation discovers `.OpenAPI/openapi.config.js`, `.cjs`, or `.ts`; validation, inspection, and diff do not require a generation config.
 
-See the [capability matrix](./capability-matrix.md) before choosing a plugin or dialect.
+For microservices, give each OpenAPI document a stable Target name and independent output root. `pnpm exec openapi generate` generates all Targets; repeat `--target <name>` to select one or more. Local JSON/YAML/YML and policy-constrained HTTP(S) inputs use the same Core loader. Managed output remains below `.OpenAPI` by default, while `output.base: 'workspace'` places generator-managed code directly below the project root.
+
+See the [CLI generation guide](./cli.md) for a complete multi-document example and ownership rules, and the [capability matrix](./capability-matrix.md) before choosing a plugin or dialect.
 
 ## MCP server
 

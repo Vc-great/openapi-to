@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Order Service
+  version: 1.0.0
+paths:
+  /orders/{id}:
+    get:
+      operationId: getById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entity"
+components:
+  schemas:
+    Entity:
+      type: object
+      properties:
+        total:
+          type: number
+      required:
+        - total

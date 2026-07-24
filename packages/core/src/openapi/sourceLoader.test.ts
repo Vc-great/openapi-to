@@ -25,8 +25,27 @@ describe('OpenAPI source loader', () => {
   it('blocks private and local addresses by default', async () => {
     expect(isPrivateIPAddress('127.0.0.1')).toBe(true)
     expect(isPrivateIPAddress('169.254.169.254')).toBe(true)
+    expect(isPrivateIPAddress('::1')).toBe(true)
+    expect(isPrivateIPAddress('::ffff:127.0.0.1')).toBe(true)
+    expect(isPrivateIPAddress('::ffff:7f00:1')).toBe(true)
     expect((await validateRemoteURL(new URL('http://127.0.0.1/openapi.yaml')))[0]?.code).toBe('REMOTE_SOURCE_BLOCKED')
+    expect((await validateRemoteURL(new URL('http://2130706433/openapi.yaml')))[0]?.code).toBe('REMOTE_SOURCE_BLOCKED')
+    expect((await validateRemoteURL(new URL('http://[::1]/openapi.yaml')))[0]?.code).toBe('REMOTE_SOURCE_BLOCKED')
     expect((await validateRemoteURL(new URL('file:///etc/passwd')))[0]?.code).toBe('REMOTE_SOURCE_BLOCKED')
+  })
+
+  it('accepts trusted HTTPS responses and parses by content rather than the URL suffix', async () => {
+    const request = vi.spyOn(axios, 'get').mockResolvedValueOnce({
+      status: 200,
+      headers: { 'content-type': 'text/plain' },
+      data: 'openapi: 3.1.0\ninfo: { title: HTTPS YAML, version: "1" }\npaths: {}\n',
+    } as never)
+    const result = await loadOpenAPIDocument('https://127.0.0.1/openapi?service=user', {
+      remote: { allowPrivateNetwork: true },
+    })
+    expect(result.document?.info.title).toBe('HTTPS YAML')
+    expect(request).toHaveBeenCalledTimes(1)
+    vi.restoreAllMocks()
   })
 
   it('rejects oversized remote responses without exposing query parameters', async () => {

@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Payment Service
+  version: 1.0.0
+paths:
+  /payments/{id}:
+    get:
+      operationId: getById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entity"
+components:
+  schemas:
+    Entity:
+      type: object
+      properties:
+        settled:
+          type: boolean
+      required:
+        - settled
