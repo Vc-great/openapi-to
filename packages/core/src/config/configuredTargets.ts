@@ -1,4 +1,5 @@
 import { DiagnosticError, type Diagnostic } from "../diagnostics.ts";
+import { classifyInputPath } from "../inputPath.ts";
 import type {
 	OpenapiToConfigServer,
 	OpenapiToConfigSingleInput,
@@ -84,25 +85,36 @@ function validateInput(input: OpenapiToConfigSingleInput, index: number): void {
 		);
 	}
 	const value = input.path.trim();
-	if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value)) {
-		let url: URL;
+	const kind = classifyInputPath(value);
+	if (kind === "windows-drive-relative-path") {
+		throw configurationError(
+			"CONFIG_INPUT_PATH_INVALID",
+			`Target ${index + 1} input.path uses a drive-relative Windows path with unstable resolution.`,
+			["servers", index, "input", "path"],
+			"Use a fully absolute Windows path such as C:\\workspace\\openapi.yaml, or a Workspace-relative path.",
+		);
+	}
+	if (kind === "unc-path") {
+		throw configurationError(
+			"CONFIG_INPUT_PATH_INVALID",
+			`Target ${index + 1} input.path may not use a UNC network path.`,
+			["servers", index, "input", "path"],
+			"Copy the document into the Workspace and use a Workspace-local path.",
+		);
+	}
+	if (kind === "file-url" || kind === "other-url") {
+		let protocol = "unknown:";
 		try {
-			url = new URL(value);
+			protocol = new URL(value).protocol;
 		} catch {
-			throw configurationError(
-				"CONFIG_INPUT_PATH_INVALID",
-				`Target ${index + 1} input.path is not a valid URL or local path.`,
-				["servers", index, "input", "path"],
-			);
+			// Keep the bounded generic protocol label.
 		}
-		if (url.protocol !== "http:" && url.protocol !== "https:") {
-			throw configurationError(
-				"CONFIG_INPUT_PROTOCOL_UNSUPPORTED",
-				`Target ${index + 1} input.path uses unsupported protocol ${url.protocol}.`,
-				["servers", index, "input", "path"],
-				"Use an http: or https: URL, or a Workspace-local filesystem path without a URL scheme.",
-			);
-		}
+		throw configurationError(
+			"CONFIG_INPUT_PROTOCOL_UNSUPPORTED",
+			`Target ${index + 1} input.path uses unsupported protocol ${protocol}.`,
+			["servers", index, "input", "path"],
+			"Use an http: or https: URL, or a Workspace-local filesystem path without a URL scheme.",
+		);
 	}
 }
 

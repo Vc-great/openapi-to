@@ -64,6 +64,20 @@ describe('OpenAPI source loader', () => {
     vi.restoreAllMocks()
   })
 
+  it('blocks HTTPS to HTTP redirect downgrades before a second request', async () => {
+    const request = vi.spyOn(axios, 'get').mockResolvedValueOnce({
+      status: 302,
+      headers: { location: 'http://127.0.0.1/plaintext.yaml' },
+      data: '',
+    } as never)
+    const result = await loadOpenAPIDocument('https://127.0.0.1/openapi.yaml', {
+      remote: { allowPrivateNetwork: true },
+    })
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(result.diagnostics[0]?.code).toBe('REMOTE_SOURCE_REDIRECT_DOWNGRADE_BLOCKED')
+    vi.restoreAllMocks()
+  })
+
   it('honors pre-aborted calls and local input size boundaries', async () => {
     const controller = new AbortController()
     controller.abort()

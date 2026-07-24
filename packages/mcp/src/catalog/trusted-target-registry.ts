@@ -172,7 +172,7 @@ export class TrustedTargetCatalogRegistry {
 		const compilation = await this.compile(single.input.path, {
 			cwd: this.options.workspaceRoot,
 			localFileRoot: this.options.workspaceRoot,
-			remote: this.options.remote,
+			remote: single.input.remote,
 			signal,
 		});
 		const rootSnapshot = compilation.references?.sourceSnapshots.find(

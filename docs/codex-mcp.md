@@ -50,6 +50,8 @@ tool_timeout_sec = 60
 
 `tool_timeout_sec` is the Codex-side deadline. The Server also enforces its own per-Tool deadlines; configure those only in `args`, for example `"--validate-timeout-ms", "30000", "--generation-timeout-ms", "60000"`. Codex cancellation propagates to the active compiler/generator call and queued generation. The Server remains usable after cancellation.
 
+For remote Targets, `input.remote` is the trusted access requirement while `--allow-host` and `--allow-private-network` are Codex Server operator ceilings. Both layers must permit the request. Tool calls cannot supply headers; configured headers are retained only on same-Origin redirects, removed cross-Origin, and never sent through an HTTPS-to-HTTP downgrade.
+
 ## Controlled writes
 
 To expose Prepare/Apply, the Server operator must add `--allow-write`, and Codex must continue to prompt before Apply:

@@ -61,11 +61,18 @@ input: {
   remote: {
     allowPrivateNetwork: true,
     allowedHosts: ['openapi.internal.example.com'],
+    headers: {
+      Authorization: process.env.OPENAPI_AUTHORIZATION!,
+    },
     timeoutMs: 10_000,
     maxResponseBytes: 10 * 1024 * 1024,
   },
 }
 ```
+
+Configured request headers are retained only across same-Origin redirects. A redirect to a different scheme, hostname, or effective port drops every configured header permanently for the remaining chain; HTTPS-to-HTTP redirects are rejected. JavaScript/TypeScript configuration is trusted executable project code, so operators must inject secrets through their environment or secret platform; `openapi-to` does not provide a general secret manager.
+
+In MCP configured mode, the Target remote policy describes what that Target needs and startup flags describe the operator's maximum authority. The effective policy is their intersection: both layers must explicitly allow private-network access, host allowlists must overlap, and numeric limits use the smaller value. Tool arguments cannot add headers or expand this policy.
 
 Compiler library APIs such as `compileOpenAPI`, `resolveOpenAPIReferences`, `validateOpenAPIDocument`, `inspectOpenAPIDocument`, `diffOpenAPIDocuments`, diagnostics, and `GeneratedArtifact` are exported from both `@openapi-to/core` and `openapi-to`. Existing plugins can keep using `ctx.setSourceFiles`; new plugins may use `ctx.addArtifact` and `ctx.addDiagnostic`.
 
@@ -106,6 +113,8 @@ export default defineConfig({
 ```
 
 `input.path` parsing uses response content and Content-Type as well as the URL/path suffix, so extensionless and query-bearing HTTP(S) URLs are supported. `output.base` defaults to `managed`: `dir: 'payment'` still writes to `.OpenAPI/payment`. `base: 'workspace'` writes below the Workspace, keeps the ownership manifest in that generated root, and remains generator-managed. Keep hand-written extensions elsewhere, such as `src/api/custom`; generated source is not an eject/scaffold boundary.
+
+Local `input.path` accepts Workspace-relative paths and absolute paths that remain inside the Workspace, including native Windows `C:\...` or `C:/...` paths. Windows drive-relative paths such as `C:openapi.yaml`, UNC paths, and `file:` URLs are rejected. `output.dir` must be portable across Linux, macOS, and Windows: reserved device names, reserved characters, control characters, and segments ending in a period or space are invalid.
 
 `openapi generate` processes all Targets. Repeat `--target` to select services; duplicates are removed and configuration order is preserved. Unknown names and unsafe/overlapping configured outputs fail before any Target writes. Multi-Target CLI generation preflights all selected inputs, then commits each Target independently—it is not a cross-directory global transaction. Whether a generated directory is committed to Git is independent of whether its base is `managed` or `workspace`.
 

@@ -9,6 +9,9 @@ export interface OpenapiToMcpServerOptions {
   remote?: {
     allowPrivateNetwork?: boolean
     allowedHosts?: string[]
+    timeoutMs?: number
+    maxResponseBytes?: number
+    maxRedirects?: number
   }
   limits?: {
     maxDiagnostics?: number
@@ -130,6 +133,9 @@ export function resolveMcpServerOptions(options: OpenapiToMcpServerOptions): Res
     remote: {
       allowPrivateNetwork: options.remote?.allowPrivateNetwork === true,
       allowedHosts: [...new Set(options.remote?.allowedHosts ?? [])].sort(),
+      ...(options.remote?.timeoutMs !== undefined ? { timeoutMs: options.remote.timeoutMs } : {}),
+      ...(options.remote?.maxResponseBytes !== undefined ? { maxResponseBytes: options.remote.maxResponseBytes } : {}),
+      ...(options.remote?.maxRedirects !== undefined ? { maxRedirects: options.remote.maxRedirects } : {}),
     },
     limits: {
       maxDiagnostics: positiveInteger(options.limits?.maxDiagnostics, DEFAULT_LIMITS.maxDiagnostics),

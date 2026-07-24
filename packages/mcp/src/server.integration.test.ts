@@ -1,4 +1,6 @@
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { once } from 'node:events'
+import { createServer } from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,11 +17,11 @@ interface ConnectedClient {
   stderr: string[]
 }
 
-async function connect(workspaceRoot: string, configPath?: string): Promise<ConnectedClient> {
+async function connect(workspaceRoot: string, configPath?: string, extraArgs: string[] = []): Promise<ConnectedClient> {
   const stderr: string[] = []
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [bin, '--workspace-root', workspaceRoot, ...(configPath ? ['--config', configPath] : [])],
+    args: [bin, '--workspace-root', workspaceRoot, ...(configPath ? ['--config', configPath] : []), ...extraArgs],
     stderr: 'pipe',
   })
   transport.stderr?.on('data', (chunk) => stderr.push(String(chunk)))
@@ -414,5 +416,78 @@ module.exports = {
     const listed = await connected.client.callTool({ name: 'openapi_list_targets', arguments: {} })
     expect(JSON.stringify([escaped, remote, listed])).not.toContain('catalog-secret-token')
     expect(JSON.stringify(listed)).not.toContain('127.0.0.1')
+  })
+
+  it('intersects Target remote requirements with operator bounds without dropping trusted headers', async () => {
+    const receivedAuthorization: Array<string | undefined> = []
+    const remoteServer = createServer((request, response) => {
+      receivedAuthorization.push(request.headers.authorization)
+      response.end(
+        '{"openapi":"3.1.0","info":{"title":"Remote target","version":"1"},"paths":{"/ping":{"get":{"operationId":"ping","responses":{"200":{"description":"ok"}}}}}}',
+      )
+    })
+    remoteServer.listen(0, '127.0.0.1')
+    await once(remoteServer, 'listening')
+    try {
+      const address = remoteServer.address()
+      if (!address || typeof address === 'string') throw new Error('Unable to bind remote target fixture.')
+      const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-remote-policy-'))
+      await mkdir(path.join(root, '.OpenAPI'))
+      await writeFile(
+        path.join(root, '.OpenAPI/openapi.config.js'),
+        `module.exports = { servers: [{
+          name: 'remote',
+          input: {
+            path: 'http://127.0.0.1:${address.port}/openapi.yaml',
+            remote: {
+              allowPrivateNetwork: true,
+              allowedHosts: ['127.0.0.1'],
+              headers: { Authorization: 'Bearer target-only-secret' },
+              timeoutMs: 10000,
+              maxResponseBytes: 100000,
+              maxRedirects: 3
+            }
+          },
+          output: { dir: 'remote' }
+        }], plugins: [] }\n`,
+      )
+      const connected = await connect(root, '.OpenAPI/openapi.config.js', [
+        '--allow-private-network',
+        '--allow-host',
+        '127.0.0.1',
+      ])
+      clients.push(connected.client)
+      const searched = await connected.client.callTool({
+        name: 'openapi_search_operations',
+        arguments: { target: 'remote', query: 'ping' },
+      })
+      expect(searched.isError).not.toBe(true)
+      expect(receivedAuthorization).toEqual(['Bearer target-only-secret'])
+      expect(JSON.stringify(searched)).not.toContain('target-only-secret')
+      expect(connected.stderr.join('')).not.toContain('target-only-secret')
+
+      const restricted = await connect(root, '.OpenAPI/openapi.config.js', [
+        '--allow-private-network',
+        '--allow-host',
+        'schemas.example.com',
+      ])
+      clients.push(restricted.client)
+      const blocked = await restricted.client.callTool({
+        name: 'openapi_search_operations',
+        arguments: { target: 'remote', query: 'ping' },
+      })
+      expect(blocked.isError).toBe(true)
+      expect(
+        (structured(blocked).diagnostics as Array<{ code: string }>).map(
+          ({ code }) => code,
+        ),
+      ).toContain('CONFIG_REMOTE_POLICY_CONFLICT')
+      expect(JSON.stringify(blocked)).not.toContain('target-only-secret')
+    } finally {
+      const closed = once(remoteServer, 'close')
+      remoteServer.close()
+      remoteServer.closeAllConnections()
+      await closed
+    }
   })
 })

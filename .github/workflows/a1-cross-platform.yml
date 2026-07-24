@@ -1,0 +1,38 @@
+name: A1 cross-platform contracts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    name: A1 focused (${{ matrix.os }})
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup Node 20 and pnpm
+        uses: ./.github/setup
+      - name: Build packages
+        run: pnpm build --concurrency=1
+      - name: Run A1 focused contracts
+        run: pnpm test:a1-contracts
+      - name: Verify aggregate CLI aliases
+        run: |
+          pnpm exec openapi --help
+          pnpm exec openapi-to --version
+          pnpm exec openapi-to-mcp --help
+      - name: Verify both shared MCP wrappers
+        run: |
+          node packages/openapi/bin/openapi-to-mcp.js --help
+          node packages/mcp/bin/openapi-to-mcp.js --help

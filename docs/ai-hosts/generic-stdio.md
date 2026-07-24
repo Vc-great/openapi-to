@@ -71,3 +71,5 @@ The Host sends and receives MCP JSON-RPC on stdin/stdout. stderr is for bounded 
 Repository checkouts provide `pnpm mcp:check` and foreground `pnpm mcp:inspect`; the npm package does not include those helpers. An installed-package Host should verify `openapi-to-mcp --help`, initialization, and `tools/list`.
 
 See [troubleshooting](../troubleshooting.md) and [MCP security](../mcp-security.md). The server does not provide HTTP, OAuth, server API keys, multi-tenancy, LLM calls, background tasks, or a chat UI.
+
+Remote Target configuration is intersected with the Host-launched server's fixed startup policy. Tool calls cannot inject headers or broaden hosts/private-network access; cross-Origin redirects clear configured headers and HTTPS-to-HTTP redirects are rejected.

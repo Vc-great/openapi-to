@@ -38,7 +38,7 @@ The aggregate `openapi-to` package re-exports Core plus the six official generat
 | OpenAPI 3.1 | Stable | Read, resolve, validate, normalize, inspect, diff, and generate for the constructs covered by official plugins. This is not a claim that every JSON Schema vocabulary changes every generator. |
 | OpenAPI 3.2 | Partial | Compatible reading and diagnostics only for 3.2-specific gaps. `$self` participates in reference-base resolution; standard document/operation content remains readable. Existing generators do not emit code for 3.2-only `query`, `additionalOperations`, `querystring`, streaming `itemSchema`/encoding fields, or tag hierarchy. |
 | External local `$ref` | Stable | Resolved inside the configured local-file/Workspace boundary with cycle and missing-target diagnostics. |
-| Remote documents and `$ref` | Stable | HTTP(S) only, with explicit host/private-network policy, redirect, timeout, and size limits. |
+| Remote documents and `$ref` | Stable | HTTP(S) only; Target requirements intersect MCP operator bounds. Origin-aware redirects clear configured headers cross-Origin, block HTTPS downgrade, and retain DNS/host/private-network/timeout/size limits on every hop. |
 
 “Stable” describes the maintained contract above; it does not mean complete implementation of every keyword in every OpenAPI or JSON Schema dialect.
 
@@ -56,7 +56,7 @@ The published `openapi-to` package installs two CLI aliases that execute the sam
 | `--json` | Stable | Exactly one JSON document on stdout; diagnostics and incidental logs stay on stderr. |
 | Exit codes | Stable | Central `ExitCode`, `exitCodeForDiagnostics()`, and `process.exitCode` handling. |
 
-Generation supports independent `managed` (default `.OpenAPI/<dir>`) and `workspace` output bases. Both are generator-owned, reject protected/escaping/symlinked/overlapping Target roots, and keep ownership inside each output root. Multi-Target CLI writes have per-Target transaction boundaries, not one cross-root transaction.
+Generation supports independent `managed` (default `.OpenAPI/<dir>`) and `workspace` output bases. Both are generator-owned, reject protected/escaping/symlinked/overlapping Target roots and non-portable Windows device/character/trailing-dot-or-space segments, and keep ownership inside each output root. Native Windows absolute inputs are accepted only inside the Workspace; drive-relative, UNC, and configured `file:` inputs are rejected. Multi-Target CLI writes have per-Target transaction boundaries, not one cross-root transaction.
 
 ## MCP
 

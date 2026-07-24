@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { classifyInputPath } from "../inputPath.ts";
 import type { OpenapiToConfigServer } from "../types";
 import { selectConfiguredTargets } from "./configuredTargets.ts";
 
@@ -97,4 +98,53 @@ describe("selectConfiguredTargets", () => {
 			}),
 		);
 	});
+
+	it.each([
+		["C:\\workspace\\openapi.yaml", "windows-absolute-path"],
+		["C:/workspace/openapi.yaml", "windows-absolute-path"],
+		["C:openapi.yaml", "windows-drive-relative-path"],
+		["C:folder\\openapi.yaml", "windows-drive-relative-path"],
+		["\\\\server\\share\\openapi.yaml", "unc-path"],
+		["/workspace/openapi.yaml", "posix-absolute-path"],
+		["./openapi.yaml", "relative-path"],
+		["https://example.com/openapi.yaml", "https-url"],
+		["http://example.com/openapi.json", "http-url"],
+		["ftp://example.com/openapi.yaml", "other-url"],
+		["file:///tmp/openapi.yaml", "file-url"],
+		["data:text/plain,x", "other-url"],
+	])("classifies %s as %s on every host platform", (inputPath, kind) => {
+		expect(classifyInputPath(inputPath)).toBe(kind);
+	});
+
+	it.each(["C:\\workspace\\openapi.yaml", "C:/workspace/openapi.yaml"])(
+		"accepts Windows absolute input without interpreting its drive as a URL",
+		(inputPath) => {
+			expect(
+				selectConfiguredTargets({
+					servers: [server("target", inputPath)],
+				})[0]?.server.input.path,
+			).toBe(inputPath);
+		},
+	);
+
+	it.each([
+		"C:openapi.yaml",
+		"C:folder\\openapi.yaml",
+		"\\\\server\\share\\openapi.yaml",
+	])(
+		"rejects unstable Windows input %s with a path diagnostic",
+		(inputPath) => {
+			expect(() =>
+				selectConfiguredTargets({
+					servers: [server("target", inputPath)],
+				}),
+			).toThrowError(
+				expect.objectContaining({
+					diagnostics: [
+						expect.objectContaining({ code: "CONFIG_INPUT_PATH_INVALID" }),
+					],
+				}),
+			);
+		},
+	);
 });

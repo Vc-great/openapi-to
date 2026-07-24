@@ -130,6 +130,92 @@ describe("configured output roots", () => {
 		}
 	});
 
+	it.each([
+		"CON",
+		"con",
+		"CON.txt",
+		"NUL",
+		"CLOCK$",
+		"COM1",
+		"COM9",
+		"LPT1",
+		"LPT9",
+		"generated.",
+		"generated ",
+		"api. ",
+		"api:client",
+		"api?client",
+		"api<client",
+		'api"client',
+		"api|client",
+		"api*client",
+		"api\u0001client",
+	])("rejects non-portable output segment %s", (dir) => {
+		expect(() =>
+			resolveConfiguredOutputRoot({
+				workspaceRoot: "/workspace",
+				output: { base: "workspace", dir },
+				targetName: "portable",
+			}),
+		).toThrowError(
+			expect.objectContaining({
+				diagnostics: [
+					expect.objectContaining({
+						code: "CONFIG_OUTPUT_PATH_NOT_PORTABLE",
+						message: expect.stringContaining(JSON.stringify(dir)),
+					}),
+				],
+			}),
+		);
+	});
+
+	it.each([
+		"COM10",
+		"LPT10",
+		"connection",
+		"console",
+		"src/api/generated",
+		"packages/api-user/src/generated",
+		"user-service",
+		"api.v1",
+		"_openapi",
+		"generated-client",
+		"普通/生成目录",
+	])("accepts portable output %s", (dir) => {
+		expect(
+			resolveConfiguredOutputRoot({
+				workspaceRoot: "/workspace",
+				output: { base: "workspace", dir },
+			}).workspaceRelativePath,
+		).toBe(dir);
+	});
+
+	it("normalizes Unicode deterministically and rejects normalized output collisions", async () => {
+		expect(
+			resolveConfiguredOutputRoot({
+				workspaceRoot: "/workspace",
+				output: { base: "workspace", dir: "cafe\u0301/client" },
+			}).workspaceRelativePath,
+		).toBe("café/client");
+		const root = await mkdtemp(path.join(os.tmpdir(), "output-unicode-"));
+		await expect(
+			resolveConfiguredTargetOutputs(
+				root,
+				selectConfiguredTargets({
+					servers: [
+						target("first", { base: "workspace", dir: "café/client" }),
+						target("second", {
+							base: "workspace",
+							dir: "cafe\u0301/client",
+						}),
+					],
+				}),
+			),
+		).rejects.toMatchObject({
+			diagnostics: [expect.objectContaining({ code: "CONFIG_OUTPUT_OVERLAP" })],
+		});
+	});
+
 	it("rejects an existing output parent symlink", async () => {
 		const root = await mkdtemp(path.join(os.tmpdir(), "output-symlink-"));
 		const outside = await mkdtemp(path.join(os.tmpdir(), "output-outside-"));

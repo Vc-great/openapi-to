@@ -14,6 +14,7 @@ import { load as loadYaml } from 'js-yaml'
 
 import { errorCause, sortDiagnostics, type Diagnostic } from '../diagnostics.ts'
 import { throwIfAborted } from '../execution.ts'
+import { classifyInputPath } from '../inputPath.ts'
 import type { CompatibleOpenAPIDocument, OpenAPIAllDocument, RemoteSourceOptions } from '../types'
 
 export type OpenAPIInput = string | URL | Record<string, unknown>
@@ -122,6 +123,20 @@ function sanitizedRemoteSource(url: URL): string {
   copy.password = ''
   copy.search = ''
   return copy.toString()
+}
+
+export function isSameRemoteOrigin(left: URL, right: URL): boolean {
+  return left.origin === right.origin
+}
+
+export function isRemoteRedirectDowngrade(from: URL, to: URL): boolean {
+  return from.protocol === 'https:' && to.protocol === 'http:'
+}
+
+function configuredRequestHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!headers) return undefined
+  const entries = Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'set-cookie')
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
 function hostMatches(hostname: string, pattern: string): boolean {
@@ -251,6 +266,7 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
   const httpAgent = lookupAtConnection ? new HttpAgent({ lookup: lookupAtConnection }) : undefined
   const httpsAgent = lookupAtConnection ? new HttpsAgent({ lookup: lookupAtConnection }) : undefined
   let currentURL = initialURL
+  let requestHeaders = configuredRequestHeaders(options.headers)
   for (let redirect = 0; redirect <= policy.maxRedirects; redirect += 1) {
     throwIfAborted(signal)
     const diagnostics = await validateRemoteURL(currentURL, policy, signal)
@@ -258,7 +274,7 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
     const source = sanitizedRemoteSource(currentURL)
     try {
       const response = await axios.get<string>(currentURL.toString(), {
-        headers: options.headers,
+        headers: requestHeaders,
         httpAgent,
         httpsAgent,
         maxBodyLength: policy.maxResponseBytes,
@@ -274,7 +290,23 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
         if (redirect === policy.maxRedirects) {
           return { source, uri: currentURL.toString(), diagnostics: [sourceDiagnostic('REMOTE_SOURCE_REDIRECT_LIMIT', 'Remote source exceeded the redirect limit.', source)] }
         }
-        currentURL = new URL(response.headers.location, currentURL)
+        const nextURL = new URL(response.headers.location, currentURL)
+        if (isRemoteRedirectDowngrade(currentURL, nextURL)) {
+          const redirectSource = sanitizedRemoteSource(nextURL)
+          return {
+            source: redirectSource,
+            uri: nextURL.toString(),
+            diagnostics: [
+              sourceDiagnostic(
+                'REMOTE_SOURCE_REDIRECT_DOWNGRADE_BLOCKED',
+                'Remote source redirect from HTTPS to HTTP is blocked.',
+                redirectSource,
+              ),
+            ],
+          }
+        }
+        if (!isSameRemoteOrigin(currentURL, nextURL)) requestHeaders = undefined
+        currentURL = nextURL
         continue
       }
       if (response.status < 200 || response.status >= 300) {
@@ -311,11 +343,14 @@ export async function loadSource(input: OpenAPIInput, options: SourceLoaderOptio
     return { source: '<object>', uri: 'memory://openapi', value: input, diagnostics: [], snapshot: contentSnapshot('<object>', 'memory://openapi', text) }
   }
   const raw = input instanceof URL ? input.toString() : input
+  const inputKind = classifyInputPath(raw)
   let parsedURL: URL | undefined
-  try {
-    parsedURL = new URL(raw)
-  } catch {
-    parsedURL = undefined
+  if (inputKind.endsWith('-url')) {
+    try {
+      parsedURL = new URL(raw)
+    } catch {
+      parsedURL = undefined
+    }
   }
   if (parsedURL && parsedURL.protocol !== 'file:') {
     const key = parsedURL.toString()

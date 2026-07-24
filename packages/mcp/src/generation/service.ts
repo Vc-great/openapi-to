@@ -13,6 +13,7 @@ import {
 	type OperationGenerationScope,
 	type OpenapiToConfigServer,
 	type OpenAPICompilation,
+	type RemoteSourceOptions,
 	type OutputWriteLock,
 	type OpenAPIProjectionStats,
 	type ResolvedConfiguredOutputRoot,
@@ -27,6 +28,19 @@ import {
 } from "../security/workspace.ts";
 import type { TrustedConfigProvider } from "./trusted-config.ts";
 import type { TrustedTargetCatalogRegistry } from "../catalog/trusted-target-registry.ts";
+
+function remotePolicyIdentity(remote: RemoteSourceOptions | undefined): string {
+	return JSON.stringify({
+		allowPrivateNetwork: remote?.allowPrivateNetwork === true,
+		allowedHosts: [...new Set(remote?.allowedHosts ?? [])].sort(),
+		headers: Object.entries(remote?.headers ?? {}).sort(([left], [right]) =>
+			left < right ? -1 : left > right ? 1 : 0,
+		),
+		timeoutMs: remote?.timeoutMs,
+		maxResponseBytes: remote?.maxResponseBytes,
+		maxRedirects: remote?.maxRedirects,
+	});
+}
 
 export interface GenerationExecution {
 	signal?: AbortSignal;
@@ -65,6 +79,8 @@ export interface GenerationServerRun {
 	name: string;
 	source: string;
 	outputRoot: string;
+	/** Hash of the merged Target/operator remote policy; never expose policy headers. */
+	remotePolicyHash: string;
 	result: Awaited<ReturnType<typeof buildFromCompilation>>;
 	materialized: Awaited<
 		ReturnType<typeof formatMaterializedArtifacts>
@@ -208,6 +224,9 @@ export async function executeGeneration(
 			name: target.name,
 			source: sanitizeSourceDisplay(options.workspaceRoot, single.input.path),
 			outputRoot: workspaceRelative(options.workspaceRoot, safeOutput),
+			remotePolicyHash: createHash("sha256")
+				.update(remotePolicyIdentity(single.input.remote))
+				.digest("hex"),
 			result,
 			materialized: formatted.artifacts,
 		});
@@ -331,6 +350,9 @@ export async function executeSelectiveGeneration(
 				name: target.name,
 				source: sanitizeSourceDisplay(options.workspaceRoot, single.input.path),
 				outputRoot: workspaceRelative(options.workspaceRoot, safeOutput),
+				remotePolicyHash: createHash("sha256")
+					.update(remotePolicyIdentity(single.input.remote))
+					.digest("hex"),
 				result,
 				materialized: formatted.artifacts,
 			},

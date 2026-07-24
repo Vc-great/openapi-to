@@ -326,7 +326,7 @@ async function deterministicPlanFromRun(
       sources: await currentConfigSources(options.workspaceRoot, loadedConfig.sources),
     },
     target: run.targets[0] as string,
-    remotePolicyHash: hash(stableJSON(options.remote ?? {})),
+    remotePolicyHash: server.remotePolicyHash,
     sources: (server.result.compilation.references?.sourceSnapshots ?? [])
       .map((snapshot) => planSource(options.workspaceRoot, snapshot))
       .sort((left, right) => compareText(left.displayPath, right.displayPath) || compareText(left.sha256, right.sha256)),

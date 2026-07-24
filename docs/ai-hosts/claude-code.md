@@ -96,3 +96,5 @@ On Windows use `"command": "node.exe"` and `"args": ["packages\\mcp\\bin\\openap
 From the repository root, use `pnpm mcp:check` for a non-interactive built-bin health report and `pnpm mcp:inspect` for foreground manual review. These helpers are not included in the npm package.
 
 See [troubleshooting](../troubleshooting.md) for connection, Windows, config, logging, and stale-plan failures. See [MCP security](../mcp-security.md) before enabling writes. The server is stdio-only and does not provide HTTP, OAuth, multi-tenancy, LLM calls, or a chat UI.
+
+Remote Target configuration is intersected with the fixed server startup policy. Tool calls cannot inject headers or broaden hosts/private-network access; cross-Origin redirects clear configured headers and HTTPS-to-HTTP redirects are rejected.

@@ -252,6 +252,19 @@ if (!aggregate) {
 			"openapi-to: expected openapi/openapi-to CLI aliases and the openapi-to-mcp wrapper",
 		);
 	}
+	const aggregateIndex = await readFile(
+		join(repositoryRoot, "packages/openapi/src/index.ts"),
+		"utf8",
+	);
+	if (
+		/\b(?:createOpenapiToMcpServer|runMcpCli|openapi_prepare_generation|openapi_apply_generation)\b/.test(
+			aggregateIndex,
+		)
+	) {
+		failures.push(
+			"openapi-to: top-level JavaScript API must not re-export MCP implementation APIs",
+		);
+	}
 }
 
 const mcp = publicRecords.find(
@@ -277,6 +290,33 @@ if (!mcp) {
 	) {
 		failures.push("@openapi-to/mcp: ./cli export targets are incomplete");
 	}
+}
+
+const aggregateMcpWrapper = await readFile(
+	join(repositoryRoot, "packages/openapi/bin/openapi-to-mcp.js"),
+	"utf8",
+);
+const independentMcpWrapper = await readFile(
+	join(repositoryRoot, "packages/mcp/bin/openapi-to-mcp.js"),
+	"utf8",
+);
+if (aggregateMcpWrapper !== independentMcpWrapper) {
+	failures.push(
+		"openapi-to-mcp: aggregate and independent wrappers must be byte-identical",
+	);
+}
+if (
+	!aggregateMcpWrapper.includes(
+		"import { runMcpCli } from '@openapi-to/mcp/cli'",
+	) ||
+	!aggregateMcpWrapper.includes("await runMcpCli(process.argv.slice(2))") ||
+	/\b(?:parseArgs|StdioServerTransport|createOpenapiToMcpServer)\b/.test(
+		aggregateMcpWrapper,
+	)
+) {
+	failures.push(
+		"openapi-to-mcp: wrappers must delegate only to the shared @openapi-to/mcp/cli runner",
+	);
 }
 
 const changesetsConfig = JSON.parse(

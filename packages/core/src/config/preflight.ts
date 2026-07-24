@@ -13,6 +13,10 @@ import {
 	resolveConfiguredTargetOutputs,
 	type ResolvedConfiguredOutputRoot,
 } from "./outputRoot.ts";
+import {
+	remoteSourcePolicyIdentity,
+	resolveRemoteSourcePolicy,
+} from "./remotePolicy.ts";
 
 export interface PreparedConfiguredTarget extends ConfiguredTarget {
 	config: OpenapiToSingleConfig;
@@ -27,19 +31,6 @@ export interface PreflightConfiguredTargetsOptions {
 	remote?: RemoteSourceOptions;
 	signal?: AbortSignal;
 	compileInputs?: boolean;
-}
-
-function remotePolicyIdentity(remote: RemoteSourceOptions | undefined): string {
-	return JSON.stringify({
-		allowPrivateNetwork: remote?.allowPrivateNetwork === true,
-		allowedHosts: [...(remote?.allowedHosts ?? [])].sort(),
-		headers: Object.entries(remote?.headers ?? {}).sort(([left], [right]) =>
-			left < right ? -1 : left > right ? 1 : 0,
-		),
-		timeoutMs: remote?.timeoutMs,
-		maxResponseBytes: remote?.maxResponseBytes,
-		maxRedirects: remote?.maxRedirects,
-	});
 }
 
 /**
@@ -69,6 +60,11 @@ export async function preflightConfiguredTargets(
 				"Configured target output preflight lost its target mapping.",
 			);
 		}
+		const remote = resolveRemoteSourcePolicy({
+			targetRemote: target.server.input.remote,
+			operatorPolicy: options.remote,
+			targetName: target.name,
+		});
 		return {
 			...target,
 			output,
@@ -78,7 +74,7 @@ export async function preflightConfiguredTargets(
 				name: target.name,
 				input: {
 					...target.server.input,
-					...(options.remote ? { remote: options.remote } : {}),
+					...(remote ? { remote } : {}),
 				},
 				output: {
 					...target.server.output,
@@ -90,13 +86,12 @@ export async function preflightConfiguredTargets(
 		};
 	});
 	if (options.compileInputs === false) return prepared;
-	const sourceCaches = new Map<
-		string,
-		Map<string, Promise<LoadedSource>>
-	>();
+	const sourceCaches = new Map<string, Map<string, Promise<LoadedSource>>>();
 	return Promise.all(
 		prepared.map(async (target) => {
-			const policyIdentity = remotePolicyIdentity(target.config.input.remote);
+			const policyIdentity = remoteSourcePolicyIdentity(
+				target.config.input.remote,
+			);
 			let sourceCache = sourceCaches.get(policyIdentity);
 			if (!sourceCache) {
 				sourceCache = new Map<string, Promise<LoadedSource>>();

@@ -7,6 +7,9 @@ import type { OpenapiToConfigSingleOutput, OutputBase } from "../types";
 import type { ConfiguredTarget } from "./configuredTargets.ts";
 
 const WINDOWS_ABSOLUTE_OR_DRIVE_RELATIVE = /^(?:[a-zA-Z]:|\\\\)/;
+const WINDOWS_RESERVED_DEVICE =
+	/^(?:con|prn|aux|nul|clock\$|com[1-9]|lpt[1-9])(?:\.|$)/i;
+const WINDOWS_RESERVED_CHARACTERS = new Set('<>:"|?*');
 const CONTROL_OUTPUT_SEGMENTS = new Set([
 	"selections",
 	"transactions",
@@ -71,7 +74,7 @@ function portableRelativeDirectory(
 			targetName,
 		);
 	}
-	const raw = output.dir.trim();
+	const raw = output.dir;
 	if (
 		raw.includes("\0") ||
 		path.posix.isAbsolute(raw.replaceAll("\\", "/")) ||
@@ -83,7 +86,41 @@ function portableRelativeDirectory(
 			targetName,
 		);
 	}
-	const normalized = path.posix.normalize(raw.replaceAll("\\", "/"));
+	const portableSegments = raw.replaceAll("\\", "/").split("/");
+	for (const originalSegment of portableSegments) {
+		if (originalSegment === "." || originalSegment === "..") continue;
+		const segment = originalSegment.normalize("NFKC");
+		let reason: string | undefined;
+		if (segment.endsWith(".") || segment.endsWith(" "))
+			reason = "segments may not end in a period or space";
+		else if (
+			[...segment].some((character) => {
+				const code = character.charCodeAt(0);
+				return (
+					WINDOWS_RESERVED_CHARACTERS.has(character) ||
+					code <= 0x1f ||
+					code === 0x7f
+				);
+			})
+		)
+			reason =
+				"segments may not contain Windows-reserved or control characters";
+		else if (WINDOWS_RESERVED_DEVICE.test(segment))
+			reason = "segments may not use a Windows reserved device name";
+		else if (segment.includes("/") || segment.includes("\\"))
+			reason = "Unicode normalization may not introduce a path separator";
+		if (reason) {
+			throw outputError(
+				"CONFIG_OUTPUT_PATH_NOT_PORTABLE",
+				`Configured output.dir segment ${JSON.stringify(originalSegment)} is not portable: ${reason}.`,
+				targetName,
+				"Choose a directory name that is valid on Linux, macOS, and Windows.",
+			);
+		}
+	}
+	const normalized = path.posix.normalize(
+		portableSegments.map((segment) => segment.normalize("NFKC")).join("/"),
+	);
 	if (
 		normalized === "." ||
 		normalized === ".." ||

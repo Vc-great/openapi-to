@@ -200,7 +200,11 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 				failures.push(`${label} uses Bun`);
 			if (/(?:^|\s)npx(?:\s|$)/.test(script))
 				failures.push(`${label} uses uncontrolled npx`);
-			if (name === "test" && /\bvitest\b/.test(script) && !/\bvitest\s+run\b/.test(script)) {
+			if (
+				name === "test" &&
+				/\bvitest\b/.test(script) &&
+				!/\bvitest\s+run\b/.test(script)
+			) {
 				failures.push(`${label} must use non-interactive vitest run`);
 			}
 			for (const tool of scriptToolInvocations(script)) {
@@ -248,6 +252,30 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	}
 	if (/(?:--changed|--staged|\blint:changed\b)/.test(lintCi)) {
 		failures.push("lint:ci must not depend on working-tree changes");
+	}
+	const a1WorkflowPath = join(root, ".github/workflows/a1-cross-platform.yml");
+	if (!(await exists(a1WorkflowPath))) {
+		failures.push("missing A1 cross-platform contracts workflow");
+	} else {
+		const a1Workflow = await readFile(a1WorkflowPath, "utf8");
+		for (const required of [
+			"push:",
+			"pull_request:",
+			"workflow_dispatch:",
+			"ubuntu-latest",
+			"windows-latest",
+			"macos-latest",
+			"pnpm build --concurrency=1",
+			"pnpm test:a1-contracts",
+			"packages/openapi/bin/openapi-to-mcp.js",
+			"packages/mcp/bin/openapi-to-mcp.js",
+		]) {
+			if (!a1Workflow.includes(required))
+				failures.push(`A1 workflow is missing ${required}`);
+		}
+	}
+	if (!rootManifest.scripts?.["test:a1-contracts"]) {
+		failures.push("missing test:a1-contracts focused test script");
 	}
 
 	const publicPackageNames = new Set(

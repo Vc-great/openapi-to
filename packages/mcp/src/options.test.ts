@@ -19,6 +19,27 @@ describe('MCP timeout options', () => {
     expect(resolveMcpServerOptions({ workspaceRoot: process.cwd(), configPath: 'package.json', allowWrite: true }).allowWrite).toBe(true)
   })
 
+  it('preserves operator remote upper bounds without accepting headers', () => {
+    expect(
+      resolveMcpServerOptions({
+        workspaceRoot: process.cwd(),
+        remote: {
+          allowPrivateNetwork: true,
+          allowedHosts: ['schemas.example.com', 'api.example.com', 'api.example.com'],
+          timeoutMs: 5_000,
+          maxResponseBytes: 2_000_000,
+          maxRedirects: 2,
+        },
+      }).remote,
+    ).toEqual({
+      allowPrivateNetwork: true,
+      allowedHosts: ['api.example.com', 'schemas.example.com'],
+      timeoutMs: 5_000,
+      maxResponseBytes: 2_000_000,
+      maxRedirects: 2,
+    })
+  })
+
   it.each([
     { planTtlMs: 999 },
     { maxPlans: 0 },

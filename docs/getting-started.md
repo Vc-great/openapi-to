@@ -31,6 +31,8 @@ Run `pnpm exec openapi init` to create a starting configuration. Generation disc
 
 For microservices, give each OpenAPI document a stable Target name and independent output root. `pnpm exec openapi generate` generates all Targets; repeat `--target <name>` to select one or more. Local JSON/YAML/YML and policy-constrained HTTP(S) inputs use the same Core loader. Managed output remains below `.OpenAPI` by default, while `output.base: 'workspace'` places generator-managed code directly below the project root.
 
+Workspace-local absolute Windows input paths are supported. Drive-relative paths (`C:openapi.yaml`), UNC paths, and configured `file:` URLs are rejected. Output segments must also be portable across Linux, macOS, and Windows; Windows device names, reserved characters, control characters, and trailing periods/spaces are rejected before generation.
+
 See the [CLI generation guide](./cli.md) for a complete multi-document example and ownership rules, and the [capability matrix](./capability-matrix.md) before choosing a plugin or dialect.
 
 ## MCP server
@@ -40,6 +42,8 @@ The same aggregate installation provides the MCP command; no additional MCP pack
 ```sh
 pnpm exec openapi-to-mcp --help
 ```
+
+Advanced users who intentionally want only the MCP package boundary may instead install `pnpm add -D @openapi-to/mcp`; it provides the same standalone `openapi-to-mcp` command plus the `@openapi-to/mcp` and `@openapi-to/mcp/cli` programming interfaces.
 
 The safe default is local stdio and no writes:
 
@@ -67,6 +71,8 @@ Choose the Host-specific configuration:
 - [Generic stdio Host](./ai-hosts/generic-stdio.md)
 
 All Hosts share the same [security boundary](./mcp-security.md) and [troubleshooting guide](./troubleshooting.md).
+
+Target `input.remote` is trusted access configuration; MCP startup remote options are operator-owned upper bounds. The effective policy uses only permissions allowed by both layers. Configured headers remain available for the initial request and same-Origin redirects, are removed on cross-Origin redirects, and are never accepted as Tool arguments. HTTPS-to-HTTP redirects are blocked.
 
 ## Repository development
 

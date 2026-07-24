@@ -19,4 +19,6 @@ The package installs `openapi` and `openapi-to` as aliases of the same CLI entry
 
 Faker, NestJS, and React Query generators are not included.
 
+The aggregate depends on `@openapi-to/mcp` at runtime only to provide the shared command. MCP server APIs remain available from `@openapi-to/mcp` and `@openapi-to/mcp/cli`; they are intentionally not re-exported from the `openapi-to` top-level JavaScript API.
+
 See the repository [getting-started guide](../../docs/getting-started.md) and [capability matrix](../../docs/capability-matrix.md).

@@ -14,13 +14,23 @@ const LINTABLE_EXTENSIONS = new Set([
 ]);
 
 // These tracked legacy files are not parseable as their filename's language by
-// Biome 2.2. Checked-in package mock directories are generator fixtures rather
-// than maintained source and are excluded separately below.
+// Biome 2.2.
 const EXCLUDED_PATHS = new Set([
 	"packages/config-ts/base.json",
 	"packages/config-ts/bundler.json",
 	"packages/openapi/src/utils.ts",
+	// Checked-in generator output: the source generator and snapshots own it.
+	"packages/plugin-swr/mock/newPetAPI.ts",
+	// Checked-in TypeScript request/type generator output with intentional namespace merging.
+	"packages/plugin-ts-type/mock/User.ts",
 ]);
+
+const EXCLUDED_PREFIXES = [
+	// Checked-in TypeScript generator output fixtures.
+	"packages/plugin-ts-type/mock/typeModels/",
+	// Checked-in Zod generator output fixtures.
+	"packages/plugin-zod/mock/zodModels/",
+];
 
 const LEGACY_RULES = [
 	"lint/correctness/noConstructorReturn",
@@ -41,7 +51,15 @@ function run(command, args, options = {}) {
 }
 
 export function collectTrackedLintableFiles() {
-	const result = run("git", ["ls-files", "-z", "--", "packages"]);
+	const result = run("git", [
+		"ls-files",
+		"-z",
+		"--",
+		"packages",
+		"scripts",
+		"e2e",
+		"configs",
+	]);
 	if (result.status !== 0) {
 		process.stderr.write(result.stderr ?? "");
 		throw new Error(`git ls-files exited with status ${result.status}`);
@@ -51,7 +69,9 @@ export function collectTrackedLintableFiles() {
 		.filter(Boolean)
 		.filter((path) => LINTABLE_EXTENSIONS.has(extname(path).toLowerCase()))
 		.filter((path) => !EXCLUDED_PATHS.has(path))
-		.filter((path) => !/^packages\/[^/]+\/mock\//.test(path))
+		.filter(
+			(path) => !EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix)),
+		)
 		.filter((path) => existsSync(resolve(process.cwd(), path)))
 		.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
 }
@@ -73,7 +93,7 @@ function biomeCommand() {
 export function main() {
 	const files = collectTrackedLintableFiles();
 	if (files.length === 0) {
-		throw new Error("lint:ci found no tracked lintable package files");
+		throw new Error("lint:ci found no tracked lintable repository files");
 	}
 
 	const { command, prefix } = biomeCommand();

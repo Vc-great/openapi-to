@@ -46,7 +46,7 @@ The default plan lifetime is five minutes, with at most 20 in-memory plans. Toke
 
 The Server proves that Apply addresses the exact plan returned by Prepare. It cannot independently prove that a human performed confirmation; final approval depends on the MCP Host. Operators should require Host approval for `openapi_apply_generation`, especially when Prepare reports managed deletions.
 
-Remote access is private-network-denied by default. Use repeatable `--allow-host` options to narrow allowed hosts. `--allow-private-network` is operator-only and lowers the security boundary.
+Remote access is private-network-denied by default. Use repeatable `--allow-host` options to narrow allowed hosts. `--allow-private-network` is operator-only and lowers the security boundary. Target `input.remote` remains the trusted access requirement and is intersected with this operator policy: both layers must allow private access, host policies must overlap, and numeric limits use the smaller value. Target-configured headers are kept only for the initial request and same-Origin redirects; cross-Origin redirects clear all of them and HTTPS-to-HTTP redirects are blocked. Tool arguments cannot provide headers or relax the result.
 
 The package intentionally does not provide HTTP transport, authentication, resources, prompts, sampling, elicitation, Tasks, Apps UI, LLM calls, background jobs, arbitrary writes, OpenAPI/config modification, or business API execution.
 

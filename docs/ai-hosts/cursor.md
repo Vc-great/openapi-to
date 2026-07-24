@@ -79,3 +79,5 @@ Maintainers can use `"command": "node"` with `"args": ["packages/mcp/bin/openapi
 Repository maintainers can run `pnpm mcp:check` and the foreground `pnpm mcp:inspect`. Those helpers are intentionally not packed.
 
 See [troubleshooting](../troubleshooting.md) and [MCP security](../mcp-security.md). stdout must remain MCP JSON-RPC and operational logs stay on stderr. This server does not implement HTTP, OAuth, multi-tenancy, LLM calls, or a chat UI.
+
+Remote Target configuration is intersected with Cursor's fixed server startup policy. Tool calls cannot inject headers or broaden hosts/private-network access; cross-Origin redirects clear configured headers and HTTPS-to-HTTP redirects are rejected.

@@ -4,6 +4,7 @@ import {
 	mkdir,
 	mkdtemp,
 	readFile,
+	readdir,
 	rm,
 	stat,
 	writeFile,
@@ -113,6 +114,16 @@ const json = JSON.stringify({
   paths: { "/remote-json": { get: { operationId: "remoteJson", responses: { "200": { description: "ok" } } } } },
 });
 const yaml = 'openapi: 3.1.0\\ninfo: { title: Remote YAML Service, version: "1" }\\npaths:\\n  /remote-yaml:\\n    get:\\n      operationId: remoteYaml\\n      responses: { "200": { description: ok } }\\n';
+const observations = { sameOriginAuthorization: null, crossOriginAuthorization: null };
+const crossServer = createServer((request, response) => {
+  const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+  if (pathname === "/header-final") {
+    observations.crossOriginAuthorization = request.headers.authorization ?? null;
+    response.end(json);
+  } else {
+    response.writeHead(404).end();
+  }
+});
 const server = createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
   if (pathname === "/json") {
@@ -121,12 +132,24 @@ const server = createServer((request, response) => {
   } else if (pathname === "/yaml") {
     response.setHeader("content-type", "application/json");
     response.end(yaml);
+  } else if (pathname === "/same-redirect") {
+    response.writeHead(302, { location: "/same-final" }).end();
+  } else if (pathname === "/same-final") {
+    observations.sameOriginAuthorization = request.headers.authorization ?? null;
+    response.end(json);
+  } else if (pathname === "/cross-redirect") {
+    response.writeHead(302, { location: "http://127.0.0.1:" + crossServer.address().port + "/header-final" }).end();
+  } else if (pathname === "/observations") {
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify(observations));
   } else {
     response.writeHead(404).end();
   }
 });
-server.listen(0, "127.0.0.1", () => process.stdout.write(String(server.address().port) + "\\n"));
-for (const signal of ["SIGTERM", "SIGINT"]) process.once(signal, () => server.close(() => process.exit(0)));
+crossServer.listen(0, "127.0.0.1", () => {
+  server.listen(0, "127.0.0.1", () => process.stdout.write(JSON.stringify({ primary: server.address().port, cross: crossServer.address().port }) + "\\n"));
+});
+for (const signal of ["SIGTERM", "SIGINT"]) process.once(signal, () => server.close(() => crossServer.close(() => process.exit(0))));
 `,
 	);
 	const child = spawn(process.execPath, [serverPath], {
@@ -146,9 +169,17 @@ for (const signal of ["SIGTERM", "SIGINT"]) process.once(signal, () => server.cl
 		child.stdout.on("data", (chunk) => {
 			stdout += String(chunk);
 			const line = stdout.split(/\r?\n/)[0];
-			if (!/^\d+$/.test(line ?? "")) return;
+			if (!line?.startsWith("{")) return;
+			let ports;
+			try {
+				ports = JSON.parse(line);
+			} catch {
+				return;
+			}
+			if (!Number.isInteger(ports.primary) || !Number.isInteger(ports.cross))
+				return;
 			clearTimeout(timer);
-			resolvePort(Number(line));
+			resolvePort(ports);
 		});
 		child.once("error", (error) => {
 			clearTimeout(timer);
@@ -158,14 +189,34 @@ for (const signal of ["SIGTERM", "SIGINT"]) process.once(signal, () => server.cl
 			if (code !== null && !stdout.includes("\n")) {
 				clearTimeout(timer);
 				reject(
-					new Error(
-						`Remote fixture server exited with ${code}: ${stderr}`,
-					),
+					new Error(`Remote fixture server exited with ${code}: ${stderr}`),
 				);
 			}
 		});
 	});
-	return { child, baseURL: `http://127.0.0.1:${port}` };
+	return {
+		child,
+		baseURL: `http://127.0.0.1:${port.primary}`,
+		crossBaseURL: `http://127.0.0.1:${port.cross}`,
+	};
+}
+
+async function directoryBytes(directory) {
+	let total = 0;
+	for (const entry of await readdir(directory, { withFileTypes: true })) {
+		const entryPath = join(directory, entry.name);
+		if (entry.isDirectory()) total += await directoryBytes(entryPath);
+		else if (entry.isFile()) total += (await stat(entryPath)).size;
+	}
+	return total;
+}
+
+function dependencyNames(node, names = new Set()) {
+	for (const [name, dependency] of Object.entries(node?.dependencies ?? {})) {
+		names.add(name);
+		dependencyNames(dependency, names);
+	}
+	return names;
 }
 
 const temporaryRoot = await mkdtemp(
@@ -187,6 +238,7 @@ await Promise.all([
 
 let succeeded = false;
 let remoteFixtureServer;
+let packageBaseline;
 try {
 	const packed = [];
 	for (const directory of packageDirectories) {
@@ -251,9 +303,7 @@ try {
 	const packedOverrides = Object.fromEntries(
 		packed
 			.map(({ name, archive }) => [name, `file:${archive}`])
-			.sort(([left], [right]) =>
-				left < right ? -1 : left > right ? 1 : 0,
-			),
+			.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)),
 	);
 	const aggregateArchive = packed.find(
 		({ name }) => name === "openapi-to",
@@ -283,6 +333,21 @@ try {
 		["install", "--ignore-scripts", "--prefer-offline"],
 		aggregateInstallationDirectory,
 	);
+	await mkdir(join(aggregateInstallationDirectory, ".OpenAPI"), {
+		recursive: true,
+	});
+	await writeFile(
+		join(aggregateInstallationDirectory, "openapi.yaml"),
+		'openapi: 3.1.0\ninfo: { title: Aggregate only, version: "1" }\npaths: {}\n',
+	);
+	await writeFile(
+		join(aggregateInstallationDirectory, ".OpenAPI/openapi.config.cjs"),
+		`module.exports = {
+  servers: [{ name: "main", input: { path: "./openapi.yaml" }, output: { dir: "generated" } }],
+  plugins: []
+};
+`,
+	);
 	await writeFile(
 		join(aggregateInstallationDirectory, "mcp-aggregate-stdio-smoke.mjs"),
 		`import { createRequire } from "node:module";
@@ -295,12 +360,20 @@ const sdkRequire = createRequire(mcpManifest);
 const { Client } = await import(pathToFileURL(sdkRequire.resolve("@modelcontextprotocol/sdk/client/index.js")));
 const { StdioClientTransport } = await import(pathToFileURL(sdkRequire.resolve("@modelcontextprotocol/sdk/client/stdio.js")));
 const stderr = [];
-const transport = new StdioClientTransport({ command: process.argv[2], args: [...process.argv.slice(3), "--workspace-root", process.cwd()], stderr: "pipe" });
+const serverArgs = process.argv.slice(3);
+const transport = new StdioClientTransport({ command: process.argv[2], args: [...serverArgs, "--workspace-root", process.cwd()], stderr: "pipe" });
 transport.stderr?.on("data", (chunk) => stderr.push(String(chunk)));
 const client = new Client({ name: "aggregate-only-release-smoke", version: "1.0.0" });
 await client.connect(transport);
 const tools = await client.listTools();
-if (tools.tools.map(({ name }) => name).join(",") !== "openapi_validate,openapi_inspect,openapi_diff") throw new Error("Aggregate-only MCP tool matrix is not 3");
+const analysis = ["openapi_validate", "openapi_inspect", "openapi_diff"];
+const configured = [...analysis, "openapi_list_targets", "openapi_search_operations", "openapi_get_operation", "openapi_generate_dry_run", "openapi_check_generation"];
+const write = [...configured, "openapi_prepare_generation", "openapi_apply_generation"];
+const expected = serverArgs.includes("--allow-write") ? write : serverArgs.includes("--config") ? configured : analysis;
+if (tools.tools.map(({ name }) => name).join(",") !== expected.join(",")) throw new Error("Packed MCP tool matrix mismatch: expected " + expected.length);
+for (const tool of tools.tools) {
+  if (!tool.title || !tool.description || tool.inputSchema?.type !== "object" || tool.outputSchema?.type !== "object") throw new Error("Packed MCP schema metadata is incomplete");
+}
 await client.close();
 if (stderr.join("").includes("Unable to start server")) throw new Error("Aggregate-only MCP server reported a startup failure");
 `,
@@ -327,11 +400,37 @@ if (stderr.join("").includes("Unable to start server")) throw new Error("Aggrega
 	pnpm(["exec", "openapi", "--help"], aggregateInstallationDirectory);
 	pnpm(["exec", "openapi-to", "--version"], aggregateInstallationDirectory);
 	pnpm(["exec", "openapi-to-mcp", "--help"], aggregateInstallationDirectory);
-	run(
-		process.execPath,
-		["mcp-aggregate-stdio-smoke.mjs", aggregateOnlyMcp],
-		aggregateInstallationDirectory,
-	);
+	const coldInitializeStarted = process.hrtime.bigint();
+	for (const [matrixIndex, serverArgs] of [
+		[],
+		["--config", ".OpenAPI/openapi.config.cjs"],
+		["--config", ".OpenAPI/openapi.config.cjs", "--allow-write"],
+	].entries()) {
+		run(
+			process.execPath,
+			["mcp-aggregate-stdio-smoke.mjs", aggregateOnlyMcp, ...serverArgs],
+			aggregateInstallationDirectory,
+		);
+		if (matrixIndex === 0) {
+			const mcpInitializeMilliseconds =
+				Number(process.hrtime.bigint() - coldInitializeStarted) / 1_000_000;
+			const listed = JSON.parse(
+				pnpm(
+					["list", "--depth", "Infinity", "--json"],
+					aggregateInstallationDirectory,
+				).stdout,
+			)[0];
+			packageBaseline = {
+				aggregateNodeModulesBytes: await directoryBytes(
+					join(aggregateInstallationDirectory, "node_modules"),
+				),
+				productionDependencyCount: dependencyNames(
+					listed.devDependencies?.["openapi-to"],
+				).size,
+				mcpInitializeMilliseconds,
+			};
+		}
+	}
 
 	await writeFile(
 		join(installationDirectory, "package.json"),
@@ -373,18 +472,22 @@ if (stderr.join("").includes("Unable to start server")) throw new Error("Aggrega
 		"openapi-to-mcp.js",
 	);
 	run(process.execPath, [independentMcpBin, "--help"], installationDirectory);
-	run(
-		process.execPath,
-		[
-			join(
-				aggregateInstallationDirectory,
-				"mcp-aggregate-stdio-smoke.mjs",
-			),
+	for (const serverArgs of [
+		[],
+		["--config", ".OpenAPI/openapi.config.cjs"],
+		["--config", ".OpenAPI/openapi.config.cjs", "--allow-write"],
+	]) {
+		run(
 			process.execPath,
-			independentMcpBin,
-		],
-		aggregateInstallationDirectory,
-	);
+			[
+				join(aggregateInstallationDirectory, "mcp-aggregate-stdio-smoke.mjs"),
+				process.execPath,
+				independentMcpBin,
+				...serverArgs,
+			],
+			aggregateInstallationDirectory,
+		);
+	}
 
 	const minimumDocument = `openapi: 3.0.3
 info:
@@ -414,24 +517,16 @@ paths:
 		join(installationDirectory, "user.json"),
 		`${JSON.stringify(userDocument, null, 2)}\n`,
 	);
-	await writeFile(
-		join(installationDirectory, "order.yaml"),
-		minimumDocument,
-	);
+	await writeFile(join(installationDirectory, "order.yaml"), minimumDocument);
 	await writeFile(
 		join(installationDirectory, "legacy.yml"),
-		minimumDocument.replace("Order Service", "Legacy Service").replace(
-			"getById",
-			"legacyGetById",
-		),
+		minimumDocument
+			.replace("Order Service", "Legacy Service")
+			.replace("getById", "legacyGetById"),
 	);
-	await writeFile(
-		join(installationDirectory, "openapi.yaml"),
-		minimumDocument,
-	);
+	await writeFile(join(installationDirectory, "openapi.yaml"), minimumDocument);
 	await writeFile(join(installationDirectory, "invalid.yaml"), "openapi: [\n");
-	remoteFixtureServer =
-		await startRemoteFixtureServer(installationDirectory);
+	remoteFixtureServer = await startRemoteFixtureServer(installationDirectory);
 	await writeFile(
 		join(installationDirectory, ".OpenAPI/openapi.config.cjs"),
 		`module.exports = {
@@ -449,8 +544,42 @@ paths:
 `,
 	);
 	await writeFile(
+		join(installationDirectory, ".OpenAPI/remote-policy.config.cjs"),
+		`module.exports = {
+  servers: [
+    {
+      name: "same-origin",
+      input: {
+        path: "${remoteFixtureServer.baseURL}/same-redirect",
+        remote: {
+          allowPrivateNetwork: true,
+          allowedHosts: ["127.0.0.1"],
+          headers: { Authorization: "Bearer packed-redirect-secret" }
+        }
+      },
+      output: { dir: "same-origin" }
+    },
+    {
+      name: "cross-origin",
+      input: {
+        path: "${remoteFixtureServer.baseURL}/cross-redirect",
+        remote: {
+          allowPrivateNetwork: true,
+          allowedHosts: ["127.0.0.1"],
+          headers: { Authorization: "Bearer packed-redirect-secret" }
+        }
+      },
+      output: { dir: "cross-origin" }
+    }
+  ],
+  plugins: []
+};
+`,
+	);
+	await writeFile(
 		join(installationDirectory, "esm-smoke.mjs"),
-		`import {
+		`import * as openapiTo from "openapi-to";
+import {
   compileOpenAPI,
   inspectOpenAPIDocument,
   diffOpenAPIDocuments,
@@ -474,6 +603,9 @@ if (difference.breaking || difference.changes.length !== 0) throw new Error("dif
 if (pluginSWR !== swrPackage || pluginMSW !== mswPackage || pluginSWR === pluginMSW) throw new Error("plugin identity failed");
 if (pluginSWR().name !== "SWR" || pluginMSW().name !== "MSW") throw new Error("plugin name failed");
 if (typeof runMcpCli !== "function") throw new Error("MCP CLI ESM export missing");
+for (const forbidden of ["createOpenapiToMcpServer", "runMcpCli", "openapi_prepare_generation", "openapi_apply_generation"]) {
+  if (forbidden in openapiTo) throw new Error("Aggregate top-level MCP boundary regressed: " + forbidden);
+}
 `,
 	);
 	await writeFile(
@@ -488,6 +620,9 @@ if (openapiTo.pluginSWR !== swr.definePlugin || openapiTo.pluginMSW !== msw.defi
 if (openapiTo.pluginSWR === openapiTo.pluginMSW) throw new Error("CJS plugins collapsed");
 if (typeof mcp.createOpenapiToMcpServer !== "function") throw new Error("MCP CJS export missing");
 if (typeof mcpCli.runMcpCli !== "function") throw new Error("MCP CLI CJS export missing");
+for (const forbidden of ["createOpenapiToMcpServer", "runMcpCli", "openapi_prepare_generation", "openapi_apply_generation"]) {
+  if (forbidden in openapiTo) throw new Error("Aggregate top-level MCP boundary regressed: " + forbidden);
+}
 `,
 	);
 	await writeFile(
@@ -565,6 +700,37 @@ const orderContract = await configuredClient.callTool({ name: "openapi_get_opera
 if (userContract.isError || userContract.structuredContent?.operation?.path !== "/users/{id}") throw new Error("Packed MCP user contract lookup leaked or failed");
 if (orderContract.isError || orderContract.structuredContent?.operation?.path !== "/orders/{id}") throw new Error("Packed MCP order contract lookup leaked or failed");
 await configuredClient.close();
+
+const remotePolicyStderr = [];
+const remotePolicyTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/remote-policy.config.cjs", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
+remotePolicyTransport.stderr?.on("data", (chunk) => remotePolicyStderr.push(String(chunk)));
+const remotePolicyClient = new Client({ name: "release-remote-policy-smoke", version: "1.0.0" });
+await remotePolicyClient.connect(remotePolicyTransport);
+const remotePolicyTargets = await remotePolicyClient.callTool({ name: "openapi_list_targets", arguments: {} });
+if (remotePolicyTargets.isError || remotePolicyTargets.structuredContent?.success !== true || remotePolicyTargets.structuredContent?.targets?.some(({ catalogAvailable }) => catalogAvailable !== true)) {
+  const summary = {
+    diagnostics: remotePolicyTargets.structuredContent?.diagnostics?.map(({ code, message }) => ({ code, message })),
+    targets: remotePolicyTargets.structuredContent?.targets?.map(({ name, catalogAvailable, diagnosticSummary }) => ({
+    name,
+    catalogAvailable,
+    diagnosticSummary,
+    })),
+  };
+  throw new Error("Packed MCP remote policy targets failed: " + JSON.stringify(summary));
+}
+await remotePolicyClient.close();
+const redirectObservations = await fetch("${remoteFixtureServer.baseURL}/observations").then((response) => response.json());
+if (redirectObservations.sameOriginAuthorization !== "Bearer packed-redirect-secret") throw new Error("Packed MCP same-origin redirect dropped trusted headers");
+if (redirectObservations.crossOriginAuthorization !== null) throw new Error("Packed MCP cross-origin redirect leaked trusted headers");
+if (remotePolicyStderr.join("").includes("packed-redirect-secret")) throw new Error("Packed MCP stderr leaked a trusted header");
+
+const restrictedPolicyTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/remote-policy.config.cjs", "--allow-private-network", "--allow-host", "schemas.example.com"], stderr: "pipe" });
+const restrictedPolicyClient = new Client({ name: "release-restricted-policy-smoke", version: "1.0.0" });
+await restrictedPolicyClient.connect(restrictedPolicyTransport);
+const restrictedPolicy = await restrictedPolicyClient.callTool({ name: "openapi_search_operations", arguments: { target: "same-origin", query: "remote" } });
+if (!restrictedPolicy.isError || !restrictedPolicy.structuredContent?.diagnostics?.some(({ code }) => code === "CONFIG_REMOTE_POLICY_CONFLICT")) throw new Error("Packed MCP operator host policy did not tighten the Target policy");
+if (JSON.stringify(restrictedPolicy).includes("packed-redirect-secret")) throw new Error("Packed MCP policy error leaked a trusted header");
+await restrictedPolicyClient.close();
 
 const writeStderr = [];
 const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/openapi.config.cjs", "--allow-write", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
@@ -780,11 +946,7 @@ await writeClient.close();
 	}
 
 	const generatedAll = JSON.parse(
-		run(
-			cliExecutable,
-			["generate", "--json"],
-			installationDirectory,
-		).stdout,
+		run(cliExecutable, ["generate", "--json"], installationDirectory).stdout,
 	);
 	if (
 		generatedAll.success !== true ||
@@ -804,8 +966,10 @@ await writeClient.close();
 		["src/api/generated/remote-yaml", "remote-yaml"],
 	]) {
 		if (
-			await readFile(join(installationDirectory, output, "client.txt"), "utf8") !==
-			`${target}\n`
+			(await readFile(
+				join(installationDirectory, output, "client.txt"),
+				"utf8",
+			)) !== `${target}\n`
 		) {
 			throw new Error(`Packed CLI wrote unexpected ${target} bytes`);
 		}
@@ -836,17 +1000,17 @@ await writeClient.close();
 	);
 	if (
 		selectedMultiple.servers.map(({ name }) => name).join(",") !==
-			"user-service,order-service"
+		"user-service,order-service"
 	) {
 		throw new Error(
 			"Packed CLI repeated target selection was not deduplicated in config order",
 		);
 	}
 	if (
-		await readFile(
+		(await readFile(
 			join(installationDirectory, "src/api/generated/remote-json/client.txt"),
 			"utf8",
-		) !== "remote-sentinel\n"
+		)) !== "remote-sentinel\n"
 	) {
 		throw new Error("Packed CLI changed an unselected target");
 	}
@@ -856,13 +1020,7 @@ await writeClient.close();
 		aliasDryRuns.push(
 			run(
 				binPath(installationDirectory, binary),
-				[
-					"generate",
-					"--target",
-					"legacy-service",
-					"--dry-run",
-					"--json",
-				],
+				["generate", "--target", "legacy-service", "--dry-run", "--json"],
 				installationDirectory,
 			).stdout,
 		);
@@ -887,6 +1045,14 @@ await writeClient.close();
 					fileCount: files.length,
 				})),
 				versions: reportedVersions,
+				baseline: {
+					openapiToTarballBytes: packed.find(
+						({ name }) => name === "openapi-to",
+					)?.size,
+					mcpTarballBytes: packed.find(({ name }) => name === "@openapi-to/mcp")
+						?.size,
+					...packageBaseline,
+				},
 				checks: [
 					"esm",
 					"cjs",
@@ -896,12 +1062,17 @@ await writeClient.close();
 					"openapi-to-mcp-bin",
 					"aggregate-only-install",
 					"aggregate-only-mcp-stdio",
+					"aggregate-only-mcp-tool-matrix-3-8-10",
 					"independent-mcp-bin-stdio",
+					"independent-mcp-tool-matrix-3-8-10",
 					"mcp-stdio",
 					"mcp-tool-matrix-3-8-10",
 					"mcp-schemas-annotations",
 					"mcp-selective-prepare-apply",
 					"mcp-target-scoped-catalog",
+					"mcp-target-operator-remote-policy",
+					"mcp-same-origin-header-retention",
+					"mcp-cross-origin-header-clearing",
 					"mcp-workspace-output-ownership",
 					"mcp-three-state-commit",
 					"mcp-token-replay",
