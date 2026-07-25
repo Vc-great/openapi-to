@@ -1,6 +1,6 @@
 {
 	"name": "openapi-to",
-	"version": "3.2.2",
+	"version": "4.0.0-rc.0",
 	"description": "OpenAPI compiler, CLI, and official TypeScript code-generation plugins",
 	"keywords": [
 		"openapi",

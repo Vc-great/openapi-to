@@ -61,5 +61,6 @@ docs/.vitepress/dist/**
 !.changeset/config.json
 !.changeset/README.md
 !.changeset/*.md
+!.changeset/pre.json
 
 **/test-output/**

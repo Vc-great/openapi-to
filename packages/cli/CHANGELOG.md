@@ -1,5 +1,70 @@
 # @openapi-to/cli
 
+## 4.0.0-rc.0
+
+### Major Changes
+
+- e373f8c: Freeze the P0 compiler and P1 Codex governance baseline. This release adds the
+  OpenAPI compiler pipeline, structured diagnostics, general generated artifacts,
+  validation, inspection, contract diffing, deterministic dry-run/check modes,
+  safe remote loading, and the expanded CLI surface.
+
+  The major bump records compatibility-sensitive behavior changes: private-network
+  remote sources are blocked by default, conflicting artifact paths fail instead of
+  depending on write order, managed output cleanup is manifest-aware, and CLI
+  failures now return classified non-zero exit codes.
+
+### Minor Changes
+
+- 862f0ae: Add shared microservice Target selection and generator-managed Workspace output
+  roots. The CLI now accepts repeatable `generate --target` options while Core,
+  CLI, MCP, and packed-package smoke workflows share deterministic Target naming,
+  output resolution, overlap protection, and write preflight.
+
+  Preserve and verify JSON, YAML, YML, and HTTP(S) OpenAPI inputs across
+  multi-target CLI and MCP workflows. Default output remains
+  `.OpenAPI/<output.dir>`; opting into `output.base: "workspace"` keeps ownership
+  inside the selected project output root while Operation selection remains in
+  `.OpenAPI/selections`.
+
+### Patch Changes
+
+- 642c834: Align published package metadata, documented capabilities, CLI aliases, MCP Host setup, and release verification with the shipped package surfaces.
+- f0a38b1: Add operator-gated, two-phase MCP generation writes through a short-lived HMAC-bound Prepare plan and an exact one-time Apply. Apply re-generates and rejects stale config, source, reference, output, manifest, or file state before committing only managed artifacts.
+
+  Core gains public source/config fingerprints plus a shared cross-process output lock and transaction writer with same-filesystem staging, a stable ownership manifest, rollback, crash journal recovery, commit cancellation/deadline semantics, and fail-closed TOCTOU checks. The CLI keeps its command and output contract while using the same transaction/lock path, so its direct SemVer impact is patch; the fixed-version group will coordinate the eventual release version. No version or publication command is run by this change.
+
+- 6aac98f: Harden remote loading by clearing trusted request headers on cross-Origin
+  redirects and rejecting HTTPS-to-HTTP downgrades. Merge trusted Target remote
+  requirements with MCP operator ceilings instead of replacing them; the MCP
+  server API can now supply optional remote timeout, response-size, and redirect
+  upper bounds while Tool schemas remain unchanged.
+
+  Classify native Windows absolute inputs without treating drive letters as URL
+  schemes, reject drive-relative and UNC configured inputs, and require portable
+  output segments across Linux, macOS, and Windows. Extend cross-platform CI,
+  stable lint coverage, package-surface checks, and real tarball consumers for the
+  three aggregate binaries and shared MCP CLI subpath.
+
+- ca8f1cb: Add the independent read-only stdio MCP server with bounded validate, inspect,
+  diff, generation dry-run, and generation check Tools. Core gains opt-in local
+  file-root confinement for entry and transitive reference reads plus the shared
+  trusted configuration loader; the CLI now reuses that loader without changing
+  its command contract.
+- Updated dependencies [e373f8c]
+- Updated dependencies [4f10867]
+- Updated dependencies [642c834]
+- Updated dependencies [3e1078b]
+- Updated dependencies [ce3f9f2]
+- Updated dependencies [862f0ae]
+- Updated dependencies [b4130f7]
+- Updated dependencies [f0a38b1]
+- Updated dependencies [6aac98f]
+- Updated dependencies [b4130f7]
+- Updated dependencies [ca8f1cb]
+- Updated dependencies [235162c]
+  - @openapi-to/core@4.0.0-rc.0
+
 ## 3.2.2
 
 ### Patch Changes

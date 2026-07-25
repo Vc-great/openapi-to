@@ -1,5 +1,80 @@
 # openapi-to
 
+## 4.0.0-rc.0
+
+### Major Changes
+
+- e373f8c: Freeze the P0 compiler and P1 Codex governance baseline. This release adds the
+  OpenAPI compiler pipeline, structured diagnostics, general generated artifacts,
+  validation, inspection, contract diffing, deterministic dry-run/check modes,
+  safe remote loading, and the expanded CLI surface.
+
+  The major bump records compatibility-sensitive behavior changes: private-network
+  remote sources are blocked by default, conflicting artifact paths fail instead of
+  depending on write order, managed output cleanup is manifest-aware, and CLI
+  failures now return classified non-zero exit codes.
+
+### Minor Changes
+
+- 862f0ae: Add shared microservice Target selection and generator-managed Workspace output
+  roots. The CLI now accepts repeatable `generate --target` options while Core,
+  CLI, MCP, and packed-package smoke workflows share deterministic Target naming,
+  output resolution, overlap protection, and write preflight.
+
+  Preserve and verify JSON, YAML, YML, and HTTP(S) OpenAPI inputs across
+  multi-target CLI and MCP workflows. Default output remains
+  `.OpenAPI/<output.dir>`; opting into `output.base: "workspace"` keeps ownership
+  inside the selected project output root while Operation selection remains in
+  `.OpenAPI/selections`.
+
+- acfb118: Make `openapi-to` the complete user installation entrypoint. The aggregate now
+  depends on the MCP runtime and installs the `openapi-to-mcp` command alongside
+  the `openapi` and `openapi-to` CLI aliases, so most users no longer need to
+  install `@openapi-to/mcp` separately.
+
+  Expose the shared MCP CLI runner through the stable `@openapi-to/mcp/cli`
+  subpath so both package bins use one argument parser and stdio Server startup
+  implementation.
+
+### Patch Changes
+
+- 642c834: Align published package metadata, documented capabilities, CLI aliases, MCP Host setup, and release verification with the shipped package surfaces.
+- 6aac98f: Harden remote loading by clearing trusted request headers on cross-Origin
+  redirects and rejecting HTTPS-to-HTTP downgrades. Merge trusted Target remote
+  requirements with MCP operator ceilings instead of replacing them; the MCP
+  server API can now supply optional remote timeout, response-size, and redirect
+  upper bounds while Tool schemas remain unchanged.
+
+  Classify native Windows absolute inputs without treating drive letters as URL
+  schemes, reject drive-relative and UNC configured inputs, and require portable
+  output segments across Linux, macOS, and Windows. Extend cross-platform CI,
+  stable lint coverage, package-surface checks, and real tarball consumers for the
+  three aggregate binaries and shared MCP CLI subpath.
+
+- Updated dependencies [e373f8c]
+- Updated dependencies [4f10867]
+- Updated dependencies [642c834]
+- Updated dependencies [3e1078b]
+- Updated dependencies [f3d4d04]
+- Updated dependencies [ce3f9f2]
+- Updated dependencies [862f0ae]
+- Updated dependencies [b4130f7]
+- Updated dependencies [f0a38b1]
+- Updated dependencies [6aac98f]
+- Updated dependencies [b4130f7]
+- Updated dependencies [ca8f1cb]
+- Updated dependencies [235162c]
+- Updated dependencies [acfb118]
+  - @openapi-to/core@4.0.0-rc.0
+  - @openapi-to/cli@4.0.0-rc.0
+  - @openapi-to/plugin-msw@4.0.0-rc.0
+  - @openapi-to/plugin-swr@4.0.0-rc.0
+  - @openapi-to/plugin-ts-request@4.0.0-rc.0
+  - @openapi-to/plugin-ts-type@4.0.0-rc.0
+  - @openapi-to/plugin-vue-query@4.0.0-rc.0
+  - @openapi-to/plugin-zod@4.0.0-rc.0
+  - @openapi-to/mcp@4.0.0-rc.0
+
 ## 3.2.2
 
 ### Patch Changes

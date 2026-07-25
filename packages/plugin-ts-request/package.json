@@ -1,6 +1,6 @@
 {
 	"name": "@openapi-to/plugin-ts-request",
-	"version": "3.2.2",
+	"version": "4.0.0-rc.0",
 	"sideEffects": false,
 	"type": "module",
 	"description": "Generate TypeScript request clients from OpenAPI operations",
