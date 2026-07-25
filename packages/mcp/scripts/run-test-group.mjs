@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -51,6 +51,9 @@ const performanceScripts = [
   { file: 'packages/mcp/scripts/benchmark.mjs', args: ['--iterations', '2', '--check'] },
   { file: 'packages/mcp/scripts/stress.mjs', args: [] },
 ]
+const crossPlatformSmokeScripts = [
+  { file: 'packages/mcp/scripts/cross-platform-smoke.mjs', args: [] },
+]
 
 function unique(files) {
   return [...new Set(files)]
@@ -64,13 +67,13 @@ const groups = {
   test: { build: 'write', files: allMcpFiles, expectedTests: 124, timeoutMs: 300_000 },
   unit: { build: 'core', files: unitFiles, expectedTests: 72, timeoutMs: 120_000 },
   integration: { build: 'write', files: integrationFiles, expectedTests: 52, timeoutMs: 240_000 },
-  smoke: { build: 'write', files: smokeFiles, expectedTests: 6, timeoutMs: 120_000 },
+  smoke: { build: 'write', files: smokeFiles, expectedTests: 6, scripts: crossPlatformSmokeScripts, timeoutMs: 120_000 },
   stdio: { build: 'write', files: stdioFiles, expectedTests: 46, timeoutMs: 240_000 },
   write: { build: 'write', files: writeFiles, expectedTests: 37, timeoutMs: 180_000 },
   recovery: { build: 'write', files: recoveryFiles, expectedTests: 117, timeoutMs: 360_000 },
   performance: { build: 'mcp', files: [], expectedTests: 0, scripts: performanceScripts, timeoutMs: 360_000 },
-  e2e: { build: 'write', files: e2eFiles, expectedTests: 105, timeoutMs: 480_000 },
-  all: { build: 'write', files: allVitestFiles, expectedTests: 177, scripts: performanceScripts, timeoutMs: 600_000 },
+  e2e: { build: 'write', files: e2eFiles, expectedTests: 105, scripts: crossPlatformSmokeScripts, timeoutMs: 480_000 },
+  all: { build: 'write', files: allVitestFiles, expectedTests: 177, scripts: [...crossPlatformSmokeScripts, ...performanceScripts], timeoutMs: 600_000 },
 }
 
 function fail(message) {
@@ -158,6 +161,23 @@ async function main() {
   }
 
   const group = groups[name]
+  const requestedArtifactDirectory = process.env.MCP_TEST_ARTIFACT_DIR
+  const artifactDirectory = requestedArtifactDirectory
+    ? path.resolve(requestedArtifactDirectory)
+    : undefined
+  if (artifactDirectory) {
+    await mkdir(artifactDirectory, { recursive: true })
+    await writeFile(path.join(artifactDirectory, 'runner.json'), `${JSON.stringify({
+      group: name,
+      platform: process.platform,
+      arch: process.arch,
+      node: process.version,
+      pnpmEntrypoint: process.env.npm_execpath ? path.basename(process.env.npm_execpath) : null,
+      files: group.files,
+      expectedTests: group.expectedTests,
+      scripts: (group.scripts ?? []).map(({ file, args }) => ({ file, args })),
+    }, null, 2)}\n`)
+  }
   await validateInventory(group)
   process.stdout.write(`[mcp-tests] group=${name} vitestFiles=${group.files.length} expectedVitestTests=${group.expectedTests} scripts=${group.scripts?.length ?? 0}\n`)
   for (const file of group.files) process.stdout.write(`[mcp-tests] vitest ${file}\n`)
@@ -166,7 +186,7 @@ async function main() {
 
   await build(group.build)
   if (group.files.length > 0) {
-    const reportDirectory = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-mcp-vitest-'))
+    const reportDirectory = artifactDirectory ?? await mkdtemp(path.join(os.tmpdir(), 'openapi-to-mcp-vitest-'))
     const reportPath = path.join(reportDirectory, 'results.json')
     const invocation = pnpmInvocation([
       'exec',
@@ -192,7 +212,7 @@ async function main() {
       }
       process.stdout.write(`[mcp-tests] verified actualVitestFiles=${actualFiles} actualVitestTests=${actualTests}\n`)
     } finally {
-      await rm(reportDirectory, { recursive: true, force: true })
+      if (!artifactDirectory) await rm(reportDirectory, { recursive: true, force: true })
     }
   }
   for (const { file, args } of group.scripts ?? []) await run(process.execPath, [path.join(repositoryRoot, file), ...args], group.timeoutMs)

@@ -12,10 +12,10 @@ on:
 jobs:
   common:
     name: CLI CommonJS E2E (${{ matrix.os }})
-    if: github.event_name == 'push'
+    if: github.event_name != 'schedule'
     timeout-minutes: 30
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -28,27 +28,26 @@ jobs:
         uses: ./.github/setup
       - name: Build
         run: pnpm run build
-      - name: Install e2e dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-        working-directory: ./e2e/common
-      - name: Initialize openapi-to
-        run: pnpm run init
-        working-directory: ./e2e/common
-      - name: Configure plugins
-        run: pnpm run editPlugins
-        working-directory: ./e2e/common
-      - name: Generate
-        run: pnpm run generate
-        working-directory: ./e2e/common
+      - name: Run deterministic CommonJS CLI E2E
+        run: pnpm test:e2e:common
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
+          CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-common
+      - name: Upload CommonJS CLI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-common-${{ matrix.os }}
+          path: ${{ runner.temp }}/cli-common
+          if-no-files-found: warn
+          retention-days: 14
 
   module:
     name: CLI ESM E2E (${{ matrix.os }})
-    if: github.event_name == 'push'
+    if: github.event_name != 'schedule'
     timeout-minutes: 30
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -61,20 +60,50 @@ jobs:
         uses: ./.github/setup
       - name: Build
         run: pnpm run build
-      - name: Install e2e dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-        working-directory: ./e2e/module
-      - name: Initialize openapi-to
-        run: pnpm run init
-        working-directory: ./e2e/module
-      - name: Configure plugins
-        run: pnpm run editPlugins
-        working-directory: ./e2e/module
-      - name: Generate
-        run: pnpm run generate
-        working-directory: ./e2e/module
+      - name: Run deterministic ESM CLI E2E
+        run: pnpm test:e2e:module
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
+          CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-module
+      - name: Upload ESM CLI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-module-${{ matrix.os }}
+          path: ${{ runner.temp }}/cli-module
+          if-no-files-found: warn
+          retention-days: 14
+
+  remote:
+    name: CLI local HTTP E2E (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Build
+        run: pnpm run build
+      - name: Generate from controlled local HTTP fixtures
+        run: pnpm test:e2e:remote
+        env:
+          CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-remote
+      - name: Upload remote CLI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-remote-${{ matrix.os }}
+          path: ${{ runner.temp }}/cli-remote
+          if-no-files-found: warn
+          retention-days: 14
 
   mcp-stdio-e2e:
     name: MCP stdio E2E
@@ -119,6 +148,16 @@ jobs:
         uses: ./.github/setup
       - name: Initialize, list tools, validate, and close
         run: pnpm test:mcp:smoke
+        env:
+          MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-smoke
+      - name: Upload MCP smoke failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-smoke-${{ matrix.os }}
+          path: ${{ runner.temp }}/mcp-smoke
+          if-no-files-found: warn
+          retention-days: 14
 
   mcp-transaction-safety:
     name: MCP transaction safety

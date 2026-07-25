@@ -27,7 +27,10 @@ jobs:
         run: pnpm build --concurrency=1
       - name: Run A1 focused contracts
         run: pnpm test:a1-contracts
+        env:
+          A1_TEST_ARTIFACT_DIR: ${{ runner.temp }}/a1-contracts
       - name: Verify aggregate CLI aliases
+        working-directory: e2e/common
         run: |
           pnpm exec openapi --help
           pnpm exec openapi-to --version
@@ -36,3 +39,11 @@ jobs:
         run: |
           node packages/openapi/bin/openapi-to-mcp.js --help
           node packages/mcp/bin/openapi-to-mcp.js --help
+      - name: Upload A1 failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a1-contracts-${{ matrix.os }}
+          path: ${{ runner.temp }}/a1-contracts
+          if-no-files-found: warn
+          retention-days: 14

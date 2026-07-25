@@ -126,7 +126,7 @@ function boundedInteger(name: string, value: number | undefined, fallback: numbe
 
 export function resolveMcpServerOptions(options: OpenapiToMcpServerOptions): ResolvedMcpServerOptions {
   if (options.allowWrite && !options.configPath) throw new RangeError('allowWrite requires a trusted startup configPath.')
-  const workspaceRoot = realpathSync(path.resolve(options.workspaceRoot))
+  const workspaceRoot = realpathSync.native(path.resolve(options.workspaceRoot))
   return {
     ...options,
     workspaceRoot,

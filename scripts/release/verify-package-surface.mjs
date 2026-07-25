@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { access, readFile, readdir, stat } from "node:fs/promises";
+import { access, readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -263,6 +263,17 @@ if (!aggregate) {
 	) {
 		failures.push(
 			"openapi-to: top-level JavaScript API must not re-export MCP implementation APIs",
+		);
+	}
+}
+
+for (const directory of ["e2e/common", "e2e/module"]) {
+	const manifest = JSON.parse(
+		await readFile(join(repositoryRoot, directory, "package.json"), "utf8"),
+	);
+	if (manifest.dependencies?.["openapi-to"] !== "workspace:*") {
+		failures.push(
+			`${directory}: real CLI consumer must depend on openapi-to through workspace:*`,
 		);
 	}
 }

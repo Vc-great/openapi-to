@@ -1,26 +1,34 @@
 const fs = require("fs-extra");
-const path = require("path");
+const path = require("node:path");
 
-const filePath = path.resolve(__dirname, "./.OpenAPI/openapi.config.ts");
+const filePath = path.resolve(
+	process.env.CLI_E2E_CONFIG_PATH ??
+		path.join(__dirname, ".OpenAPI", "openapi.config.ts"),
+);
+const inputPath = process.env.CLI_E2E_INPUT_PATH ?? "../fixtures/petstore.yaml";
 
-const config = `import { defineConfig, pluginMSW,pluginSWR, pluginTSRequest, pluginTSType, pluginZod,pluginVueQuery } from 'openapi-to'
+const config = `import {
+  defineConfig,
+  pluginTSRequest,
+  pluginTSType,
+  pluginZod,
+} from 'openapi-to'
 
 
 export default defineConfig({
-  servers:[
+  servers: [
     {
-    input: {
-      path:'https://petstore.swagger.io/v2/swagger.json'  //api documentation url
+      name: 'local-yaml',
+      input: {
+        path: ${JSON.stringify(inputPath)},
+      },
+      output: {
+        dir: 'server',
+        clean: true,
+      },
     },
-        output:{
-       dir:'server'
-    }
-    }
   ],
   plugins: [
-    pluginMSW(),
-    pluginSWR(),
-    pluginVueQuery(),
     pluginZod(),
     pluginTSType(),
     pluginTSRequest({
@@ -32,9 +40,10 @@ export default defineConfig({
       requestConfigTypeImportDeclaration: {
         namedImports: ['AxiosRequestConfig'],
         moduleSpecifier: 'axios',
-      }
-          })
-  ]
-})`;
+      },
+    }),
+  ],
+})
+`;
 
 fs.writeFileSync(filePath, config, { encoding: "utf8" });

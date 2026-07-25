@@ -1,5 +1,5 @@
-import { access, readFile, readdir } from "node:fs/promises";
 import { constants } from "node:fs";
+import { access, readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -157,6 +157,15 @@ function documentedPnpmScripts(contents) {
 	return names;
 }
 
+function toolMatrixSize(contents, testName) {
+	const testStart = contents.indexOf(testName);
+	if (testStart < 0) return undefined;
+	const assertion = contents
+		.slice(testStart)
+		.match(/toEqual\(\[([\s\S]*?)\]\)/);
+	return assertion?.[1].match(/['"]openapi_[a-z_]+['"]/g)?.length ?? 0;
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -265,17 +274,113 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"ubuntu-latest",
 			"windows-latest",
 			"macos-latest",
+			"fail-fast: false",
 			"pnpm build --concurrency=1",
 			"pnpm test:a1-contracts",
+			"working-directory: e2e/common",
 			"packages/openapi/bin/openapi-to-mcp.js",
 			"packages/mcp/bin/openapi-to-mcp.js",
+			"actions/upload-artifact@v4",
+			"A1_TEST_ARTIFACT_DIR",
 		]) {
 			if (!a1Workflow.includes(required))
 				failures.push(`A1 workflow is missing ${required}`);
 		}
 	}
-	if (!rootManifest.scripts?.["test:a1-contracts"]) {
-		failures.push("missing test:a1-contracts focused test script");
+	if (
+		rootManifest.scripts?.["test:a1-contracts"] !==
+		"node scripts/run-a1-contracts.mjs"
+	) {
+		failures.push(
+			"test:a1-contracts must use the inventory-checking A1 test runner",
+		);
+	}
+
+	const e2eWorkflowPath = join(root, ".github/workflows/e2e.yaml");
+	if (!(await exists(e2eWorkflowPath))) {
+		failures.push("missing deterministic E2E workflow");
+	} else {
+		const e2eWorkflow = await readFile(e2eWorkflowPath, "utf8");
+		for (const required of [
+			"CLI CommonJS E2E",
+			"CLI ESM E2E",
+			"CLI local HTTP E2E",
+			"pnpm test:e2e:common",
+			"pnpm test:e2e:module",
+			"pnpm test:e2e:remote",
+			"MCP cross-platform smoke",
+			"MCP_TEST_ARTIFACT_DIR",
+			"actions/upload-artifact@v4",
+		]) {
+			if (!e2eWorkflow.includes(required))
+				failures.push(`E2E workflow is missing ${required}`);
+		}
+		if (e2eWorkflow.includes("fail-fast: true"))
+			failures.push("E2E workflow matrices must keep fail-fast disabled");
+		if (!e2eWorkflow.includes("fail-fast: false"))
+			failures.push("E2E workflow must declare fail-fast: false");
+		if (e2eWorkflow.includes("petstore.swagger.io"))
+			failures.push(
+				"blocking E2E workflow must not depend on the public Petstore service",
+			);
+	}
+	for (const requiredPath of [
+		"e2e/fixtures/petstore.json",
+		"e2e/fixtures/petstore.yaml",
+		"e2e/run-cli-e2e.mjs",
+		"e2e/run-remote-e2e.mjs",
+		"packages/mcp/scripts/cross-platform-smoke.mjs",
+	]) {
+		if (!(await exists(join(root, requiredPath))))
+			failures.push(`missing deterministic E2E input ${requiredPath}`);
+	}
+	for (const script of [
+		"test:e2e:common",
+		"test:e2e:module",
+		"test:e2e:remote",
+	]) {
+		if (!rootManifest.scripts?.[script])
+			failures.push(`missing root ${script} script`);
+	}
+
+	const serverIntegration = await readFile(
+		join(root, "packages/mcp/src/server.integration.test.ts"),
+		"utf8",
+	);
+	const controlledWriteIntegration = await readFile(
+		join(root, "packages/mcp/src/controlled-write.integration.test.ts"),
+		"utf8",
+	);
+	for (const [label, actual, expected] of [
+		[
+			"no-config MCP",
+			toolMatrixSize(
+				serverIntegration,
+				"initializes a no-config server with exactly three bounded analysis tools",
+			),
+			3,
+		],
+		[
+			"trusted-config MCP",
+			toolMatrixSize(
+				serverIntegration,
+				"registers generation tools only for fixed trusted config and preserves stdio integrity",
+			),
+			8,
+		],
+		[
+			"write-enabled MCP",
+			toolMatrixSize(
+				controlledWriteIntegration,
+				"prepares without writing, applies exactly once, and leaves generation current",
+			),
+			10,
+		],
+	]) {
+		if (actual !== expected)
+			failures.push(
+				`${label} Tool matrix must contain exactly ${expected} Tools (found ${actual ?? "no assertion"})`,
+			);
 	}
 
 	const publicPackageNames = new Set(

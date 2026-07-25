@@ -49,6 +49,8 @@ private
 test.json
 .turbo
 .next
+.ci-artifacts
+e2e/*/.openapi-to-e2e-*
 docs/.vitepress/cache/**
 docs/.vitepress/dist/**
 
