@@ -1,7 +1,11 @@
+import { execFile } from "node:child_process";
 import { constants } from "node:fs";
 import { access, readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 export const repositoryRoot = resolve(
 	dirname(fileURLToPath(import.meta.url)),
@@ -46,6 +50,19 @@ async function exists(path) {
 
 async function readJson(path) {
 	return JSON.parse(await readFile(path, "utf8"));
+}
+
+async function isGitTracked(root, path) {
+	try {
+		await execFileAsync(
+			"git",
+			["ls-files", "--error-unmatch", "--", path],
+			{ cwd: root },
+		);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 export function parseWorkspacePatterns(contents) {
@@ -255,12 +272,47 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"release:check must not use the diff-only lint:changed command",
 		);
 	}
+	if (!/\bpnpm\s+verify:changeset-state\b/.test(releaseCheck)) {
+		failures.push(
+			"release:check must run the prerelease-aware verify:changeset-state gate",
+		);
+	}
+	if (/\bchangeset\s+status\b/.test(releaseCheck)) {
+		failures.push(
+			"release:check must not invoke changeset status directly",
+		);
+	}
+	if (
+		rootManifest.scripts?.["verify:changeset-state"] !==
+		"node scripts/verify-changeset-state.mjs"
+	) {
+		failures.push(
+			"verify:changeset-state must run the maintained Changesets state validator",
+		);
+	}
+	if (await exists(join(root, ".changeset/new-mice-sit.md"))) {
+		failures.push("empty Changeset workaround new-mice-sit.md must not exist");
+	}
+	if (!(await exists(join(root, ".changeset/pre.json")))) {
+		failures.push("tracked prerelease state .changeset/pre.json must exist");
+	} else if (!(await isGitTracked(root, ".changeset/pre.json"))) {
+		failures.push(".changeset/pre.json must be tracked by Git");
+	}
 	const lintCi = rootManifest.scripts?.["lint:ci"] ?? "";
 	if (lintCi !== "node scripts/lint-ci.mjs") {
 		failures.push("lint:ci must run the tracked-file lint driver");
 	}
 	if (/(?:--changed|--staged|\blint:changed\b)/.test(lintCi)) {
 		failures.push("lint:ci must not depend on working-tree changes");
+	}
+	const qualityWorkflow = await readFile(
+		join(root, ".github/workflows/quality.yml"),
+		"utf8",
+	);
+	if (!qualityWorkflow.includes("run: pnpm verify:changeset-state")) {
+		failures.push(
+			"Quality package smoke must run verify:changeset-state",
+		);
 	}
 	const a1WorkflowPath = join(root, ".github/workflows/a1-cross-platform.yml");
 	if (!(await exists(a1WorkflowPath))) {

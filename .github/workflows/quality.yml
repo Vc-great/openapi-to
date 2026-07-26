@@ -95,4 +95,4 @@ jobs:
       - name: Pack and install packages
         run: pnpm release:smoke
       - name: Verify Changesets plan
-        run: pnpm exec changeset status
+        run: pnpm verify:changeset-state
