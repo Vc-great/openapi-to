@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   acquireOutputWriteLock,
   ARTIFACT_MANIFEST_FILENAME,
@@ -21,6 +21,28 @@ import {
   writeArtifactsTransaction,
   type TransactionFailpoint,
 } from './index.ts'
+
+const lockLstatRace = vi.hoisted(() => ({
+  armed: false,
+  observed: undefined as (() => void) | undefined,
+}))
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...actual,
+    async lstat(candidate: Parameters<typeof actual.lstat>[0], ...options: unknown[]) {
+      if (lockLstatRace.armed && String(candidate).endsWith(`/${OUTPUT_WRITE_LOCK_DIRECTORY}`)) {
+        lockLstatRace.armed = false
+        lockLstatRace.observed?.()
+        const error = new Error(`ENOENT: no such file or directory, lstat '${String(candidate)}'`) as NodeJS.ErrnoException
+        error.code = 'ENOENT'
+        throw error
+      }
+      return Reflect.apply(actual.lstat, actual, [candidate, ...options])
+    },
+  }
+})
 
 async function fileState(root: string): Promise<Record<string, string>> {
   const state: Record<string, string> = {}
@@ -137,6 +159,38 @@ describe.sequential('transactional artifact writer', () => {
     await expect(access(path.join(root, OUTPUT_TRANSACTION_JOURNAL))).rejects.toThrow()
     await expect(access(path.join(root, OUTPUT_WRITE_LOCK_DIRECTORY))).rejects.toThrow()
   }, 20_000)
+
+  it('retries when a released lock disappears before stale-lock inspection', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-transaction-lock-handoff-'))
+    const owner = await acquireOutputWriteLock(root)
+    let contenderLock: Awaited<ReturnType<typeof acquireOutputWriteLock>> | undefined
+    try {
+      const observed = new Promise<void>((resolve) => {
+        lockLstatRace.observed = resolve
+      })
+      lockLstatRace.armed = true
+      const contender = acquireOutputWriteLock(root, {
+        pollIntervalMs: 1,
+        waitTimeoutMs: 1_000,
+      }).then(
+        (lock) => ({ lock }),
+        (error: Error) => ({ error }),
+      )
+
+      await observed
+      await owner.release()
+      const outcome = await contender
+      expect(outcome).not.toHaveProperty('error')
+      if ('error' in outcome) throw outcome.error
+      contenderLock = outcome.lock
+    } finally {
+      lockLstatRace.armed = false
+      lockLstatRace.observed = undefined
+      await owner.release()
+      await contenderLock?.release()
+    }
+    await expect(access(path.join(root, OUTPUT_WRITE_LOCK_DIRECTORY))).rejects.toThrow()
+  })
 
   it('fails closed when the lock path is a symlink', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-transaction-lock-symlink-'))

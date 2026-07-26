@@ -70,10 +70,10 @@ const groups = {
   smoke: { build: 'write', files: smokeFiles, expectedTests: 6, scripts: crossPlatformSmokeScripts, timeoutMs: 120_000 },
   stdio: { build: 'write', files: stdioFiles, expectedTests: 46, timeoutMs: 240_000 },
   write: { build: 'write', files: writeFiles, expectedTests: 37, timeoutMs: 180_000 },
-  recovery: { build: 'write', files: recoveryFiles, expectedTests: 117, timeoutMs: 360_000 },
+  recovery: { build: 'write', files: recoveryFiles, expectedTests: 118, timeoutMs: 360_000 },
   performance: { build: 'mcp', files: [], expectedTests: 0, scripts: performanceScripts, timeoutMs: 360_000 },
-  e2e: { build: 'write', files: e2eFiles, expectedTests: 105, scripts: crossPlatformSmokeScripts, timeoutMs: 480_000 },
-  all: { build: 'write', files: allVitestFiles, expectedTests: 177, scripts: [...crossPlatformSmokeScripts, ...performanceScripts], timeoutMs: 600_000 },
+  e2e: { build: 'write', files: e2eFiles, expectedTests: 106, scripts: crossPlatformSmokeScripts, timeoutMs: 480_000 },
+  all: { build: 'write', files: allVitestFiles, expectedTests: 178, scripts: [...crossPlatformSmokeScripts, ...performanceScripts], timeoutMs: 600_000 },
 }
 
 function fail(message) {

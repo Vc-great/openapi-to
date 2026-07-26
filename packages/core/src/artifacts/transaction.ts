@@ -680,7 +680,11 @@ function processIsAlive(pid: number): boolean {
 }
 
 async function removeStaleLock(lockPath: string, staleLockMs: number): Promise<boolean> {
-  const metadata = await lstat(lockPath)
+  const metadata = await lstat(lockPath).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return undefined
+    throw error
+  })
+  if (!metadata) return true
   if (!metadata.isDirectory() || metadata.isSymbolicLink()) throw new OutputRecoveryRequiredError('The output lock path is unsafe.')
   const ownerPath = path.join(lockPath, 'owner.json')
   try {
