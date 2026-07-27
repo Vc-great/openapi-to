@@ -10,44 +10,19 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+	createPackedOverrides,
+	packReleasePackages,
+} from "./pack-smoke-helpers.mjs";
+import { runConsumerCodegenScenario } from "../consumer-codegen-smoke.mjs";
 
 const repositoryRoot = resolve(
 	dirname(fileURLToPath(import.meta.url)),
 	"../..",
 );
-const packageDirectories = [
-	"packages/core",
-	"packages/cli",
-	"packages/mcp",
-	"packages/plugin-msw",
-	"packages/plugin-swr",
-	"packages/plugin-ts-request",
-	"packages/plugin-ts-type",
-	"packages/plugin-vue-query",
-	"packages/plugin-zod",
-	"packages/openapi",
-];
-const forbiddenTarballPaths = [
-	/(^|\/)test-output(\/|$)/,
-	/(^|\/)coverage(\/|$)/,
-	/(^|\/)fixtures?(\/|$)/i,
-	/(^|\/)\.agents(\/|$)/,
-	/(^|\/)AGENTS\.md$/,
-	/(^|\/)\.env(?:\.|$)/,
-	/(^|\/)ownership-manifest/i,
-	/\.log$/,
-	/\.map$/,
-	/(^|\/)\.openapi-to-transaction(?:\.json|\/|$)/,
-	/(^|\/)\.openapi-to-write\.lock(\/|$)/,
-	/(^|\/)tool-selection-cases\.json$/,
-	/(^|\/)performance-baseline\.json$/,
-	/(^|\/)(?:doctor|inspect|run-doctor|run-test-group)\.mjs$/,
-	/(^|\/)(?:mcp-doctor|inspector)-(?:report|config)\.json$/i,
-	/(^|\/)(?:staging|backup)(\/|$)/i,
-];
 
 function run(command, args, cwd, options = {}) {
 	const result = spawnSync(command, args, {
@@ -79,18 +54,6 @@ function pnpm(args, cwd) {
 		args,
 		cwd,
 	);
-}
-
-function parsePackResult(stdout) {
-	const start = stdout.indexOf("{");
-	if (start < 0) throw new Error(`pnpm pack did not return JSON: ${stdout}`);
-	return JSON.parse(stdout.slice(start));
-}
-
-function exportTargets(value) {
-	if (typeof value === "string") return [value];
-	if (!value || typeof value !== "object") return [];
-	return Object.values(value).flatMap(exportTargets);
 }
 
 function binPath(installationDirectory, name) {
@@ -228,11 +191,16 @@ const aggregateInstallationDirectory = join(
 	temporaryRoot,
 	"aggregate-only-consumer",
 );
+const formalCodegenConsumerDirectory = join(
+	temporaryRoot,
+	"formal-codegen-consumer",
+);
 await writeFile(join(temporaryRoot, ".keep"), "release smoke workspace\n");
 await Promise.all([
 	mkdir(tarballDirectory, { recursive: true }),
 	mkdir(installationDirectory, { recursive: true }),
 	mkdir(aggregateInstallationDirectory, { recursive: true }),
+	mkdir(formalCodegenConsumerDirectory, { recursive: true }),
 	mkdir(join(installationDirectory, ".OpenAPI"), { recursive: true }),
 ]);
 
@@ -240,76 +208,22 @@ let succeeded = false;
 let remoteFixtureServer;
 let packageBaseline;
 try {
-	const packed = [];
-	for (const directory of packageDirectories) {
-		const packageDirectory = join(repositoryRoot, directory);
-		const manifest = JSON.parse(
-			await readFile(join(packageDirectory, "package.json"), "utf8"),
-		);
-		const result = parsePackResult(
-			pnpm(
-				["pack", "--json", "--pack-destination", tarballDirectory],
-				packageDirectory,
-			).stdout,
-		);
-		const archive = result.filename;
-		const archiveStat = await stat(archive);
-		const filePaths = result.files.map(({ path }) => path).sort();
-		const forbidden = filePaths.filter((path) =>
-			forbiddenTarballPaths.some((pattern) => pattern.test(path)),
-		);
-		if (
-			result.name === "@openapi-to/mcp" &&
-			filePaths.some((path) => path.startsWith("scripts/"))
-		) {
-			forbidden.push(
-				...filePaths.filter((path) => path.startsWith("scripts/")),
-			);
-		}
-		if (forbidden.length > 0) {
-			throw new Error(
-				`${result.name} tarball contains forbidden files: ${forbidden.join(", ")}`,
-			);
-		}
-		for (const required of ["package.json"]) {
-			if (!filePaths.includes(required))
-				throw new Error(`${result.name} tarball is missing ${required}`);
-		}
-		const packageTargets = [
-			manifest.main,
-			manifest.module,
-			manifest.types,
-			...exportTargets(manifest.exports),
-			...Object.values(manifest.bin ?? {}),
-		]
-			.filter((target) => typeof target === "string" && !target.includes("*"))
-			.map((target) => target.replace(/^\.\//, ""));
-		for (const target of new Set(packageTargets)) {
-			if (!filePaths.includes(target))
-				throw new Error(
-					`${result.name} tarball is missing declared target ${target}`,
-				);
-		}
-		packed.push({
-			name: result.name,
-			version: result.version,
-			filename: basename(archive),
-			archive,
-			size: archiveStat.size,
-			files: filePaths,
-		});
-	}
-
-	const packedOverrides = Object.fromEntries(
-		packed
-			.map(({ name, archive }) => [name, `file:${archive}`])
-			.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)),
-	);
+	const packed = await packReleasePackages({
+		repositoryRoot,
+		tarballDirectory,
+		pnpm,
+	});
+	const packedOverrides = createPackedOverrides(packed);
 	const aggregateArchive = packed.find(
 		({ name }) => name === "openapi-to",
 	)?.archive;
 	if (!aggregateArchive)
 		throw new Error("Packed aggregate openapi-to archive is missing");
+
+	await runConsumerCodegenScenario({
+		consumerRoot: formalCodegenConsumerDirectory,
+		packed,
+	});
 
 	await writeFile(
 		join(aggregateInstallationDirectory, "package.json"),
@@ -1057,6 +971,7 @@ await writeClient.close();
 					"esm",
 					"cjs",
 					"types",
+					"formal-plugin-consumer-codegen",
 					"openapi-bin",
 					"openapi-to-bin",
 					"openapi-to-mcp-bin",

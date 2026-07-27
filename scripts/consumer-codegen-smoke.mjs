@@ -1,0 +1,1015 @@
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { constants } from "node:fs";
+import {
+	access,
+	appendFile,
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	realpath,
+	rm,
+	writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+	sep,
+} from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+	createPackedOverrides,
+	packReleasePackages,
+} from "./release/pack-smoke-helpers.mjs";
+
+const temporaryPrefix = "openapi-to-consumer-codegen-";
+const outputLimit = 4_000;
+
+export const repositoryRoot = resolve(
+	dirname(fileURLToPath(import.meta.url)),
+	"..",
+);
+
+export function parseArguments(argv) {
+	const options = { keep: false, json: false };
+	for (const argument of argv) {
+		if (argument === "--") continue;
+		else if (argument === "--keep") options.keep = true;
+		else if (argument === "--json") options.json = true;
+		else if (argument === "--help") options.help = true;
+		else throw new Error(`Unknown argument: ${argument}`);
+	}
+	return options;
+}
+
+export function installedBinaryPath(
+	consumerRoot,
+	name,
+	platform = process.platform,
+) {
+	return join(
+		consumerRoot,
+		"node_modules",
+		".bin",
+		`${name}${platform === "win32" ? ".cmd" : ""}`,
+	);
+}
+
+function bounded(value, limit = outputLimit) {
+	const text = String(value ?? "");
+	if (text.length <= limit) return text;
+	return `${text.slice(0, limit)}\n… ${text.length - limit} characters omitted`;
+}
+
+function displayCommand(command, args) {
+	return [command, ...args]
+		.map((value) => (/\s/.test(value) ? JSON.stringify(value) : value))
+		.join(" ");
+}
+
+export class ConsumerSmokeCommandError extends Error {
+	constructor({ stage, command, args, result }) {
+		super(
+			[
+				`Consumer codegen smoke failed during ${stage}.`,
+				`Command: ${displayCommand(command, args)}`,
+				`Exit code: ${result.status ?? result.signal ?? "unknown"}`,
+				`stdout:\n${bounded(result.stdout)}`,
+				`stderr:\n${bounded(result.stderr)}`,
+			].join("\n"),
+		);
+		this.name = "ConsumerSmokeCommandError";
+		this.stage = stage;
+		this.exitCode = result.status;
+	}
+}
+
+export function runCommand(
+	stage,
+	command,
+	args,
+	cwd,
+	{ expectedStatus = 0, env = {} } = {},
+) {
+	const result = spawnSync(command, args, {
+		cwd,
+		encoding: "utf8",
+		maxBuffer: 16 * 1024 * 1024,
+		shell: false,
+		env: {
+			...process.env,
+			CI: "1",
+			NO_UPDATE_NOTIFIER: "1",
+			...env,
+		},
+	});
+	if (result.error) {
+		throw new Error(
+			`Consumer codegen smoke failed during ${stage}. Command: ${displayCommand(command, args)}. ${result.error.message}`,
+		);
+	}
+	if (result.status !== expectedStatus) {
+		throw new ConsumerSmokeCommandError({
+			stage,
+			command,
+			args,
+			result,
+		});
+	}
+	return result;
+}
+
+function pnpm(args, cwd, stage = "pnpm") {
+	const executable = process.env.npm_execpath;
+	if (executable) {
+		return runCommand(stage, process.execPath, [executable, ...args], cwd);
+	}
+	return runCommand(
+		stage,
+		installedBinaryPath(repositoryRoot, "pnpm"),
+		args,
+		cwd,
+	);
+}
+
+async function exists(candidate) {
+	try {
+		await access(candidate, constants.F_OK);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function assert(condition, message) {
+	if (!condition) throw new Error(message);
+}
+
+function parseJson(result, stage) {
+	try {
+		return JSON.parse(result.stdout);
+	} catch (error) {
+		throw new Error(
+			`${stage} stdout was not exactly one JSON document: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+	}
+}
+
+async function writeJson(path, value) {
+	await mkdir(dirname(path), { recursive: true });
+	await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function filesRecursively(root, { ignoreNodeModules = false } = {}) {
+	if (!(await exists(root))) return [];
+	const files = [];
+	async function visit(directory) {
+		for (const entry of await readdir(directory, { withFileTypes: true })) {
+			if (ignoreNodeModules && entry.name === "node_modules") continue;
+			const absolutePath = join(directory, entry.name);
+			if (entry.isDirectory()) await visit(absolutePath);
+			else if (entry.isFile()) files.push(absolutePath);
+			else
+				throw new Error(
+					`Consumer workspace contains a non-file entry: ${absolutePath}`,
+				);
+		}
+	}
+	await visit(root);
+	return files.sort();
+}
+
+async function fileHashes(root, options) {
+	const hashes = {};
+	for (const absolutePath of await filesRecursively(root, options)) {
+		const path = relative(root, absolutePath).split(sep).join("/");
+		hashes[path] = createHash("sha256")
+			.update(await readFile(absolutePath))
+			.digest("hex");
+	}
+	return hashes;
+}
+
+function manifestSummary(server) {
+	return server?.manifest?.summary ?? {};
+}
+
+function assertGenerateEnvelope(output, mode) {
+	assert(
+		output?.command === "generate",
+		`${mode} did not report command=generate`,
+	);
+	assert(output?.mode === mode, `${mode} did not report its expected mode`);
+	assert(output?.success === true, `${mode} did not report success=true`);
+	assert(
+		output?.servers?.length === 1,
+		`${mode} did not report exactly one target`,
+	);
+	assert(
+		output.servers[0]?.name === "consumer",
+		`${mode} did not report the consumer target`,
+	);
+	return output.servers[0];
+}
+
+function changedEntries(server, status) {
+	return (server?.manifest?.entries ?? []).filter(
+		(entry) => entry.status === status,
+	);
+}
+
+export function assertGeneratedOutput(files) {
+	assert(files.length > 0, "Formal plugins generated no files.");
+	const paths = files.map((file) => file.split(sep).join("/"));
+	for (const expected of [
+		"types/models/widget.model.ts",
+		"zod/models/widget.schema.ts",
+		"widgets/get-widget.types.ts",
+		"widgets/get-widget.schema.ts",
+		"widgets/get-widget.service.ts",
+		"widgets/create-widget.types.ts",
+		"widgets/create-widget.schema.ts",
+		"widgets/create-widget.service.ts",
+		".openapi-to-manifest.json",
+	]) {
+		assert(
+			paths.includes(expected),
+			`Generated output is missing ${expected}.`,
+		);
+	}
+}
+
+async function assertRelativeImportsResolve(outputRoot, generatedFiles) {
+	for (const relativePath of generatedFiles.filter((path) =>
+		path.endsWith(".ts"),
+	)) {
+		const absolutePath = join(outputRoot, relativePath);
+		const source = await readFile(absolutePath, "utf8");
+		for (const match of source.matchAll(
+			/\bfrom\s+["'](\.{1,2}\/[^"']+)["']/g,
+		)) {
+			const candidate = resolve(dirname(absolutePath), match[1]);
+			const alternatives = [
+				candidate,
+				`${candidate}.ts`,
+				join(candidate, "index.ts"),
+			];
+			assert(
+				await alternatives.reduce(
+					async (found, item) => (await found) || (await exists(item)),
+					Promise.resolve(false),
+				),
+				`${relativePath} imports missing file ${match[1]}.`,
+			);
+		}
+	}
+}
+
+async function assertSemanticOutput(outputRoot, consumerRoot, generatedFiles) {
+	const readGenerated = (path) => readFile(join(outputRoot, path), "utf8");
+	const [
+		widgetType,
+		getType,
+		createType,
+		widgetZod,
+		getService,
+		createService,
+	] = await Promise.all([
+		readGenerated("types/models/widget.model.ts"),
+		readGenerated("widgets/get-widget.types.ts"),
+		readGenerated("widgets/create-widget.types.ts"),
+		readGenerated("zod/models/widget.schema.ts"),
+		readGenerated("widgets/get-widget.service.ts"),
+		readGenerated("widgets/create-widget.service.ts"),
+	]);
+	assert(
+		/export interface WidgetModel/.test(widgetType),
+		"Widget component type was not generated.",
+	);
+	assert(
+		/\bid: string;/.test(widgetType),
+		"Required Widget.id is missing or optional.",
+	);
+	assert(
+		/\bdisplayName\?: string;/.test(widgetType),
+		"Optional Widget.displayName was not preserved.",
+	);
+	assert(
+		/\btags\?: Array<string>;/.test(widgetType),
+		"Widget tags array was not generated.",
+	);
+	assert(
+		/WidgetStatusEnum/.test(widgetType),
+		"Widget status enum was not referenced.",
+	);
+	assert(
+		/\bwidgetId: string;/.test(getType),
+		"GET path parameter type was not generated.",
+	);
+	assert(
+		/\bincludeHistory\?: boolean;/.test(getType),
+		"Optional GET query parameter type was not generated.",
+	);
+	assert(
+		/WidgetModel/.test(getType),
+		"GET response does not reference WidgetModel.",
+	);
+	assert(
+		/CreateWidgetRequestModel/.test(createType),
+		"POST request body does not reference CreateWidgetRequestModel.",
+	);
+	assert(
+		/WidgetModel/.test(createType),
+		"POST response does not reference WidgetModel.",
+	);
+	assert(
+		/z\.object\(/.test(widgetZod),
+		"Widget Zod object schema was not generated.",
+	);
+	assert(
+		/widgetId/.test(getService),
+		"GET service signature omitted the path parameter.",
+	);
+	assert(
+		/params\?/.test(getService),
+		"GET service signature omitted optional query parameters.",
+	);
+	assert(
+		/GetWidgetResponse/.test(getService),
+		"GET service omitted its response type.",
+	);
+	assert(
+		/CreateWidgetMutationRequest/.test(createService),
+		"POST service omitted its request body type.",
+	);
+	assert(
+		/CreateWidgetMutationResponse/.test(createService),
+		"POST service omitted its response type.",
+	);
+	assert(
+		/createWidgetMutationRequestSchema\.parse\(data\)/.test(createService),
+		"POST service does not validate its body with Zod.",
+	);
+
+	const repositoryPath = repositoryRoot.split(sep).join("/");
+	for (const relativePath of generatedFiles) {
+		const source = await readFile(join(outputRoot, relativePath), "utf8");
+		const normalized = source.split(sep).join("/");
+		assert(
+			!normalized.includes(repositoryPath),
+			`${relativePath} leaks the repository path.`,
+		);
+		assert(
+			!/(?:^|["'])[^"']*packages\/[^"']*\/src(?:\/|["'])/.test(normalized),
+			`${relativePath} imports repository source.`,
+		);
+	}
+	await assertRelativeImportsResolve(outputRoot, generatedFiles);
+	assert(
+		(await realpath(consumerRoot)) !== (await realpath(repositoryRoot)),
+		"Consumer workspace is not independent from the repository.",
+	);
+}
+
+async function createConsumerFiles(consumerRoot, aggregateArchive, packed) {
+	const typescriptManifest = JSON.parse(
+		await readFile(
+			join(repositoryRoot, "node_modules/typescript/package.json"),
+			"utf8",
+		),
+	);
+	const zodManifest = JSON.parse(
+		await readFile(
+			join(repositoryRoot, "e2e/module/node_modules/zod/package.json"),
+			"utf8",
+		),
+	);
+	await writeJson(join(consumerRoot, "package.json"), {
+		name: "openapi-to-formal-plugin-consumer-smoke",
+		private: true,
+		type: "module",
+		devDependencies: {
+			"openapi-to": `file:${aggregateArchive}`,
+			typescript: typescriptManifest.version,
+			zod: zodManifest.version,
+		},
+		pnpm: { overrides: createPackedOverrides(packed) },
+	});
+	await writeJson(join(consumerRoot, "openapi.json"), {
+		openapi: "3.0.3",
+		info: { title: "Consumer Widgets", version: "1.0.0" },
+		paths: {
+			"/widgets/{widgetId}": {
+				get: {
+					tags: ["widgets"],
+					operationId: "getWidget",
+					parameters: [
+						{
+							name: "widgetId",
+							in: "path",
+							required: true,
+							schema: { type: "string" },
+						},
+						{
+							name: "includeHistory",
+							in: "query",
+							required: false,
+							schema: { type: "boolean" },
+						},
+					],
+					responses: {
+						200: {
+							description: "Widget",
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Widget" },
+								},
+							},
+						},
+					},
+				},
+			},
+			"/widgets": {
+				post: {
+					tags: ["widgets"],
+					operationId: "createWidget",
+					requestBody: {
+						required: true,
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/CreateWidgetRequest",
+								},
+							},
+						},
+					},
+					responses: {
+						201: {
+							description: "Created widget",
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Widget" },
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		components: {
+			schemas: {
+				Widget: {
+					type: "object",
+					required: ["id", "status", "metadata"],
+					properties: {
+						id: { type: "string" },
+						displayName: { type: "string" },
+						status: {
+							type: "string",
+							enum: ["active", "archived"],
+						},
+						tags: { type: "array", items: { type: "string" } },
+						metadata: { $ref: "#/components/schemas/WidgetMetadata" },
+					},
+				},
+				WidgetMetadata: {
+					type: "object",
+					required: ["createdBy"],
+					properties: {
+						createdBy: { type: "string" },
+						audit: { $ref: "#/components/schemas/AuditMetadata" },
+					},
+				},
+				AuditMetadata: {
+					type: "object",
+					required: ["revision"],
+					properties: {
+						revision: { type: "integer" },
+						note: { type: "string" },
+					},
+				},
+				CreateWidgetRequest: {
+					type: "object",
+					required: ["name", "status"],
+					properties: {
+						name: { type: "string" },
+						status: {
+							type: "string",
+							enum: ["active", "archived"],
+						},
+						tags: { type: "array", items: { type: "string" } },
+						details: { $ref: "#/components/schemas/WidgetDetails" },
+					},
+				},
+				WidgetDetails: {
+					type: "object",
+					required: ["color"],
+					properties: {
+						color: { type: "string" },
+						description: { type: "string" },
+					},
+				},
+			},
+		},
+	});
+	await mkdir(join(consumerRoot, ".OpenAPI"), { recursive: true });
+	await writeFile(
+		join(consumerRoot, ".OpenAPI/openapi.config.ts"),
+		`import {
+  defineConfig,
+  pluginTSRequest,
+  pluginTSType,
+  pluginZod,
+} from "openapi-to";
+
+export default defineConfig({
+  servers: [{
+    name: "consumer",
+    input: { path: "./openapi.json" },
+    output: { base: "workspace", dir: "generated", clean: true },
+  }],
+  plugins: [
+    pluginZod(),
+    pluginTSType(),
+    pluginTSRequest({
+      parser: "zod",
+      requestClient: "common",
+      requestImportDeclaration: { moduleSpecifier: "../../request.ts" },
+      requestConfigTypeImportDeclaration: {
+        namedImports: ["RequestOptions"],
+        moduleSpecifier: "../../request.ts",
+      },
+      importWithExtension: true,
+    }),
+  ],
+});
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "request.ts"),
+		`export interface RequestOptions {
+  method?: string;
+  url?: string;
+  params?: unknown;
+  data?: unknown;
+  headers?: Record<string, string>;
+}
+
+export async function request<T>(_options: RequestOptions): Promise<{ data: unknown }> {
+  return { data: {} as T };
+}
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "consumer-usage.ts"),
+		`import { createWidgetService } from "./generated/widgets/create-widget.service.ts";
+import { getWidgetService } from "./generated/widgets/get-widget.service.ts";
+import type { WidgetModel } from "./generated/types/models/widget.model.ts";
+
+const created = await createWidgetService({
+  name: "desk",
+  status: "active",
+  details: { color: "blue" },
+});
+const fetched = await getWidgetService("widget-1", { includeHistory: true });
+const widget: WidgetModel = {
+  id: "widget-1",
+  status: "active",
+  metadata: {
+    createdBy: "consumer",
+    audit: { revision: 1 },
+  },
+};
+void created;
+void fetched;
+void widget;
+`,
+	);
+	await writeJson(join(consumerRoot, "tsconfig.generated.json"), {
+		compilerOptions: {
+			allowImportingTsExtensions: true,
+			module: "NodeNext",
+			moduleResolution: "NodeNext",
+			noEmit: true,
+			skipLibCheck: false,
+			strict: true,
+			target: "ES2022",
+		},
+		include: ["generated/**/*.ts", "request.ts", "consumer-usage.ts"],
+	});
+}
+
+export async function runConsumerCodegenScenario({
+	consumerRoot,
+	packed,
+	log = () => {},
+}) {
+	const aggregate = packed.find(({ name }) => name === "openapi-to");
+	assert(aggregate, "Packed aggregate openapi-to archive is missing.");
+	await mkdir(consumerRoot, { recursive: true });
+	await createConsumerFiles(consumerRoot, aggregate.archive, packed);
+
+	log("install", "Installing the packed aggregate and tarball overrides");
+	pnpm(
+		["install", "--ignore-scripts", "--prefer-offline"],
+		consumerRoot,
+		"consumer install",
+	);
+	const cli = installedBinaryPath(consumerRoot, "openapi");
+	const tsc = installedBinaryPath(consumerRoot, "tsc");
+	assert(isAbsolute(cli), "Consumer CLI path must be absolute.");
+	assert(
+		await exists(cli),
+		"Installed consumer node_modules/.bin/openapi entry is missing.",
+	);
+
+	log("entry", "Checking installed CLI version and help");
+	const version = runCommand(
+		"CLI version",
+		cli,
+		["--version"],
+		consumerRoot,
+	).stdout.trim();
+	assert(
+		version.startsWith(`openapi/${aggregate.version} `),
+		`Installed CLI reported ${version}; expected openapi/${aggregate.version}.`,
+	);
+	const help = runCommand("CLI help", cli, ["--help"], consumerRoot).stdout;
+	assert(help.includes("generate"), "Installed CLI help omitted generate.");
+
+	log("analysis", "Validating and inspecting the local OpenAPI fixture");
+	const validation = parseJson(
+		runCommand(
+			"OpenAPI validation",
+			cli,
+			["validate", "./openapi.json", "--json"],
+			consumerRoot,
+		),
+		"OpenAPI validation",
+	);
+	assert(
+		validation.success === true && validation.command === "validate",
+		"Structured validation result is not successful.",
+	);
+	const inspection = parseJson(
+		runCommand(
+			"OpenAPI inspection",
+			cli,
+			["inspect", "./openapi.json", "--json"],
+			consumerRoot,
+		),
+		"OpenAPI inspection",
+	);
+	assert(
+		inspection.success === true &&
+			inspection.command === "inspect" &&
+			inspection.inspection?.pathCount === 2 &&
+			inspection.inspection?.operationCount === 2,
+		"Structured inspection did not report two paths and two operations.",
+	);
+
+	const outputRoot = join(consumerRoot, "generated");
+	const beforeDryRun = await fileHashes(consumerRoot, {
+		ignoreNodeModules: true,
+	});
+	log("dry-run", "Planning formal plugin output without writing");
+	const dryRun = parseJson(
+		runCommand(
+			"generation dry-run",
+			cli,
+			["generate", "--target", "consumer", "--dry-run", "--json"],
+			consumerRoot,
+		),
+		"generation dry-run",
+	);
+	const dryRunServer = assertGenerateEnvelope(dryRun, "dry-run");
+	assert(
+		(dryRunServer.manifest?.entries?.length ?? 0) > 0,
+		"Generation dry-run reported no artifacts.",
+	);
+	assert(
+		!(await exists(outputRoot)),
+		"Generation dry-run created the output directory.",
+	);
+	assert(
+		JSON.stringify(beforeDryRun) ===
+			JSON.stringify(
+				await fileHashes(consumerRoot, { ignoreNodeModules: true }),
+			),
+		"Generation dry-run modified consumer project files.",
+	);
+
+	log("generate", "Writing formal plugin output");
+	const generated = parseJson(
+		runCommand(
+			"generation write",
+			cli,
+			["generate", "--target", "consumer", "--json"],
+			consumerRoot,
+		),
+		"generation write",
+	);
+	assertGenerateEnvelope(generated, "write");
+	const generatedFiles = (await filesRecursively(outputRoot)).map((path) =>
+		relative(outputRoot, path).split(sep).join("/"),
+	);
+	assertGeneratedOutput(generatedFiles);
+	await assertSemanticOutput(outputRoot, consumerRoot, generatedFiles);
+	const ownershipPath = join(outputRoot, ".openapi-to-manifest.json");
+	const ownership = JSON.parse(await readFile(ownershipPath, "utf8"));
+	assert(
+		ownership.version === 2 && ownership.files?.length > 0,
+		"Ownership manifest is missing or empty.",
+	);
+
+	log("typecheck", "Strictly compiling generated code in the consumer");
+	runCommand(
+		"TypeScript compile",
+		tsc,
+		["-p", "tsconfig.generated.json"],
+		consumerRoot,
+	);
+
+	log("check", "Checking that generated output is current");
+	const current = parseJson(
+		runCommand(
+			"generation check",
+			cli,
+			["generate", "--target", "consumer", "--check", "--json"],
+			consumerRoot,
+		),
+		"generation check",
+	);
+	const currentServer = assertGenerateEnvelope(current, "check");
+	assert(
+		currentServer.manifest?.outdated === false,
+		"Generated output is outdated.",
+	);
+	for (const status of ["added", "modified", "deleted"]) {
+		assert(
+			changedEntries(currentServer, status).length === 0,
+			`Current check unexpectedly reported ${status} artifacts.`,
+		);
+	}
+
+	const firstHashes = await fileHashes(outputRoot);
+	const modifiedPath = "widgets/get-widget.service.ts";
+	await appendFile(
+		join(outputRoot, modifiedPath),
+		"\n// consumer smoke drift\n",
+	);
+	log("outdated", "Confirming exit code 6 and modified-artifact reporting");
+	const outdated = parseJson(
+		runCommand(
+			"outdated generation check",
+			cli,
+			["generate", "--target", "consumer", "--check", "--json"],
+			consumerRoot,
+			{ expectedStatus: 6 },
+		),
+		"outdated generation check",
+	);
+	assert(
+		outdated.command === "generate" && outdated.mode === "check",
+		"Outdated check envelope is invalid.",
+	);
+	const outdatedServer = outdated.servers?.[0];
+	assert(
+		outdatedServer?.manifest?.outdated === true,
+		"Outdated check did not report outdated=true.",
+	);
+	assert(
+		changedEntries(outdatedServer, "modified").some(
+			(entry) => entry.path === modifiedPath,
+		),
+		"Outdated check did not identify the modified managed artifact.",
+	);
+
+	log("restore", "Regenerating and recompiling after drift");
+	assertGenerateEnvelope(
+		parseJson(
+			runCommand(
+				"generation restore",
+				cli,
+				["generate", "--target", "consumer", "--json"],
+				consumerRoot,
+			),
+			"generation restore",
+		),
+		"write",
+	);
+	runCommand(
+		"TypeScript compile after restore",
+		tsc,
+		["-p", "tsconfig.generated.json"],
+		consumerRoot,
+	);
+	const restored = parseJson(
+		runCommand(
+			"generation check after restore",
+			cli,
+			["generate", "--target", "consumer", "--check", "--json"],
+			consumerRoot,
+		),
+		"generation check after restore",
+	);
+	assert(
+		assertGenerateEnvelope(restored, "check").manifest?.outdated === false,
+		"Restored output is not current.",
+	);
+	assert(
+		JSON.stringify(firstHashes) ===
+			JSON.stringify(await fileHashes(outputRoot)),
+		"Restored output does not match the first generated bytes.",
+	);
+
+	log(
+		"idempotency",
+		"Running identical generation and comparing every file hash",
+	);
+	assertGenerateEnvelope(
+		parseJson(
+			runCommand(
+				"second identical generation",
+				cli,
+				["generate", "--target", "consumer", "--json"],
+				consumerRoot,
+			),
+			"second identical generation",
+		),
+		"write",
+	);
+	const secondHashes = await fileHashes(outputRoot);
+	assert(
+		JSON.stringify(firstHashes) === JSON.stringify(secondHashes),
+		"Second identical generation changed the file set or bytes.",
+	);
+	const finalCheck = parseJson(
+		runCommand(
+			"final generation check",
+			cli,
+			["generate", "--target", "consumer", "--check", "--json"],
+			consumerRoot,
+		),
+		"final generation check",
+	);
+	assert(
+		assertGenerateEnvelope(finalCheck, "check").manifest?.outdated === false,
+		"Final generated output is not current.",
+	);
+
+	return {
+		version: aggregate.version,
+		validate: {
+			success: validation.success,
+			errors: validation.summary?.errors ?? 0,
+		},
+		inspect: {
+			paths: inspection.inspection.pathCount,
+			operations: inspection.inspection.operationCount,
+			schemas: inspection.inspection.schemaCount,
+		},
+		dryRunArtifacts: dryRunServer.manifest.entries.length,
+		generatedFiles: generatedFiles.length,
+		manifestFiles: ownership.files.length,
+		categories: {
+			types: generatedFiles.filter(
+				(path) => path.endsWith(".types.ts") || path.startsWith("types/"),
+			).length,
+			zod: generatedFiles.filter(
+				(path) => path.endsWith(".schema.ts") || path.startsWith("zod/"),
+			).length,
+			request: generatedFiles.filter((path) => path.endsWith(".service.ts"))
+				.length,
+		},
+		typecheck: "passed",
+		currentCheck: manifestSummary(currentServer),
+		outdated: { exitCode: 6, modified: modifiedPath },
+		restore: "current-and-compiled",
+		idempotent: true,
+		ownershipManifestStable:
+			firstHashes[".openapi-to-manifest.json"] ===
+			secondHashes[".openapi-to-manifest.json"],
+	};
+}
+
+export function assertSafeTemporaryRoot(
+	candidate,
+	prefix = temporaryPrefix,
+	systemTemporaryDirectory = tmpdir(),
+) {
+	const absolute = resolve(candidate);
+	const temporaryDirectory = resolve(systemTemporaryDirectory);
+	const relativePath = relative(temporaryDirectory, absolute);
+	assert(
+		relativePath !== "" &&
+			relativePath !== ".." &&
+			!relativePath.startsWith(`..${sep}`) &&
+			!isAbsolute(relativePath),
+		`Refusing to clean a path outside the operating system temporary directory: ${absolute}`,
+	);
+	assert(
+		basename(absolute).startsWith(prefix),
+		`Refusing to clean a temporary path without the expected prefix: ${absolute}`,
+	);
+	return absolute;
+}
+
+export async function cleanupTemporaryRoot(candidate) {
+	const safe = assertSafeTemporaryRoot(candidate);
+	await rm(safe, { recursive: true, force: true });
+}
+
+async function executeStandalone({ temporaryRoot, log }) {
+	const tarballDirectory = join(temporaryRoot, "tarballs");
+	const consumerRoot = join(temporaryRoot, "consumer");
+	await Promise.all([
+		mkdir(tarballDirectory, { recursive: true }),
+		mkdir(consumerRoot, { recursive: true }),
+	]);
+	log("pack", "Packing all public workspace packages");
+	const packed = await packReleasePackages({
+		repositoryRoot,
+		tarballDirectory,
+		pnpm: (args, cwd) => pnpm(args, cwd, `pack ${basename(cwd)}`),
+	});
+	return runConsumerCodegenScenario({ consumerRoot, packed, log });
+}
+
+function usage() {
+	return `Usage: pnpm test:consumer:codegen -- [--keep] [--json]
+
+Runs a packed external-consumer smoke with the official TypeScript, Zod, and
+request plugins. --keep retains the temporary project for debugging.`;
+}
+
+export async function main({
+	argv = process.argv.slice(2),
+	stdout = (value) => process.stdout.write(value),
+	stderr = (value) => process.stderr.write(value),
+	createTemporaryRoot = () => mkdtemp(join(tmpdir(), temporaryPrefix)),
+	execute = executeStandalone,
+} = {}) {
+	let options;
+	try {
+		options = parseArguments(argv);
+	} catch (error) {
+		stderr(`${error instanceof Error ? error.message : String(error)}\n`);
+		return 1;
+	}
+	if (options.help) {
+		stdout(`${usage()}\n`);
+		return 0;
+	}
+	const temporaryRoot = await createTemporaryRoot();
+	const log = (stage, message) => {
+		const line = `[consumer-codegen:${stage}] ${message}\n`;
+		(options.json ? stderr : stdout)(line);
+	};
+	let report;
+	let failure;
+	try {
+		report = await execute({ temporaryRoot, log });
+	} catch (error) {
+		failure = error instanceof Error ? error : new Error(String(error));
+	} finally {
+		if (!options.keep) {
+			try {
+				await cleanupTemporaryRoot(temporaryRoot);
+			} catch (error) {
+				failure ??= error instanceof Error ? error : new Error(String(error));
+			}
+		}
+	}
+
+	const result = {
+		success: !failure,
+		...(report ? { report } : {}),
+		...(failure
+			? { error: { name: failure.name, message: bounded(failure.message) } }
+			: {}),
+		temporaryRoot: options.keep ? resolve(temporaryRoot) : null,
+	};
+	if (options.json) stdout(`${JSON.stringify(result)}\n`);
+	else if (failure) stderr(`${failure.message}\n`);
+	else stdout("[consumer-codegen:complete] PASS\n");
+	if (options.keep) {
+		const target = options.json ? stderr : stdout;
+		target(
+			`Consumer codegen workspace retained at ${resolve(temporaryRoot)}\n`,
+		);
+	}
+	return failure ? 1 : 0;
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+	process.exitCode = await main();
+}

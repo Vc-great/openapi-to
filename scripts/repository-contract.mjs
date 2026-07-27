@@ -37,6 +37,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/ai-hosts/claude-code.md",
 	"docs/ai-hosts/cursor.md",
 	"docs/ai-hosts/generic-stdio.md",
+	"docs/testing/consumer-codegen.md",
 ];
 
 async function exists(path) {

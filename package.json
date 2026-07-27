@@ -25,6 +25,7 @@
 		"test:e2e:common": "node e2e/run-cli-e2e.mjs common",
 		"test:e2e:module": "node e2e/run-cli-e2e.mjs module",
 		"test:e2e:remote": "node e2e/run-remote-e2e.mjs",
+		"test:consumer:codegen": "node scripts/consumer-codegen-smoke.mjs",
 		"test:release-scripts": "node --test scripts/*.node-test.mjs",
 		"test:mcp": "pnpm --filter @openapi-to/mcp run test",
 		"test:mcp:unit": "pnpm --filter @openapi-to/mcp run test:unit",

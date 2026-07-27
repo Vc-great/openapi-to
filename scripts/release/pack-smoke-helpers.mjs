@@ -1,0 +1,121 @@
+import { readFile, stat } from "node:fs/promises";
+import { basename, join } from "node:path";
+
+export const releasePackageDirectories = [
+	"packages/core",
+	"packages/cli",
+	"packages/mcp",
+	"packages/plugin-msw",
+	"packages/plugin-swr",
+	"packages/plugin-ts-request",
+	"packages/plugin-ts-type",
+	"packages/plugin-vue-query",
+	"packages/plugin-zod",
+	"packages/openapi",
+];
+
+const forbiddenTarballPaths = [
+	/(^|\/)test-output(\/|$)/,
+	/(^|\/)coverage(\/|$)/,
+	/(^|\/)fixtures?(\/|$)/i,
+	/(^|\/)\.agents(\/|$)/,
+	/(^|\/)AGENTS\.md$/,
+	/(^|\/)\.env(?:\.|$)/,
+	/(^|\/)ownership-manifest/i,
+	/\.log$/,
+	/\.map$/,
+	/(^|\/)\.openapi-to-transaction(?:\.json|\/|$)/,
+	/(^|\/)\.openapi-to-write\.lock(\/|$)/,
+	/(^|\/)tool-selection-cases\.json$/,
+	/(^|\/)performance-baseline\.json$/,
+	/(^|\/)(?:doctor|inspect|run-doctor|run-test-group)\.mjs$/,
+	/(^|\/)(?:mcp-doctor|inspector)-(?:report|config)\.json$/i,
+	/(^|\/)(?:staging|backup)(\/|$)/i,
+];
+
+export function parsePackResult(stdout) {
+	const start = stdout.indexOf("{");
+	if (start < 0) throw new Error(`pnpm pack did not return JSON: ${stdout}`);
+	return JSON.parse(stdout.slice(start));
+}
+
+function exportTargets(value) {
+	if (typeof value === "string") return [value];
+	if (!value || typeof value !== "object") return [];
+	return Object.values(value).flatMap(exportTargets);
+}
+
+export async function packReleasePackages({
+	repositoryRoot,
+	tarballDirectory,
+	pnpm,
+}) {
+	const packed = [];
+	for (const directory of releasePackageDirectories) {
+		const packageDirectory = join(repositoryRoot, directory);
+		const manifest = JSON.parse(
+			await readFile(join(packageDirectory, "package.json"), "utf8"),
+		);
+		const result = parsePackResult(
+			pnpm(
+				["pack", "--json", "--pack-destination", tarballDirectory],
+				packageDirectory,
+			).stdout,
+		);
+		const archive = result.filename;
+		const archiveStat = await stat(archive);
+		const filePaths = result.files.map(({ path }) => path).sort();
+		const forbidden = filePaths.filter((path) =>
+			forbiddenTarballPaths.some((pattern) => pattern.test(path)),
+		);
+		if (
+			result.name === "@openapi-to/mcp" &&
+			filePaths.some((path) => path.startsWith("scripts/"))
+		) {
+			forbidden.push(
+				...filePaths.filter((path) => path.startsWith("scripts/")),
+			);
+		}
+		if (forbidden.length > 0) {
+			throw new Error(
+				`${result.name} tarball contains forbidden files: ${forbidden.join(", ")}`,
+			);
+		}
+		if (!filePaths.includes("package.json")) {
+			throw new Error(`${result.name} tarball is missing package.json`);
+		}
+		const packageTargets = [
+			manifest.main,
+			manifest.module,
+			manifest.types,
+			...exportTargets(manifest.exports),
+			...Object.values(manifest.bin ?? {}),
+		]
+			.filter((target) => typeof target === "string" && !target.includes("*"))
+			.map((target) => target.replace(/^\.\//, ""));
+		for (const target of new Set(packageTargets)) {
+			if (!filePaths.includes(target)) {
+				throw new Error(
+					`${result.name} tarball is missing declared target ${target}`,
+				);
+			}
+		}
+		packed.push({
+			name: result.name,
+			version: result.version,
+			filename: basename(archive),
+			archive,
+			size: archiveStat.size,
+			files: filePaths,
+		});
+	}
+	return packed;
+}
+
+export function createPackedOverrides(packed) {
+	return Object.fromEntries(
+		packed
+			.map(({ name, archive }) => [name, `file:${archive}`])
+			.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)),
+	);
+}

@@ -127,11 +127,21 @@ pnpm exec changeset status
 pnpm lint:changed
 pnpm build
 pnpm test:release-scripts
+pnpm test:consumer:codegen
 pnpm verify:package-surface
 pnpm release:smoke
 ```
 
-`release:smoke` packs every public workspace package and verifies ESM, CJS, declarations, all three aggregate binaries, an aggregate-only installation, real MCP stdio startup, and machine-readable CLI output in temporary consumers. It does not publish.
+`test:consumer:codegen` proves that the packed aggregate package can generate
+and strictly compile real TypeScript, Zod, and request-client output in an
+independent consumer. See the
+[packed formal-plugin consumer guide](docs/testing/consumer-codegen.md) for
+debugging and `--keep` usage.
+
+`release:smoke` packs every public workspace package and verifies ESM, CJS,
+declarations, all three aggregate binaries, an aggregate-only installation,
+real formal-plugin code generation, real MCP stdio startup, and
+machine-readable CLI output in temporary consumers. It does not publish.
 
 ## MCP verification
 
