@@ -27,6 +27,7 @@
 		"test:e2e:remote": "node e2e/run-remote-e2e.mjs",
 		"test:consumer:codegen": "node scripts/consumer-codegen-smoke.mjs",
 		"test:consumer:codegen:keep": "pnpm test:consumer:codegen -- --keep",
+		"test:consumer:codegen:review": "pnpm test:consumer:codegen -- --export-review-dir .ci-artifacts/consumer-codegen-review/current",
 		"test:release-scripts": "node --test scripts/*.node-test.mjs",
 		"test:mcp": "pnpm --filter @openapi-to/mcp run test",
 		"test:mcp:unit": "pnpm --filter @openapi-to/mcp run test:unit",

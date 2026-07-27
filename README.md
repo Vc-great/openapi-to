@@ -136,7 +136,8 @@ pnpm release:smoke
 and strictly compile real TypeScript, Zod, and request-client output in an
 independent consumer. See the
 [packed formal-plugin consumer guide](docs/testing/consumer-codegen.md) for
-debugging and `--keep` usage.
+debugging, retained temporary workspaces, and the compact generated-code review
+snapshot.
 
 `release:smoke` packs every public workspace package and verifies ESM, CJS,
 declarations, all three aggregate binaries, an aggregate-only installation,

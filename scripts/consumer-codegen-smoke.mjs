@@ -1,14 +1,17 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import {
 	access,
 	appendFile,
+	copyFile,
+	lstat,
 	mkdir,
 	mkdtemp,
-	readFile,
 	readdir,
+	readFile,
 	realpath,
+	rename,
 	rm,
 	writeFile,
 } from "node:fs/promises";
@@ -29,6 +32,11 @@ import {
 } from "./release/pack-smoke-helpers.mjs";
 
 const temporaryPrefix = "openapi-to-consumer-codegen-";
+const reviewDirectoryParts = [".ci-artifacts", "consumer-codegen-review"];
+const reviewKind = "openapi-to-consumer-codegen-review";
+const reviewSchemaVersion = 1;
+const reviewStagingPrefix = ".consumer-codegen-review-staging-";
+const reviewBackupPrefix = ".consumer-codegen-review-backup-";
 const outputLimit = 4_000;
 
 export const repositoryRoot = resolve(
@@ -37,14 +45,41 @@ export const repositoryRoot = resolve(
 );
 
 export function parseArguments(argv) {
-	const options = { keep: false, json: false };
-	for (const argument of argv) {
+	const options = { keep: false, json: false, exportReviewDir: null };
+	const seen = new Set();
+	for (let index = 0; index < argv.length; index += 1) {
+		const argument = argv[index];
 		if (argument === "--") continue;
-		else if (argument === "--keep") options.keep = true;
-		else if (argument === "--json") options.json = true;
-		else if (argument === "--help") options.help = true;
-		else throw new Error(`Unknown argument: ${argument}`);
+		if (
+			argument === "--keep" ||
+			argument === "--json" ||
+			argument === "--help"
+		) {
+			if (seen.has(argument))
+				throw new Error(`Duplicate argument: ${argument}`);
+			seen.add(argument);
+			if (argument === "--keep") options.keep = true;
+			else if (argument === "--json") options.json = true;
+			else options.help = true;
+		} else if (argument === "--export-review-dir") {
+			if (seen.has(argument))
+				throw new Error(`Duplicate argument: ${argument}`);
+			seen.add(argument);
+			const value = argv[index + 1];
+			if (
+				typeof value !== "string" ||
+				value.trim() === "" ||
+				value.startsWith("--")
+			)
+				throw new Error(
+					"--export-review-dir requires a non-empty directory value.",
+				);
+			options.exportReviewDir = value;
+			index += 1;
+		} else throw new Error(`Unknown argument: ${argument}`);
 	}
+	if (options.help && seen.size > 1)
+		throw new Error("--help cannot be combined with other arguments.");
 	return options;
 }
 
@@ -185,6 +220,128 @@ async function filesRecursively(root, { ignoreNodeModules = false } = {}) {
 	}
 	await visit(root);
 	return files.sort();
+}
+
+function isStrictDescendant(parent, candidate) {
+	const relativePath = relative(parent, candidate);
+	return (
+		relativePath !== "" &&
+		relativePath !== ".." &&
+		!relativePath.startsWith(`..${sep}`) &&
+		!isAbsolute(relativePath)
+	);
+}
+
+async function assertNoSymlinkComponents(parent, candidate) {
+	const relativePath = relative(parent, candidate);
+	assert(
+		relativePath === "" || isStrictDescendant(parent, candidate),
+		`Review export path is outside its expected parent: ${candidate}`,
+	);
+	let cursor = parent;
+	for (const part of relativePath.split(sep).filter(Boolean)) {
+		cursor = join(cursor, part);
+		try {
+			const entry = await lstat(cursor);
+			assert(
+				!entry.isSymbolicLink(),
+				`Review export path contains a symbolic link: ${cursor}`,
+			);
+			assert(
+				entry.isDirectory(),
+				`Review export path component is not a directory: ${cursor}`,
+			);
+		} catch (error) {
+			if (error?.code !== "ENOENT") throw error;
+		}
+	}
+}
+
+export async function assertSafeReviewExportDirectory(
+	candidate,
+	root = repositoryRoot,
+) {
+	assert(
+		typeof candidate === "string" && candidate.trim() !== "",
+		"Review export directory must be a non-empty path.",
+	);
+	assert(
+		!/(?:^|[\\/])\.\.(?:[\\/]|$)/.test(candidate),
+		`Review export directory must not contain path traversal: ${candidate}`,
+	);
+	assert(
+		!/[\\/](?:node_modules|packages)(?:[\\/]|$)/i.test(
+			`/${candidate.replaceAll("\\", "/")}/`,
+		),
+		`Review export directory contains a forbidden path segment: ${candidate}`,
+	);
+	assert(
+		!/^\\\\/.test(candidate) && !/^[A-Za-z]:[\\/]/.test(candidate),
+		`Review export directory must not use a Windows drive or UNC path: ${candidate}`,
+	);
+
+	const repository = resolve(root);
+	const allowedRoot = join(repository, ...reviewDirectoryParts);
+	const target = isAbsolute(candidate)
+		? resolve(candidate)
+		: resolve(repository, candidate);
+	assert(
+		isStrictDescendant(allowedRoot, target),
+		`Review export directory must be strictly inside ${allowedRoot}: ${target}`,
+	);
+	assert(
+		dirname(target) === allowedRoot,
+		`Review export directory must be a direct child of ${allowedRoot}: ${target}`,
+	);
+
+	await realpath(repository);
+	await assertNoSymlinkComponents(repository, target);
+	return target;
+}
+
+async function ensureReviewRoot(root = repositoryRoot) {
+	const repository = resolve(root);
+	const allowedRoot = join(repository, ...reviewDirectoryParts);
+	await assertNoSymlinkComponents(
+		repository,
+		join(repository, reviewDirectoryParts[0]),
+	);
+	await mkdir(allowedRoot, { recursive: true });
+	await assertNoSymlinkComponents(repository, allowedRoot);
+	const realAllowedRoot = await realpath(allowedRoot);
+	const realRepository = await realpath(repository);
+	assert(
+		realAllowedRoot === join(realRepository, ...reviewDirectoryParts),
+		`Review export root must not resolve through a symbolic link: ${allowedRoot}`,
+	);
+	return allowedRoot;
+}
+
+async function readOwnedReviewReport(target) {
+	let report;
+	try {
+		report = JSON.parse(await readFile(join(target, "report.json"), "utf8"));
+	} catch {
+		throw new Error(
+			`Refusing to replace or clean a review directory without a valid report.json: ${target}`,
+		);
+	}
+	assert(
+		report?.kind === reviewKind &&
+			report?.schemaVersion === reviewSchemaVersion,
+		`Refusing to replace or clean a review directory not owned by this feature: ${target}`,
+	);
+	return report;
+}
+
+export async function cleanupReviewExportDirectory(
+	candidate,
+	root = repositoryRoot,
+) {
+	const target = await assertSafeReviewExportDirectory(candidate, root);
+	if (!(await exists(target))) return;
+	await readOwnedReviewReport(target);
+	await rm(target, { recursive: true, force: false });
 }
 
 async function fileHashes(root, options) {
@@ -901,6 +1058,262 @@ export async function runConsumerCodegenScenario({
 	};
 }
 
+async function copyReviewEntry(source, destination) {
+	const sourceEntry = await lstat(source);
+	assert(
+		!sourceEntry.isSymbolicLink(),
+		`Review snapshot source must not be a symbolic link: ${source}`,
+	);
+	if (sourceEntry.isDirectory()) {
+		await mkdir(destination);
+		for (const entry of (await readdir(source, { withFileTypes: true })).sort(
+			(left, right) =>
+				left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+		)) {
+			await copyReviewEntry(
+				join(source, entry.name),
+				join(destination, entry.name),
+			);
+		}
+		return;
+	}
+	assert(
+		sourceEntry.isFile(),
+		`Review snapshot source must be a regular file or directory: ${source}`,
+	);
+	await copyFile(source, destination);
+}
+
+function assertScenarioReadyForReview(report) {
+	assert(
+		report?.validate?.success === true,
+		"Review export requires validation.",
+	);
+	assert(
+		report?.typecheck === "passed",
+		"Review export requires TypeScript compile.",
+	);
+	assert(
+		report?.currentCheck?.added === 0 &&
+			report?.currentCheck?.modified === 0 &&
+			report?.currentCheck?.deleted === 0,
+		"Review export requires a current generated output check.",
+	);
+	assert(
+		report?.outdated?.exitCode === 6,
+		"Review export requires the outdated exit-code check.",
+	);
+	assert(
+		report?.restore === "current-and-compiled",
+		"Review export requires restored and compiled output.",
+	);
+	assert(
+		report?.idempotent === true,
+		"Review export requires idempotent output.",
+	);
+	assert(
+		report?.ownershipManifestStable === true,
+		"Review export requires a stable ownership manifest.",
+	);
+}
+
+function safeCommandVersion(command, args, cwd) {
+	try {
+		return runCommand(
+			`read ${basename(command)} version`,
+			command,
+			args,
+			cwd,
+		).stdout.trim();
+	} catch {
+		return null;
+	}
+}
+
+async function collectReviewMetadata(root = repositoryRoot) {
+	const pnpmExecutable = process.env.npm_execpath;
+	const pnpmVersion = pnpmExecutable
+		? safeCommandVersion(process.execPath, [pnpmExecutable, "--version"], root)
+		: safeCommandVersion(
+				installedBinaryPath(root, "pnpm"),
+				["--version"],
+				root,
+			);
+	return {
+		exportedAt: new Date().toISOString(),
+		sourceCommitSha: safeCommandVersion("git", ["rev-parse", "HEAD"], root),
+		nodeVersion: process.version,
+		pnpmVersion,
+	};
+}
+
+function createReviewReport(report, metadata, exportedConsumerFiles) {
+	return {
+		schemaVersion: reviewSchemaVersion,
+		kind: reviewKind,
+		success: true,
+		openapiToVersion: report.version,
+		validate: report.validate,
+		inspect: report.inspect,
+		generatedFiles: report.generatedFiles,
+		typeScript: {
+			initialCompile: report.typecheck,
+			restoredCompile:
+				report.restore === "current-and-compiled" ? "passed" : "failed",
+		},
+		currentCheck: report.currentCheck,
+		outdatedCheck: report.outdated,
+		restoration: report.restore,
+		idempotency: { stable: report.idempotent },
+		ownershipManifestStable: report.ownershipManifestStable,
+		exportedConsumerFiles,
+		exportedAt: metadata.exportedAt,
+		sourceCommitSha: metadata.sourceCommitSha,
+		runtime: {
+			node: metadata.nodeVersion,
+			pnpm: metadata.pnpmVersion,
+		},
+	};
+}
+
+async function validateReviewSnapshot(snapshotRoot, root = repositoryRoot) {
+	for (const required of [
+		"report.json",
+		"consumer/package.json",
+		"consumer/pnpm-lock.yaml",
+		"consumer/openapi.json",
+		"consumer/request.ts",
+		"consumer/consumer-usage.ts",
+		"consumer/tsconfig.generated.json",
+		"consumer/.OpenAPI/openapi.config.ts",
+		"consumer/generated/.openapi-to-manifest.json",
+	]) {
+		assert(
+			await exists(join(snapshotRoot, required)),
+			`Review snapshot is missing ${required}.`,
+		);
+	}
+	for (const requiredDirectory of [
+		"consumer/generated/types",
+		"consumer/generated/zod",
+		"consumer/generated/widgets",
+	]) {
+		const entry = await lstat(join(snapshotRoot, requiredDirectory));
+		assert(
+			entry.isDirectory() && !entry.isSymbolicLink(),
+			`Review snapshot is missing directory ${requiredDirectory}.`,
+		);
+	}
+
+	const repositoryPath = resolve(root).split(sep).join("/");
+	const files = await filesRecursively(snapshotRoot);
+	for (const absolutePath of files) {
+		const snapshotPath = relative(snapshotRoot, absolutePath)
+			.split(sep)
+			.join("/");
+		assert(
+			!/(?:^|\/)(?:node_modules|tarballs)(?:\/|$)/i.test(snapshotPath) &&
+				!/(?:^|\/)\.openapi-to-write\.lock(?:\/|$)/.test(snapshotPath) &&
+				!/(?:^|\/)\.openapi-to-transaction(?:\.json|\/|$)/.test(snapshotPath) &&
+				!/(?:^|\/)(?:staging|backup)(?:\/|$)/i.test(snapshotPath) &&
+				!/\.tgz$/i.test(snapshotPath) &&
+				!/\.log$/i.test(snapshotPath),
+			`Review snapshot contains a forbidden path: ${snapshotPath}`,
+		);
+		const source = await readFile(absolutePath, "utf8");
+		assert(
+			!source.includes("// consumer smoke drift") &&
+				!source.includes("// manual drift test"),
+			`Review snapshot contains test drift: ${snapshotPath}`,
+		);
+		assert(
+			!source.split(sep).join("/").includes(repositoryPath),
+			`Review snapshot leaks the repository source path: ${snapshotPath}`,
+		);
+	}
+	return files.length;
+}
+
+export async function exportReviewSnapshot({
+	consumerRoot,
+	targetDirectory,
+	report,
+	root = repositoryRoot,
+	metadata,
+}) {
+	assertScenarioReadyForReview(report);
+	const target = await assertSafeReviewExportDirectory(targetDirectory, root);
+	const allowedRoot = await ensureReviewRoot(root);
+	await assertNoSymlinkComponents(allowedRoot, target);
+	if (await exists(target)) await readOwnedReviewReport(target);
+
+	const token = randomUUID();
+	const staging = join(allowedRoot, `${reviewStagingPrefix}${token}`);
+	const backup = join(allowedRoot, `${reviewBackupPrefix}${token}`);
+	let targetMovedToBackup = false;
+	let stagingMovedToTarget = false;
+	await mkdir(staging);
+	try {
+		const reviewConsumerRoot = join(staging, "consumer");
+		await mkdir(reviewConsumerRoot);
+		for (const path of [
+			"package.json",
+			"pnpm-lock.yaml",
+			"openapi.json",
+			"request.ts",
+			"consumer-usage.ts",
+			"tsconfig.generated.json",
+			".OpenAPI",
+			"generated",
+		]) {
+			await copyReviewEntry(
+				join(consumerRoot, path),
+				join(reviewConsumerRoot, path),
+			);
+		}
+		const consumerFileCount = (await filesRecursively(reviewConsumerRoot))
+			.length;
+		const reviewReport = createReviewReport(
+			report,
+			metadata ?? (await collectReviewMetadata(root)),
+			consumerFileCount,
+		);
+		await writeJson(join(staging, "report.json"), reviewReport);
+		const fileCount = await validateReviewSnapshot(staging, root);
+
+		if (await exists(target)) {
+			await assertNoSymlinkComponents(allowedRoot, target);
+			await readOwnedReviewReport(target);
+			await rename(target, backup);
+			targetMovedToBackup = true;
+		}
+		try {
+			await rename(staging, target);
+			stagingMovedToTarget = true;
+		} catch (error) {
+			if (targetMovedToBackup) {
+				await rename(backup, target);
+				targetMovedToBackup = false;
+			}
+			throw error;
+		}
+		if (targetMovedToBackup) {
+			await rm(backup, { recursive: true, force: false });
+			targetMovedToBackup = false;
+		}
+		return { path: target, fileCount };
+	} finally {
+		if (!stagingMovedToTarget && (await exists(staging)))
+			await rm(staging, { recursive: true, force: true });
+		if (targetMovedToBackup && !(await exists(target))) {
+			await rename(backup, target);
+			targetMovedToBackup = false;
+		}
+		if (await exists(backup))
+			await rm(backup, { recursive: true, force: true });
+	}
+}
+
 export function assertSafeTemporaryRoot(
 	candidate,
 	prefix = temporaryPrefix,
@@ -945,10 +1358,12 @@ async function executeStandalone({ temporaryRoot, log }) {
 }
 
 function usage() {
-	return `Usage: pnpm test:consumer:codegen -- [--keep] [--json]
+	return `Usage: pnpm test:consumer:codegen -- [--keep] [--json] [--export-review-dir <directory>]
 
 Runs a packed external-consumer smoke with the official TypeScript, Zod, and
-request plugins. --keep retains the temporary project for debugging.`;
+request plugins. --keep retains the temporary project for debugging.
+--export-review-dir atomically exports a compact snapshot beneath
+.ci-artifacts/consumer-codegen-review/ after every validation passes.`;
 }
 
 export async function main({
@@ -957,6 +1372,7 @@ export async function main({
 	stderr = (value) => process.stderr.write(value),
 	createTemporaryRoot = () => mkdtemp(join(tmpdir(), temporaryPrefix)),
 	execute = executeStandalone,
+	exportReview = exportReviewSnapshot,
 } = {}) {
 	let options;
 	try {
@@ -975,9 +1391,18 @@ export async function main({
 		(options.json ? stderr : stdout)(line);
 	};
 	let report;
+	let reviewExport = null;
 	let failure;
 	try {
 		report = await execute({ temporaryRoot, log });
+		if (options.exportReviewDir) {
+			log("export", "Exporting the validated consumer review snapshot");
+			reviewExport = await exportReview({
+				consumerRoot: join(temporaryRoot, "consumer"),
+				targetDirectory: options.exportReviewDir,
+				report,
+			});
+		}
 	} catch (error) {
 		failure = error instanceof Error ? error : new Error(String(error));
 	} finally {
@@ -997,10 +1422,17 @@ export async function main({
 			? { error: { name: failure.name, message: bounded(failure.message) } }
 			: {}),
 		temporaryRoot: options.keep ? resolve(temporaryRoot) : null,
+		...(options.exportReviewDir ? { export: reviewExport } : {}),
 	};
 	if (options.json) stdout(`${JSON.stringify(result)}\n`);
 	else if (failure) stderr(`${failure.message}\n`);
 	else stdout("[consumer-codegen:complete] PASS\n");
+	if (reviewExport) {
+		const target = options.json ? stderr : stdout;
+		target(
+			`Consumer codegen review exported to ${reviewExport.path} (${reviewExport.fileCount} files)\n`,
+		);
+	}
 	if (options.keep) {
 		const target = options.json ? stderr : stdout;
 		target(

@@ -26,11 +26,55 @@ exercise repository workspaces rather than a newly installed tarball.
 `release:smoke` reuses this exact scenario with its already packed tarballs,
 alongside the package-surface, binary, and MCP checks.
 
-By default the temporary project is removed after success or failure. Retain it
-for debugging with:
+There are three maintainer entry points:
 
 ```shell
-pnpm test:consumer:codegen -- --keep
+pnpm test:consumer:codegen
+pnpm test:consumer:codegen:keep
+pnpm test:consumer:codegen:review
+```
+
+The default command is the automation-oriented validation and always cleans
+its operating-system temporary workspace. `test:consumer:codegen:keep` runs
+the same scenario but retains the complete temporary root, including installed
+`node_modules` and packed tarballs, for command-level debugging.
+`test:consumer:codegen:review` still installs and validates in the operating
+system temporary directory. Only after validation, drift recovery, strict
+compilation, the final current check, and byte-stable regeneration have all
+passed does it atomically export a compact snapshot to
+`.ci-artifacts/consumer-codegen-review/current`. The original temporary root is
+then removed automatically.
+
+The review snapshot contains the fixture, config, request stub, consumer usage,
+TypeScript config, lockfile, all final generated files, the ownership manifest,
+and `report.json`. It deliberately excludes `node_modules`, tarballs, pnpm
+store data, transaction state, and the artificial drift used by the test.
+`.ci-artifacts` is ignored by Git and review snapshots must not be committed.
+
+Open `.ci-artifacts/consumer-codegen-review/current` directly in WebStorm, or
+use Finder's **Go to Folder** command and paste its absolute path. To keep two
+reviewable runs, export explicit names beneath the same owned root:
+
+```shell
+pnpm test:consumer:codegen -- --export-review-dir .ci-artifacts/consumer-codegen-review/previous
+pnpm test:consumer:codegen -- --export-review-dir .ci-artifacts/consumer-codegen-review/current
+diff -ru .ci-artifacts/consumer-codegen-review/previous .ci-artifacts/consumer-codegen-review/current
+```
+
+Remove an individual review snapshot when it is no longer useful:
+
+```shell
+node --input-type=module -e "import { cleanupReviewExportDirectory as clean } from './scripts/consumer-codegen-smoke.mjs'; await clean('.ci-artifacts/consumer-codegen-review/current')"
+```
+
+The cleanup helper applies the same path and ownership checks as replacement;
+deleting the `current` folder explicitly in WebStorm or Finder is also safe.
+The exported snapshot is intended for inspection and does not include
+dependencies, so do not run `tsc` from it. Use the keep command when commands
+must be rerun in the original installed consumer:
+
+```shell
+pnpm test:consumer:codegen:keep
 ```
 
 The final output prints the absolute retained path. Inspect
@@ -55,4 +99,15 @@ stdout with progress on stderr, suppress pnpm's lifecycle banner:
 
 ```shell
 pnpm --silent test:consumer:codegen -- --json
+```
+
+JSON mode writes exactly one document to stdout and sends progress and retained
+or exported paths to stderr. Combine review export and retention when both
+artifacts are useful:
+
+```shell
+pnpm --silent test:consumer:codegen -- \
+  --json \
+  --keep \
+  --export-review-dir .ci-artifacts/consumer-codegen-review/current
 ```
