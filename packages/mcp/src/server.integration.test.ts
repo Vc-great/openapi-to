@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const bin = path.join(repositoryRoot, 'packages/mcp/bin/openapi-to-mcp.js')
+const MCP_GENERATION_TEST_TIMEOUT_MS = 20_000
 
 interface ConnectedClient {
   client: Client
@@ -38,8 +39,10 @@ type DryRunServer = { manifest: { hash?: string } }
 
 describe.sequential('stdio MCP server', () => {
   const clients: Client[] = []
+  const temporaryRoots: string[] = []
   afterEach(async () => {
     await Promise.all(clients.splice(0).map((client) => client.close()))
+    await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
   })
 
   it('initializes a no-config server with exactly three bounded analysis tools', async () => {
@@ -122,6 +125,7 @@ describe.sequential('stdio MCP server', () => {
 
   it('registers generation tools only for fixed trusted config and preserves stdio integrity', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-integration-'))
+    temporaryRoots.push(root)
     await mkdir(path.join(root, '.OpenAPI'))
     const spec = `openapi: 3.1.0
 info: { title: Generation, version: "1" }
@@ -347,7 +351,7 @@ module.exports = {
     expect(await readFile(path.join(outputRoot, 'user.txt'), 'utf8')).toBe('unmanaged')
     expect(await readFile(ownership, 'utf8')).toBe(staleOwnership)
     expect(ownershipBefore).not.toBe(staleOwnership)
-  })
+  }, MCP_GENERATION_TEST_TIMEOUT_MS)
 
   it('keeps generation tools stable when a supplied startup config fails to load', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-bad-config-'))

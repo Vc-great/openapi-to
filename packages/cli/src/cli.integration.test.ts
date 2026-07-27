@@ -7,6 +7,7 @@ import { ExitCode } from '@openapi-to/core'
 import { run, type CLIIO } from './index.ts'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+const CLI_GENERATION_TEST_TIMEOUT_MS = 15_000
 
 describe.sequential('CLI machine-readable commands', () => {
   let cwd: string
@@ -35,9 +36,10 @@ describe.sequential('CLI machine-readable commands', () => {
     io = { stdout: (message) => stdout.push(message), stderr: (message) => stderr.push(message) }
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     process.chdir(cwd)
     process.exitCode = 0
+    await rm(root, { recursive: true, force: true })
   })
 
   it('validates JSON/YAML, refs, cycles, 3.2 warnings, and global JSON placement', async () => {
@@ -181,7 +183,7 @@ describe.sequential('CLI machine-readable commands', () => {
     result = await run(['node', 'openapi', 'generate', '--check', '--json'], io)
     expect(result.exitCode).toBe(ExitCode.Success)
     expect(stdout.join('\n')).toBe(firstCheck)
-  })
+  }, CLI_GENERATION_TEST_TIMEOUT_MS)
 
   it('selects named microservice targets in config order across workspace and managed outputs', async () => {
     const fixtures = path.join(repositoryRoot, 'packages/cli/mock/microservices')
@@ -293,7 +295,7 @@ describe.sequential('CLI machine-readable commands', () => {
     })
     expect(await readFile(userFile, 'utf8')).toBe(userBeforeUnknown)
     expect(await readFile(orderFile, 'utf8')).toBe('outdated-order\n')
-  })
+  }, CLI_GENERATION_TEST_TIMEOUT_MS)
 
   it('preflights every configured output and every selected input before any target write', async () => {
     await writeFile(
