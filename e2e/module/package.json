@@ -27,7 +27,7 @@
 		"openapi-to": "workspace:*",
 		"swr": "^2.2.5",
 		"vue": "^3.5.13",
-		"zod": "^3.22.4"
+		"zod": "^4.4.3"
 	},
 	"engines": {
 		"node": ">=20",

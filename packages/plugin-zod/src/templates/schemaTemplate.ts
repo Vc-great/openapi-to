@@ -1,213 +1,351 @@
-import { buildSchemaPropertiesTypes } from '@/builds/components/buildSchemaPropertiesTypes.ts'
-import type { SchemaObjectAndJSONSchema } from '@/types.ts'
-import { getlowerFirstRefAlias } from '@/utils/getlowerFirstRefAlias.ts'
+import type { Schema } from "@openapi-to/core";
+import { getlowerFirstRefAlias } from "@/utils/getlowerFirstRefAlias.ts";
 
-import type { Schema } from '@openapi-to/core'
-import { isBoolean, isUndefined, upperFirst } from 'lodash-es'
-import { type SchemaObject, isRef } from 'oas/types'
+type SchemaRecord = Record<string, unknown>;
 
-export function schemaTemplate(schema: Schema, propertyName: string, parentName?: string): string {
-  if (isBoolean(schema) || isUndefined(schema)) {
-    return '.unknown()'
-  }
+export type SchemaRenderDiagnostic = {
+	code:
+		| "ZOD_EMPTY_COMPOSITION"
+		| "ZOD_EMPTY_ENUM"
+		| "ZOD_UNSUPPORTED_ENUM_VALUE";
+	message: string;
+};
 
-  // 引用类型
-  if (isRef(schema)) {
-    return refType(schema)
-  }
+export type SchemaRenderOptions = {
+	lazyRefs?: ReadonlySet<string>;
+	onDiagnostic?: (diagnostic: SchemaRenderDiagnostic) => void;
+};
 
-  // 枚举类型
-  if (schema.enum && schema.enum.length > 0) {
-    return `z.enum([${schema.enum.map((x) => `'${x}'`)}])`
-  }
-
-  // 合并类型 oneOf, anyOf, allOf
-  if (schema.oneOf) {
-    return unionType(schema, propertyName, `${upperFirst(parentName)}${propertyName}`)
-  }
-  if (schema.anyOf) {
-    return unionType(schema, propertyName, `${upperFirst(parentName)}${propertyName}`)
-  }
-  if (schema.allOf) {
-    return intersectionType(schema, propertyName, `${upperFirst(parentName)}${propertyName}`)
-  }
-
-  // 普通类型
-  const baseType = resolveBaseSchema(schema, propertyName, `${upperFirst(parentName)}${propertyName}`)
-
-  // 处理 nullable
-  if ('nullable' in schema && isBoolean(schema.nullable)) {
-    return `${baseType}.nullable()`
-  }
-
-  return baseType
+function isRecord(value: unknown): value is SchemaRecord {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// 处理引用
-function refType(schema: { $ref: string }): string {
-  return `${getlowerFirstRefAlias(schema.$ref)}`
+function reportDiagnostic(
+	options: SchemaRenderOptions,
+	diagnostic: SchemaRenderDiagnostic,
+): void {
+	if (options.onDiagnostic) {
+		options.onDiagnostic(diagnostic);
+		return;
+	}
+	throw new Error(`${diagnostic.code}: ${diagnostic.message}`);
 }
 
-// union: oneOf / anyOf
-function unionType(schemas: SchemaObjectAndJSONSchema, propertyName: string, parentName: string): string {
-  if (('oneOf' in schemas && schemas.oneOf) || ('anyOf' in schemas && schemas.anyOf)) {
-    const types = [...(schemas.oneOf ? schemas.oneOf : []), ...(schemas.anyOf ? schemas.anyOf : [])].map((s) =>
-      schemaTemplate(s as SchemaObject, propertyName, parentName),
-    )
-    return types.join(' | ')
-  }
-  throw new Error(`Expected oneOf type for property "${propertyName}", but got "${'type' in schemas ? schemas.type : schemas}"`)
+function literal(value: unknown): string | undefined {
+	if (
+		value === null ||
+		typeof value === "string" ||
+		typeof value === "boolean" ||
+		(typeof value === "number" && Number.isFinite(value))
+	) {
+		return `z.literal(${JSON.stringify(value)})`;
+	}
+	return undefined;
 }
 
-// intersection: allOf
-function intersectionType(schemas: SchemaObjectAndJSONSchema, propertyName: string, parentName: string): string {
-  if (!('allOf' in schemas && schemas.allOf)) {
-    throw new Error(`Expected allOf type for property "${propertyName}", but got "${'type' in schemas ? schemas.type : schemas}"`)
-  }
-  const types = schemas.allOf.map((s) => schemaTemplate(s as SchemaObject, propertyName, parentName))
-  return types.join(' & ')
+function enumSchema(values: unknown[], options: SchemaRenderOptions): string {
+	const uniqueValues = values.filter(
+		(value, index) =>
+			values.findIndex((candidate) => Object.is(candidate, value)) === index,
+	);
+	if (uniqueValues.length === 0) {
+		reportDiagnostic(options, {
+			code: "ZOD_EMPTY_ENUM",
+			message: "An empty enum cannot match any value; generated z.never().",
+		});
+		return "z.never()";
+	}
+
+	const literals = uniqueValues.map(literal);
+	if (literals.some((value) => value === undefined)) {
+		reportDiagnostic(options, {
+			code: "ZOD_UNSUPPORTED_ENUM_VALUE",
+			message:
+				"An enum contains a non-JSON scalar value that cannot be represented as a Zod literal; generated z.never().",
+		});
+		return "z.never()";
+	}
+	if (literals.length === 1) return literals[0] ?? "z.never()";
+	if (uniqueValues.every((value) => typeof value === "string")) {
+		return `z.enum([${uniqueValues.map((value) => JSON.stringify(value)).join(", ")}])`;
+	}
+	return `z.union([${literals.join(", ")}])`;
 }
 
-// 基础类型
-export function resolveBaseSchema(schema: Schema, propertyName: string, parentName: string): string {
-  if (isBoolean(schema)) {
-    return '.unknown()'
-  }
-  const type = 'type' in schema ? schema.type : ''
-
-  switch (type) {
-    case 'boolean':
-      return '.boolean()'
-
-    case 'string':
-      //todo
-      return formatterString(schema)
-
-    case 'number':
-    case 'integer':
-      return formatterNumber(schema)
-
-    case 'array':
-      return resolveArraySchema(schema, propertyName, parentName)
-
-    case 'object':
-      return resolveObjectSchema(schema, parentName)
-
-    default:
-      return '.unknown()'
-  }
+function unionSchema(
+	schemas: unknown[],
+	propertyName: string,
+	parentName: string,
+	options: SchemaRenderOptions,
+): string {
+	if (schemas.length === 0) {
+		reportDiagnostic(options, {
+			code: "ZOD_EMPTY_COMPOSITION",
+			message: `An empty union${propertyName ? ` at "${propertyName}"` : ""} cannot match any value; generated z.never().`,
+		});
+		return "z.never()";
+	}
+	const members = schemas.map((schema) =>
+		schemaTemplate(schema as Schema, propertyName, parentName, options),
+	);
+	return members.length === 1
+		? (members[0] ?? "z.never()")
+		: `z.union([${members.join(", ")}])`;
 }
 
-// 数组类型
-function resolveArraySchema(schema: SchemaObjectAndJSONSchema, propertyName: string, parentName: string): string {
-  if ('type' in schema && schema.type !== 'array') {
-    throw new Error(`Expected array type for property "${propertyName}", but got "${schema.type}"`)
-  }
-
-  if (!('items' in schema && schema.items)) return '.unknown()'
-
-  const itemType = schemaTemplate(schema.items as SchemaObjectAndJSONSchema, propertyName, parentName)
-  const hasRef = !isBoolean(schema.items) && schema.items && '$ref' in schema.items
-  const hasEnum = !isBoolean(schema.items) && schema.items && 'enum' in schema.items && schema.items.enum
-  return `.array(${hasRef || hasEnum ? '' : 'z'}${itemType})`
+function intersectionSchema(
+	schemas: unknown[],
+	propertyName: string,
+	parentName: string,
+	options: SchemaRenderOptions,
+): string {
+	if (schemas.length === 0) {
+		reportDiagnostic(options, {
+			code: "ZOD_EMPTY_COMPOSITION",
+			message: `An empty intersection${propertyName ? ` at "${propertyName}"` : ""} cannot be represented safely; generated z.never().`,
+		});
+		return "z.never()";
+	}
+	const members = schemas.map((schema) =>
+		schemaTemplate(schema as Schema, propertyName, parentName, options),
+	);
+	return members
+		.slice(1)
+		.reduce(
+			(left, right) => `z.intersection(${left}, ${right})`,
+			members[0] ?? "z.never()",
+		);
 }
 
-// 对象类型
-function resolveObjectSchema(schema: Schema, parentName: string): string {
-  if (isBoolean(schema)) {
-    return '.unknown()'
-  }
-
-  // 如果有 properties，使用 buildSchemaPropertiesTypes 处理
-  if ('properties' in schema && schema.properties) {
-    return buildSchemaPropertiesTypes(schema as SchemaObject, parentName)
-  }
-
-  // 如果没有 properties 但有 additionalProperties，生成 record 类型
-  if ('additionalProperties' in schema && schema.additionalProperties) {
-    const additional = schema.additionalProperties
-
-    // 处理 additionalProperties 为 true 的情况
-    if (additional === true) {
-      return '.record(z.string(), z.unknown())'
-    }
-
-    // 处理 additionalProperties 为引用的情况
-    if (!isBoolean(additional) && '$ref' in additional && additional.$ref) {
-      return `.record(z.string(), z.lazy(() => ${getlowerFirstRefAlias(additional.$ref)}))`
-    }
-
-    // 处理 additionalProperties 为具体 schema 的情况
-    if (!isBoolean(additional) && 'type' in additional) {
-      if (additional.type === 'object') {
-        return '.record(z.string(), z.object({}))'
-      }
-      // 递归处理其他类型
-      const itemType = schemaTemplate(additional as Schema, '', parentName)
-      const prefix = itemType.startsWith('.') ? 'z' : ''
-      return `.record(z.string(), ${prefix}${itemType})`
-    }
-
-    return '.record(z.string(), z.unknown())'
-  }
-
-  // 纯粹的 object 类型（没有 properties 也没有 additionalProperties）
-  return '.object({})'
+function appendStringConstraints(
+	expression: string,
+	schema: SchemaRecord,
+): string {
+	let result = expression;
+	if (typeof schema.minLength === "number")
+		result += `.min(${schema.minLength})`;
+	if (typeof schema.maxLength === "number")
+		result += `.max(${schema.maxLength})`;
+	if (typeof schema.pattern === "string")
+		result += `.regex(new RegExp(${JSON.stringify(schema.pattern)}))`;
+	return result;
 }
 
-function formatterString(schema: Schema) {
-  if (!isBoolean(schema) && schema && 'format' in schema) {
-    switch (schema.format) {
-      case 'email':
-        return '.string().email()'
-      case 'uri':
-      case 'url':
-        return '.string().url()'
-      case 'uuid':
-        return '.string().uuid()'
-      case 'date':
-      case 'date-time':
-      case 'datetime':
-        return '.string().datetime()'
-      case 'byte':
-        return '.string().regex(/^[A-Za-z0-9+/=]*$/)' // base64
-      case 'binary':
-        return '.string()'
-      case 'password':
-        return '.string().min(1)'
-      default:
-        return '.string()'
-    }
-  }
-  return '.string()'
+function formatterString(schema: SchemaRecord): string {
+	let expression: string;
+	switch (schema.format) {
+		case "email":
+			expression = "z.email()";
+			break;
+		case "uri":
+		case "url":
+			expression = "z.url()";
+			break;
+		case "uuid":
+			expression = "z.uuid()";
+			break;
+		case "date":
+			expression = "z.iso.date()";
+			break;
+		case "date-time":
+		case "datetime":
+			expression = "z.iso.datetime()";
+			break;
+		case "byte":
+			expression = "z.base64()";
+			break;
+		case "password":
+			expression = "z.string().min(1)";
+			break;
+		default:
+			expression = "z.string()";
+			break;
+	}
+	return appendStringConstraints(expression, schema);
 }
 
-function formatterNumber(schema: Schema) {
-  let baseType = '.number()'
+function formatterNumber(schema: SchemaRecord): string {
+	const integerFormats = new Set(["int32", "int64", "integer", "long", "int"]);
+	let result =
+		schema.type === "integer" || integerFormats.has(String(schema.format ?? ""))
+			? "z.int()"
+			: "z.number()";
 
-  // 处理整数类型
-  if (
-    (!isBoolean(schema) && 'type' in schema && schema.type === 'integer') ||
-    (!isBoolean(schema) && 'format' in schema && ['int32', 'int64', 'integer', 'long', 'int'].includes(schema.format || ''))
-  ) {
-    baseType = '.number().int()'
-  }
+	if (typeof schema.minimum === "number") {
+		result +=
+			schema.exclusiveMinimum === true
+				? `.gt(${schema.minimum})`
+				: `.min(${schema.minimum})`;
+	} else if (typeof schema.exclusiveMinimum === "number") {
+		result += `.gt(${schema.exclusiveMinimum})`;
+	}
+	if (typeof schema.maximum === "number") {
+		result +=
+			schema.exclusiveMaximum === true
+				? `.lt(${schema.maximum})`
+				: `.max(${schema.maximum})`;
+	} else if (typeof schema.exclusiveMaximum === "number") {
+		result += `.lt(${schema.exclusiveMaximum})`;
+	}
+	if (typeof schema.multipleOf === "number")
+		result += `.multipleOf(${schema.multipleOf})`;
+	return result;
+}
 
-  // 添加范围限制
-  if (!isBoolean(schema)) {
-    if ('minimum' in schema && schema.minimum !== undefined) {
-      baseType += `.min(${schema.minimum})`
-    }
-    if ('maximum' in schema && schema.maximum !== undefined) {
-      baseType += `.max(${schema.maximum})`
-    }
-    if ('exclusiveMinimum' in schema && schema.exclusiveMinimum === true && 'minimum' in schema) {
-      baseType += `.gt(${schema.minimum})`
-    }
-    if ('exclusiveMaximum' in schema && schema.exclusiveMaximum === true && 'maximum' in schema) {
-      baseType += `.lt(${schema.maximum})`
-    }
-  }
+function refSchema(ref: string, options: SchemaRenderOptions): string {
+	const alias = getlowerFirstRefAlias(ref);
+	return options.lazyRefs?.has(ref) ? `z.lazy(() => ${alias})` : alias;
+}
 
-  return baseType
+function arraySchema(
+	schema: SchemaRecord,
+	propertyName: string,
+	parentName: string,
+	options: SchemaRenderOptions,
+): string {
+	const items = schema.items;
+	let result = `z.array(${items === undefined ? "z.unknown()" : schemaTemplate(items as Schema, propertyName, parentName, options)})`;
+	if (typeof schema.minItems === "number") result += `.min(${schema.minItems})`;
+	if (typeof schema.maxItems === "number") result += `.max(${schema.maxItems})`;
+	return result;
+}
+
+export function renderObjectSchema(
+	schema: SchemaRecord,
+	parentName = "",
+	options: SchemaRenderOptions = {},
+): string {
+	const properties = isRecord(schema.properties) ? schema.properties : {};
+	const required = new Set(
+		Array.isArray(schema.required)
+			? schema.required.filter(
+					(name): name is string => typeof name === "string",
+				)
+			: [],
+	);
+	const entries = Object.entries(properties);
+	const shape = entries
+		.map(([propertyName, propertySchema]) => {
+			const rendered = schemaTemplate(
+				propertySchema as Schema,
+				propertyName,
+				parentName,
+				options,
+			);
+			return `${JSON.stringify(propertyName)}: ${rendered}${required.has(propertyName) ? "" : ".optional()"}`;
+		})
+		.join(", ");
+
+	if (schema.additionalProperties === false)
+		return `z.strictObject({${shape}})`;
+	if (
+		schema.additionalProperties === true ||
+		schema.additionalProperties === undefined
+	)
+		return `z.looseObject({${shape}})`;
+
+	const additional = schemaTemplate(
+		schema.additionalProperties as Schema,
+		"",
+		parentName,
+		options,
+	);
+	if (entries.length === 0) return `z.record(z.string(), ${additional})`;
+	return `z.object({${shape}}).catchall(${additional})`;
+}
+
+function resolveTypeArray(
+	schema: SchemaRecord,
+	propertyName: string,
+	parentName: string,
+	options: SchemaRenderOptions,
+): string | undefined {
+	if (!Array.isArray(schema.type)) return undefined;
+	const members = schema.type.map((type) =>
+		type === "null"
+			? "z.null()"
+			: resolveBaseSchema(
+					{ ...schema, type } as Schema,
+					propertyName,
+					parentName,
+					options,
+				),
+	);
+	const unique = [...new Set(members)];
+	return unique.length === 1
+		? (unique[0] ?? "z.unknown()")
+		: `z.union([${unique.join(", ")}])`;
+}
+
+export function schemaTemplate(
+	schema: Schema,
+	propertyName = "",
+	parentName = "",
+	options: SchemaRenderOptions = {},
+): string {
+	if (schema === true || schema === undefined) return "z.unknown()";
+	if (schema === false) return "z.never()";
+	if (!isRecord(schema)) return "z.unknown()";
+	const record: SchemaRecord = schema;
+	if (typeof record.$ref === "string") return refSchema(record.$ref, options);
+
+	let result: string;
+	if (Array.isArray(record.enum)) {
+		result = enumSchema(record.enum, options);
+	} else if ("const" in record) {
+		result = literal(record.const) ?? "z.never()";
+	} else if (Array.isArray(record.oneOf)) {
+		result = unionSchema(record.oneOf, propertyName, parentName, options);
+	} else if (Array.isArray(record.anyOf)) {
+		result = unionSchema(record.anyOf, propertyName, parentName, options);
+	} else if (Array.isArray(record.allOf)) {
+		result = intersectionSchema(
+			record.allOf,
+			propertyName,
+			parentName,
+			options,
+		);
+	} else {
+		result =
+			resolveTypeArray(record, propertyName, parentName, options) ??
+			resolveBaseSchema(schema, propertyName, parentName, options);
+	}
+
+	if (record.nullable === true && result !== "z.null()")
+		result += ".nullable()";
+	return result;
+}
+
+export function resolveBaseSchema(
+	schema: Schema,
+	propertyName = "",
+	parentName = "",
+	options: SchemaRenderOptions = {},
+): string {
+	if (schema === true || schema === undefined) return "z.unknown()";
+	if (schema === false || !isRecord(schema)) return "z.never()";
+	const record: SchemaRecord = schema;
+
+	switch (record.type) {
+		case "boolean":
+			return "z.boolean()";
+		case "string":
+			return formatterString(record);
+		case "number":
+		case "integer":
+			return formatterNumber(record);
+		case "array":
+			return arraySchema(record, propertyName, parentName, options);
+		case "object":
+			return renderObjectSchema(record, parentName, options);
+		case "null":
+			return "z.null()";
+		default:
+			if (
+				record.properties !== undefined ||
+				record.additionalProperties !== undefined
+			)
+				return renderObjectSchema(record, parentName, options);
+			return "z.unknown()";
+	}
 }

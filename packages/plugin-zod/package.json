@@ -43,13 +43,17 @@
 	"devDependencies": {
 		"@openapi-to/config-ts": "workspace:*",
 		"@openapi-to/config-tsup": "workspace:*",
-		"@types/lodash": "^4.17.9"
+		"@types/lodash": "^4.17.9",
+		"zod": "^4.4.3"
 	},
 	"dependencies": {
 		"@openapi-to/core": "workspace:*",
 		"lodash": "^4.17.21",
 		"oas": "^24.9.0",
 		"ts-morph": "^23.0.0"
+	},
+	"peerDependencies": {
+		"zod": "^4.0.0"
 	},
 	"engines": {
 		"node": ">=20"

@@ -488,7 +488,7 @@ async function assertSemanticOutput(outputRoot, consumerRoot, generatedFiles) {
 		"POST response does not reference WidgetModel.",
 	);
 	assert(
-		/z\.object\(/.test(widgetZod),
+		/z\.(?:looseObject|strictObject|object)\(/.test(widgetZod),
 		"Widget Zod object schema was not generated.",
 	);
 	assert(
@@ -528,6 +528,21 @@ async function assertSemanticOutput(outputRoot, consumerRoot, generatedFiles) {
 			!/(?:^|["'])[^"']*packages\/[^"']*\/src(?:\/|["'])/.test(normalized),
 			`${relativePath} imports repository source.`,
 		);
+		for (const legacy of [
+			"z.string().email(",
+			"z.string().url(",
+			"z.string().uuid(",
+			"z.string().datetime(",
+		]) {
+			assert(
+				!source.includes(legacy),
+				`${relativePath} contains legacy Zod string format output: ${legacy}`,
+			);
+		}
+		assert(
+			!/\bz\.record\(\s*[^,()]+(?:\([^()]*\))?\s*\)/.test(source),
+			`${relativePath} contains a single-argument z.record() call.`,
+		);
 	}
 	await assertRelativeImportsResolve(outputRoot, generatedFiles);
 	assert(
@@ -536,29 +551,68 @@ async function assertSemanticOutput(outputRoot, consumerRoot, generatedFiles) {
 	);
 }
 
-async function createConsumerFiles(consumerRoot, aggregateArchive, packed) {
-	const typescriptManifest = JSON.parse(
-		await readFile(
-			join(repositoryRoot, "node_modules/typescript/package.json"),
-			"utf8",
-		),
+async function packConsumerDependency({
+	consumerRoot,
+	installedRoot,
+	expectedName,
+	expectedMajor,
+}) {
+	const packageRoot = await realpath(installedRoot);
+	const manifest = JSON.parse(
+		await readFile(join(packageRoot, "package.json"), "utf8"),
 	);
-	const zodManifest = JSON.parse(
-		await readFile(
-			join(repositoryRoot, "e2e/module/node_modules/zod/package.json"),
-			"utf8",
-		),
+	assert(
+		manifest.name === expectedName,
+		`Expected ${expectedName}, found ${manifest.name}.`,
 	);
+	if (expectedMajor !== undefined) {
+		assert(
+			Number.parseInt(manifest.version.split(".")[0], 10) === expectedMajor,
+			`${expectedName} resolved ${manifest.version}; expected major ${expectedMajor}.`,
+		);
+	}
+	const tarballDirectory = join(consumerRoot, "tarballs");
+	await mkdir(tarballDirectory, { recursive: true });
+	const packed = parseJson(
+		pnpm(
+			["pack", "--pack-destination", tarballDirectory, "--json"],
+			packageRoot,
+			`pack ${expectedName}`,
+		),
+		`pack ${expectedName}`,
+	);
+	assert(
+		packed.name === expectedName && packed.version === manifest.version,
+		`Packed ${expectedName} metadata did not match its installed dependency.`,
+	);
+	return {
+		archive: `file:./tarballs/${basename(packed.filename)}`,
+		version: manifest.version,
+	};
+}
+
+async function createConsumerFiles(
+	consumerRoot,
+	aggregateArchive,
+	packed,
+	consumerDependencies,
+) {
 	await writeJson(join(consumerRoot, "package.json"), {
 		name: "openapi-to-formal-plugin-consumer-smoke",
 		private: true,
 		type: "module",
 		devDependencies: {
 			"openapi-to": `file:${aggregateArchive}`,
-			typescript: typescriptManifest.version,
-			zod: zodManifest.version,
+			typescript: consumerDependencies.typescript.version,
+			zod: "^4.4.3",
 		},
-		pnpm: { overrides: createPackedOverrides(packed) },
+		pnpm: {
+			overrides: {
+				...createPackedOverrides(packed),
+				typescript: consumerDependencies.typescript.archive,
+				zod: consumerDependencies.zod.archive,
+			},
+		},
 	});
 	await writeJson(join(consumerRoot, "openapi.json"), {
 		openapi: "3.0.3",
@@ -625,9 +679,30 @@ async function createConsumerFiles(consumerRoot, aggregateArchive, packed) {
 			schemas: {
 				Widget: {
 					type: "object",
-					required: ["id", "status", "metadata"],
+					required: [
+						"id",
+						"email",
+						"url",
+						"uuid",
+						"createdDate",
+						"createdAt",
+						"bytes",
+						"count",
+						"status",
+						"metadata",
+						"labels",
+						"choice",
+						"combined",
+					],
 					properties: {
 						id: { type: "string" },
+						email: { type: "string", format: "email" },
+						url: { type: "string", format: "uri" },
+						uuid: { type: "string", format: "uuid" },
+						createdDate: { type: "string", format: "date" },
+						createdAt: { type: "string", format: "date-time" },
+						bytes: { type: "string", format: "byte" },
+						count: { type: "integer", minimum: 1, maximum: 3 },
 						displayName: { type: "string" },
 						status: {
 							type: "string",
@@ -635,6 +710,28 @@ async function createConsumerFiles(consumerRoot, aggregateArchive, packed) {
 						},
 						tags: { type: "array", items: { type: "string" } },
 						metadata: { $ref: "#/components/schemas/WidgetMetadata" },
+						labels: {
+							type: "object",
+							additionalProperties: { type: "string" },
+						},
+						choice: {
+							oneOf: [{ type: "string" }, { type: "number" }],
+						},
+						combined: {
+							allOf: [
+								{
+									type: "object",
+									required: ["left"],
+									properties: { left: { type: "string" } },
+								},
+								{
+									type: "object",
+									required: ["right"],
+									properties: { right: { type: "boolean" } },
+								},
+							],
+						},
+						nullableNote: { type: "string", nullable: true },
 					},
 				},
 				WidgetMetadata: {
@@ -677,6 +774,43 @@ async function createConsumerFiles(consumerRoot, aggregateArchive, packed) {
 			},
 		},
 	});
+	await writeJson(join(consumerRoot, "openapi-recursive.json"), {
+		openapi: "3.0.3",
+		info: { title: "Recursive Zod 4 fixture", version: "1.0.0" },
+		paths: {},
+		components: {
+			schemas: {
+				Node: {
+					type: "object",
+					required: ["value"],
+					additionalProperties: false,
+					properties: {
+						value: { type: "string" },
+						children: {
+							type: "array",
+							items: { $ref: "#/components/schemas/Node" },
+						},
+					},
+				},
+				PairA: {
+					type: "object",
+					required: ["name"],
+					properties: {
+						name: { type: "string" },
+						pair: { $ref: "#/components/schemas/PairB" },
+					},
+				},
+				PairB: {
+					type: "object",
+					required: ["count"],
+					properties: {
+						count: { type: "integer" },
+						pair: { $ref: "#/components/schemas/PairA" },
+					},
+				},
+			},
+		},
+	});
 	await writeFile(
 		join(consumerRoot, "openapi.config.ts"),
 		`import {
@@ -693,8 +827,8 @@ export default defineConfig({
     output: { base: "workspace", dir: "generated", clean: true },
   }],
   plugins: [
-    pluginZod(),
-    pluginTSType(),
+    pluginZod({ importWithExtension: false }),
+    pluginTSType({ importWithExtension: false }),
     pluginTSRequest({
       parser: "zod",
       requestClient: "common",
@@ -703,9 +837,23 @@ export default defineConfig({
         namedImports: ["RequestOptions"],
         moduleSpecifier: "../../request.ts",
       },
-      importWithExtension: true,
+      importWithExtension: false,
     }),
   ],
+});
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "openapi.recursive.config.ts"),
+		`import { defineConfig, pluginZod } from "openapi-to";
+
+export default defineConfig({
+  servers: [{
+    name: "recursive",
+    input: { path: "./openapi-recursive.json" },
+    output: { base: "workspace", dir: "generated-recursive", clean: true },
+  }],
+  plugins: [pluginZod({ importWithExtension: false })],
 });
 `,
 	);
@@ -736,30 +884,114 @@ const created = await createWidgetService({
   details: { color: "blue" },
 });
 const fetched = await getWidgetService("widget-1", { includeHistory: true });
-const widget: WidgetModel = {
-  id: "widget-1",
-  status: "active",
-  metadata: {
+	const widget: WidgetModel = {
+	  id: "widget-1",
+	  email: "user@example.com",
+	  url: "https://example.com/widgets/1",
+	  uuid: "550e8400-e29b-41d4-a716-446655440000",
+	  createdDate: "2026-07-28",
+	  createdAt: "2026-07-28T12:30:00Z",
+	  bytes: "aGVsbG8=",
+	  count: 2,
+	  status: "active",
+	  labels: { owner: "consumer" },
+	  choice: "manual",
+	  combined: { left: "l", right: true },
+	  metadata: {
     createdBy: "consumer",
     audit: { revision: 1 },
   },
 };
 void created;
 void fetched;
-void widget;
+	void widget;
+	`,
+	);
+	await writeFile(
+		join(consumerRoot, "runtime-check.ts"),
+		`import { widgetSchema } from "./generated/zod/models/widget.schema";
+import {
+  getWidgetPathParamsSchema,
+  getWidgetQueryParamsSchema,
+} from "./generated/widgets/get-widget.schema";
+import { createWidgetMutationRequestSchema } from "./generated/widgets/create-widget.schema";
+import { nodeSchema } from "./generated-recursive/zod/models/node.schema";
+import { pairASchema } from "./generated-recursive/zod/models/pair-a.schema";
+
+const widget = {
+  id: "widget-1",
+  email: "user@example.com",
+  url: "https://example.com/widgets/1",
+  uuid: "550e8400-e29b-41d4-a716-446655440000",
+  createdDate: "2026-07-28",
+  createdAt: "2026-07-28T12:30:00Z",
+  bytes: "aGVsbG8=",
+  count: 2,
+  status: "active",
+  metadata: { createdBy: "runtime", audit: { revision: 1 } },
+  labels: { owner: "runtime" },
+  choice: 3,
+  combined: { left: "left", right: true },
+  nullableNote: null,
+};
+
+widgetSchema.parse(widget);
+if (widgetSchema.safeParse({ ...widget, email: "invalid" }).success) throw new Error("invalid email passed");
+if (widgetSchema.safeParse({ ...widget, count: 2.5 }).success) throw new Error("non-integer count passed");
+if (widgetSchema.safeParse({ ...widget, bytes: "not base64!" }).success) throw new Error("invalid base64 passed");
+if (widgetSchema.safeParse({ ...widget, status: "unknown" }).success) throw new Error("invalid enum passed");
+if (widgetSchema.safeParse({ ...widget, combined: { left: "left" } }).success) throw new Error("invalid intersection passed");
+if (!getWidgetPathParamsSchema.safeParse({ widgetId: "widget-1" }).success) throw new Error("valid path params failed");
+if (getWidgetPathParamsSchema.safeParse({}).success) throw new Error("missing path param passed");
+if (!getWidgetQueryParamsSchema.safeParse({ includeHistory: true }).success) throw new Error("valid query params failed");
+if (getWidgetQueryParamsSchema.safeParse({ includeHistory: "yes" }).success) throw new Error("invalid query params passed");
+if (!createWidgetMutationRequestSchema.safeParse({ name: "desk", status: "active", tags: ["new"] }).success) {
+  throw new Error("valid request body failed");
+}
+if (createWidgetMutationRequestSchema.safeParse({ name: "desk", status: "unknown" }).success) {
+  throw new Error("invalid request body passed");
+}
+nodeSchema.parse({ value: "root", children: [{ value: "leaf" }] });
+if (nodeSchema.safeParse({ value: "root", children: [{ value: 1 }] }).success) {
+  throw new Error("invalid recursive node passed");
+}
+pairASchema.parse({ name: "a", pair: { count: 1, pair: { name: "nested" } } });
+console.log("zod4-runtime-parse:passed");
 `,
 	);
 	await writeJson(join(consumerRoot, "tsconfig.generated.json"), {
 		compilerOptions: {
 			allowImportingTsExtensions: true,
-			module: "NodeNext",
-			moduleResolution: "NodeNext",
+			module: "ESNext",
+			moduleResolution: "Bundler",
 			noEmit: true,
 			skipLibCheck: false,
 			strict: true,
 			target: "ES2022",
 		},
-		include: ["generated/**/*.ts", "request.ts", "consumer-usage.ts"],
+		include: [
+			"generated/**/*.ts",
+			"generated-recursive/**/*.ts",
+			"request.ts",
+			"consumer-usage.ts",
+			"runtime-check.ts",
+		],
+	});
+	await writeJson(join(consumerRoot, "tsconfig.runtime.json"), {
+		compilerOptions: {
+			esModuleInterop: true,
+			module: "CommonJS",
+			moduleResolution: "Node",
+			outDir: "runtime-output",
+			skipLibCheck: false,
+			strict: true,
+			target: "ES2022",
+		},
+		include: [
+			"generated/**/*.schema.ts",
+			"generated-recursive/**/*.schema.ts",
+			"runtime-check.ts",
+		],
 	});
 }
 
@@ -771,7 +1003,28 @@ export async function runConsumerCodegenScenario({
 	const aggregate = packed.find(({ name }) => name === "openapi-to");
 	assert(aggregate, "Packed aggregate openapi-to archive is missing.");
 	await mkdir(consumerRoot, { recursive: true });
-	await createConsumerFiles(consumerRoot, aggregate.archive, packed);
+	const consumerDependencies = {
+		typescript: await packConsumerDependency({
+			consumerRoot,
+			installedRoot: join(repositoryRoot, "node_modules/typescript"),
+			expectedName: "typescript",
+		}),
+		zod: await packConsumerDependency({
+			consumerRoot,
+			installedRoot: join(
+				repositoryRoot,
+				"packages/plugin-zod/node_modules/zod",
+			),
+			expectedName: "zod",
+			expectedMajor: 4,
+		}),
+	};
+	await createConsumerFiles(
+		consumerRoot,
+		aggregate.archive,
+		packed,
+		consumerDependencies,
+	);
 
 	log("install", "Installing the packed aggregate and tarball overrides");
 	pnpm(
@@ -781,6 +1034,13 @@ export async function runConsumerCodegenScenario({
 	);
 	const cli = installedBinaryPath(consumerRoot, "openapi");
 	const tsc = installedBinaryPath(consumerRoot, "tsc");
+	const installedZod = JSON.parse(
+		await readFile(join(consumerRoot, "node_modules/zod/package.json"), "utf8"),
+	);
+	assert(
+		Number.parseInt(installedZod.version.split(".")[0], 10) === 4,
+		`Consumer resolved Zod ${installedZod.version}; expected major 4.`,
+	);
 	assert(isAbsolute(cli), "Consumer CLI path must be absolute.");
 	assert(
 		await exists(cli),
@@ -874,6 +1134,20 @@ export async function runConsumerCodegenScenario({
 		"generation write",
 	);
 	assertGenerateEnvelope(generated, "write");
+	const recursiveGeneration = parseJson(
+		runCommand(
+			"recursive Zod generation",
+			cli,
+			["generate", "--config", "./openapi.recursive.config.ts", "--json"],
+			consumerRoot,
+		),
+		"recursive Zod generation",
+	);
+	assert(
+		recursiveGeneration.success === true &&
+			recursiveGeneration.servers?.[0]?.name === "recursive",
+		"Recursive Zod-only generation did not succeed.",
+	);
 	const generatedFiles = (await filesRecursively(outputRoot)).map((path) =>
 		relative(outputRoot, path).split(sep).join("/"),
 	);
@@ -892,6 +1166,26 @@ export async function runConsumerCodegenScenario({
 		tsc,
 		["-p", "tsconfig.generated.json"],
 		consumerRoot,
+	);
+	log("runtime", "Executing generated schemas with Zod 4");
+	runCommand(
+		"Zod runtime compile",
+		tsc,
+		["-p", "tsconfig.runtime.json"],
+		consumerRoot,
+	);
+	await writeJson(join(consumerRoot, "runtime-output/package.json"), {
+		type: "commonjs",
+	});
+	const runtime = runCommand(
+		"Zod runtime parse",
+		process.execPath,
+		["runtime-output/runtime-check.js"],
+		consumerRoot,
+	);
+	assert(
+		runtime.stdout.includes("zod4-runtime-parse:passed"),
+		"Generated schema runtime checks did not complete.",
 	);
 
 	log("check", "Checking that generated output is current");
@@ -1047,6 +1341,8 @@ export async function runConsumerCodegenScenario({
 				.length,
 		},
 		typecheck: "passed",
+		runtimeParse: "passed",
+		zod: installedZod.version,
 		currentCheck: manifestSummary(currentServer),
 		outdated: { exitCode: 6, modified: modifiedPath },
 		restore: "current-and-compiled",
