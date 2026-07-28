@@ -143,7 +143,7 @@ test("review export paths reject symbolic-link escapes", async (context) => {
 async function createReviewFixture(root) {
 	const consumerRoot = join(root, "consumer");
 	for (const directory of [
-		".OpenAPI",
+		".openapi-to",
 		"generated/types/models",
 		"generated/zod/models",
 		"generated/widgets",
@@ -159,7 +159,7 @@ async function createReviewFixture(root) {
 		"request.ts": "export const request = true;\n",
 		"consumer-usage.ts": "export const usage = true;\n",
 		"tsconfig.generated.json": '{"compilerOptions":{"strict":true}}\n',
-		".OpenAPI/openapi.config.ts": "export default {};\n",
+		"openapi.config.ts": "export default {};\n",
 		"generated/.openapi-to-manifest.json":
 			'{"version":2,"files":["types/models/widget.model.ts"]}\n',
 		"generated/types/models/widget.model.ts":

@@ -51,13 +51,13 @@ openapi-to-mcp --workspace-root .
 Trusted-config read-only catalog/preview/check:
 
 ```text
-openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts
+openapi-to-mcp --workspace-root . --config ./openapi.config.ts
 ```
 
 Controlled Prepare/Apply:
 
 ```text
-openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts --allow-write
+openapi-to-mcp --workspace-root . --config ./openapi.config.ts --allow-write
 ```
 
 The expected Tool counts are 3, 8, and 10 respectively. A Host should initialize the server, call `tools/list`, and keep write approval enabled for `openapi_apply_generation`. `--allow-write` only makes that Tool available; it is not approval to call it.

@@ -55,11 +55,9 @@ async function readJson(path) {
 
 async function isGitTracked(root, path) {
 	try {
-		await execFileAsync(
-			"git",
-			["ls-files", "--error-unmatch", "--", path],
-			{ cwd: root },
-		);
+		await execFileAsync("git", ["ls-files", "--error-unmatch", "--", path], {
+			cwd: root,
+		});
 		return true;
 	} catch {
 		return false;
@@ -279,9 +277,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		);
 	}
 	if (/\bchangeset\s+status\b/.test(releaseCheck)) {
-		failures.push(
-			"release:check must not invoke changeset status directly",
-		);
+		failures.push("release:check must not invoke changeset status directly");
 	}
 	if (
 		rootManifest.scripts?.["verify:changeset-state"] !==
@@ -311,9 +307,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		"utf8",
 	);
 	if (!qualityWorkflow.includes("run: pnpm verify:changeset-state")) {
-		failures.push(
-			"Quality package smoke must run verify:changeset-state",
-		);
+		failures.push("Quality package smoke must run verify:changeset-state");
 	}
 	const a1WorkflowPath = join(root, ".github/workflows/a1-cross-platform.yml");
 	if (!(await exists(a1WorkflowPath))) {
@@ -394,6 +388,49 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	]) {
 		if (!rootManifest.scripts?.[script])
 			failures.push(`missing root ${script} script`);
+	}
+
+	const stateDirectorySource = await readFile(
+		join(root, "packages/core/src/stateDirectoryName.ts"),
+		"utf8",
+	);
+	const coreIndex = await readFile(
+		join(root, "packages/core/src/index.ts"),
+		"utf8",
+	);
+	const configLoader = await readFile(
+		join(root, "packages/core/src/config/loadOpenapiConfig.ts"),
+		"utf8",
+	);
+	const selectionState = await readFile(
+		join(root, "packages/mcp/src/generation/selection-state.ts"),
+		"utf8",
+	);
+	if (!stateDirectorySource.includes('stateDirectoryName = ".openapi-to"')) {
+		failures.push("Core stateDirectoryName must define .openapi-to");
+	}
+	if (
+		!coreIndex.includes("export { stateDirectoryName }") ||
+		coreIndex.includes("folderName") ||
+		(await exists(join(root, "packages/core/src/folderName.ts")))
+	) {
+		failures.push(
+			"Core must export stateDirectoryName without a folderName compatibility alias",
+		);
+	}
+	for (const extension of ["ts", "js", "cjs", "mjs"]) {
+		if (!configLoader.includes(`"${extension}"`))
+			failures.push(
+				`Core config discovery must include root openapi.config.${extension}`,
+			);
+	}
+	if (
+		!selectionState.includes("stateDirectoryName") ||
+		selectionState.includes('".openapi-to/selections"')
+	) {
+		failures.push(
+			"MCP selection state must derive its directory from Core stateDirectoryName",
+		);
 	}
 
 	const serverIntegration = await readFile(

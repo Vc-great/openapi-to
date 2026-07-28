@@ -26,8 +26,8 @@ describe("configured output roots", () => {
 				output: { dir: "generated" },
 			}),
 		).toEqual({
-			absolutePath: path.join(root, ".OpenAPI", "generated"),
-			workspaceRelativePath: ".OpenAPI/generated",
+			absolutePath: path.join(root, ".openapi-to", "generated"),
+			workspaceRelativePath: ".openapi-to/generated",
 			base: "managed",
 		});
 		expect(
@@ -74,15 +74,27 @@ describe("configured output roots", () => {
 			"CONFIG_OUTPUT_PROTECTED_PATH",
 		],
 		[
-			{ base: "workspace", dir: ".OpenAPI/selections" },
+			{ base: "workspace", dir: ".openapi-to/selections" },
 			"CONFIG_OUTPUT_PROTECTED_PATH",
 		],
 		[
-			{ base: "workspace", dir: ".OpenAPI/transactions" },
+			{ base: "workspace", dir: ".openapi-to/transactions" },
 			"CONFIG_OUTPUT_PROTECTED_PATH",
 		],
 		[
-			{ base: "workspace", dir: ".OpenAPI/locks" },
+			{ base: "workspace", dir: ".openapi-to/locks" },
+			"CONFIG_OUTPUT_PROTECTED_PATH",
+		],
+		[
+			{ base: "workspace", dir: ".openapi-to/cache" },
+			"CONFIG_OUTPUT_PROTECTED_PATH",
+		],
+		[
+			{ base: "workspace", dir: ".openapi-to/previews" },
+			"CONFIG_OUTPUT_PROTECTED_PATH",
+		],
+		[
+			{ base: "workspace", dir: ".openapi-to/generated" },
 			"CONFIG_OUTPUT_PROTECTED_PATH",
 		],
 	])("rejects unsafe output %#", (output, code) => {
@@ -108,13 +120,6 @@ describe("configured output roots", () => {
 			[
 				target("a", { base: "workspace", dir: "src/api" }),
 				target("b", { base: "workspace", dir: "src/api/order" }),
-			],
-			[
-				target("a", { dir: "generated" }),
-				target("b", {
-					base: "workspace",
-					dir: ".OpenAPI/generated/order",
-				}),
 			],
 		]) {
 			await expect(

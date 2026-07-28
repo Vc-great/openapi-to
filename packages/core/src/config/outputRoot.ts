@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
 
-import { folderName } from "../folderName.ts";
+import { stateDirectoryName } from "../stateDirectoryName.ts";
 import { DiagnosticError, type Diagnostic } from "../diagnostics.ts";
 import type { OpenapiToConfigSingleOutput, OutputBase } from "../types";
 import type { ConfiguredTarget } from "./configuredTargets.ts";
@@ -141,6 +141,7 @@ function portableRelativeDirectory(
 
 function protectedOutputPath(
 	workspaceRelativePath: string,
+	base: OutputBase,
 	targetName?: string,
 ): void {
 	const segments = workspaceRelativePath.split("/");
@@ -156,18 +157,18 @@ function protectedOutputPath(
 			targetName,
 		);
 	}
-	if (lower[0] === folderName.toLowerCase()) {
-		if (lower.length === 1) {
+	if (lower[0] === stateDirectoryName.toLowerCase()) {
+		if (base === "workspace" || lower.length === 1) {
 			throw outputError(
 				"CONFIG_OUTPUT_PROTECTED_PATH",
-				`Configured output root may not be the ${folderName} state root.`,
+				`Workspace output may not overlap the ${stateDirectoryName} state root.`,
 				targetName,
 			);
 		}
 		if (CONTROL_OUTPUT_SEGMENTS.has(lower[1] ?? "")) {
 			throw outputError(
 				"CONFIG_OUTPUT_PROTECTED_PATH",
-				`Configured output root ${workspaceRelativePath} overlaps reserved ${folderName} control state.`,
+				`Configured output root ${workspaceRelativePath} overlaps reserved ${stateDirectoryName} control state.`,
 				targetName,
 			);
 		}
@@ -192,9 +193,9 @@ export function resolveConfiguredOutputRoot({
 	const configuredDir = portableRelativeDirectory(output, targetName);
 	const workspaceRelativePath =
 		base === "managed"
-			? path.posix.join(folderName, configuredDir)
+			? path.posix.join(stateDirectoryName, configuredDir)
 			: configuredDir;
-	protectedOutputPath(workspaceRelativePath, targetName);
+	protectedOutputPath(workspaceRelativePath, base, targetName);
 	const absolutePath = path.resolve(
 		workspaceRoot,
 		...workspaceRelativePath.split("/"),

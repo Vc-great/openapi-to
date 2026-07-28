@@ -85,7 +85,7 @@ printed temporary subdirectory. Do not delete the operating system temporary
 directory that contains it (for example, do not remove macOS's `/var/folders`
 parent directory). Inspect
 `consumer/package.json`, `consumer/pnpm-lock.yaml`,
-`consumer/.OpenAPI/openapi.config.ts`, `consumer/openapi.json`,
+`consumer/openapi.config.ts`, `consumer/openapi.json`,
 `consumer/request.ts`, `consumer/generated/`, and
 `consumer/generated/.openapi-to-manifest.json`. From the retained `consumer`
 directory, rerun:

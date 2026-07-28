@@ -65,9 +65,20 @@ openapi generate \
   --target payment-service \
   --check \
   --json
+
+# Explicitly select one configuration file
+openapi generate --config ./openapi.config.mjs
 ```
 
 Repeated names are deduplicated. An unknown name, including a mixture of valid and unknown names, fails before generation writes. An unselected Target is not generated, cleaned, checked, or used to determine the check exit code. Output order follows configuration order.
+
+Without `--config`, generation searches upward from the current directory for
+the nearest directory containing `openapi.config.ts`, `.js`, `.cjs`, or `.mjs`.
+If that directory contains more than one supported candidate, discovery fails
+with `OPENAPI_CONFIG_AMBIGUOUS` before executing either file. Configuration is
+never auto-discovered below `.openapi-to` or the former state directory. The
+selected configuration's directory is the generation Workspace, including for
+invocations from nested directories and explicit `--config` paths.
 
 Before writing, Core validates all configured Target names and output roots, validates every requested name, and compiles every selected input. This prevents a later invalid selected input or output from appearing only after an earlier Target has written. Once plugin execution and commit begin, each Target has an independent ownership/transaction boundary; multi-Target CLI generation does not promise a global rollback across output roots.
 
@@ -94,8 +105,8 @@ output: {
 }
 ```
 
-and resolves to `.OpenAPI/generated`. `base: 'workspace'` resolves `dir` below the Workspace, for example `src/api/generated/user-service`. Both are generator-managed and place `.openapi-to-manifest.json` inside the resolved output root. Operation selection stays in `.OpenAPI/selections`.
+and resolves to `.openapi-to/generated`. `base: 'workspace'` resolves `dir` below the Workspace, for example `src/api/generated/user-service`. Both are generator-managed and place `.openapi-to-manifest.json` inside the resolved output root. Operation selection stays in `.openapi-to/selections`.
 
-Workspace output is suitable for direct project imports and may be committed to Git, but it is not user-owned: future generation may update or remove owned files. Put hand-written extensions in a separate directory such as `src/api/custom`. Output roots may not be the Workspace root, `.git`, `node_modules`, reserved `.OpenAPI` control state, an escaping/symlinked path, or equal to/inside/above another Target output.
+Workspace output is suitable for direct project imports and may be committed to Git, but it is not user-owned: future generation may update or remove owned files. Put hand-written extensions in a separate directory such as `src/api/custom`. Output roots may not be the Workspace root, any part of the root `.openapi-to` state directory, `.git`, `node_modules`, an escaping/symlinked path, or equal to/inside/above another Target output.
 
-Changing an existing Target from managed output to workspace output never migrates or deletes the old directory. Generate and verify the new output, then clean the old `.OpenAPI` output manually if appropriate.
+Changing an existing Target from managed output to workspace output never migrates or deletes the old directory. Generate and verify the new output, then clean the old `.openapi-to` output manually if appropriate.

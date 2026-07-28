@@ -7,5 +7,5 @@
     "baseUrl": ".",
   },
   "include": ["./package.json", "./tsup.config.ts", "./vitest.config.ts", "./eslint.config.js"],
-  "exclude": ["**/node_modules/**", "./.OpenAPI/**"]
+  "exclude": ["**/node_modules/**", "./.openapi-to/**"]
 }

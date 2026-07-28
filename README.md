@@ -49,6 +49,15 @@ pnpm exec openapi-to-mcp --help
 pnpm exec openapi-to-mcp --workspace-root .
 ```
 
+`init` creates `openapi.config.ts` for ESM projects or
+`openapi.config.js` for CommonJS projects in the Workspace root and adds only
+`/.openapi-to/` to `.gitignore`. Generation searches upward for the nearest
+`openapi.config.ts`, `.js`, `.cjs`, or `.mjs`. Multiple supported files in one
+candidate directory fail before configuration code executes; use
+`--config <path>` when an operator intentionally selects a specific file. The
+selected configuration's directory is the generation Workspace, so nested
+invocations keep relative inputs and outputs anchored to the project root.
+
 `--json` writes one JSON document to stdout; diagnostics and incidental plugin logs use stderr. `--dry-run` executes plugins and reports the artifact manifest without writing. `--check` performs the same comparison and fails when output is outdated. With `output.clean`, deletion is ownership-based: only files recorded by the previous `.openapi-to-manifest.json` are removed, and unmanaged user files are preserved.
 
 Exit codes are stable: `0` success, `1` general failure, `2` config failure, `3` OpenAPI parse/validation/ref failure, `4` input or remote load failure, `5` plugin failure, `6` outdated generated output, and `7` breaking changes with `diff --fail-on-breaking`.
@@ -112,7 +121,7 @@ export default defineConfig({
 })
 ```
 
-`input.path` parsing uses response content and Content-Type as well as the URL/path suffix, so extensionless and query-bearing HTTP(S) URLs are supported. `output.base` defaults to `managed`: `dir: 'payment'` still writes to `.OpenAPI/payment`. `base: 'workspace'` writes below the Workspace, keeps the ownership manifest in that generated root, and remains generator-managed. Keep hand-written extensions elsewhere, such as `src/api/custom`; generated source is not an eject/scaffold boundary.
+`input.path` parsing uses response content and Content-Type as well as the URL/path suffix, so extensionless and query-bearing HTTP(S) URLs are supported. `output.base` defaults to `managed`: `dir: 'payment'` still writes to `.openapi-to/payment`. `base: 'workspace'` writes below the Workspace, keeps the ownership manifest in that generated root, and remains generator-managed. Keep hand-written extensions elsewhere, such as `src/api/custom`; generated source is not an eject/scaffold boundary.
 
 Local `input.path` accepts Workspace-relative paths and absolute paths that remain inside the Workspace, including native Windows `C:\...` or `C:/...` paths. Windows drive-relative paths such as `C:openapi.yaml`, UNC paths, and `file:` URLs are rejected. `output.dir` must be portable across Linux, macOS, and Windows: reserved device names, reserved characters, control characters, and segments ending in a period or space are invalid.
 
@@ -236,9 +245,9 @@ The relative directory below `output.base`.
 
 **output.base**
 
-`'managed' | 'workspace'`, defaulting to `'managed'`. Managed output resolves below `.OpenAPI`; Workspace output resolves below the project root. Both modes are generator-owned, reject traversal, absolute/UNC/drive paths, symlink escapes, protected state, and overlapping Target roots, and store `.openapi-to-manifest.json` inside the resolved output root.
+`'managed' | 'workspace'`, defaulting to `'managed'`. Managed output resolves below `.openapi-to`; Workspace output resolves below the project root. Both modes are generator-owned, reject traversal, absolute/UNC/drive paths, symlink escapes, protected state, and overlapping Target roots, and store `.openapi-to-manifest.json` inside the resolved output root.
 
-Switching an existing Target from managed to workspace output does not move, copy, or remove the old `.OpenAPI` directory. Verify the new output and remove the old managed output manually if it is no longer needed.
+Switching an existing Target from managed to workspace output does not move, copy, or remove the old `.openapi-to` directory. Verify the new output and remove the old managed output manually if it is no longer needed.
 
 **output.clean**  
 

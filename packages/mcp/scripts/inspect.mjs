@@ -328,7 +328,7 @@ async function createFixture() {
 	const root = await mkdtemp(
 		path.join(os.tmpdir(), "openapi-to-mcp-inspector-"),
 	);
-	const outputRoot = path.join(root, ".OpenAPI/generated");
+	const outputRoot = path.join(root, ".openapi-to/generated");
 	await mkdir(outputRoot, { recursive: true });
 	await writeFile(
 		path.join(root, "openapi.yaml"),
@@ -382,7 +382,7 @@ paths:
 `,
 	);
 	await writeFile(
-		path.join(root, ".OpenAPI/openapi.config.cjs"),
+		path.join(root, "openapi.config.cjs"),
 		`module.exports = {
   servers: [{ name: 'fixture', input: { path: './openapi.yaml' }, output: { dir: 'generated', clean: true } }],
   plugins: [{ name: 'inspector-fixture', hooks: { buildStart(ctx) {
@@ -516,7 +516,7 @@ async function launchInspector({
 		"--workspace-root",
 		fixture.root,
 		"--config",
-		".OpenAPI/openapi.config.cjs",
+		"openapi.config.cjs",
 		...(allowWrite ? ["--allow-write"] : []),
 		"--log-level",
 		"error",

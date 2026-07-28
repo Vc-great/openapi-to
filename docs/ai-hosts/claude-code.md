@@ -63,13 +63,13 @@ Claude Code asks before accepting a project-scoped server. Use `claude mcp list`
 Add a Workspace-local config for the eight read-only configured-mode Tools:
 
 ```sh
-claude mcp add --scope local openapi-to -- pnpm exec openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts
+claude mcp add --scope local openapi-to -- pnpm exec openapi-to-mcp --workspace-root . --config ./openapi.config.ts
 ```
 
 Add `--allow-write` only when Prepare/Apply is required:
 
 ```sh
-claude mcp add --scope local openapi-to -- pnpm exec openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts --allow-write
+claude mcp add --scope local openapi-to -- pnpm exec openapi-to-mcp --workspace-root . --config ./openapi.config.ts --allow-write
 ```
 
 Keep Claude Code Tool approval enabled for `openapi_apply_generation`. Prepare writes nothing; Apply requires the exact unexpired plan ID, token, and approved hash and still passes Workspace, stale-state, output-lock, transaction, and rollback checks. `--allow-write` does not grant permission to skip Host approval.

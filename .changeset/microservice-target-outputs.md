@@ -12,6 +12,6 @@ output resolution, overlap protection, and write preflight.
 
 Preserve and verify JSON, YAML, YML, and HTTP(S) OpenAPI inputs across
 multi-target CLI and MCP workflows. Default output remains
-`.OpenAPI/<output.dir>`; opting into `output.base: "workspace"` keeps ownership
+`.openapi-to/<output.dir>`; opting into `output.base: "workspace"` keeps ownership
 inside the selected project output root while Operation selection remains in
-`.OpenAPI/selections`.
+`.openapi-to/selections`.

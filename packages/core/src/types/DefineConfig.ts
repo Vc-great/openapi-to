@@ -32,7 +32,7 @@ export type OutputBase = "managed" | "workspace";
 
 export type OpenapiToConfigSingleOutput = {
 	/**
-	 * Resolve output below `.OpenAPI` (`managed`, the default) or directly
+	 * Resolve output below `.openapi-to` (`managed`, the default) or directly
 	 * below the project Workspace (`workspace`).
 	 */
 	base?: OutputBase;

@@ -201,7 +201,6 @@ await Promise.all([
 	mkdir(installationDirectory, { recursive: true }),
 	mkdir(aggregateInstallationDirectory, { recursive: true }),
 	mkdir(formalCodegenConsumerDirectory, { recursive: true }),
-	mkdir(join(installationDirectory, ".OpenAPI"), { recursive: true }),
 ]);
 
 let succeeded = false;
@@ -247,15 +246,12 @@ try {
 		["install", "--ignore-scripts", "--prefer-offline"],
 		aggregateInstallationDirectory,
 	);
-	await mkdir(join(aggregateInstallationDirectory, ".OpenAPI"), {
-		recursive: true,
-	});
 	await writeFile(
 		join(aggregateInstallationDirectory, "openapi.yaml"),
 		'openapi: 3.1.0\ninfo: { title: Aggregate only, version: "1" }\npaths: {}\n',
 	);
 	await writeFile(
-		join(aggregateInstallationDirectory, ".OpenAPI/openapi.config.cjs"),
+		join(aggregateInstallationDirectory, "openapi.config.cjs"),
 		`module.exports = {
   servers: [{ name: "main", input: { path: "./openapi.yaml" }, output: { dir: "generated" } }],
   plugins: []
@@ -317,8 +313,8 @@ if (stderr.join("").includes("Unable to start server")) throw new Error("Aggrega
 	const coldInitializeStarted = process.hrtime.bigint();
 	for (const [matrixIndex, serverArgs] of [
 		[],
-		["--config", ".OpenAPI/openapi.config.cjs"],
-		["--config", ".OpenAPI/openapi.config.cjs", "--allow-write"],
+		["--config", "openapi.config.cjs"],
+		["--config", "openapi.config.cjs", "--allow-write"],
 	].entries()) {
 		run(
 			process.execPath,
@@ -388,8 +384,8 @@ if (stderr.join("").includes("Unable to start server")) throw new Error("Aggrega
 	run(process.execPath, [independentMcpBin, "--help"], installationDirectory);
 	for (const serverArgs of [
 		[],
-		["--config", ".OpenAPI/openapi.config.cjs"],
-		["--config", ".OpenAPI/openapi.config.cjs", "--allow-write"],
+		["--config", "openapi.config.cjs"],
+		["--config", "openapi.config.cjs", "--allow-write"],
 	]) {
 		run(
 			process.execPath,
@@ -442,7 +438,7 @@ paths:
 	await writeFile(join(installationDirectory, "invalid.yaml"), "openapi: [\n");
 	remoteFixtureServer = await startRemoteFixtureServer(installationDirectory);
 	await writeFile(
-		join(installationDirectory, ".OpenAPI/openapi.config.cjs"),
+		join(installationDirectory, "openapi.config.cjs"),
 		`module.exports = {
   servers: [
     { name: "user-service", input: { path: "./user.json" }, output: { base: "workspace", dir: "src/api/generated/user", clean: true } },
@@ -458,7 +454,7 @@ paths:
 `,
 	);
 	await writeFile(
-		join(installationDirectory, ".OpenAPI/remote-policy.config.cjs"),
+		join(installationDirectory, "remote-policy.config.cjs"),
 		`module.exports = {
   servers: [
     {
@@ -597,7 +593,7 @@ const result = await client.callTool({ name: "openapi_validate", arguments: { so
 if (result.isError || result.structuredContent?.success !== true) throw new Error("MCP validate smoke failed");
 await client.close();
 
-const configuredTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/openapi.config.cjs", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
+const configuredTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
 const configuredClient = new Client({ name: "release-configured-smoke", version: "1.0.0" });
 await configuredClient.connect(configuredTransport);
 const configured = await configuredClient.listTools();
@@ -616,7 +612,7 @@ if (orderContract.isError || orderContract.structuredContent?.operation?.path !=
 await configuredClient.close();
 
 const remotePolicyStderr = [];
-const remotePolicyTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/remote-policy.config.cjs", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
+const remotePolicyTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "remote-policy.config.cjs", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
 remotePolicyTransport.stderr?.on("data", (chunk) => remotePolicyStderr.push(String(chunk)));
 const remotePolicyClient = new Client({ name: "release-remote-policy-smoke", version: "1.0.0" });
 await remotePolicyClient.connect(remotePolicyTransport);
@@ -638,7 +634,7 @@ if (redirectObservations.sameOriginAuthorization !== "Bearer packed-redirect-sec
 if (redirectObservations.crossOriginAuthorization !== null) throw new Error("Packed MCP cross-origin redirect leaked trusted headers");
 if (remotePolicyStderr.join("").includes("packed-redirect-secret")) throw new Error("Packed MCP stderr leaked a trusted header");
 
-const restrictedPolicyTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/remote-policy.config.cjs", "--allow-private-network", "--allow-host", "schemas.example.com"], stderr: "pipe" });
+const restrictedPolicyTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "remote-policy.config.cjs", "--allow-private-network", "--allow-host", "schemas.example.com"], stderr: "pipe" });
 const restrictedPolicyClient = new Client({ name: "release-restricted-policy-smoke", version: "1.0.0" });
 await restrictedPolicyClient.connect(restrictedPolicyTransport);
 const restrictedPolicy = await restrictedPolicyClient.callTool({ name: "openapi_search_operations", arguments: { target: "same-origin", query: "remote" } });
@@ -647,7 +643,7 @@ if (JSON.stringify(restrictedPolicy).includes("packed-redirect-secret")) throw n
 await restrictedPolicyClient.close();
 
 const writeStderr = [];
-const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", ".OpenAPI/openapi.config.cjs", "--allow-write", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
+const writeTransport = new StdioClientTransport({ command: process.argv[2], args: ["--workspace-root", process.cwd(), "--config", "openapi.config.cjs", "--allow-write", "--allow-private-network", "--allow-host", "127.0.0.1"], stderr: "pipe" });
 writeTransport.stderr?.on("data", (chunk) => writeStderr.push(String(chunk)));
 const writeClient = new Client({ name: "release-write-smoke", version: "1.0.0" });
 await writeClient.connect(writeTransport);
@@ -657,15 +653,15 @@ const prepared = await writeClient.callTool({ name: "openapi_prepare_generation"
 const plan = prepared.structuredContent?.plan;
 if (prepared.isError || !plan || plan.kind !== "selective" || plan.applySupported !== true || typeof plan.token !== "string" || plan.summary.added !== 1) throw new Error("MCP selective Prepare smoke failed");
 try { await access("src/api/generated/user"); throw new Error("Prepare wrote the output directory"); } catch (error) { if (!(error && error.code === "ENOENT")) throw error; }
-try { await access(".OpenAPI/selections"); throw new Error("Prepare wrote the selection directory"); } catch (error) { if (!(error && error.code === "ENOENT")) throw error; }
+try { await access(".openapi-to/selections"); throw new Error("Prepare wrote the selection directory"); } catch (error) { if (!(error && error.code === "ENOENT")) throw error; }
 const applied = await writeClient.callTool({ name: "openapi_apply_generation", arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash } });
 if (applied.isError || applied.structuredContent?.applied !== true || applied.structuredContent?.planKind !== "selective" || applied.structuredContent?.selectionApplied !== true || applied.structuredContent?.selectedOperationCount !== 1) throw new Error("MCP selective Apply smoke failed");
 if (await readFile("src/api/generated/user/client.txt", "utf8") !== "user-service\\n") throw new Error("MCP Apply wrote unexpected bytes");
 const ownership = JSON.parse(await readFile("src/api/generated/user/.openapi-to-manifest.json", "utf8"));
 if (ownership.version !== 2 || ownership.files.length !== 1) throw new Error("MCP Apply ownership manifest failed");
-const selectionFiles = await readdir(".OpenAPI/selections");
+const selectionFiles = await readdir(".openapi-to/selections");
 if (selectionFiles.length !== 1) throw new Error("MCP selective Apply wrote an unexpected selection file set");
-const selection = JSON.parse(await readFile(".OpenAPI/selections/" + selectionFiles[0], "utf8"));
+const selection = JSON.parse(await readFile(".openapi-to/selections/" + selectionFiles[0], "utf8"));
 if (selection.target !== "user-service" || selection.operations?.join(",") !== "getById") throw new Error("MCP selective Apply wrote unexpected selection state");
 const replay = await writeClient.callTool({ name: "openapi_apply_generation", arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash } });
 if (!replay.isError || !replay.structuredContent?.diagnostics?.some(({ code }) => code === "MCP_PLAN_ALREADY_USED")) throw new Error("MCP Apply replay was not rejected");
@@ -803,7 +799,7 @@ await writeClient.close();
 	for (const output of [
 		"src/api/generated/user",
 		"src/api/generated/order",
-		".OpenAPI/legacy",
+		".openapi-to/legacy",
 	]) {
 		try {
 			await access(join(installationDirectory, output));
@@ -875,7 +871,7 @@ await writeClient.close();
 	for (const [output, target] of [
 		["src/api/generated/user", "user-service"],
 		["src/api/generated/order", "order-service"],
-		[".OpenAPI/legacy", "legacy-service"],
+		[".openapi-to/legacy", "legacy-service"],
 		["src/api/generated/remote-json", "remote-json"],
 		["src/api/generated/remote-yaml", "remote-yaml"],
 	]) {

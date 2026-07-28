@@ -28,6 +28,12 @@ The config path must exist inside the Workspace, may not escape through a symlin
 
 `--allow-write` without `--config` is rejected. Output roots must also pass Workspace validation before write Tools are registered.
 
+For CLI auto-discovery, keep exactly one of `openapi.config.ts`, `.js`, `.cjs`,
+or `.mjs` in the nearest configuration directory. `OPENAPI_CONFIG_AMBIGUOUS`
+means more than one candidate exists; remove the unintended file or pass an
+explicit `--config <path>`. Files below `.openapi-to` or the former state
+directory are not auto-discovered.
+
 ## JSON-RPC is polluted
 
 stdout is reserved for MCP protocol messages. Send diagnostics, banners, debug output, and plugin incidental logging to stderr. When embedding the server, do not use a wrapper that writes its own status line to stdout.
@@ -48,9 +54,9 @@ With the CLI, `openapi generate --target <name> --check` checks only the selecte
 
 ## A configured output is rejected
 
-Every Target needs an independent output root. Equal roots and parent/child combinations such as `src/api/generated` plus `src/api/generated/order` are rejected even if only one Target was requested. Also reject the Workspace root, absolute/drive/UNC paths, traversal, symlinks, `.git`, `node_modules`, and `.OpenAPI` selection/transaction/lock state.
+Every Target needs an independent output root. Equal roots and parent/child combinations such as `src/api/generated` plus `src/api/generated/order` are rejected even if only one Target was requested. Also reject the Workspace root, absolute/drive/UNC paths, traversal, symlinks, `.git`, `node_modules`, and `.openapi-to` selection/transaction/lock state.
 
-`base: 'workspace'` still means generator-managed. Put hand-written code in a separate path such as `src/api/custom`. Changing a Target from the default managed output to workspace output does not migrate or remove the old `.OpenAPI` directory; verify the new result and clean the old directory manually.
+`base: 'workspace'` still means generator-managed. Put hand-written code in a separate path such as `src/api/custom`. Changing a Target from the default managed output to workspace output does not migrate or remove the old `.openapi-to` directory; verify the new result and clean the old directory manually.
 
 ## A plan is expired, stale, or already used
 

@@ -25,14 +25,14 @@ import {
 const mode = process.argv[2];
 const modes = {
 	common: {
-		config: ".OpenAPI/openapi.config.js",
+		config: "openapi.config.js",
 		fixture: "petstore.json",
 		primaryAlias: "openapi",
 		secondaryAlias: "openapi-to",
 		target: "local-json",
 	},
 	module: {
-		config: ".OpenAPI/openapi.config.ts",
+		config: "openapi.config.ts",
 		fixture: "petstore.yaml",
 		primaryAlias: "openapi-to",
 		secondaryAlias: "openapi",
@@ -49,8 +49,8 @@ const consumerRoot = path.join(repositoryRoot, "e2e", mode);
 const workspace = await mkdtemp(
 	path.join(consumerRoot, ".openapi-to-e2e-work-"),
 );
-const generatedRoot = path.join(workspace, ".OpenAPI", "server");
-const stateRoot = path.join(workspace, ".OpenAPI");
+const generatedRoot = path.join(workspace, ".openapi-to", "server");
+const stateRoot = path.join(workspace, ".openapi-to");
 const artifactDirectory = path.resolve(
 	process.env.CLI_E2E_ARTIFACT_DIR ??
 		path.join(repositoryRoot, ".ci-artifacts", "cli", mode),

@@ -97,13 +97,13 @@ describe.sequential('MCP cancellation and timeout hardening', () => {
 
   it('cancels generation while running and while queued, then releases the instance lock', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-cancel-generation-'))
-    await mkdir(path.join(root, '.OpenAPI'))
+    await mkdir(path.join(root, '.openapi-to'))
     await writeFile(path.join(root, 'openapi.yaml'), 'openapi: 3.1.0\ninfo: { title: Cancel, version: "1" }\npaths: {}\n')
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = { servers: [{ name: 'main', input: { path: './openapi.yaml' }, output: { dir: 'generated' } }], plugins: [{ name: 'slow', hooks: { async buildStart(ctx) { await new Promise((resolve, reject) => { const timer = setTimeout(resolve, 300); const abort = () => { clearTimeout(timer); reject(ctx.signal.reason); }; if (ctx.signal.aborted) abort(); else ctx.signal.addEventListener('abort', abort, { once: true }); }); ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/result.txt', content: 'ok\\n' }); } } }] };\n`,
     )
-    const connected = await connect(root, ['--config', '.OpenAPI/openapi.config.js', '--generation-timeout-ms', '5000'])
+    const connected = await connect(root, ['--config', 'openapi.config.js', '--generation-timeout-ms', '5000'])
     clients.push(connected.client)
     const first = connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'] } }, undefined, { timeout: 5_000 })
     const queuedController = new AbortController()
@@ -129,7 +129,7 @@ describe.sequential('MCP cancellation and timeout hardening', () => {
     expect(progress.length).toBeGreaterThan(1)
     expect(progress).toEqual([...progress].sort((left, right) => left - right))
 
-    const timeoutServer = await connect(root, ['--config', '.OpenAPI/openapi.config.js', '--generation-timeout-ms', '100'])
+    const timeoutServer = await connect(root, ['--config', 'openapi.config.js', '--generation-timeout-ms', '100'])
     clients.push(timeoutServer.client)
     const timedCheck = await timeoutServer.client.callTool({ name: 'openapi_check_generation', arguments: { targets: ['main'] } }, undefined, { timeout: 5_000 })
     expect(timedCheck.isError).toBe(true)

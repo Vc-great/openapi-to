@@ -28,7 +28,7 @@ args = [
   "--workspace-root",
   ".",
   "--config",
-  ".OpenAPI/openapi.config.ts"
+  "openapi.config.ts"
 ]
 cwd = "."
 startup_timeout_sec = 10
@@ -42,7 +42,7 @@ Native Windows can launch the package-manager shim through `cmd.exe`:
 ```toml
 [mcp_servers.openapi_to]
 command = "cmd.exe"
-args = ["/d", "/s", "/c", "pnpm exec openapi-to-mcp --workspace-root . --config .OpenAPI/openapi.config.ts"]
+args = ["/d", "/s", "/c", "pnpm exec openapi-to-mcp --workspace-root . --config openapi.config.ts"]
 cwd = "."
 startup_timeout_sec = 10
 tool_timeout_sec = 60
@@ -65,7 +65,7 @@ args = [
   "--workspace-root",
   ".",
   "--config",
-  ".OpenAPI/openapi.config.ts",
+  "openapi.config.ts",
   "--allow-write"
 ]
 cwd = "."

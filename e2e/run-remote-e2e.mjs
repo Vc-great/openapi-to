@@ -18,7 +18,7 @@ const consumerRoot = path.join(repositoryRoot, "e2e", "common");
 const workspace = await mkdtemp(
 	path.join(consumerRoot, ".openapi-to-e2e-remote-"),
 );
-const stateRoot = path.join(workspace, ".OpenAPI");
+const stateRoot = path.join(workspace, ".openapi-to");
 const artifactDirectory = path.resolve(
 	process.env.CLI_E2E_ARTIFACT_DIR ??
 		path.join(repositoryRoot, ".ci-artifacts", "cli", "remote"),
@@ -106,8 +106,7 @@ function target(name, route, remote = true) {
     }`;
 }
 
-await mkdir(stateRoot);
-const configPath = path.join(stateRoot, "openapi.config.js");
+const configPath = path.join(workspace, "openapi.config.js");
 await writeFile(
 	configPath,
 	`const { defineConfig, pluginTSType } = require('openapi-to')

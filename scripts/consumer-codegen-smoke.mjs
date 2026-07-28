@@ -677,9 +677,8 @@ async function createConsumerFiles(consumerRoot, aggregateArchive, packed) {
 			},
 		},
 	});
-	await mkdir(join(consumerRoot, ".OpenAPI"), { recursive: true });
 	await writeFile(
-		join(consumerRoot, ".OpenAPI/openapi.config.ts"),
+		join(consumerRoot, "openapi.config.ts"),
 		`import {
   defineConfig,
   pluginTSRequest,
@@ -1185,7 +1184,7 @@ async function validateReviewSnapshot(snapshotRoot, root = repositoryRoot) {
 		"consumer/request.ts",
 		"consumer/consumer-usage.ts",
 		"consumer/tsconfig.generated.json",
-		"consumer/.OpenAPI/openapi.config.ts",
+		"consumer/openapi.config.ts",
 		"consumer/generated/.openapi-to-manifest.json",
 	]) {
 		assert(
@@ -1263,7 +1262,7 @@ export async function exportReviewSnapshot({
 			"request.ts",
 			"consumer-usage.ts",
 			"tsconfig.generated.json",
-			".OpenAPI",
+			"openapi.config.ts",
 			"generated",
 		]) {
 			await copyReviewEntry(

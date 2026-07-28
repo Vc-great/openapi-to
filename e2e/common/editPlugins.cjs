@@ -2,8 +2,7 @@ const fs = require("fs-extra");
 const path = require("node:path");
 
 const filePath = path.resolve(
-	process.env.CLI_E2E_CONFIG_PATH ??
-		path.join(__dirname, ".OpenAPI", "openapi.config.js"),
+	process.env.CLI_E2E_CONFIG_PATH ?? path.join(__dirname, "openapi.config.js"),
 );
 const inputPath = process.env.CLI_E2E_INPUT_PATH ?? "../fixtures/petstore.json";
 

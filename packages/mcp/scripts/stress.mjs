@@ -60,12 +60,12 @@ let selectiveCompileMs
 let selectiveApplyMs
 let selectiveTransactionMetrics
 try {
-  await mkdir(path.join(selectionRoot, '.OpenAPI/selections'), { recursive: true })
+  await mkdir(path.join(selectionRoot, '.openapi-to/selections'), { recursive: true })
   const largeFixtureRoot = path.join(repositoryRoot, 'packages/mcp/src/evaluation/fixtures/large')
   await copyFile(path.join(largeFixtureRoot, 'openapi.json'), path.join(selectionRoot, 'openapi.json'))
   await copyFile(path.join(largeFixtureRoot, 'schemas-a.json'), path.join(selectionRoot, 'schemas-a.json'))
   await copyFile(path.join(largeFixtureRoot, 'schemas-b.json'), path.join(selectionRoot, 'schemas-b.json'))
-  await writeFile(path.join(selectionRoot, '.OpenAPI/openapi.config.cjs'), `module.exports = {
+  await writeFile(path.join(selectionRoot, 'openapi.config.cjs'), `module.exports = {
   servers: [{ name: 'large', input: { path: './openapi.json' }, output: { dir: 'generated', clean: true } }],
   plugins: [{ name: 'selection-stress', hooks: { operation(operation, ctx) {
     const id = operation.accessor.operationId;
@@ -74,14 +74,14 @@ try {
 };
 `)
   const sha256 = (value) => createHash('sha256').update(value).digest('hex')
-  const selectionOwner = `target:large|config:${sha256('.OpenAPI/openapi.config.cjs')}|output:${sha256('.OpenAPI/generated')}`
-  const selectionFile = path.join(selectionRoot, '.OpenAPI/selections', `large-${sha256(selectionOwner).slice(0, 16)}.json`)
+  const selectionOwner = `target:large|config:${sha256('openapi.config.cjs')}|output:${sha256('.openapi-to/generated')}`
+  const selectionFile = path.join(selectionRoot, '.openapi-to/selections', `large-${sha256(selectionOwner).slice(0, 16)}.json`)
   const previousOperationKeys = Array.from({ length: 100 }, (_, index) => `getEnterpriseResource${index}`).sort()
   const selectionBytes = `${JSON.stringify({ version: 1, target: 'large', selectionOwner, operations: previousOperationKeys }, null, 2)}\n`
   await writeFile(selectionFile, selectionBytes)
   const selectionTransport = new StdioClientTransport({
     command: process.execPath,
-    args: [bin, '--workspace-root', selectionRoot, '--config', '.OpenAPI/openapi.config.cjs', '--allow-write', '--log-level', 'error'],
+    args: [bin, '--workspace-root', selectionRoot, '--config', 'openapi.config.cjs', '--allow-write', '--log-level', 'error'],
     stderr: 'pipe',
   })
   selectionTransport.stderr?.on('data', (chunk) => { stderrBytes += chunk.byteLength })
@@ -161,8 +161,8 @@ try {
   }
   const persistedSelection = JSON.parse(await readFile(selectionFile, 'utf8'))
   if (persistedSelection.operations.length !== 101 || !persistedSelection.operations.includes('getEnterpriseResource100')) throw new Error('Selective Apply stress did not persist the complete desired selection.')
-  if ((await readdir(path.join(selectionRoot, '.OpenAPI/selections'))).length !== 1) throw new Error('Selective Prepare stress created unexpected selection state.')
-  const generatedEntries = await readdir(path.join(selectionRoot, '.OpenAPI/generated'))
+  if ((await readdir(path.join(selectionRoot, '.openapi-to/selections'))).length !== 1) throw new Error('Selective Prepare stress created unexpected selection state.')
+  const generatedEntries = await readdir(path.join(selectionRoot, '.openapi-to/generated'))
   if (generatedEntries.length !== 102 || !generatedEntries.includes('.openapi-to-manifest.json')) throw new Error('Selective Apply stress committed an unexpected generated file set.')
   for (const internal of ['.openapi-to-write.lock', '.openapi-to-transaction.json', '.openapi-to-transaction']) {
     if (generatedEntries.includes(internal)) throw new Error(`Selective Apply stress leaked ${internal}.`)
@@ -173,9 +173,9 @@ try {
 const writeRoot = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-write-stress-'))
 let writeCalls = 0
 try {
-  await mkdir(path.join(writeRoot, '.OpenAPI'))
+  await mkdir(path.join(writeRoot, '.openapi-to'))
   await copyFile(path.join(repositoryRoot, 'packages/mcp/src/evaluation/fixtures/generation/openapi.json'), path.join(writeRoot, 'openapi.json'))
-  await writeFile(path.join(writeRoot, '.OpenAPI/openapi.config.cjs'), `module.exports = {
+  await writeFile(path.join(writeRoot, 'openapi.config.cjs'), `module.exports = {
   servers: [{ name: 'evaluation', input: { path: './openapi.json' }, output: { dir: 'generated', clean: true } }],
   plugins: [{ name: 'write-stress', hooks: { buildStart(ctx) {
     const root = ctx.openapiToSingleConfig.output.dir;
@@ -183,7 +183,7 @@ try {
   } } }]
 };
 `)
-  const writeTransport = new StdioClientTransport({ command: process.execPath, args: [bin, '--workspace-root', writeRoot, '--config', '.OpenAPI/openapi.config.cjs', '--allow-write', '--log-level', 'error'], stderr: 'pipe' })
+  const writeTransport = new StdioClientTransport({ command: process.execPath, args: [bin, '--workspace-root', writeRoot, '--config', 'openapi.config.cjs', '--allow-write', '--log-level', 'error'], stderr: 'pipe' })
   writeTransport.stderr?.on('data', (chunk) => { stderrBytes += chunk.byteLength })
   const writeClient = new Client({ name: 'openapi-to-write-stress', version: '1.0.0' })
   await writeClient.connect(writeTransport)
@@ -201,7 +201,7 @@ try {
   }
   for (const internal of ['.openapi-to-write.lock', '.openapi-to-transaction.json', '.openapi-to-transaction']) {
     try {
-      await access(path.join(writeRoot, '.OpenAPI/generated', internal))
+      await access(path.join(writeRoot, '.openapi-to/generated', internal))
       throw new Error(`Controlled-write stress leaked ${internal}.`)
     } catch (error) {
       if (error instanceof Error && !('code' in error && error.code === 'ENOENT')) throw error
@@ -218,7 +218,7 @@ let maxStateStagedBytes = 0
 let maxStateBackupBytes = 0
 try {
   const outputRoot = path.join(stateTransactionRoot, 'generated')
-  const selectionRoot = path.join(stateTransactionRoot, '.OpenAPI', 'selections')
+  const selectionRoot = path.join(stateTransactionRoot, '.openapi-to', 'selections')
   const selectionFile = path.join(selectionRoot, 'stress.json')
   await mkdir(selectionRoot, { recursive: true })
   await writeFile(selectionFile, '{"iteration":-1}\n')
@@ -227,7 +227,7 @@ try {
     outputRoot,
   ).artifacts
   await writeArtifacts(materialized, await compareArtifacts(materialized, outputRoot, true), { generatorVersion: 'stress' })
-  const recoveryContext = { workspaceRoot: stateTransactionRoot, allowedStateRoots: ['.OpenAPI/selections'] }
+  const recoveryContext = { workspaceRoot: stateTransactionRoot, allowedStateRoots: ['.openapi-to/selections'] }
   for (let index = 0; index < 20; index += 1) {
     const desiredArtifacts = materializeArtifacts(
       Array.from({ length: 100 }, (_, artifactIndex) => ({ kind: 'text', path: `client-${artifactIndex}.txt`, content: `commit-${index}-${artifactIndex}\n` })),
@@ -239,7 +239,7 @@ try {
     try {
       const result = await commitGenerationStateTransaction(lock, desiredArtifacts, manifest, [{
         id: 'selection',
-        workspaceRelativePath: '.OpenAPI/selections/stress.json',
+        workspaceRelativePath: '.openapi-to/selections/stress.json',
         expectedBefore: await snapshotOutputFile(selectionFile),
         desiredBytes,
         desiredSha256: createHash('sha256').update(desiredBytes).digest('hex'),
@@ -268,7 +268,7 @@ try {
       try {
         await commitGenerationStateTransaction(lock, desiredArtifacts, manifest, [{
           id: 'selection',
-          workspaceRelativePath: '.OpenAPI/selections/stress.json',
+          workspaceRelativePath: '.openapi-to/selections/stress.json',
           expectedBefore: await snapshotOutputFile(selectionFile),
           desiredBytes,
           desiredSha256: createHash('sha256').update(desiredBytes).digest('hex'),

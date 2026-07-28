@@ -22,9 +22,8 @@ describe.sequential('CLI machine-readable commands', () => {
     root = await mkdtemp(path.join(os.tmpdir(), 'openapi-cli-'))
     spec = path.join(root, 'openapi.yaml')
     await writeFile(spec, `openapi: 3.1.0\ninfo:\n  title: CLI fixture\n  version: 1.0.0\npaths:\n  /pets:\n    get:\n      operationId: listPets\n      responses:\n        '200':\n          description: ok\n`)
-    await mkdir(path.join(root, '.OpenAPI'))
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = {
         servers: [{ name: 'fixture', input: { path: './openapi.yaml' }, output: { dir: 'generated', clean: true } }],
         plugins: [{ name: 'fixture-plugin', hooks: { buildStart(ctx) { console.log('plugin progress'); ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/hello.txt', content: 'hello\\n', plugin: 'fixture-plugin' }) } } }]
@@ -129,8 +128,8 @@ describe.sequential('CLI machine-readable commands', () => {
   })
 
   it('dry-run and check never write, while write and a following check agree', async () => {
-    const outputFile = path.join(root, '.OpenAPI/generated/hello.txt')
-    const ownershipManifest = path.join(root, '.OpenAPI/generated/.openapi-to-manifest.json')
+    const outputFile = path.join(root, '.openapi-to/generated/hello.txt')
+    const ownershipManifest = path.join(root, '.openapi-to/generated/.openapi-to-manifest.json')
     let result = await run(['node', 'openapi', 'generate', '--dry-run', '--json'], io)
     let json = JSON.parse(stdout.join('\n'))
     expect(result.exitCode).toBe(ExitCode.Success)
@@ -150,7 +149,7 @@ describe.sequential('CLI machine-readable commands', () => {
     expect(await readFile(outputFile, 'utf8')).toBe('hello\n')
     expect(stderr).toContain('plugin progress')
 
-    const userFile = path.join(root, '.OpenAPI/generated/user.txt')
+    const userFile = path.join(root, '.openapi-to/generated/user.txt')
     await writeFile(userFile, 'owned by user')
     await writeFile(outputFile, 'outdated')
     stdout = []
@@ -185,6 +184,66 @@ describe.sequential('CLI machine-readable commands', () => {
     expect(stdout.join('\n')).toBe(firstCheck)
   }, CLI_GENERATION_TEST_TIMEOUT_MS)
 
+  it('discovers the nearest root configuration from a nested invocation directory', async () => {
+    const nested = path.join(root, 'packages', 'client', 'src')
+    await mkdir(nested, { recursive: true })
+    process.chdir(nested)
+
+    const result = await run(['node', 'openapi', 'generate', '--dry-run', '--json'], io)
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n'))).toMatchObject({
+      success: true,
+      mode: 'dry-run',
+      servers: [{ output: '.openapi-to/generated', success: true }],
+    })
+    await expect(access(path.join(root, '.openapi-to'))).rejects.toThrow()
+  })
+
+  it('reports ambiguous root configuration before execution and honors an explicit --config selection', async () => {
+    const marker = path.join(root, 'ambiguous-config-executed.txt')
+    await writeFile(
+      path.join(root, 'openapi.config.ts'),
+      `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(marker)}, 'executed'); export default { servers: [], plugins: [] };\n`,
+    )
+    let result = await run(['node', 'openapi', 'generate', '--json'], io)
+    expect(result.exitCode).toBe(ExitCode.ConfigError)
+    expect(JSON.parse(stdout.join('\n'))).toMatchObject({
+      success: false,
+      diagnostics: [{ code: 'OPENAPI_CONFIG_AMBIGUOUS' }],
+      servers: [],
+    })
+    await expect(access(marker)).rejects.toThrow()
+
+    stdout = []
+    result = await run(
+      ['node', 'openapi', 'generate', '--config', './openapi.config.js', '--dry-run', '--json'],
+      io,
+    )
+    expect(result.exitCode).toBe(ExitCode.Success)
+    expect(JSON.parse(stdout.join('\n'))).toMatchObject({
+      success: true,
+      mode: 'dry-run',
+    })
+    await expect(access(marker)).rejects.toThrow()
+  })
+
+  it('does not auto-discover the former .OpenAPI configuration location', async () => {
+    await rm(path.join(root, 'openapi.config.js'))
+    await mkdir(path.join(root, '.OpenAPI'))
+    await writeFile(
+      path.join(root, '.OpenAPI', 'openapi.config.js'),
+      'module.exports = { servers: [], plugins: [] }\n',
+    )
+    const result = await run(['node', 'openapi', 'generate', '--json'], io)
+    expect(result.exitCode).toBe(ExitCode.ConfigError)
+    expect(JSON.parse(stdout.join('\n'))).toMatchObject({
+      success: false,
+      diagnostics: [{ code: 'CONFIG_LOAD_FAILED' }],
+      servers: [],
+    })
+    await expect(access(path.join(root, '.openapi-to'))).rejects.toThrow()
+  })
+
   it('selects named microservice targets in config order across workspace and managed outputs', async () => {
     const fixtures = path.join(repositoryRoot, 'packages/cli/mock/microservices')
     await Promise.all([
@@ -193,7 +252,7 @@ describe.sequential('CLI machine-readable commands', () => {
       writeFile(path.join(root, 'payment-service.yml'), await readFile(path.join(fixtures, 'payment-service.yml'))),
     ])
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = {
         servers: [
           { name: 'user-service', input: { path: './user-service.json' }, output: { base: 'workspace', dir: 'src/api/generated/user', clean: true } },
@@ -218,7 +277,7 @@ describe.sequential('CLI machine-readable commands', () => {
     )
     const userFile = path.join(root, 'src/api/generated/user/target.txt')
     const orderFile = path.join(root, 'src/api/generated/order/target.txt')
-    const paymentFile = path.join(root, '.OpenAPI/payment/target.txt')
+    const paymentFile = path.join(root, '.openapi-to/payment/target.txt')
 
     let result = await run(
       ['node', 'openapi', 'generate', '--target', 'order-service', '--target', 'user-service', '--dry-run', '--json'],
@@ -230,7 +289,7 @@ describe.sequential('CLI machine-readable commands', () => {
       expect.objectContaining({ name: 'order-service', output: 'src/api/generated/order' }),
     ])
     await expect(access(path.join(root, 'src/api/generated'))).rejects.toThrow()
-    await expect(access(path.join(root, '.OpenAPI/payment'))).rejects.toThrow()
+    await expect(access(path.join(root, '.openapi-to/payment'))).rejects.toThrow()
 
     stdout = []
     result = await run(['node', 'openapi', 'generate', '--json'], io)
@@ -246,7 +305,7 @@ describe.sequential('CLI machine-readable commands', () => {
     await Promise.all([
       access(path.join(root, 'src/api/generated/user/.openapi-to-manifest.json')),
       access(path.join(root, 'src/api/generated/order/.openapi-to-manifest.json')),
-      access(path.join(root, '.OpenAPI/payment/.openapi-to-manifest.json')),
+      access(path.join(root, '.openapi-to/payment/.openapi-to-manifest.json')),
     ])
 
     await writeFile(orderFile, 'order-sentinel\n')
@@ -299,7 +358,7 @@ describe.sequential('CLI machine-readable commands', () => {
 
   it('preflights every configured output and every selected input before any target write', async () => {
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = {
         servers: [
           { name: 'valid', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated/valid' } },
@@ -314,7 +373,7 @@ describe.sequential('CLI machine-readable commands', () => {
     await expect(access(path.join(root, 'src/generated/valid'))).rejects.toThrow()
 
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = {
         servers: [
           { name: 'valid', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated/valid' } },
@@ -349,7 +408,7 @@ describe.sequential('CLI machine-readable commands', () => {
     expect(result.exitCode).toBe(ExitCode.OpenAPIError)
 
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = {
         servers: [{ input: { path: './openapi.yaml' }, output: { dir: 'generated' } }],
         plugins: [{ name: 'broken', hooks: { buildStart() { throw new Error('broken plugin') } } }]

@@ -126,7 +126,7 @@ describe.sequential('stdio MCP server', () => {
   it('registers generation tools only for fixed trusted config and preserves stdio integrity', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-integration-'))
     temporaryRoots.push(root)
-    await mkdir(path.join(root, '.OpenAPI'))
+    await mkdir(path.join(root, '.openapi-to'))
     const spec = `openapi: 3.1.0
 info: { title: Generation, version: "1" }
 paths:
@@ -176,7 +176,7 @@ components:
     await writeFile(path.join(root, 'fail.yaml'), spec)
     await writeFile(path.join(root, 'conflict.yaml'), spec)
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `let active = 0;
 module.exports = {
   servers: [
@@ -206,7 +206,7 @@ module.exports = {
 `,
     )
 
-    const connected = await connect(root, '.OpenAPI/openapi.config.js')
+    const connected = await connect(root, 'openapi.config.js')
     clients.push(connected.client)
     const listed = await connected.client.listTools()
     expect(listed.tools.map(({ name }) => name)).toEqual([
@@ -248,11 +248,11 @@ module.exports = {
     expect(unknownCatalogTarget.isError).toBe(true)
     expect((structured(unknownCatalogTarget).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_UNKNOWN_TARGET')
 
-    const outputRoot = path.join(root, '.OpenAPI/generated')
+    const outputRoot = path.join(root, '.openapi-to/generated')
     const ownership = path.join(outputRoot, '.openapi-to-manifest.json')
     const dryRun = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'], configPath: '../untrusted.js', allowPrivateNetwork: true } })
     expect(dryRun.isError).not.toBe(true)
-    expect(structured(dryRun)).toMatchObject({ success: true, mode: 'dry-run', config: { path: '.OpenAPI/openapi.config.js', targets: ['main'] } })
+    expect(structured(dryRun)).toMatchObject({ success: true, mode: 'dry-run', config: { path: 'openapi.config.js', targets: ['main'] } })
     const explicitFull = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'], scope: { type: 'full' } } })
     expect(explicitFull.isError).not.toBe(true)
     expect((structured(explicitFull).servers as DryRunServer[])[0]?.manifest.hash).toBe((structured(dryRun).servers as DryRunServer[])[0]?.manifest.hash)
@@ -299,7 +299,7 @@ module.exports = {
 
     const multiple = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['second', 'main'] } })
     expect(structured(multiple)).toMatchObject({ success: true, config: { targets: ['main', 'second'] } })
-    await expect(access(path.join(root, '.OpenAPI/second'))).rejects.toThrow()
+    await expect(access(path.join(root, '.openapi-to/second'))).rejects.toThrow()
 
     const preview = await connected.client.callTool({ name: 'openapi_generate_dry_run', arguments: { targets: ['main'], includePreview: true } })
     const previewArtifacts = ((structured(preview).servers as Array<{ manifest: { artifacts: Array<Record<string, unknown>> } }>)[0]?.manifest.artifacts ?? [])
@@ -369,13 +369,13 @@ module.exports = {
 
   it('rejects unsafe or overlapping configured output roots before any target generation', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-output-preflight-'))
-    await mkdir(path.join(root, '.OpenAPI'))
+    await mkdir(path.join(root, '.openapi-to'))
     await writeFile(
       path.join(root, 'openapi.yaml'),
       'openapi: 3.1.0\ninfo: { title: Output preflight, version: "1" }\npaths: {}\n',
     )
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = {
         servers: [
           { name: 'safe', input: { path: './openapi.yaml' }, output: { base: 'workspace', dir: 'src/generated' } },
@@ -384,7 +384,7 @@ module.exports = {
         plugins: [{ name: 'must-not-run', hooks: { buildStart(ctx) { ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/unexpected.txt', content: 'unexpected' }) } } }]
       }\n`,
     )
-    const connected = await connect(root, '.OpenAPI/openapi.config.js')
+    const connected = await connect(root, 'openapi.config.js')
     clients.push(connected.client)
     const result = await connected.client.callTool({
       name: 'openapi_generate_dry_run',
@@ -399,17 +399,17 @@ module.exports = {
 
   it('keeps trusted catalog sources inside Workspace and preserves remote and secret boundaries', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-catalog-security-'))
-    await mkdir(path.join(root, '.OpenAPI'))
+    await mkdir(path.join(root, '.openapi-to'))
     const outside = path.join(path.dirname(root), `${path.basename(root)}-outside.yaml`)
     await writeFile(outside, 'openapi: 3.1.0\ninfo: { title: Outside, version: "1" }\npaths: {}\n')
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = { servers: [
         { name: 'escape', input: { path: '../${path.basename(outside)}' }, output: { dir: 'escape' } },
         { name: 'private', input: { path: 'http://127.0.0.1/openapi.yaml', remote: { headers: { Authorization: 'Bearer catalog-secret-token' } } }, output: { dir: 'private' } }
       ], plugins: [] }\n`,
     )
-    const connected = await connect(root, '.OpenAPI/openapi.config.js')
+    const connected = await connect(root, 'openapi.config.js')
     clients.push(connected.client)
     const escaped = await connected.client.callTool({ name: 'openapi_search_operations', arguments: { target: 'escape', query: 'anything' } })
     expect(escaped.isError).toBe(true)
@@ -436,9 +436,9 @@ module.exports = {
       const address = remoteServer.address()
       if (!address || typeof address === 'string') throw new Error('Unable to bind remote target fixture.')
       const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-remote-policy-'))
-      await mkdir(path.join(root, '.OpenAPI'))
+      await mkdir(path.join(root, '.openapi-to'))
       await writeFile(
-        path.join(root, '.OpenAPI/openapi.config.js'),
+        path.join(root, 'openapi.config.js'),
         `module.exports = { servers: [{
           name: 'remote',
           input: {
@@ -455,7 +455,7 @@ module.exports = {
           output: { dir: 'remote' }
         }], plugins: [] }\n`,
       )
-      const connected = await connect(root, '.OpenAPI/openapi.config.js', [
+      const connected = await connect(root, 'openapi.config.js', [
         '--allow-private-network',
         '--allow-host',
         '127.0.0.1',
@@ -470,7 +470,7 @@ module.exports = {
       expect(JSON.stringify(searched)).not.toContain('target-only-secret')
       expect(connected.stderr.join('')).not.toContain('target-only-secret')
 
-      const restricted = await connect(root, '.OpenAPI/openapi.config.js', [
+      const restricted = await connect(root, 'openapi.config.js', [
         '--allow-private-network',
         '--allow-host',
         'schemas.example.com',

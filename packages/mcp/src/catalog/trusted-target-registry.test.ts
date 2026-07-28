@@ -10,12 +10,12 @@ import { TrustedTargetCatalogRegistry } from './trusted-target-registry.ts'
 
 async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'mcp-catalog-registry-'))
-  await mkdir(path.join(root, '.OpenAPI'))
+  await mkdir(path.join(root, '.openapi-to'))
   await writeFile(path.join(root, 'first.yaml'), 'openapi: 3.1.0\ninfo: { title: First, version: "1" }\npaths: { /same: { get: { operationId: firstOperation, responses: { "200": { description: ok } } } } }\n')
   await writeFile(path.join(root, 'second.yaml'), 'openapi: 3.1.0\ninfo: { title: Second, version: "1" }\npaths: { /same: { get: { operationId: secondOperation, responses: { "200": { description: ok } } } } }\n')
   await writeFile(path.join(root, 'broken.yaml'), 'not: [valid')
   await writeFile(
-    path.join(root, '.OpenAPI/openapi.config.js'),
+    path.join(root, 'openapi.config.js'),
     `module.exports = { servers: [
       { name: 'first', input: { path: './first.yaml' }, output: { dir: 'first' } },
       { name: 'second', input: { path: './second.yaml' }, output: { dir: 'second' } },
@@ -28,8 +28,8 @@ async function fixture() {
 describe('TrustedTargetCatalogRegistry', () => {
   it('deduplicates concurrent first compilation and isolates targets with the same method and path', async () => {
     const root = await fixture()
-    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: '.OpenAPI/openapi.config.js' })
-    const provider = new TrustedConfigProvider(root, '.OpenAPI/openapi.config.js')
+    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: 'openapi.config.js' })
+    const provider = new TrustedConfigProvider(root, 'openapi.config.js')
     let compilationCount = 0
     const registry = new TrustedTargetCatalogRegistry(provider, options, async (...args) => {
       compilationCount += 1
@@ -48,8 +48,8 @@ describe('TrustedTargetCatalogRegistry', () => {
 
   it('does not retain failed compilations and can retry the same trusted target', async () => {
     const root = await fixture()
-    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: '.OpenAPI/openapi.config.js' })
-    const provider = new TrustedConfigProvider(root, '.OpenAPI/openapi.config.js')
+    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: 'openapi.config.js' })
+    const provider = new TrustedConfigProvider(root, 'openapi.config.js')
     let compilationCount = 0
     const registry = new TrustedTargetCatalogRegistry(provider, options, async (...args) => {
       compilationCount += 1
@@ -63,8 +63,8 @@ describe('TrustedTargetCatalogRegistry', () => {
 
   it('keeps discovery cached while allowing Apply to compile the current trusted bytes', async () => {
     const root = await fixture()
-    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: '.OpenAPI/openapi.config.js' })
-    const provider = new TrustedConfigProvider(root, '.OpenAPI/openapi.config.js')
+    const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: 'openapi.config.js' })
+    const provider = new TrustedConfigProvider(root, 'openapi.config.js')
     let compilationCount = 0
     const registry = new TrustedTargetCatalogRegistry(provider, options, async (...args) => {
       compilationCount += 1

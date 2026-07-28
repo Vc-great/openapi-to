@@ -56,7 +56,7 @@ The published `openapi-to` package installs two CLI aliases that execute the sam
 | `--json` | Stable | Exactly one JSON document on stdout; diagnostics and incidental logs stay on stderr. |
 | Exit codes | Stable | Central `ExitCode`, `exitCodeForDiagnostics()`, and `process.exitCode` handling. |
 
-Generation supports independent `managed` (default `.OpenAPI/<dir>`) and `workspace` output bases. Both are generator-owned, reject protected/escaping/symlinked/overlapping Target roots and non-portable Windows device/character/trailing-dot-or-space segments, and keep ownership inside each output root. Native Windows absolute inputs are accepted only inside the Workspace; drive-relative, UNC, and configured `file:` inputs are rejected. Multi-Target CLI writes have per-Target transaction boundaries, not one cross-root transaction.
+Generation supports independent `managed` (default `.openapi-to/<dir>`) and `workspace` output bases. Both are generator-owned, reject protected/escaping/symlinked/overlapping Target roots and non-portable Windows device/character/trailing-dot-or-space segments, and keep ownership inside each output root. Native Windows absolute inputs are accepted only inside the Workspace; drive-relative, UNC, and configured `file:` inputs are rejected. Multi-Target CLI writes have per-Target transaction boundaries, not one cross-root transaction.
 
 ## MCP
 

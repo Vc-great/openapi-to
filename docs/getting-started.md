@@ -27,9 +27,13 @@ pnpm exec openapi diff ./old.yaml ./new.yaml --json
 pnpm exec openapi generate --dry-run --json
 ```
 
-Run `pnpm exec openapi init` to create a starting configuration. Generation discovers `.OpenAPI/openapi.config.js`, `.cjs`, or `.ts`; validation, inspection, and diff do not require a generation config.
+Run `pnpm exec openapi init` to create a starting configuration in the Workspace root. Generation searches upward for the nearest `openapi.config.ts`, `.js`, `.cjs`, or `.mjs`; multiple supported files in one candidate directory fail before any configuration code executes. `--config <path>` explicitly selects one file and bypasses discovery. Validation, inspection, and diff do not require a generation config. `init` adds `/.openapi-to/` to `.gitignore`, while the root configuration remains trackable.
 
-For microservices, give each OpenAPI document a stable Target name and independent output root. `pnpm exec openapi generate` generates all Targets; repeat `--target <name>` to select one or more. Local JSON/YAML/YML and policy-constrained HTTP(S) inputs use the same Core loader. Managed output remains below `.OpenAPI` by default, while `output.base: 'workspace'` places generator-managed code directly below the project root.
+The selected configuration's directory becomes the generation Workspace.
+Running `generate` from a nested package therefore keeps relative inputs,
+managed state, and Workspace outputs anchored to the configuration directory.
+
+For microservices, give each OpenAPI document a stable Target name and independent output root. `pnpm exec openapi generate` generates all Targets; repeat `--target <name>` to select one or more. Local JSON/YAML/YML and policy-constrained HTTP(S) inputs use the same Core loader. Managed output remains below `.openapi-to` by default, while `output.base: 'workspace'` places generator-managed code directly below the project root.
 
 Workspace-local absolute Windows input paths are supported. Drive-relative paths (`C:openapi.yaml`), UNC paths, and configured `file:` URLs are rejected. Output segments must also be portable across Linux, macOS, and Windows; Windows device names, reserved characters, control characters, and trailing periods/spaces are rejected before generation.
 
@@ -54,13 +58,13 @@ pnpm exec openapi-to-mcp --workspace-root .
 A trusted project config adds read-only catalog and generation preview/check Tools:
 
 ```sh
-pnpm exec openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts
+pnpm exec openapi-to-mcp --workspace-root . --config ./openapi.config.ts
 ```
 
 `--allow-write` additionally exposes the existing Prepare/Apply Tools. It does not bypass Host approval:
 
 ```sh
-pnpm exec openapi-to-mcp --workspace-root . --config ./.OpenAPI/openapi.config.ts --allow-write
+pnpm exec openapi-to-mcp --workspace-root . --config ./openapi.config.ts --allow-write
 ```
 
 Choose the Host-specific configuration:

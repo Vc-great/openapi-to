@@ -11,7 +11,7 @@ import {
 } from './selection.ts'
 
 const target = 'backend'
-const owner = 'config:.OpenAPI/openapi.config.ts|target:backend|output:.OpenAPI/sdk'
+const owner = 'config:.openapi-to/openapi.config.ts|target:backend|output:.openapi-to/sdk'
 
 describe('operation selection manifest', () => {
   it('creates and deterministically serializes empty and populated version 1 manifests', () => {

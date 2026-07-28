@@ -2,8 +2,7 @@ const fs = require("fs-extra");
 const path = require("node:path");
 
 const filePath = path.resolve(
-	process.env.CLI_E2E_CONFIG_PATH ??
-		path.join(__dirname, ".OpenAPI", "openapi.config.ts"),
+	process.env.CLI_E2E_CONFIG_PATH ?? path.join(__dirname, "openapi.config.ts"),
 );
 const inputPath = process.env.CLI_E2E_INPUT_PATH ?? "../fixtures/petstore.yaml";
 

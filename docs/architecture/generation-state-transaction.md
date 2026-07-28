@@ -40,7 +40,7 @@ Journal schema v1 remains the no-state format for generated artifacts plus owner
 Both versions use `.openapi-to-transaction.json` in the output root and a deterministic SHA-256 checksum over stable JSON. Output stage/backup bytes remain beneath `.openapi-to-transaction/<transaction-id>/`. Each controlled state file stages and backs up beneath its trusted target parent:
 
 ```text
-.OpenAPI/selections/
+.openapi-to/selections/
   <selection>.json
   .openapi-to-state-transaction/<transaction-id>/
     stage/<index>
@@ -84,6 +84,6 @@ The first implementation requires the output root and every controlled state tar
 
 ## MCP selective Apply integration
 
-Selective Prepare remains side-effect free but now issues a one-time token for a complete frozen plan. Selective Apply passes one internally derived `TransactionStateFile` containing the prior physical selection snapshot and exact desired bytes to `commitGenerationStateTransaction()`. It supplies the startup-trusted Workspace and `.OpenAPI/selections` recovery root; no Tool argument can supply those values.
+Selective Prepare remains side-effect free but now issues a one-time token for a complete frozen plan. Selective Apply passes one internally derived `TransactionStateFile` containing the prior physical selection snapshot and exact desired bytes to `commitGenerationStateTransaction()`. It supplies the startup-trusted Workspace and `.openapi-to/selections` recovery root; no Tool argument can supply those values.
 
 B2b does not add remove, replace, clear, prune, historical full-output bootstrap, output migration, or `src/api/generated` writes. Full plans continue to use journal v1 and `commitOutputTransaction()`; only selective plans with the controlled selection state use journal v2.

@@ -51,6 +51,7 @@ test.json
 .next
 .ci-artifacts
 e2e/*/.openapi-to-e2e-*
+/.openapi-to/
 docs/.vitepress/cache/**
 docs/.vitepress/dist/**
 

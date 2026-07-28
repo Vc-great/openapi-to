@@ -64,7 +64,7 @@ async function connectWrite(workspaceRoot) {
   const stderr = []
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [bin, '--workspace-root', workspaceRoot, '--config', '.OpenAPI/openapi.config.cjs', '--allow-write', '--log-format', 'json', '--log-level', 'info'],
+    args: [bin, '--workspace-root', workspaceRoot, '--config', 'openapi.config.cjs', '--allow-write', '--log-format', 'json', '--log-level', 'info'],
     stderr: 'pipe',
   })
   transport.stderr?.on('data', (chunk) => stderr.push(Buffer.from(chunk)))
@@ -75,9 +75,9 @@ async function connectWrite(workspaceRoot) {
 
 async function createWriteWorkspace() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-write-benchmark-'))
-  await mkdir(path.join(root, '.OpenAPI'))
+  await mkdir(path.join(root, '.openapi-to'))
   await copyFile(path.join(fixtures, 'generation/openapi.json'), path.join(root, 'openapi.json'))
-  await writeFile(path.join(root, '.OpenAPI/openapi.config.cjs'), `module.exports = {
+  await writeFile(path.join(root, 'openapi.config.cjs'), `module.exports = {
   servers: [{ name: 'evaluation', input: { path: './openapi.json' }, output: { dir: 'generated', clean: true } }],
   plugins: [{ name: 'write-benchmark', hooks: { buildStart(ctx) {
     const paths = Object.keys(ctx.openAPIDocument.paths || {}).sort();

@@ -53,12 +53,34 @@ Omitting `--target` continues to generate all configured Targets. Selection is
 Target-scoped, so equal operation IDs or schema names in different services do
 not collide.
 
+## Move configuration and state manually
+
+Version 4 makes the configuration and state boundaries explicit:
+
+| Before | After |
+| --- | --- |
+| `.OpenAPI/openapi.config.*` | `./openapi.config.*` |
+| `.OpenAPI/` | `.openapi-to/` |
+| `folderName` | `stateDirectoryName` |
+
+Move one configuration file to the Workspace root as `openapi.config.ts`,
+`.js`, `.cjs`, or `.mjs`. Version 4 does not auto-read, copy, or migrate the
+old configuration. It also does not copy old selections, clean the old
+directory, or remove old managed output.
+
+If selection or other state must be retained, inspect it and migrate only the
+state that remains valid for the new configuration and output identities. The
+safe sequence is to generate into `.openapi-to`, validate the new result and
+ownership manifest, then manually remove the old directory only after deciding
+that its state and managed output are no longer needed. There is no compatibility
+fallback or automatic `.OpenAPI` to `.openapi-to` migration.
+
 ## Choose the output base
 
-The default output remains managed:
+The default output is managed:
 
 ```text
-managed -> .OpenAPI/<output.dir>
+managed -> .openapi-to/<output.dir>
 ```
 
 An explicit Workspace output places the generated directory beneath the
@@ -135,6 +157,11 @@ plan.
 
 ## Breaking changes to account for
 
+- Root `openapi.config.*` files are the only auto-discovered generation
+  configuration. The former directory is not searched.
+- Tool-managed state and managed outputs now use `.openapi-to`; existing
+  selections and generated output are not copied or deleted automatically.
+- Core exports `stateDirectoryName` and no longer exports `folderName`.
 - Private-network remote sources that were previously reachable implicitly are
   now blocked by default.
 - Conflicting artifact paths fail deterministically instead of depending on

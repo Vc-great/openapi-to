@@ -62,7 +62,7 @@ describe("preflightConfiguredTargets", () => {
 			["payment", "Payment"],
 		]);
 		await expect(access(path.join(root, "src/generated"))).rejects.toThrow();
-		await expect(access(path.join(root, ".OpenAPI"))).rejects.toThrow();
+		await expect(access(path.join(root, ".openapi-to"))).rejects.toThrow();
 	});
 
 	it("loads all selected inputs before a caller can write any target", async () => {
@@ -93,7 +93,7 @@ describe("preflightConfiguredTargets", () => {
 		expect(prepared[1]?.compilation?.diagnostics[0]?.code).toBe(
 			"INPUT_READ_FAILED",
 		);
-		await expect(access(path.join(root, ".OpenAPI"))).rejects.toThrow();
+		await expect(access(path.join(root, ".openapi-to"))).rejects.toThrow();
 	});
 
 	it("reuses one remote response across selected targets in one preflight", async () => {

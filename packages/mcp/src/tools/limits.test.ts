@@ -46,15 +46,15 @@ describe('MCP bounded tool results', () => {
 
   it('applies one artifact budget across generation output and bounds previews', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'mcp-artifact-limit-'))
-    await mkdir(path.join(root, '.OpenAPI'))
+    await mkdir(path.join(root, '.openapi-to'))
     await writeFile(path.join(root, 'openapi.yaml'), 'openapi: 3.1.0\ninfo: { title: Limits, version: "1" }\npaths: {}\n')
     await writeFile(
-      path.join(root, '.OpenAPI/openapi.config.js'),
+      path.join(root, 'openapi.config.js'),
       `module.exports = { servers: [{ name: 'main', input: { path: './openapi.yaml' }, output: { dir: 'generated' } }], plugins: [{ name: 'limits', hooks: { buildStart(ctx) { for (const name of ['a', 'b', 'c']) ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/' + name + '.txt', content: '0123456789' }) } } }] }\n`,
     )
     const progress: number[] = []
     const result = await generateDryRunTool(
-      context(root, '.OpenAPI/openapi.config.js'),
+      context(root, 'openapi.config.js'),
       { targets: ['main'], includePreview: true },
       { signal: new AbortController().signal, _meta: { progressToken: 'test' }, sendNotification: async (notification) => { progress.push(notification.params.progress) } },
     )

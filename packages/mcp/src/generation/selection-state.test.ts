@@ -22,7 +22,7 @@ import { TrustedConfigProvider } from './trusted-config.ts'
 
 async function fixture(options: { duplicate?: boolean; missingId?: boolean; secondTarget?: boolean; sharedOutput?: boolean } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-selection-'))
-  await mkdir(path.join(root, '.OpenAPI'))
+  await mkdir(path.join(root, '.openapi-to'))
   const operationId = options.missingId ? '' : 'operationId: getUser'
   await writeFile(path.join(root, 'openapi.yaml'), `openapi: 3.1.0
 info: { title: Selection, version: "1" }
@@ -47,7 +47,7 @@ components:
     `{ name: 'main', input: { path: './openapi.yaml' }, output: { dir: 'generated', clean: true } }`,
     ...(options.secondTarget ? [`{ name: 'second', input: { path: './openapi.yaml' }, output: { dir: '${options.sharedOutput ? 'generated' : 'generated-second'}', clean: true } }`] : []),
   ]
-  await writeFile(path.join(root, '.OpenAPI/openapi.config.cjs'), `module.exports = {
+  await writeFile(path.join(root, 'openapi.config.cjs'), `module.exports = {
   servers: [${servers.join(',')}],
   plugins: [{ name: 'selection-fixture', hooks: { operation(operation, ctx) {
     const id = operation.accessor.operationId;
@@ -55,8 +55,8 @@ components:
   } } }]
 };
 `)
-  const resolved = resolveMcpServerOptions({ workspaceRoot: root, configPath: '.OpenAPI/openapi.config.cjs', allowWrite: true })
-  const provider = new TrustedConfigProvider(resolved.workspaceRoot, '.OpenAPI/openapi.config.cjs')
+  const resolved = resolveMcpServerOptions({ workspaceRoot: root, configPath: 'openapi.config.cjs', allowWrite: true })
+  const provider = new TrustedConfigProvider(resolved.workspaceRoot, 'openapi.config.cjs')
   const registry = new TrustedTargetCatalogRegistry(provider, resolved)
   return { root: resolved.workspaceRoot, resolved, provider, registry }
 }
@@ -87,7 +87,7 @@ describe('trusted persistent operation selection state', () => {
       alreadySelectedOperationKeys: [],
       desiredOperationKeys: ['createUser', 'getUser'],
     })
-    expect(prepared.selectionFileIdentity).toMatch(/^\.OpenAPI\/selections\/main-[a-f0-9]{16}\.json$/)
+    expect(prepared.selectionFileIdentity).toMatch(/^\.openapi-to\/selections\/main-[a-f0-9]{16}\.json$/)
     expect(prepared.selectionOwner).not.toContain(context.root)
   })
 
@@ -107,7 +107,7 @@ describe('trusted persistent operation selection state', () => {
 
   it('fails closed when ownership exists without selection state', async () => {
     const context = await fixture()
-    const output = path.join(context.root, '.OpenAPI/generated')
+    const output = path.join(context.root, '.openapi-to/generated')
     await mkdir(output)
     await writeFile(path.join(output, ARTIFACT_MANIFEST_FILENAME), '{"version":2,"files":[]}\n')
     await expect(prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] }))
@@ -116,16 +116,16 @@ describe('trusted persistent operation selection state', () => {
 
   it('fails closed for unmanaged output and for selection without ownership beside non-empty output', async () => {
     const unmanaged = await fixture()
-    await mkdir(path.join(unmanaged.root, '.OpenAPI/generated'))
-    await writeFile(path.join(unmanaged.root, '.OpenAPI/generated/user.txt'), 'user\n')
+    await mkdir(path.join(unmanaged.root, '.openapi-to/generated'))
+    await writeFile(path.join(unmanaged.root, '.openapi-to/generated/user.txt'), 'user\n')
     await expect(prepareOperationSelection(unmanaged.provider, unmanaged.resolved, unmanaged.registry, ['main'], { type: 'add', operationKeys: ['getUser'] }))
       .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_BOOTSTRAP_REQUIRED' }] })
 
     const inconsistent = await fixture()
     const initial = await prepareOperationSelection(inconsistent.provider, inconsistent.resolved, inconsistent.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })
     await persistSelection(initial)
-    await mkdir(path.join(inconsistent.root, '.OpenAPI/generated'))
-    await writeFile(path.join(inconsistent.root, '.OpenAPI/generated/user.txt'), 'user\n')
+    await mkdir(path.join(inconsistent.root, '.openapi-to/generated'))
+    await writeFile(path.join(inconsistent.root, '.openapi-to/generated/user.txt'), 'user\n')
     await expect(prepareOperationSelection(inconsistent.provider, inconsistent.resolved, inconsistent.registry, ['main'], { type: 'add', operationKeys: ['createUser'] }))
       .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_STATE_INCONSISTENT' }] })
   })
@@ -300,7 +300,7 @@ describe('selective write-plan binding', () => {
       })
       expect(result.isError).toBe(true)
       expect((result.structuredContent?.diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain(expectedCode)
-      await expect(access(path.join(context.root, '.OpenAPI/generated/getUser.txt'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated/getUser.txt'))).rejects.toThrow()
       await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
     } finally {
       plans.clear()
@@ -372,10 +372,10 @@ describe('selective write-plan binding', () => {
       const input = { planId: prepared.stored.planId, token: prepared.token, approvedPlanHash: prepared.stored.planHash }
       expect(assertGenerationPlanApplySupported(plans, input)).toBe(prepared.stored)
       expect(plans.verify(input.planId, input.token, input.approvedPlanHash)).toBe(prepared.stored)
-      await expect(access(path.join(context.root, '.OpenAPI/generated'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated'))).rejects.toThrow()
       await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
-      await expect(access(path.join(context.root, '.OpenAPI/generated/.openapi-to-write.lock'))).rejects.toThrow()
-      await expect(access(path.join(context.root, '.OpenAPI/generated/.openapi-to-transaction'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated/.openapi-to-write.lock'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated/.openapi-to-transaction'))).rejects.toThrow()
     } finally {
       plans.clear()
     }
@@ -403,7 +403,7 @@ describe('selective write-plan binding', () => {
       expect(result.isError).not.toBe(true)
       expect(result.structuredContent).toMatchObject({ success: true, applied: true, planKind: 'selective', selectionApplied: true, selectedOperationCount: 1 })
       expect(() => plans.verify(prepared.stored.planId, prepared.token, prepared.stored.planHash)).toThrow(/already/i)
-      expect(await readFile(path.join(context.root, '.OpenAPI/generated/getUser.txt'), 'utf8')).toBe('getUser\n')
+      expect(await readFile(path.join(context.root, '.openapi-to/generated/getUser.txt'), 'utf8')).toBe('getUser\n')
       expect(await readFile(prepared.selection.selectionFile, 'utf8')).toBe(prepared.selection.desiredSelectionBytes)
     } finally {
       plans.clear()
@@ -425,10 +425,10 @@ describe('selective write-plan binding', () => {
         logger,
         { transactionFailpoint: 'state-after-rename' },
       )).rejects.toMatchObject({ name: 'OutputTransactionRolledBackError' })
-      await expect(access(path.join(context.root, '.OpenAPI/generated/getUser.txt'))).rejects.toThrow()
-      await expect(access(path.join(context.root, '.OpenAPI/generated/.openapi-to-manifest.json'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated/getUser.txt'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated/.openapi-to-manifest.json'))).rejects.toThrow()
       await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
-      await expect(access(path.join(context.root, '.OpenAPI/generated/.openapi-to-transaction.json'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/generated/.openapi-to-transaction.json'))).rejects.toThrow()
       expect(() => plans.verify(prepared.stored.planId, prepared.token, prepared.stored.planHash)).toThrow(/already/i)
 
       const fresh = await prepareSelectiveGenerationWritePlan(context.provider, plans, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser'] })

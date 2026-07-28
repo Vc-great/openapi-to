@@ -305,11 +305,11 @@ function createSpecification(includeHealth) {
 
 async function createWorkspace() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-to-mcp-doctor-'))
-  await mkdir(path.join(root, '.OpenAPI'))
+  await mkdir(path.join(root, '.openapi-to'))
   await writeFile(path.join(root, 'before.json'), createSpecification(false))
   await writeFile(path.join(root, 'after.json'), createSpecification(true))
   await writeFile(
-    path.join(root, '.OpenAPI/openapi.config.cjs'),
+    path.join(root, 'openapi.config.cjs'),
     `module.exports = {
   servers: [{ name: 'doctor', input: { path: './before.json' }, output: { dir: 'generated', clean: true } }],
   plugins: [{ name: 'doctor-fixture', hooks: { buildStart(ctx) {
@@ -366,7 +366,7 @@ async function runDoctor(checks, state) {
         bin,
         '--workspace-root',
         workspaceRoot,
-        ...(config ? ['--config', '.OpenAPI/openapi.config.cjs'] : []),
+        ...(config ? ['--config', 'openapi.config.cjs'] : []),
         ...(allowWrite ? ['--allow-write'] : []),
         '--log-format',
         'json',
@@ -444,7 +444,7 @@ async function runDoctor(checks, state) {
     })
     await runCheck(checks, 'workspace-setup', async () => {
       workspaceRoot = await createWorkspace()
-      assert(!(await missing(path.join(workspaceRoot, '.OpenAPI/openapi.config.cjs'))), 'Synthetic workspace setup failed.')
+      assert(!(await missing(path.join(workspaceRoot, 'openapi.config.cjs'))), 'Synthetic workspace setup failed.')
     })
 
     let noConfig
@@ -518,7 +518,7 @@ async function runDoctor(checks, state) {
     await runCheck(checks, 'close-8', () => closeConnection(configured))
     await runCheck(checks, 'read-only-no-write', async () => {
       assert(equalValues(await snapshotTree(workspaceRoot), readOnlyBefore), 'A configured read-only tool modified the workspace.')
-      assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'A configured read-only tool created the output root.')
+      assert(await missing(path.join(workspaceRoot, '.openapi-to/generated')), 'A configured read-only tool created the output root.')
     })
 
     let writeEnabled
@@ -546,8 +546,8 @@ async function runDoctor(checks, state) {
       assert(value.plan?.selection?.desiredOperationKeys?.[0] === 'listPets', 'Selective Prepare omitted the desired selection summary.')
       assert(value.plan?.projection?.operationCount === 1 && typeof value.plan?.projection?.projectionHash === 'string', 'Selective Prepare omitted projection binding.')
       assert(equalValues(await snapshotTree(workspaceRoot), beforePrepare), 'Selective Prepare modified workspace bytes.')
-      assert(await missing(path.join(workspaceRoot, '.OpenAPI/generated')), 'Selective Prepare created the output root.')
-      assert(await missing(path.join(workspaceRoot, '.OpenAPI/selections')), 'Selective Prepare created the selection directory.')
+      assert(await missing(path.join(workspaceRoot, '.openapi-to/generated')), 'Selective Prepare created the output root.')
+      assert(await missing(path.join(workspaceRoot, '.openapi-to/selections')), 'Selective Prepare created the selection directory.')
     })
     await runCheck(checks, 'selective-apply', async () => {
       const value = successful(
@@ -561,8 +561,8 @@ async function runDoctor(checks, state) {
       assert(value.applied === true && value.planKind === 'selective' && value.selectionApplied === true, 'Selective Apply omitted its committed state result.')
       assert(value.selectedOperationCount === 1 && value.selectionHash === selectivePlan.selection.desiredSelectionHash, 'Selective Apply returned an unexpected selection identity.')
       assert(value.projectionHash === selectivePlan.projection.projectionHash, 'Selective Apply returned an unexpected projection identity.')
-      const outputRoot = path.join(workspaceRoot, '.OpenAPI/generated')
-      const selectionDirectory = path.join(workspaceRoot, '.OpenAPI/selections')
+      const outputRoot = path.join(workspaceRoot, '.openapi-to/generated')
+      const selectionDirectory = path.join(workspaceRoot, '.openapi-to/selections')
       const selectionFiles = await readdir(selectionDirectory)
       assert(selectionFiles.length === 1, 'Selective Apply did not commit exactly one derived selection manifest.')
       const selection = JSON.parse(await readFile(path.join(selectionDirectory, selectionFiles[0]), 'utf8'))
@@ -605,7 +605,7 @@ async function runDoctor(checks, state) {
         'openapi_apply_generation',
       )
       assert(value.applied === true && value.planKind === 'full' && value.summary?.added === 0 && value.summary?.modified === 0 && value.summary?.deleted === 0 && value.summary?.unchanged === 2, 'Full Apply no-op returned an unexpected transaction summary.')
-      const outputRoot = path.join(workspaceRoot, '.OpenAPI/generated')
+      const outputRoot = path.join(workspaceRoot, '.openapi-to/generated')
       assert((await readFile(path.join(outputRoot, 'client.txt'), 'utf8')) === `${generatedSentinel}\n`, 'Apply wrote unexpected generated bytes.')
       assert(equalValues(JSON.parse(await readFile(path.join(outputRoot, 'metadata.json'), 'utf8')), { stable: true }), 'Apply wrote unexpected JSON bytes.')
       const ownership = JSON.parse(await readFile(path.join(outputRoot, '.openapi-to-manifest.json'), 'utf8'))

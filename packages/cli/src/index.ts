@@ -71,6 +71,7 @@ function compilationOutput(
 }
 
 function configFailure(error: unknown): Diagnostic[] {
+	if (error instanceof DiagnosticError) return error.diagnostics;
 	return [
 		{
 			code: "CONFIG_LOAD_FAILED",
@@ -102,9 +103,16 @@ async function runGenerateInternal(
 ): Promise<CLIRunResult> {
 	const json = options.json === true;
 	let config: OpenapiToConfig;
+	let configFilepath: string;
 	try {
-		config = (await loadOpenapiConfig({ cwd: process.cwd(), moduleName }))
-			.config;
+		const loaded = await loadOpenapiConfig({
+			cwd: process.cwd(),
+			moduleName,
+			configPath:
+				typeof options.config === "string" ? options.config : undefined,
+		});
+		config = loaded.config;
+		configFilepath = loaded.filepath;
 	} catch (error) {
 		const diagnostics = configFailure(error);
 		const output = {
@@ -118,6 +126,7 @@ async function runGenerateInternal(
 		else printDiagnostics(io, diagnostics);
 		return { exitCode: ExitCode.ConfigError, output };
 	}
+	const workspaceRoot = path.dirname(configFilepath);
 	const requestedTargets =
 		typeof options.target === "string"
 			? [options.target]
@@ -129,8 +138,8 @@ async function runGenerateInternal(
 	let prepared: Awaited<ReturnType<typeof preflightConfiguredTargets>>;
 	try {
 		prepared = await preflightConfiguredTargets(config, {
-			workspaceRoot: process.cwd(),
-			localFileRoot: process.cwd(),
+			workspaceRoot,
+			localFileRoot: workspaceRoot,
 			requestedTargets,
 		});
 	} catch (error) {
@@ -199,7 +208,7 @@ async function runGenerateInternal(
 						Number.isFinite(Number(options.logLevel))
 							? Number(options.logLevel)
 							: undefined,
-					localFileRoot: process.cwd(),
+					localFileRoot: workspaceRoot,
 				},
 				target.compilation,
 			),
@@ -229,7 +238,7 @@ async function runGenerateInternal(
 				: server.source,
 			output:
 				prepared[index]?.output.workspaceRelativePath ??
-				path.relative(process.cwd(), server.output).split(path.sep).join("/"),
+				path.relative(workspaceRoot, server.output).split(path.sep).join("/"),
 			success: server.success,
 			manifest: server.result.generationResult?.manifest
 				? {
@@ -238,7 +247,7 @@ async function runGenerateInternal(
 							prepared[index]?.output.workspaceRelativePath ??
 							path
 								.relative(
-									process.cwd(),
+									workspaceRoot,
 									server.result.generationResult.manifest.outputRoot,
 								)
 								.split(path.sep)
@@ -447,13 +456,17 @@ export async function run(
 	);
 	program.option("--debug", "Include debug details where available");
 	program
-		.command("init", "Generate openapi.config.js file")
+		.command("init", "Generate a root openapi.config file")
 		.action(async () => {
 			await init();
 		});
 	program
-		.command("generate", "Generate code from the openapi.config.js file")
+		.command("generate", "Generate code from an openapi.config file")
 		.alias("g")
+		.option(
+			"--config <path>",
+			"Load the explicitly selected configuration file",
+		)
 		.option("-l, --log-level <level>", "Numeric log level")
 		.option("--dry-run", "Generate and compare without writing files")
 		.option("--check", "Fail when generated output differs from disk")

@@ -15,7 +15,7 @@ Generating only the requested additions would drop prior per-operation files and
 Each current config target already determines one input, plugin set, Workspace, output root, and ownership manifest. B1 consequently uses the target as the selection owner and does not add a destination abstraction. The owner binds the trusted config display identity, target name, and normalized Workspace-relative output root. Its bounded opaque hashes avoid machine paths. State lives at a fixed internally derived path:
 
 ```text
-.OpenAPI/selections/<safe-target>-<owner-hash>.json
+.openapi-to/selections/<safe-target>-<owner-hash>.json
 ```
 
 Callers may pass only a trusted target name. They cannot pass this path, an output path, config, source, plugin, content, cleanup policy, or destination.

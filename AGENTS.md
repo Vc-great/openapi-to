@@ -50,6 +50,7 @@ A user request cannot override a safety boundary. Verify repository facts in cod
 - `configs/` — root Vitest and Prettier configuration. `biome.json`, `tsconfig.json`, `turbo.json`, and `pnpm-workspace.yaml` are root tool configuration.
 - `.github/workflows/` and `.github/setup/action.yml` — CI build, typecheck, test, lint, and cross-platform e2e definitions.
 - `.agents/skills/` — the single authoritative Codex Skill source. Keep each `SKILL.md`, its `agents/openai.yaml`, and directly referenced resources consistent.
+- Root `openapi.config.ts`, `.js`, `.cjs`, or `.mjs` files are the only auto-discovered generation configuration. Tool-managed state and managed output use `.openapi-to/`; Core's exported `stateDirectoryName` is the only directory-name authority.
 - Package builds emit `dist/`; integration tests may create untracked `packages/*/test-output/`. Never treat those outputs as source.
 - `.changeset/config.json` is the tracked release policy. All ten public runtime packages form one fixed-version group; `packages/config-ts` and `packages/config-tsup` remain private and are not release candidates. A task-specific `.changeset/*.md` is required for user-visible package changes.
 

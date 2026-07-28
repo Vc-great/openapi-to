@@ -12,6 +12,7 @@ import {
 	mergeOperationSelection,
 	parseOperationSelectionManifest,
 	serializeOperationSelectionManifest,
+	stateDirectoryName,
 	type FileIdentity,
 	type OperationCatalog,
 	type OperationSelectionManifestV1,
@@ -32,7 +33,7 @@ import {
 import { prepareTargets, type PreparedTarget } from "./service.ts";
 import type { TrustedConfigProvider } from "./trusted-config.ts";
 
-export const OPERATION_SELECTION_DIRECTORY = ".OpenAPI/selections";
+export const OPERATION_SELECTION_DIRECTORY = `${stateDirectoryName}/selections`;
 
 export interface SelectionFileSnapshot extends OutputFileSnapshot {
 	path: string;

@@ -61,7 +61,7 @@ Configured read-only mode:
         "--workspace-root",
         ".",
         "--config",
-        "./.OpenAPI/openapi.config.ts"
+        "./openapi.config.ts"
       ]
     }
   }

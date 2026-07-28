@@ -13,7 +13,7 @@ import {
 const [workspace, outputRoot, crashPoint] = process.argv.slice(2)
 if (!workspace || !outputRoot || !crashPoint) throw new Error('workspace, output root, and crash point are required')
 
-const stateRelativePath = '.OpenAPI/selections/target-0.json'
+const stateRelativePath = '.openapi-to/selections/target-0.json'
 const statePath = path.join(workspace, ...stateRelativePath.split('/'))
 const desiredBytes = new TextEncoder().encode('{"version":"crash-after"}\n')
 const artifacts = materializeArtifacts([
@@ -21,7 +21,7 @@ const artifacts = materializeArtifacts([
   { kind: 'text', path: 'crash-added.txt', content: 'added crash\n' },
 ], outputRoot).artifacts
 const manifest = await compareArtifacts(artifacts, outputRoot, true)
-const recoveryContext = { workspaceRoot: workspace, allowedStateRoots: ['.OpenAPI/selections'] }
+const recoveryContext = { workspaceRoot: workspace, allowedStateRoots: ['.openapi-to/selections'] }
 const lock = await acquireOutputWriteLock(outputRoot, { recoveryContext })
 await commitGenerationStateTransaction(lock, artifacts, manifest, [{
   id: 'selection-0',

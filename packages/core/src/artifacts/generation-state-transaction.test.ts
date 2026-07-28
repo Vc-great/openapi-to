@@ -50,7 +50,7 @@ async function missing(filePath: string): Promise<boolean> {
 async function prepareStateTransaction(options: { stateExists?: boolean; stateCount?: number; stateRootExists?: boolean } = {}) {
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'openapi-generation-state-'))
   const outputRoot = path.join(workspace, 'generated')
-  const stateRoot = path.join(workspace, '.OpenAPI', 'selections')
+  const stateRoot = path.join(workspace, '.openapi-to', 'selections')
   const stateRootExisted = options.stateRootExists !== false || options.stateExists !== false
   if (stateRootExisted) await mkdir(stateRoot, { recursive: true })
   const beforeArtifacts = materializeArtifacts([
@@ -80,7 +80,7 @@ async function prepareStateTransaction(options: { stateExists?: boolean; stateCo
     const desiredBytes = encoder.encode(`{"version":"after-${index}"}\n`)
     stateFiles.push({
       id: `selection-${index}`,
-      workspaceRelativePath: path.posix.join('.OpenAPI', 'selections', `target-${index}.json`),
+      workspaceRelativePath: path.posix.join('.openapi-to', 'selections', `target-${index}.json`),
       expectedBefore: await snapshotOutputFile(statePath),
       desiredBytes,
       desiredSha256: sha256(desiredBytes),
@@ -89,7 +89,7 @@ async function prepareStateTransaction(options: { stateExists?: boolean; stateCo
   }
   const recoveryContext: TransactionRecoveryContext = {
     workspaceRoot: workspace,
-    allowedStateRoots: [path.posix.join('.OpenAPI', 'selections')],
+    allowedStateRoots: [path.posix.join('.openapi-to', 'selections')],
   }
   return { workspace, outputRoot, stateRoot, stateRootExisted, statePaths, beforeOutput, beforeState, artifacts: afterArtifacts.artifacts, manifest, stateFiles, recoveryContext }
 }
@@ -219,7 +219,7 @@ describe.sequential('generation and controlled state transaction', () => {
     }
 
     const nonRegular = await prepareStateTransaction()
-    const directoryRelativePath = '.OpenAPI/selections/directory.json'
+    const directoryRelativePath = '.openapi-to/selections/directory.json'
     await mkdir(path.join(nonRegular.workspace, ...directoryRelativePath.split('/')))
     const directoryLock = await acquireOutputWriteLock(nonRegular.outputRoot, { recoveryContext: nonRegular.recoveryContext })
     try {
@@ -237,19 +237,19 @@ describe.sequential('generation and controlled state transaction', () => {
     const outside = await mkdtemp(path.join(os.tmpdir(), 'openapi-state-outside-'))
     const outputRoot = path.join(symlinkWorkspace, 'generated')
     await mkdir(outputRoot)
-    await mkdir(path.join(symlinkWorkspace, '.OpenAPI'))
-    await symlink(outside, path.join(symlinkWorkspace, '.OpenAPI', 'selections'), 'dir')
+    await mkdir(path.join(symlinkWorkspace, '.openapi-to'))
+    await symlink(outside, path.join(symlinkWorkspace, '.openapi-to', 'selections'), 'dir')
     const symlinkLock = await acquireOutputWriteLock(outputRoot)
     const desiredBytes = encoder.encode('{}\n')
     try {
       await expect(commitGenerationStateTransaction(symlinkLock, [], { outputRoot, entries: [], summary: { added: 0, modified: 0, deleted: 0, unchanged: 0 }, outdated: false }, [{
         id: 'selection',
-        workspaceRelativePath: '.OpenAPI/selections/state.json',
+        workspaceRelativePath: '.openapi-to/selections/state.json',
         expectedBefore: { exists: false },
         desiredBytes,
         desiredSha256: sha256(desiredBytes),
         maxBytes: 100,
-      }], { recoveryContext: { workspaceRoot: symlinkWorkspace, allowedStateRoots: ['.OpenAPI/selections'] } })).rejects.toMatchObject({ code: 'TRANSACTION_STATE_FILE_SYMLINK' })
+      }], { recoveryContext: { workspaceRoot: symlinkWorkspace, allowedStateRoots: ['.openapi-to/selections'] } })).rejects.toMatchObject({ code: 'TRANSACTION_STATE_FILE_SYMLINK' })
     } finally {
       await symlinkLock.release()
     }
