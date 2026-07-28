@@ -1,5 +1,12 @@
 # e2e-common
 
+## 0.0.2-rc.1
+
+### Patch Changes
+
+- Updated dependencies [ed854a9]
+  - openapi-to@4.0.0-rc.1
+
 ## 0.0.2-rc.0
 
 ### Patch Changes

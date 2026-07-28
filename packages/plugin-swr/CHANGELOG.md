@@ -1,5 +1,23 @@
 # @openapi-to/plugin-swr
 
+## 4.0.0-rc.1
+
+### Major Changes
+
+- ed854a9: Move automatic configuration discovery to root `openapi.config.ts`, `.js`,
+  `.cjs`, or `.mjs` files and move tool-managed state and managed output to
+  `.openapi-to`.
+
+  The former `.OpenAPI` configuration location is no longer discovered, and Core
+  replaces the removed `folderName` export with `stateDirectoryName`. No
+  compatibility fallback or automatic migration is provided; move the
+  configuration and any state that must be retained manually.
+
+### Patch Changes
+
+- Updated dependencies [ed854a9]
+  - @openapi-to/core@4.0.0-rc.1
+
 ## 4.0.0-rc.0
 
 ### Major Changes
