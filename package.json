@@ -48,6 +48,7 @@
 		"//changeset:beta:exit": "pnpm exec changeset pre exit",
 		"changeset": "pnpm exec changeset",
 		"verify:changeset-state": "node scripts/verify-changeset-state.mjs",
+		"verify:changeset-state:development": "node scripts/verify-changeset-state.mjs --allow-pending",
 		"verify:repository-contract": "node scripts/repository-contract.mjs",
 		"verify:package-surface": "node scripts/release/verify-package-surface.mjs",
 		"release:smoke": "node scripts/release/pack-install-smoke.mjs",

@@ -94,5 +94,5 @@ jobs:
         run: pnpm verify:package-surface
       - name: Pack and install packages
         run: pnpm release:smoke
-      - name: Verify Changesets plan
-        run: pnpm verify:changeset-state
+      - name: Verify Changesets development state
+        run: pnpm verify:changeset-state:development

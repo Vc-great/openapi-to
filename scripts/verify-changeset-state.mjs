@@ -224,7 +224,7 @@ async function verifyNormalMode(root) {
 	};
 }
 
-async function verifyPrereleaseMode(root, preState) {
+async function verifyPrereleaseMode(root, preState, { allowPending = false } = {}) {
 	const diagnostics = [];
 	let config;
 	try {
@@ -482,12 +482,14 @@ async function verifyPrereleaseMode(root, preState) {
 			);
 		} else if (!consumedSet.has(changeset.id)) {
 			pendingChangesets += 1;
-			diagnostics.push(
-				diagnostic(
-					"NEXT_RC_REQUIRED",
-					`Changeset ${changeset.id} is pending; version the next RC before publishing this candidate.`,
-				),
-			);
+			if (!allowPending) {
+				diagnostics.push(
+					diagnostic(
+						"NEXT_RC_REQUIRED",
+						`Changeset ${changeset.id} is pending; version the next RC before publishing this candidate.`,
+					),
+				);
+			}
 		}
 	}
 
@@ -503,7 +505,10 @@ async function verifyPrereleaseMode(root, preState) {
 	};
 }
 
-export async function verifyChangesetState(root = repositoryRoot) {
+export async function verifyChangesetState(
+	root = repositoryRoot,
+	{ allowPending = false } = {},
+) {
 	const prePath = join(root, ".changeset/pre.json");
 	if (!(await exists(prePath))) return verifyNormalMode(root);
 
@@ -545,7 +550,7 @@ export async function verifyChangesetState(root = repositoryRoot) {
 		};
 	}
 	try {
-		return await verifyPrereleaseMode(root, preState);
+		return await verifyPrereleaseMode(root, preState, { allowPending });
 	} catch {
 		return {
 			success: false,
@@ -568,10 +573,13 @@ export async function verifyChangesetState(root = repositoryRoot) {
 function parseArguments(argv) {
 	let root = repositoryRoot;
 	let json = false;
+	let allowPending = false;
 	for (let index = 0; index < argv.length; index += 1) {
 		const argument = argv[index];
 		if (argument === "--json") {
 			json = true;
+		} else if (argument === "--allow-pending") {
+			allowPending = true;
 		} else if (argument === "--root" && argv[index + 1]) {
 			root = resolve(argv[index + 1]);
 			index += 1;
@@ -579,7 +587,7 @@ function parseArguments(argv) {
 			throw new Error(`Unknown or incomplete argument: ${argument}`);
 		}
 	}
-	return { root, json };
+	return { root, json, allowPending };
 }
 
 export async function main(argv = process.argv.slice(2)) {
@@ -591,7 +599,9 @@ export async function main(argv = process.argv.slice(2)) {
 		process.exitCode = 2;
 		return;
 	}
-	const result = await verifyChangesetState(options.root);
+	const result = await verifyChangesetState(options.root, {
+		allowPending: options.allowPending,
+	});
 	if (options.json || result.success) {
 		process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 	} else {

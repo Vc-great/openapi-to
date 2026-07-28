@@ -262,6 +262,9 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"version:canary must parse as `pnpm exec changeset version --snapshot canary`",
 		);
 	}
+	if (rootManifest.scripts?.version !== "pnpm exec changeset version") {
+		failures.push("version must run changeset version without publishing");
+	}
 	const releaseCheck = rootManifest.scripts?.["release:check"] ?? "";
 	if (!/(?:^|&&\s*)pnpm\s+lint:ci(?:\s*&&|$)/.test(releaseCheck)) {
 		failures.push("release:check must run the full lint:ci gate");
@@ -271,10 +274,17 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"release:check must not use the diff-only lint:changed command",
 		);
 	}
-	if (!/\bpnpm\s+verify:changeset-state\b/.test(releaseCheck)) {
+	if (
+		!/(?:^|&&\s*)pnpm\s+verify:changeset-state(?:\s*&&|$)/.test(
+			releaseCheck,
+		)
+	) {
 		failures.push(
 			"release:check must run the prerelease-aware verify:changeset-state gate",
 		);
+	}
+	if (/\bpnpm\s+verify:changeset-state:development\b/.test(releaseCheck)) {
+		failures.push("release:check must not use the development Changesets gate");
 	}
 	if (/\bchangeset\s+status\b/.test(releaseCheck)) {
 		failures.push("release:check must not invoke changeset status directly");
@@ -285,6 +295,14 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	) {
 		failures.push(
 			"verify:changeset-state must run the maintained Changesets state validator",
+		);
+	}
+	if (
+		rootManifest.scripts?.["verify:changeset-state:development"] !==
+		"node scripts/verify-changeset-state.mjs --allow-pending"
+	) {
+		failures.push(
+			"verify:changeset-state:development must allow only pending Changesets",
 		);
 	}
 	if (await exists(join(root, ".changeset/new-mice-sit.md"))) {
@@ -306,8 +324,155 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		join(root, ".github/workflows/quality.yml"),
 		"utf8",
 	);
-	if (!qualityWorkflow.includes("run: pnpm verify:changeset-state")) {
-		failures.push("Quality package smoke must run verify:changeset-state");
+	if (
+		!qualityWorkflow.includes(
+			"run: pnpm verify:changeset-state:development",
+		)
+	) {
+		failures.push(
+			"Quality package smoke must run verify:changeset-state:development",
+		);
+	}
+	if (/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(qualityWorkflow)) {
+		failures.push("Quality must not run the strict Changesets release gate");
+	}
+	if (qualityWorkflow.includes("continue-on-error")) {
+		failures.push("Quality must not continue on Changesets or other gate errors");
+	}
+
+	const versionWorkflowPath = join(
+		root,
+		".github/workflows/version-packages.yml",
+	);
+	if (!(await exists(versionWorkflowPath))) {
+		failures.push("missing Version Packages workflow");
+	} else {
+		const workflow = await readFile(versionWorkflowPath, "utf8");
+		const triggerLines = (
+			workflow.match(/^on:\s*\r?\n([\s\S]*?)^concurrency:/m)?.[1] ?? ""
+		)
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter(Boolean);
+		if (
+			JSON.stringify(triggerLines) !==
+			JSON.stringify(["push:", "branches:", "- main"])
+		) {
+			failures.push(
+				"Version Packages workflow must run only on pushes to main",
+			);
+		}
+		for (const forbiddenEvent of [
+			"pull_request:",
+			"pull_request_target:",
+			"workflow_dispatch:",
+			"schedule:",
+		]) {
+			if (workflow.includes(forbiddenEvent))
+				failures.push(
+					`Version Packages workflow must not use ${forbiddenEvent}`,
+				);
+		}
+		const permissions =
+			workflow.match(/permissions:\s*\r?\n([\s\S]*?)\r?\njobs:/)?.[1] ?? "";
+		const permissionLines = permissions
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter(Boolean)
+			.sort();
+		if (
+			JSON.stringify(permissionLines) !==
+			JSON.stringify(["contents: write", "pull-requests: write"])
+		) {
+			failures.push(
+				"Version Packages workflow must grant only contents: write and pull-requests: write",
+			);
+		}
+		if (!workflow.includes("uses: changesets/action@v1")) {
+			failures.push("Version Packages workflow must use changesets/action@v1");
+		}
+		if (workflow.includes("uses: changesets/action@v2")) {
+			failures.push("Version Packages workflow must not use changesets/action@v2");
+		}
+		if (!workflow.includes("version: pnpm run version")) {
+			failures.push("Version Packages workflow must use the root version script");
+		}
+		if (
+			!/GITHUB_TOKEN:\s+\$\{\{\s*secrets\.GITHUB_TOKEN\s*}}/.test(workflow)
+		) {
+			failures.push(
+				"Version Packages workflow must use the repository GITHUB_TOKEN",
+			);
+		}
+		if (/^\s*publish:/m.test(workflow)) {
+			failures.push("Version Packages workflow must not configure publishing");
+		}
+		for (const forbidden of [
+			"NPM_TOKEN",
+			"NODE_AUTH_TOKEN",
+			"changeset publish",
+			"pnpm publish",
+			"npm publish",
+			"pnpm release",
+			"changeset pre exit",
+			"changeset tag",
+			"npm dist-tag",
+			"git tag",
+			"git push --tags",
+			"gh release",
+			"actions/create-release",
+			"gh pr merge",
+			"auto-merge",
+		]) {
+			if (workflow.includes(forbidden))
+				failures.push(
+					`Version Packages workflow contains forbidden release behavior: ${forbidden}`,
+				);
+		}
+	}
+
+	const readinessWorkflowPath = join(
+		root,
+		".github/workflows/version-readiness.yml",
+	);
+	if (!(await exists(readinessWorkflowPath))) {
+		failures.push("missing Version readiness workflow");
+	} else {
+		const workflow = await readFile(readinessWorkflowPath, "utf8");
+		for (const required of [
+			"pull_request:",
+			"- main",
+			'".changeset/pre.json"',
+			'"packages/*/package.json"',
+			'"packages/*/CHANGELOG.md"',
+			'"e2e/*/package.json"',
+			'"e2e/*/CHANGELOG.md"',
+			'"pnpm-lock.yaml"',
+			"name: Verify strict Changesets state",
+		]) {
+			if (!workflow.includes(required))
+				failures.push(`Version readiness workflow is missing ${required}`);
+		}
+		if (
+			!/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(workflow)
+		) {
+			failures.push(
+				"Version readiness workflow must run strict verify:changeset-state",
+			);
+		}
+		if (workflow.includes("--allow-pending")) {
+			failures.push(
+				"Version readiness workflow must not allow pending Changesets",
+			);
+		}
+		if (workflow.includes("continue-on-error")) {
+			failures.push("Version readiness workflow must not continue on errors");
+		}
+		if (workflow.includes("pull_request.title")) {
+			failures.push(
+				"Version readiness workflow must use paths rather than a PR title",
+			);
+		}
 	}
 	const a1WorkflowPath = join(root, ".github/workflows/a1-cross-platform.yml");
 	if (!(await exists(a1WorkflowPath))) {
