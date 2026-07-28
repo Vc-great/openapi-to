@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
 
@@ -16,6 +17,9 @@ import { verifyChangesetState } from "./verify-changeset-state.mjs";
 
 const execFileAsync = promisify(execFile);
 const fixtures = new Set();
+const verifyScript = fileURLToPath(
+	new URL("./verify-changeset-state.mjs", import.meta.url),
+);
 
 async function writeJson(path, value) {
 	await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -106,6 +110,19 @@ async function initializeGit(root) {
 	await execFileAsync("git", ["config", "user.name", "Fixture"], { cwd: root });
 	await execFileAsync("git", ["add", "."], { cwd: root });
 	await execFileAsync("git", ["commit", "-m", "fixture"], { cwd: root });
+}
+
+async function runCli(args) {
+	try {
+		const result = await execFileAsync(process.execPath, [verifyScript, ...args]);
+		return { exitCode: 0, stdout: result.stdout, stderr: result.stderr };
+	} catch (error) {
+		return {
+			exitCode: error.code,
+			stdout: error.stdout,
+			stderr: error.stderr,
+		};
+	}
 }
 
 test.after(async () => {
@@ -295,8 +312,21 @@ test("pre mode reports NEXT_RC_REQUIRED for a pending non-empty changeset", asyn
 		},
 	});
 	const result = await verifyChangesetState(root);
+	assert.equal(result.success, false);
 	assert.equal(result.pendingChangesets, 1);
 	assert.ok(result.diagnostics.some(({ code }) => code === "NEXT_RC_REQUIRED"));
+});
+
+test("development mode accepts a pending non-empty changeset", async () => {
+	const root = await createFixture({
+		changesets: {
+			pending: '---\n"package-a": patch\n---\n\nNext candidate.\n',
+		},
+	});
+	const result = await verifyChangesetState(root, { allowPending: true });
+	assert.equal(result.success, true);
+	assert.equal(result.pendingChangesets, 1);
+	assert.equal(result.diagnostics.length, 0);
 });
 
 test("pre mode rejects an empty changeset", async () => {
@@ -310,4 +340,125 @@ test("pre mode rejects an empty changeset", async () => {
 			({ code }) => code === "EMPTY_CHANGESET_NOT_ALLOWED",
 		),
 	);
+});
+
+test("development mode still rejects an empty changeset", async () => {
+	const root = await createFixture({
+		changesets: { empty: "---\n---\n\nPlaceholder.\n" },
+	});
+	const result = await verifyChangesetState(root, { allowPending: true });
+	assert.equal(result.success, false);
+	assert.equal(result.emptyChangesets, 1);
+	assert.ok(
+		result.diagnostics.some(
+			({ code }) => code === "EMPTY_CHANGESET_NOT_ALLOWED",
+		),
+	);
+});
+
+test("development mode still rejects an unknown package", async () => {
+	const root = await createFixture({
+		changesets: {
+			pending: '---\n"missing-package": patch\n---\n\nInvalid.\n',
+		},
+	});
+	const result = await verifyChangesetState(root, { allowPending: true });
+	assert.equal(result.success, false);
+	assert.equal(result.pendingChangesets, 1);
+	assert.ok(
+		result.diagnostics.some(
+			({ code }) => code === "INVALID_CHANGESET_RELEASE",
+		),
+	);
+});
+
+test("development mode still rejects damaged frontmatter", async () => {
+	const root = await createFixture({
+		changesets: { pending: "not frontmatter\n" },
+	});
+	const result = await verifyChangesetState(root, { allowPending: true });
+	assert.equal(result.success, false);
+	assert.ok(
+		result.diagnostics.some(({ code }) => code === "INVALID_CHANGESET"),
+	);
+});
+
+test("development mode still rejects a fixed-group version split", async () => {
+	const root = await createFixture();
+	await updateJson(join(root, "packages/package-b/package.json"), (value) => {
+		value.version = "4.0.1-rc.0";
+	});
+	const result = await verifyChangesetState(root, { allowPending: true });
+	assert.equal(result.success, false);
+	assert.ok(
+		result.diagnostics.some(
+			({ code }) => code === "FIXED_GROUP_VERSION_SPLIT",
+		),
+	);
+});
+
+test("development mode still rejects a prerelease sequence split", async () => {
+	const root = await createFixture();
+	await updateJson(join(root, "packages/package-b/package.json"), (value) => {
+		value.version = "4.0.0-rc.1";
+	});
+	const result = await verifyChangesetState(root, { allowPending: true });
+	assert.equal(result.success, false);
+	assert.ok(
+		result.diagnostics.some(
+			({ code }) => code === "FIXED_GROUP_PRERELEASE_SEQUENCE_SPLIT",
+		),
+	);
+});
+
+test("CLI defaults to strict mode and --allow-pending opts into development mode", async () => {
+	const root = await createFixture({
+		changesets: {
+			pending: '---\n"package-a": patch\n---\n\nNext candidate.\n',
+		},
+	});
+	const strict = await runCli(["--root", root]);
+	assert.equal(strict.exitCode, 1);
+	assert.equal(strict.stdout, "");
+	assert.match(strict.stderr, /NEXT_RC_REQUIRED/);
+
+	const development = await runCli(["--root", root, "--allow-pending"]);
+	assert.equal(development.exitCode, 0);
+	assert.equal(development.stderr, "");
+	const result = JSON.parse(development.stdout);
+	assert.equal(result.success, true);
+	assert.equal(result.pendingChangesets, 1);
+});
+
+test("CLI rejects unknown and incomplete arguments with exit code 2", async () => {
+	for (const args of [["--unknown"], ["--root"]]) {
+		const result = await runCli(args);
+		assert.equal(result.exitCode, 2);
+		assert.equal(result.stdout, "");
+		assert.match(result.stderr, /Unknown or incomplete argument/);
+	}
+});
+
+test("--json and --allow-pending produce stable valid JSON", async () => {
+	const root = await createFixture({
+		changesets: {
+			pending: '---\n"package-a": patch\n---\n\nNext candidate.\n',
+		},
+	});
+	const args = ["--allow-pending", "--json", "--root", root];
+	const first = await runCli(args);
+	const second = await runCli(args);
+	assert.equal(first.exitCode, 0);
+	assert.equal(first.stderr, "");
+	assert.equal(first.stdout, second.stdout);
+	assert.deepEqual(JSON.parse(first.stdout), {
+		success: true,
+		mode: "pre",
+		tag: "rc",
+		candidateVersion: "4.0.0-rc.0",
+		publicPackages: 2,
+		pendingChangesets: 1,
+		emptyChangesets: 0,
+		diagnostics: [],
+	});
 });

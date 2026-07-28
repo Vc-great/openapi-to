@@ -12,9 +12,13 @@ These facts route an investigation. Re-read the files because release configurat
 - Root development policy, CI, bins, and package manifests require Node >=20. A lower runtime must not be claimed unless it has its own maintained CI and pack-install smoke lane.
 - Package manifests use `workspace:*` for internal edges; never replace those values or lockfile entries manually as a release workaround.
 - Package `CHANGELOG.md` files exist. Root and some packages have README files, but plugin packages do not all have package-local READMEs at this revision.
-- `.changeset/config.json` is tracked. It uses public access, `main` as the base branch, workspace-protocol-aware internal dependency bumps, and one fixed-version group for all nine public packages. Private config packages are excluded by `private: true`, not `ignore`.
+- `.changeset/config.json` is tracked. It uses public access, `main` as the base branch, workspace-protocol-aware internal dependency bumps, and one fixed-version group for all ten public packages. Private config packages are excluded by `private: true`, not `ignore`.
+- Changesets are committed with feature work and may remain pending on feature branches and `main`. `verify:changeset-state:development` accepts only valid, non-empty pending changesets; the default `verify:changeset-state` and `release:check` remain strict release-candidate gates.
+- `.github/workflows/version-packages.yml` uses `changesets/action@v1` after pushes to `main` to create or update one Version Packages PR through the root `version` script. It has no publish command or npm credential. The Version PR settles versions, changelogs, `.changeset/pre.json`, internal dependency metadata, and the lockfile without publishing, tagging, or creating a GitHub Release.
+- `.github/workflows/version-readiness.yml` runs the strict Changesets state validator when version-state paths change in a PR. Ordinary Quality CI still runs build, typecheck, tests, changed-file lint, repository contracts, package-surface checks, and pack-install smoke while using the development Changesets gate.
+- The tracked prerelease state remains in `rc` mode. Exiting prerelease mode, npm publication, dist-tag mutation, tags, and GitHub Releases require a separate explicitly authorized release operation.
 - Root release gates include `lint:changed`, `test:release-scripts`, `verify:package-surface`, and `release:smoke`. The smoke script packs all public packages and installs them in a temporary consumer to verify ESM/CJS/types and both aggregate bins.
-- CI on Node 20 builds, typechecks packages and root project references, runs Vitest, rejects changed-file lint warnings, verifies Changesets, and performs pack-install smoke. e2e generation runs on Linux, Windows, and macOS.
+- CI on Node 20 builds, typechecks packages and root project references, runs Vitest, rejects changed-file lint warnings, verifies Changesets under the appropriate development or strict mode, and performs pack-install smoke. e2e generation runs on Linux, Windows, and macOS.
 
 ## Files to inspect
 

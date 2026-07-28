@@ -1,0 +1,31 @@
+name: Version Readiness
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".changeset/pre.json"
+      - "packages/*/package.json"
+      - "packages/*/CHANGELOG.md"
+      - "e2e/*/package.json"
+      - "e2e/*/CHANGELOG.md"
+      - "pnpm-lock.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  changeset-state:
+    name: Verify strict Changesets state
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup
+        uses: ./.github/setup
+      - name: Verify release candidate Changesets state
+        run: pnpm verify:changeset-state
