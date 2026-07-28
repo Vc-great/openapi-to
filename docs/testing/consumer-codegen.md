@@ -26,30 +26,29 @@ exercise repository workspaces rather than a newly installed tarball.
 `release:smoke` reuses this exact scenario with its already packed tarballs,
 alongside the package-surface, binary, and MCP checks.
 
-There are three maintainer entry points:
+There are two primary maintainer entry points:
 
 ```shell
 pnpm test:consumer:codegen
-pnpm test:consumer:codegen:keep
 pnpm test:consumer:codegen:review
 ```
 
-The default command is the automation-oriented validation and always cleans
-its operating-system temporary workspace. `test:consumer:codegen:keep` runs
-the same scenario but retains the complete temporary root, including installed
-`node_modules` and packed tarballs, for command-level debugging.
-`test:consumer:codegen:review` still installs and validates in the operating
-system temporary directory. Only after validation, drift recovery, strict
-compilation, the final current check, and byte-stable regeneration have all
-passed does it atomically export a compact snapshot to
+`test:consumer:codegen` is the automation-oriented validation and always cleans
+its operating-system temporary workspace. For day-to-day human review of
+generated code, use `test:consumer:codegen:review`. It still installs and
+validates in the operating-system temporary directory, then, only after
+validation, drift recovery, strict compilation, the final current check, and
+byte-stable regeneration have passed, atomically exports a compact snapshot to
 `.ci-artifacts/consumer-codegen-review/current`. The original temporary root is
 then removed automatically.
 
-The review snapshot contains the fixture, config, request stub, consumer usage,
-TypeScript config, lockfile, all final generated files, the ownership manifest,
-and `report.json`. It deliberately excludes `node_modules`, tarballs, pnpm
-store data, transaction state, and the artificial drift used by the test.
-`.ci-artifacts` is ignored by Git and review snapshots must not be committed.
+The review snapshot contains `report.json`, the OpenAPI fixture and config,
+request stub, consumer usage, TypeScript config, `pnpm-lock.yaml`, all final
+generated files, and the ownership manifest. It deliberately excludes
+`node_modules`, tarballs, and pnpm store data (as well as transaction state and
+the artificial drift used by the test). `.ci-artifacts` is ignored by Git and
+review snapshots must not be committed. The snapshot is for code review, not
+for rerunning `tsc` or an installed CLI.
 
 Open `.ci-artifacts/consumer-codegen-review/current` directly in WebStorm, or
 use Finder's **Go to Folder** command and paste its absolute path. To keep two
@@ -69,15 +68,22 @@ node --input-type=module -e "import { cleanupReviewExportDirectory as clean } fr
 
 The cleanup helper applies the same path and ownership checks as replacement;
 deleting the `current` folder explicitly in WebStorm or Finder is also safe.
-The exported snapshot is intended for inspection and does not include
-dependencies, so do not run `tsc` from it. Use the keep command when commands
-must be rerun in the original installed consumer:
+## Advanced troubleshooting
+
+For infrequent command-level debugging, retain the complete temporary consumer,
+including its `node_modules` and packed tarballs, with the underlying `--keep`
+parameter:
 
 ```shell
-pnpm test:consumer:codegen:keep
+pnpm test:consumer:codegen -- --keep
 ```
 
-The final output prints the absolute retained path. Inspect
+This is not the primary daily review workflow; use
+`test:consumer:codegen:review` to inspect generated code. The final output
+prints the absolute retained path. After debugging, manually remove that
+printed temporary subdirectory. Do not delete the operating system temporary
+directory that contains it (for example, do not remove macOS's `/var/folders`
+parent directory). Inspect
 `consumer/package.json`, `consumer/pnpm-lock.yaml`,
 `consumer/.OpenAPI/openapi.config.ts`, `consumer/openapi.json`,
 `consumer/request.ts`, `consumer/generated/`, and
