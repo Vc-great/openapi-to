@@ -18,7 +18,7 @@ This document is the single status reference for shipped `openapi-to` capabiliti
 | --- | --- | --- | --- |
 | TypeScript types | Stable | `@openapi-to/plugin-ts-type` / `pluginTSType` | Component and operation type generation. |
 | TypeScript request client | Stable | `@openapi-to/plugin-ts-request` / `pluginTSRequest` | Request functions with the existing configurable client/import contract. |
-| Zod schemas | Stable | `@openapi-to/plugin-zod` / `pluginZod` | Zod model and operation schema generation for supported OpenAPI constructs. |
+| Zod schemas | Stable | `@openapi-to/plugin-zod` / `pluginZod` | Zod 4-only model and operation schemas. Consumers install `zod@^4`; generated code imports `{ z }` from `zod`. String formats use top-level Zod 4 schemas, records use explicit key/value schemas, `oneOf`/`anyOf` use ordinary unions, and `allOf` uses intersections. Zod 3 and exact-one `oneOf` semantics are not supported. |
 | SWR hooks | Stable | `@openapi-to/plugin-swr` / `pluginSWR` | SWR hooks built on generated operation metadata. |
 | Vue Query hooks | Stable | `@openapi-to/plugin-vue-query` / `pluginVueQuery` | Vue Query hooks built on generated operation metadata. |
 | MSW handlers | Stable | `@openapi-to/plugin-msw` / `pluginMSW` | Mock Service Worker handler generation. |

@@ -433,6 +433,25 @@ Whether to add an extension (such as .ts) in the import path
 ## pluginZod
 With the Zod plugin you can use [Zod](https://zod.dev/) to validate your schemas.
 
+`pluginZod` targets Zod 4 only. Install Zod 4 in every project that compiles or
+runs the generated schemas:
+
+```shell
+pnpm add zod@^4
+```
+
+Generated files use `import { z } from 'zod'`. Zod 3 is not supported and
+there is no compatibility option. OpenAPI string formats use Zod 4's top-level
+format schemas (`z.email()`, `z.url()`, `z.uuid()`, `z.iso.date()`,
+`z.iso.datetime()`, and `z.base64()`). Records always provide key and value
+schemas. Objects use strict, loose, or typed catch-all behavior according to
+`additionalProperties`.
+
+`oneOf` and `anyOf` are generated as ordinary `z.union([...])` schemas. This
+means at least one branch must parse; it does not enforce JSON Schema's
+exclusive “exactly one branch” interpretation of `oneOf`. `allOf` is generated
+with `z.intersection(...)`.
+
 **importWithExtension**
 
 Whether to add an extension (such as .ts) in the import path

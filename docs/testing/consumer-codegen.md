@@ -10,14 +10,20 @@ pnpm test:consumer:codegen
 The smoke packs every public workspace package, creates a project beneath the
 operating system temporary directory, installs the `openapi-to` tarball with
 tarball overrides for all aggregate dependencies, and invokes the installed
-`node_modules/.bin/openapi` entry. The consumer pins the repository's exact
-installed TypeScript and Zod versions while preferring the populated pnpm
-store. Its local OpenAPI fixture exercises two
+`node_modules/.bin/openapi` entry. The consumer pins the repository's installed
+TypeScript version, explicitly requests `zod@^4`, and rejects any resolved Zod
+major other than 4. It does not copy a Zod version from an e2e workspace. Its
+local OpenAPI fixture exercises two
 operations, path and query parameters, a JSON body and response, component
-references, required and optional fields, enums, arrays, and nested schemas.
+references, required/optional/nullable fields, formats, numeric constraints,
+enums, arrays, records, additional properties, unions, intersections, recursive
+schemas, and nested schemas. Escaped property names are covered by the plugin's
+focused generator and runtime tests.
 The aggregate package supplies `pluginTSType`, `pluginZod`, and
 `pluginTSRequest`; the generated TypeScript and a consumer request stub are
-then compiled in strict mode.
+then compiled in strict mode with `skipLibCheck: false`. A separate runtime
+entry executes the generated model, request body, query, and path schemas with
+Zod 4 and checks both accepted and rejected values.
 
 This is broader than a plugin unit or snapshot test because it validates the
 packed aggregate export, installed CLI, config loading, cross-package plugin

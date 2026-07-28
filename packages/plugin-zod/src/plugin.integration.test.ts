@@ -1,107 +1,128 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { PluginManager } from '@openapi-to/core'
-import { checkFolderHasFiles } from '@openapi-to/core/utils'
+import path from "node:path";
+import { PluginManager } from "@openapi-to/core";
+import { describe, expect, it } from "vitest";
+import { definePlugin } from "./plugin.ts";
 
-import type { MediaTypeObject, SchemaObject } from 'oas/types'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import mockOpenAPI from '../mock/petstore.json'
-import { definePlugin } from './plugin'
-// 获取当前文件的目录
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const TEST_OUTPUT_DIR = path.resolve(__dirname, '../test-output')
+const fixture = {
+	openapi: "3.0.3",
+	info: { title: "Zod 4 fixture", version: "1.0.0" },
+	paths: {},
+	components: {
+		schemas: {
+			Profile: {
+				type: "object",
+				required: ["email"],
+				additionalProperties: false,
+				properties: {
+					email: { type: "string", format: "email" },
+					"user-id": { type: "string" },
+				},
+			},
+			ProfileMap: {
+				type: "object",
+				additionalProperties: { $ref: "#/components/schemas/Profile" },
+			},
+			Choice: {
+				oneOf: [{ type: "string" }, { type: "number" }],
+			},
+			Combined: {
+				allOf: [
+					{
+						type: "object",
+						required: ["left"],
+						properties: { left: { type: "string" } },
+					},
+					{
+						type: "object",
+						required: ["right"],
+						properties: { right: { type: "boolean" } },
+					},
+				],
+			},
+			Node: {
+				type: "object",
+				required: ["value"],
+				additionalProperties: false,
+				properties: {
+					value: { type: "string" },
+					children: {
+						type: "array",
+						items: { $ref: "#/components/schemas/Node" },
+					},
+				},
+			},
+		},
+	},
+};
 
-// 模拟简单的 OpenAPI 操作
-const mockOperation = {
-  accessor: {
-    operationName: 'getUser',
-    operation: {
-      getResponseStatusCodes: () => ['200', '404'],
-      getResponseAsJSONSchema: () => [
-        {
-          description: 'User response',
-          label: 'user',
-          schema: { type: 'object', properties: { id: { type: 'string' } } },
-          type: 'object',
-        },
-      ],
-      getRequestBody: (mediaType?: string): MediaTypeObject | false | [string, MediaTypeObject, ...string[]] => {
-        return {
-          schema: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' },
-            },
-          },
-        }
-      },
-    },
-    getParametersSchema(): SchemaObject {
-      return {
-        type: 'object',
-        properties: {
-          id: { type: 'string', description: 'Unique identifier' },
-          name: { type: 'string', description: 'Name of the entity' },
-        },
-        required: ['id'],
-      }
-    },
-  },
+async function generatedSources() {
+	const output = path.resolve("packages/plugin-zod/test-output");
+	const manager = new PluginManager(
+		{
+			root: "",
+			plugins: [definePlugin()],
+			input: { path: "" },
+			output: { dir: output },
+		},
+		fixture as never,
+	);
+	const result = await manager.execute();
+	return {
+		diagnostics: result.diagnostics,
+		files: Object.fromEntries(
+			result.sourceFiles
+				.map<[string, string]>((sourceFile) => [
+					path
+						.relative(output, sourceFile.getFilePath())
+						.split(path.sep)
+						.join("/"),
+					sourceFile.getFullText(),
+				])
+				.sort(([left], [right]) => left.localeCompare(right)),
+		),
+	};
 }
 
-describe('Ts Type Plugin Integration', () => {
-  beforeEach(() => {
-    // 确保测试输出目录存在
-    if (!fs.existsSync(TEST_OUTPUT_DIR)) {
-      fs.mkdirSync(TEST_OUTPUT_DIR, { recursive: true })
-    }
+describe("Zod 4 plugin integration", () => {
+	it("generates executable Zod 4 schemas with safe imports and stable bytes", async () => {
+		const first = await generatedSources();
+		const second = await generatedSources();
+		expect(first).toEqual(second);
+		expect(first.diagnostics).toEqual([]);
+		expect(Object.keys(first.files)).toEqual([
+			"zod/models/choice.schema.ts",
+			"zod/models/combined.schema.ts",
+			"zod/models/node.schema.ts",
+			"zod/models/profile-map.schema.ts",
+			"zod/models/profile.schema.ts",
+		]);
 
-    // 确保 types 目录存在
-    const typesDir = path.join(TEST_OUTPUT_DIR, 'types')
-    if (!fs.existsSync(typesDir)) {
-      fs.mkdirSync(typesDir, { recursive: true })
-    }
-  })
+		const all = Object.values(first.files).join("\n");
+		expect(all).toContain('import { z } from "zod"');
+		expect(all).toContain("z.email()");
+		expect(all).toContain("z.union([z.string(), z.number()])");
+		expect(all).toContain("z.intersection(");
+		expect(all).toContain("z.record(z.string(), profileSchema)");
+		expect(all).toContain('"user-id": z.string().optional()');
+		expect(all).not.toMatch(/z\.string\(\)\.(?:email|url|uuid|datetime)\(/);
+		expect(all).not.toMatch(/\bz\.record\(\s*[^,()]+(?:\([^()]*\))?\s*\)/);
+		expect(all).not.toContain("z.string() | z.number()");
+		expect(all).not.toContain("z.string() &");
 
-  afterEach(() => {
-    // 清理测试文件
-    const typesDir = path.join(TEST_OUTPUT_DIR, 'types')
-    if (fs.existsSync(typesDir)) {
-      const files = fs.readdirSync(typesDir)
-      files.forEach((file) => {
-        // fs.unlinkSync(path.join(typesDir, file))
-      })
-    }
-  })
-
-  it('should generate typescript file with correct namespace', async () => {
-    const pluginManager = new PluginManager(
-      {
-        root: '',
-        plugins: [definePlugin()],
-        input: {
-          path: '',
-        },
-        output: {
-          dir: TEST_OUTPUT_DIR,
-        },
-      },
-      // @ts-ignore
-      mockOpenAPI,
-    )
-
-    pluginManager.run()
-
-    // 检查文件是否生成
-    const hasFiles = checkFolderHasFiles(TEST_OUTPUT_DIR)
-    expect(hasFiles).toBe(true)
-
-    // 读取文件内容并进行简单验证
-    // const fileContent = fs.readFileSync(filePath, 'utf-8')
-    // expect(fileContent).toContain('namespace Users')
-
-    expect('').toMatchSnapshot()
-  })
-})
+		expect(first.files["zod/models/profile-map.schema.ts"]).toContain(
+			'import { profileSchema } from "./profile.schema.ts"',
+		);
+		expect(first.files["zod/models/profile-map.schema.ts"]).not.toContain(
+			"z.lazy",
+		);
+		expect(first.files["zod/models/node.schema.ts"]).toContain(
+			"export const nodeSchema: z.ZodType<unknown>",
+		);
+		expect(first.files["zod/models/node.schema.ts"]).toContain(
+			"z.lazy(() => nodeSchema)",
+		);
+		expect(first.files["zod/models/node.schema.ts"]).not.toContain(
+			'from "./node.schema"',
+		);
+	});
+});

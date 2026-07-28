@@ -359,7 +359,7 @@ if (stderr.join("").includes("Unable to start server")) throw new Error("Aggrega
 				devDependencies: {
 					"@modelcontextprotocol/sdk": "1.29.0",
 					"@types/node": "^22.7.4",
-					zod: "3.25.76",
+					zod: "4.4.3",
 				},
 				pnpm: {
 					overrides: packedOverrides,

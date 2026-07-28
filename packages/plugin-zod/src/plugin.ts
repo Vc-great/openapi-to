@@ -19,6 +19,7 @@ import {
 } from "@/collect/collectRefsFromDocument.ts";
 import { collectRefsFromOperation } from "@/collect/collectRefsFromOperation.ts";
 import { collectRefsFromSchema } from "@/collect/collectRefsFromSchemas.ts";
+import { findRecursiveSchemaRefs } from "@/collect/findRecursiveSchemaRefs.ts";
 import { importZodTemplate } from "@/templates/importZodTemplate.ts";
 import { getOperationZodSchemaName } from "@/templates/operationTypeNameTemplate.ts";
 import { getlowerFirstRefAlias } from "@/utils/getlowerFirstRefAlias.ts";
@@ -33,9 +34,16 @@ const stateMap = new WeakMap<
 	{
 		project: Project;
 		componentOutputDir: string;
-		operationFileNameOfTag: Set<string>;
 	}
 >();
+
+function getState(config: OpenapiToSingleConfig) {
+	const state = stateMap.get(config);
+	if (!state) {
+		throw new Error("Zod plugin build state was not initialized.");
+	}
+	return state;
+}
 
 export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 	return {
@@ -48,25 +56,18 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						ctx.openapiToSingleConfig.output.dir,
 						schemaFolderName,
 					),
-					operationFileNameOfTag: new Set(),
 				});
 			},
-			tagStart: async (tagData, ctx) => {
-				const state = stateMap.get(ctx.openapiToSingleConfig);
-				//tag开始时，清空当前tag的operation记录
-				state?.operationFileNameOfTag.clear();
-			},
 			operation: async (operation, ctx) => {
-				const { project, componentOutputDir, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentOutputDir } = getState(
+					ctx.openapiToSingleConfig,
+				);
 				const fileName = `${kebabCase(operation.accessor.operationName)}.schema.ts`;
 				const filePath = path.join(
 					ctx.openapiToSingleConfig.output.dir,
 					kebabCase(operation.tagName),
 					fileName,
 				);
-				operationFileNameOfTag.add(fileName);
-
 				const operationStatements = buildOperationTypes(operation);
 
 				//
@@ -102,13 +103,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					operationSourceFile,
 				);
 			},
-			tagEnd: async (tagData, ctx) => {},
 			componentsSchemas: async (schemas, ctx) => {
-				const { project, componentOutputDir, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
-				for (const schemaName in schemas) {
-					const schema = schemas[schemaName]!;
-
+				const { project, componentOutputDir } = getState(
+					ctx.openapiToSingleConfig,
+				);
+				const recursiveRefs = findRecursiveSchemaRefs(schemas);
+				for (const [schemaName, schema] of Object.entries(schemas)) {
 					const formatterSchemaName =
 						ctx.openapiHelper.formatterName(schemaName);
 
@@ -119,8 +119,28 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const schemaSourceFile = project.createSourceFile(filePath, "", {
 						overwrite: true,
 					});
-					const statements = buildSchemas(formatterSchemaName, schema);
-					const refs = collectRefsFromSchema(schema);
+					const statements = buildSchemas(
+						formatterSchemaName,
+						schema,
+						{
+							lazyRefs: recursiveRefs,
+							onDiagnostic(diagnostic) {
+								ctx.addDiagnostic({
+									...diagnostic,
+									severity: "warning",
+									plugin: pluginEnum.Zod,
+									location: {
+										path: ["components", "schemas", schemaName],
+									},
+								});
+							},
+						},
+						schemaName,
+					);
+					const selfRef = `#/components/schemas/${schemaName}`;
+					const refs = collectRefsFromSchema(schema).filter(
+						(ref) => ref !== selfRef,
+					);
 
 					const imports = refs.flatMap((ref) =>
 						buildSchemaImports(
@@ -135,12 +155,11 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						),
 					);
 
-					statements &&
-						schemaSourceFile.addStatements([
-							...imports,
-							importZodTemplate,
-							...(statements ? [statements] : []),
-						]);
+					schemaSourceFile.addStatements([
+						...imports,
+						importZodTemplate,
+						statements,
+					]);
 
 					ctx.setSourceFiles(
 						[pluginEnum.Zod, "componentsSchemas", schemaName],
@@ -149,8 +168,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsParameters(parameters, ctx) {
-				const { project, componentOutputDir, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentOutputDir } = getState(
+					ctx.openapiToSingleConfig,
+				);
 				const refs = collectRefsFromComponentParameters(parameters);
 
 				forEach(parameters, (parameter, parameterName) => {
@@ -200,8 +220,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				});
 			},
 			componentsRequestBodies(requestBodies, ctx) {
-				const { project, componentOutputDir, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentOutputDir } = getState(
+					ctx.openapiToSingleConfig,
+				);
 				// components.requestBodies
 				for (const [requestBodyName, requestObject] of Object.entries(
 					requestBodies,
@@ -253,8 +274,9 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsResponses(responses, ctx) {
-				const { project, componentOutputDir, operationFileNameOfTag } =
-					stateMap.get(ctx.openapiToSingleConfig)!;
+				const { project, componentOutputDir } = getState(
+					ctx.openapiToSingleConfig,
+				);
 				// components.responses
 				forEach(responses, (response, responseName) => {
 					const formatterResponse =
@@ -304,7 +326,6 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					);
 				});
 			},
-			buildEnd: async (ctx) => {},
 		},
 	};
 });
