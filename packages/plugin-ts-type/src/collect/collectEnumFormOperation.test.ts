@@ -1,4 +1,4 @@
-//@ts-nocheck
+import type { OperationWrapper } from '@openapi-to/core'
 import { describe, expect, it, vi } from 'vitest'
 import { collectEnumFormOperation } from './collectEnumFormOperation'
 import * as collectEnumsModule from './collectEnumsFromDocument'
@@ -24,7 +24,7 @@ describe('collectEnumFormOperation', () => {
         parameters: [{ name: 'param1', in: 'query' }],
         operation: {
           getResponseStatusCodes: vi.fn().mockReturnValue(['200', '404']),
-          getResponseAsJSONSchema: vi.fn().mockImplementation((statusCode) => {
+          getResponseAsJSONSchema: vi.fn().mockImplementation((statusCode: string) => {
             if (statusCode === '200') {
               return [{ schema: { type: 'string', enum: ['OK', 'PARTIAL'] } }]
             }
@@ -37,14 +37,14 @@ describe('collectEnumFormOperation', () => {
       },
     }
 
-    const result = collectEnumFormOperation(mockOperation)
+    const result = collectEnumFormOperation(mockOperation as unknown as OperationWrapper)
 
     // 验证函数调用与结果
     expect(collectEnumsModule.collectEnumsFromPathParameters).toHaveBeenCalledWith(mockOperation.accessor.parameters, mockOperation.accessor.operationName)
 
     expect(collectEnumsModule.collectEnumsFromPathRequestBodies).toHaveBeenCalledWith(
       mockOperation.accessor.operation.getRequestBody(),
-      mockOperation.accessor.operationName,
+      'TestOperationMutationRequest',
     )
 
     // 验证 getResponseAsJSONSchema 被调用了两次，对应两个状态码
@@ -73,7 +73,7 @@ describe('collectEnumFormOperation', () => {
       },
     }
 
-    const result = collectEnumFormOperation(mockOperation)
+    const result = collectEnumFormOperation(mockOperation as unknown as OperationWrapper)
 
     expect(mockOperation.accessor.operation.getResponseStatusCodes).toHaveBeenCalled()
     expect(mockOperation.accessor.operation.getResponseAsJSONSchema).not.toHaveBeenCalled()

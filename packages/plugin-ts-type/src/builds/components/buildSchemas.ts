@@ -1,63 +1,79 @@
-import { jsDocTemplateFromSchema } from '@/templates/jsDocTemplateFromSchema.ts'
-import { getUpperFirstRefAlias } from '@/utils/getUpperFirstRefAlias.ts'
-import type { ComponentsSchema } from '@openapi-to/core'
-import { upperFirst } from 'lodash-es'
-import { type InterfaceDeclarationStructure, type JSDocStructure, type OptionalKind, StructureKind, type TypeAliasDeclarationStructure } from 'ts-morph'
-import { buildSchemaPropertiesTypes } from './buildSchemaPropertiesTypes.ts'
+import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
+import { schemaTemplate } from "@/templates/schemaTemplate.ts";
+import { canRenderAsPlainInterface } from "@/templates/canRenderAsPlainInterface.ts";
+import type { ComponentsSchema } from "@openapi-to/core";
+import { upperFirst } from "lodash-es";
+import type { SchemaObject } from "oas/types";
+import {
+	type InterfaceDeclarationStructure,
+	type JSDocStructure,
+	type OptionalKind,
+	StructureKind,
+	type TypeAliasDeclarationStructure,
+} from "ts-morph";
+import { buildSchemaPropertiesTypes } from "./buildSchemaPropertiesTypes.ts";
 
 export type SchemaDeclarationStructure = InterfaceDeclarationStructure | TypeAliasDeclarationStructure
 
-export function buildSchemas(schemaName: string, schema: ComponentsSchema): SchemaDeclarationStructure[] {
-  const statements: SchemaDeclarationStructure[] = []
-  const typeName = `${upperFirst(schemaName)}Model`
-  if (typeof schema !== 'object' || schema === null) return []
+export function buildSchemas(
+	schemaName: string,
+	schema: ComponentsSchema,
+): SchemaDeclarationStructure[] {
+	if (
+		schema === undefined ||
+		schema === null ||
+		(typeof schema !== "object" && typeof schema !== "boolean")
+	) {
+		return [];
+	}
 
-  if ('$ref' in schema && schema.$ref) {
-    const refType = getUpperFirstRefAlias(schema.$ref)
+	const typeName = `${upperFirst(schemaName)}Model`;
+	if (canRenderAsPlainInterface(schema)) {
+		const objectSchema = schema as Exclude<ComponentsSchema, boolean>;
+		return [
+			{
+				kind: StructureKind.Interface,
+				name: typeName,
+				isExported: true,
+				docs: jsDocTemplateFromSchema(
+					"description" in objectSchema
+						? objectSchema.description
+						: undefined,
+					objectSchema,
+					schemaName,
+				),
+				properties:
+					buildSchemaPropertiesTypes(
+						objectSchema as SchemaObject,
+						schemaName,
+					) ?? [],
+			},
+		];
+	}
 
-    statements.push(createTypeAlias(typeName, refType, []))
-    return statements
-  }
-
-  if ('type' in schema && schema.type === 'object' && schema.properties) {
-    statements.push({
-      kind: StructureKind.Interface,
-      name: typeName,
-      isExported: true,
-      docs: jsDocTemplateFromSchema(schema.description, schema, schemaName),
-      properties: buildSchemaPropertiesTypes(schema, schemaName) || [],
-    })
-    return statements
-  }
-
-  /*  const typeValue = schemaTemplate(schema, schemaName)
-  statements.push(createTypeAlias(typeName, typeValue, jsDocTemplateFromSchema(schema.description, schema)))*/
-
-  return statements
+	const description =
+		typeof schema === "object" && "description" in schema
+			? schema.description
+			: undefined;
+	return [
+		createTypeAlias(
+			typeName,
+			schemaTemplate(schema, schemaName),
+			jsDocTemplateFromSchema(description, schema, schemaName),
+		),
+	];
 }
 
-function createTypeAlias(name: string, type: string, docs?: OptionalKind<JSDocStructure>[]): TypeAliasDeclarationStructure {
-  return {
-    kind: StructureKind.TypeAlias,
-    name,
-    isExported: true,
-    type,
-    docs,
-  }
-}
-
-function getSchemaJSDocs(schema: any): OptionalKind<JSDocStructure>[] | undefined {
-  if (!schema.description) return undefined
-
-  return [
-    {
-      tags: [
-        {
-          leadingTrivia: '\n',
-          tagName: 'description',
-          text: schema.description,
-        },
-      ],
-    },
-  ]
+function createTypeAlias(
+	name: string,
+	type: string,
+	docs?: OptionalKind<JSDocStructure>[],
+): TypeAliasDeclarationStructure {
+	return {
+		kind: StructureKind.TypeAlias,
+		name,
+		isExported: true,
+		type,
+		docs,
+	};
 }

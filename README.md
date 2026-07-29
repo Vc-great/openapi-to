@@ -40,6 +40,16 @@ Zod emits corresponding intersections. `nullable` remains the documented
 compatibility exception and emits `Ref | null`/a nullable ref. `oneOf` remains
 an ordinary union approximation, not exact-one validation.
 
+TypeScript component schemas use the same renderer as operation, request, and
+response schemas. Primitive, array, enum, composition, nullable, type-array,
+`$ref`-sibling, and OpenAPI 3.1 boolean components therefore always emit a
+named export; `true` maps to `unknown` and `false` maps to `never`. Boolean
+properties are retained with the same mapping. Schema-valued
+`additionalProperties` becomes the index-signature value directly, with known
+property types included when necessary to keep the interface compilable.
+Recursive component types refer to their local declaration without a
+self-import.
+
 # Quick Start
 ## Install
 ```shell

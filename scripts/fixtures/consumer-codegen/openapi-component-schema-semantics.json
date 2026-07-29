@@ -1,0 +1,52 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Component schema semantics",
+		"version": "1.0.0"
+	},
+	"paths": {},
+	"components": {
+		"schemas": {
+			"UserId": { "type": "string" },
+			"Count": { "type": "integer" },
+			"Tags": { "type": "array", "items": { "type": "string" } },
+			"Status": {
+				"type": "string",
+				"enum": ["active", "disabled"]
+			},
+			"MaybeValue": { "type": ["string", "null"] },
+			"Result": {
+				"oneOf": [{ "type": "string" }, { "type": "number" }]
+			},
+			"Alternative": {
+				"anyOf": [{ "type": "boolean" }, { "type": "number" }]
+			},
+			"Base": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "type": "string" } }
+			},
+			"Extra": {
+				"type": "object",
+				"properties": { "extra": { "type": "number" } }
+			},
+			"Combined": {
+				"allOf": [
+					{ "$ref": "#/components/schemas/Base" },
+					{ "$ref": "#/components/schemas/Extra" }
+				]
+			},
+			"NullableUser": {
+				"type": "object",
+				"nullable": true,
+				"properties": { "name": { "type": "string" } }
+			},
+			"Extended": {
+				"$ref": "#/components/schemas/Base",
+				"allOf": [{ "$ref": "#/components/schemas/Extra" }]
+			},
+			"Anything": true,
+			"Impossible": false
+		}
+	}
+}

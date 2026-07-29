@@ -1,10 +1,9 @@
-import type { OpenAPIV3, OpenAPIV3_1 } from 'openapi-types'
 import type { SourceFile } from 'ts-morph'
 import type { Diagnostic } from '../diagnostics.ts'
 import type { GeneratedArtifact } from '../artifacts/types.ts'
 import type { OpenAPIHelper } from '../OpenAPIContext/OpenAPIHelper.ts'
 
-import type { ComponentsParameters, ComponentsRequestBodies, ComponentsResponses, HookTagObject, OperationWrapper } from '../OpenAPIContext/types.ts'
+import type { ComponentsParameters, ComponentsRequestBodies, ComponentsResponses, HookTagObject, OperationWrapper, Schema } from '../OpenAPIContext/types.ts'
 import type { PluginEnumType } from '../enums.ts'
 import type { OpenAPIDocument, OpenapiToSingleConfig } from '../types'
 
@@ -44,11 +43,7 @@ export interface HookContext extends PluginContext {
   // biome-ignore lint/suspicious/noExplicitAny: Preserve the legacy plugin store's intentionally open value contract.
   store: Map<any, any>
 }
-export type ComponentsSchemas =
-  | {
-      [p: string]: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject
-    }
-  | Record<string, OpenAPIV3_1.SchemaObject>
+export type ComponentsSchemas = Record<string, Schema>
 
 export type ComponentHooks = {
   componentsSchemas?(schemas: ComponentsSchemas, hookContext: HookContext): Promise<void> | void

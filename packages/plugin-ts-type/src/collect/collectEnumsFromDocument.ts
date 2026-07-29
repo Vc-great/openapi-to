@@ -18,7 +18,7 @@ export const collectEnumsFromPathParameters = (
 ): EnumItem[] => {
 	return parameters.flatMap((parameter) => {
 		const schema = resolveParameterSchema(parameter) || {};
-		if (typeof schema !== "object" || "$ref" in schema) return [];
+		if (typeof schema !== "object") return [];
 		const name = operationName + upperFirst(parameter.name);
 		return collectEnumsFromSchema(schema, name);
 	});
@@ -29,17 +29,16 @@ export const collectEnumsFromPathRequestBodies = (
 		| MediaTypeObject
 		| false
 		| [string, MediaTypeObject, ...string[]],
-	operationName: string,
+	contextName: string,
 ): EnumItem[] => {
 	if (requestBodies === false) return [];
-	const name = `${operationName}Body`;
 	if (Array.isArray(requestBodies)) {
 		const [_contentType, media] = requestBodies;
 
-		if (media?.schema) return collectEnumsFromSchema(media.schema, name);
+		if (media?.schema) return collectEnumsFromSchema(media.schema, contextName);
 	} else if (requestBodies) {
 		if (requestBodies.schema)
-			return collectEnumsFromSchema(requestBodies.schema, name);
+			return collectEnumsFromSchema(requestBodies.schema, contextName);
 	}
 	return [];
 };
@@ -54,15 +53,17 @@ type Responses =
 	| null;
 export const collectEnumsFromPathResponses = (
 	responses: Responses,
-	operationName: string,
+	contextName: string,
 ): EnumItem[] => {
 	if (!responses) {
 		return [];
 	}
 
-	const name = `${operationName}Response`;
 	return responses.flatMap((response) =>
-		collectEnumsFromSchema(response.schema, name),
+		collectEnumsFromSchema(
+			response.schema,
+			`${contextName}${upperFirst(response.label)}`,
+		),
 	);
 };
 
@@ -74,7 +75,9 @@ export const collectEnumsFromComponentParameters = (
 		if ("$ref" in parameter) continue;
 		const schema = resolveParameterSchema(parameter);
 		if (schema !== undefined)
-			enums.push(...collectEnumsFromSchema(schema, name));
+			enums.push(
+				...collectEnumsFromSchema(schema, `Parameter${upperFirst(name)}Model`),
+			);
 	}
 	return enums;
 };
@@ -93,11 +96,20 @@ export const collectEnumsFromComponentRequestBody = (
 	return enums;
 };
 
+export const collectEnumsFromComponentResponse = (
+	response: OpenAPIV3.ResponseObject | OpenAPIV3_1.ResponseObject | Reference,
+	contextName: string,
+): EnumItem[] => {
+	if ("$ref" in response) return [];
+	return Object.values(response.content ?? {}).flatMap((media) =>
+		media?.schema ? collectEnumsFromSchema(media.schema, contextName) : [],
+	);
+};
+
 export const collectEnumsFromComponentSchema = (
 	schema: ComponentsSchema,
 	name: string,
 ): EnumItem[] => {
-	if ("$ref" in schema) return [];
 	return collectEnumsFromSchema(schema, name);
 };
 
@@ -107,51 +119,52 @@ export function collectEnumsFromSchema(
 	enums: EnumItem[] = [],
 ): EnumItem[] {
 	if (!schema || typeof schema !== "object") return enums;
-	if ("$ref" in schema) return enums;
+	const record = schema as Record<string, unknown>;
 
-	if (schema.type === "string" && Array.isArray(schema.enum)) {
+	if (Array.isArray(record.enum)) {
 		const enumName = `${contextName}`;
 
 		enums.push({
 			name: enumName,
-			enumValue: schema.enum,
-			description: schema.description,
+			enumValue: record.enum,
+			description:
+				typeof record.description === "string" ? record.description : undefined,
 		});
-		return enums;
 	}
 
-	if (schema.type === "object" && schema.properties) {
-		for (const [propName, propSchema] of Object.entries(schema.properties)) {
-			collectEnumsFromSchema(
-				propSchema,
-				`${lowerFirst(contextName)}${upperFirst(propName)}`,
-				enums,
-			);
+	if (isPlainObject(record.properties)) {
+		for (const [propName, propSchema] of Object.entries(
+			record.properties as Record<string, unknown>,
+		)) {
+			if (typeof propSchema === "boolean" || isPlainObject(propSchema)) {
+				collectEnumsFromSchema(
+					propSchema as Schema,
+					`${lowerFirst(contextName)}${upperFirst(propName)}`,
+					enums,
+				);
+			}
 		}
 	}
 
-	const composedSchema = schema as Schema &
-		Partial<Record<"allOf" | "anyOf" | "oneOf", Schema[]>>;
 	for (const key of ["allOf", "anyOf", "oneOf"] as const) {
-		const arr = composedSchema[key];
+		const arr = record[key];
 		if (Array.isArray(arr)) {
 			arr.forEach((item, idx) => {
-				collectEnumsFromSchema(item, `${contextName}_${key}_${idx}`, enums);
+				if (typeof item === "boolean" || isPlainObject(item)) {
+					collectEnumsFromSchema(
+						item as Schema,
+						`${contextName}_${key}_${idx}`,
+						enums,
+					);
+				}
 			});
 		}
 	}
 
-	// array.items
-	if (
-		schema.type === "array" &&
-		schema.items &&
-		typeof schema.items === "object"
-	) {
-		const items = schema.items;
-		if ("$ref" in items) return enums;
-
+	if (record.items && typeof record.items === "object") {
+		const items = record.items;
 		if (isPlainObject(items)) {
-			return collectEnumsFromSchema(items as Schema, contextName, enums);
+			collectEnumsFromSchema(items as Schema, contextName, enums);
 		}
 
 		if (Array.isArray(items)) {
