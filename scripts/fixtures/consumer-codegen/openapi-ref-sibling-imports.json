@@ -1,0 +1,123 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Reference sibling import fixture",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/deep": {
+			"post": {
+				"tags": ["imports"],
+				"operationId": "deepOperation",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/Base",
+								"allOf": [{ "$ref": "#/components/schemas/Extra" }],
+								"anyOf": [{ "$ref": "#/components/schemas/Alternative" }],
+								"type": "object",
+								"required": ["child"],
+								"properties": {
+									"child": { "$ref": "#/components/schemas/Child" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Deep response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Base",
+									"allOf": [{ "$ref": "#/components/schemas/Extra" }],
+									"anyOf": [{ "$ref": "#/components/schemas/Alternative" }],
+									"type": "object",
+									"required": ["child"],
+									"properties": {
+										"child": { "$ref": "#/components/schemas/Child" }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/component-deep": {
+			"post": {
+				"tags": ["imports"],
+				"operationId": "componentDeepOperation",
+				"requestBody": {
+					"$ref": "#/components/requestBodies/DeepBody"
+				},
+				"responses": {
+					"200": { "$ref": "#/components/responses/DeepResponse" }
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Base": {
+				"type": "object",
+				"required": ["base"],
+				"properties": { "base": { "type": "string" } }
+			},
+			"Extra": {
+				"type": "object",
+				"required": ["extra"],
+				"properties": { "extra": { "type": "number" } }
+			},
+			"Alternative": {
+				"type": "object",
+				"required": ["alternative"],
+				"properties": { "alternative": { "type": "boolean" } }
+			},
+			"Child": {
+				"type": "object",
+				"required": ["value"],
+				"properties": { "value": { "type": "string" } }
+			}
+		},
+		"requestBodies": {
+			"DeepBody": {
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/Base",
+							"allOf": [{ "$ref": "#/components/schemas/Extra" }],
+							"anyOf": [{ "$ref": "#/components/schemas/Alternative" }],
+							"type": "object",
+							"required": ["child"],
+							"properties": {
+								"child": { "$ref": "#/components/schemas/Child" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"responses": {
+			"DeepResponse": {
+				"description": "Deep component response",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/Base",
+							"allOf": [{ "$ref": "#/components/schemas/Extra" }],
+							"anyOf": [{ "$ref": "#/components/schemas/Alternative" }],
+							"type": "object",
+							"required": ["child"],
+							"properties": {
+								"child": { "$ref": "#/components/schemas/Child" }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

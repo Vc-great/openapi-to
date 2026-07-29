@@ -12,7 +12,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
     type: operation.accessor.operationTSType?.queryParams,
   }
 
-  const pathParameters: OptionalKind<ParameterDeclarationStructure>[] = operation.accessor.pathParameters.map((item: OpenAPIV3.ParameterObject) => {
+  const pathParameters: OptionalKind<ParameterDeclarationStructure>[] = operation.accessor.pathParameters.map((item) => {
     return {
       name: camelCase(item.name),
       type: `${operation.accessor.operationTSType?.pathParams || ''}['${camelCase(item.name)}']`,

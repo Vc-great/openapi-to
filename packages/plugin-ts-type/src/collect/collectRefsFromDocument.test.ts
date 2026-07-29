@@ -1,4 +1,3 @@
-//@ts-nocheck
 import { describe, expect, it, vi } from "vitest";
 import * as collectRefsFromSchemasModule from "../collect/collectRefsFromSchemas";
 import {
@@ -9,6 +8,34 @@ import {
 	collectRefsFromOperationRequestBody,
 	collectRefsFromOperationResponse,
 } from "./collectRefsFromDocument";
+
+type OperationParametersFixture = Parameters<
+	typeof collectRefsFromOperationParameter
+>[0];
+type OperationFixture = Parameters<
+	typeof collectRefsFromOperationRequestBody
+>[0];
+type ComponentParametersFixture = Parameters<
+	typeof collectRefsFromComponentParameters
+>[0];
+type ComponentRequestBodyFixture = Parameters<
+	typeof collectRefsFromComponentRequestBody
+>[0];
+type ComponentResponseFixture = Parameters<
+	typeof collectRefsFromComponentResponse
+>[0];
+
+const asOperationParameters = (value: unknown): OperationParametersFixture =>
+	value as OperationParametersFixture;
+const asOperation = (value: unknown): OperationFixture =>
+	value as OperationFixture;
+const asComponentParameters = (value: unknown): ComponentParametersFixture =>
+	value as ComponentParametersFixture;
+const asComponentRequestBody = (
+	value: unknown,
+): ComponentRequestBodyFixture => value as ComponentRequestBodyFixture;
+const asComponentResponse = (value: unknown): ComponentResponseFixture =>
+	value as ComponentResponseFixture;
 
 describe("collectRefsFromDocument", () => {
 	beforeEach(() => {
@@ -42,7 +69,9 @@ describe("collectRefsFromDocument", () => {
 				{ name: "filter", schema: { $ref: "#/components/schemas/Filter" } },
 			];
 
-			const result = collectRefsFromOperationParameter(parameters);
+			const result = collectRefsFromOperationParameter(
+				asOperationParameters(parameters),
+			);
 
 			expect(result).toContain("#/components/parameters/Param1");
 			expect(result).toContain("#/components/parameters/Param2");
@@ -56,7 +85,9 @@ describe("collectRefsFromDocument", () => {
 				{ name: "array", schema: { type: "array" } },
 			];
 
-			const result = collectRefsFromOperationParameter(parameters);
+			const result = collectRefsFromOperationParameter(
+				asOperationParameters(parameters),
+			);
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -68,7 +99,9 @@ describe("collectRefsFromDocument", () => {
 
 		it("应该处理没有模式的参数", () => {
 			const parameters = [{ name: "noSchema" }];
-			const result = collectRefsFromOperationParameter(parameters);
+			const result = collectRefsFromOperationParameter(
+				asOperationParameters(parameters),
+			);
 			expect(result).toHaveLength(0);
 		});
 
@@ -85,9 +118,9 @@ describe("collectRefsFromDocument", () => {
 				},
 			];
 
-			expect(collectRefsFromOperationParameter(parameters)).toEqual([
-				"#/components/schemas/Filter",
-			]);
+			expect(
+				collectRefsFromOperationParameter(asOperationParameters(parameters)),
+			).toEqual(["#/components/schemas/Filter"]);
 		});
 	});
 
@@ -103,7 +136,9 @@ describe("collectRefsFromDocument", () => {
 				getRequestBody: vi.fn(),
 			};
 
-			const result = collectRefsFromOperationRequestBody(oasOperation);
+			const result = collectRefsFromOperationRequestBody(
+				asOperation(oasOperation),
+			);
 
 			expect(result).toContain("#/components/requestBodies/UserBody");
 			expect(result).toHaveLength(1);
@@ -119,7 +154,9 @@ describe("collectRefsFromDocument", () => {
 				}),
 			};
 
-			const result = collectRefsFromOperationRequestBody(oasOperation);
+			const result = collectRefsFromOperationRequestBody(
+				asOperation(oasOperation),
+			);
 
 			expect(result).toContain("#/components/schemas/User");
 			expect(result).toHaveLength(1);
@@ -135,7 +172,9 @@ describe("collectRefsFromDocument", () => {
 				}),
 			};
 
-			const result = collectRefsFromOperationRequestBody(oasOperation);
+			const result = collectRefsFromOperationRequestBody(
+				asOperation(oasOperation),
+			);
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -157,7 +196,7 @@ describe("collectRefsFromDocument", () => {
 				}),
 			};
 
-			collectRefsFromOperationRequestBody(oasOperation);
+			collectRefsFromOperationRequestBody(asOperation(oasOperation));
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -177,7 +216,9 @@ describe("collectRefsFromDocument", () => {
 					]),
 			};
 
-			const result = collectRefsFromOperationRequestBody(oasOperation);
+			const result = collectRefsFromOperationRequestBody(
+				asOperation(oasOperation),
+			);
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -202,7 +243,7 @@ describe("collectRefsFromDocument", () => {
 				}),
 			};
 
-			const result = collectRefsFromOperationResponse(oasOperation);
+			const result = collectRefsFromOperationResponse(asOperation(oasOperation));
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -221,7 +262,7 @@ describe("collectRefsFromDocument", () => {
 					]),
 			};
 
-			const result = collectRefsFromOperationResponse(oasOperation);
+			const result = collectRefsFromOperationResponse(asOperation(oasOperation));
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -236,7 +277,7 @@ describe("collectRefsFromDocument", () => {
 				getResponseAsJSONSchema: vi.fn().mockReturnValue(null),
 			};
 
-			const result = collectRefsFromOperationResponse(oasOperation);
+			const result = collectRefsFromOperationResponse(asOperation(oasOperation));
 
 			expect(result).toHaveLength(0);
 		});
@@ -253,7 +294,9 @@ describe("collectRefsFromDocument", () => {
 				Param3: { schema: { type: "object" } },
 			};
 
-			const result = collectRefsFromComponentParameters(parameters);
+			const result = collectRefsFromComponentParameters(
+				asComponentParameters(parameters),
+			);
 
 			expect(result).toContain("#/components/parameters/BaseParam");
 			expect(result).toContain("#/components/schemas/Filter");
@@ -263,17 +306,19 @@ describe("collectRefsFromDocument", () => {
 
 		it("collects refs from component Parameter Object content schemas", () => {
 			expect(
-				collectRefsFromComponentParameters({
-					Filter: {
-						name: "filter",
-						in: "query",
-						content: {
-							"application/json": {
-								schema: { $ref: "#/components/schemas/Filter" },
+				collectRefsFromComponentParameters(
+					asComponentParameters({
+						Filter: {
+							name: "filter",
+							in: "query",
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Filter" },
+								},
 							},
 						},
-					},
-				}),
+					}),
+				),
 			).toEqual(["#/components/schemas/Filter"]);
 		});
 	});
@@ -284,7 +329,9 @@ describe("collectRefsFromDocument", () => {
 		});
 		it("应该处理引用请求体", () => {
 			const rb = { $ref: "#/components/requestBodies/BaseBody" };
-			const result = collectRefsFromComponentRequestBody(rb);
+			const result = collectRefsFromComponentRequestBody(
+				asComponentRequestBody(rb),
+			);
 			expect(result).toContain("#/components/requestBodies/BaseBody");
 			expect(result).toHaveLength(1);
 		});
@@ -297,7 +344,9 @@ describe("collectRefsFromDocument", () => {
 				},
 			};
 
-			const result = collectRefsFromComponentRequestBody(rb);
+			const result = collectRefsFromComponentRequestBody(
+				asComponentRequestBody(rb),
+			);
 
 			expect(result).toContain("#/components/schemas/User");
 			expect(result).toContain("#/components/schemas/RefFromObject");
@@ -306,7 +355,9 @@ describe("collectRefsFromDocument", () => {
 
 		it("应该处理没有内容的请求体", () => {
 			const rb = {};
-			const result = collectRefsFromComponentRequestBody(rb);
+			const result = collectRefsFromComponentRequestBody(
+				asComponentRequestBody(rb),
+			);
 			expect(result).toHaveLength(0);
 		});
 	});
@@ -317,7 +368,9 @@ describe("collectRefsFromDocument", () => {
 		});
 		it("应该处理引用响应", () => {
 			const response = { $ref: "#/components/responses/BaseResponse" };
-			const result = collectRefsFromComponentResponse(response);
+			const result = collectRefsFromComponentResponse(
+				asComponentResponse(response),
+			);
 			expect(result).toContain("#/components/responses/BaseResponse");
 			expect(result).toHaveLength(1);
 		});
@@ -327,10 +380,12 @@ describe("collectRefsFromDocument", () => {
 				$ref: "#/components/schemas/Base",
 				anyOf: [{ $ref: "#/components/schemas/Extra" }],
 			};
-			collectRefsFromComponentResponse({
-				description: "Composed",
-				content: { "application/json": { schema } },
-			});
+			collectRefsFromComponentResponse(
+				asComponentResponse({
+					description: "Composed",
+					content: { "application/json": { schema } },
+				}),
+			);
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -347,7 +402,9 @@ describe("collectRefsFromDocument", () => {
 				},
 			};
 
-			const result = collectRefsFromComponentResponse(response);
+			const result = collectRefsFromComponentResponse(
+				asComponentResponse(response),
+			);
 
 			expect(result).toContain("#/components/schemas/Success");
 			expect(result).toContain("#/components/schemas/RefFromObject");
@@ -364,7 +421,9 @@ describe("collectRefsFromDocument", () => {
 				},
 			};
 
-			const result = collectRefsFromComponentResponse(response);
+			const result = collectRefsFromComponentResponse(
+				asComponentResponse(response),
+			);
 
 			expect(result).toEqual([]);
 		});
@@ -376,7 +435,9 @@ describe("collectRefsFromDocument", () => {
 				},
 			};
 
-			const result = collectRefsFromComponentResponse(response);
+			const result = collectRefsFromComponentResponse(
+				asComponentResponse(response),
+			);
 
 			expect(result).toEqual([]);
 		});

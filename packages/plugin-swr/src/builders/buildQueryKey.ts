@@ -14,7 +14,7 @@ export function buildQueryKey(operation: OperationWrapper, pluginConfig?: Plugin
   const queryParameters = operation.accessor.hasQueryParameters ? `params?:${operation.accessor.operationTSType?.queryParams}` : ''
   const pathParameters = operation.accessor.parameters
     .filter((x) => x.in === 'path')
-    .map((item: OpenAPIV3.ParameterObject) => {
+    .map((item) => {
       const name = camelCase(item.name)
       const type = `${operation.accessor.operationTSType?.pathParams || ''}['${camelCase(item.name)}']`
       return `${name}:${type}`

@@ -1,6 +1,5 @@
 import type { OperationWrapper } from '@openapi-to/core'
 import { camelCase, head } from 'lodash-es'
-import type { OpenAPIV3 } from 'openapi-types'
 import type { OptionalKind, ParameterDeclarationStructure } from 'ts-morph'
 import { type PluginConfig, RequestClientEnum } from '../types.ts'
 
@@ -18,7 +17,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
 
   const pathParameters: OptionalKind<ParameterDeclarationStructure>[] = operation.accessor.parameters
     .filter((x) => x.in === 'path')
-    .map((item: OpenAPIV3.ParameterObject) => {
+    .map((item) => {
       return {
         name: camelCase(item.name),
         type: `${operation.accessor.operationTSType?.pathParams || ''}['${camelCase(item.name)}']`,

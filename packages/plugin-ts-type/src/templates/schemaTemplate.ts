@@ -19,44 +19,40 @@ export function schemaTemplate(
 
 	const contextName = `${upperFirst(parentName)}${propertyName}`;
 	let baseType: string;
+	const record = schema as SchemaObjectAndJSONSchema;
+	const hasUnion =
+		("oneOf" in record && Array.isArray(record.oneOf)) ||
+		("anyOf" in record && Array.isArray(record.anyOf));
+	const hasIntersection = "allOf" in record && Array.isArray(record.allOf);
 
-	if (isRef(schema)) {
-		const members = [refType(schema)];
-		const schemaWithSiblings = schema as typeof schema & {
-			oneOf?: Schema[];
-			anyOf?: Schema[];
-			allOf?: Schema[];
-		};
-		if (schemaWithSiblings.oneOf || schemaWithSiblings.anyOf) {
-			members.push(
-				unionType(
-					schemaWithSiblings as SchemaObjectAndJSONSchema,
-					propertyName,
-					contextName,
-				),
-			);
-		}
-		baseType = members.join(" | ");
-		if (schemaWithSiblings.allOf) {
-			baseType = `${members.length > 1 ? `(${baseType})` : baseType} & ${intersectionType(
-				schemaWithSiblings as SchemaObjectAndJSONSchema,
-				propertyName,
-				contextName,
-			)}`;
-		}
+	if (isRef(schema) || hasUnion || hasIntersection) {
+		const members: string[] = [];
+		if (isRef(schema)) members.push(refType(schema));
+		if (hasUnion) members.push(unionType(record, propertyName, contextName));
+		if (hasIntersection)
+			members.push(intersectionType(record, propertyName, contextName));
+
+		const structuralSibling = renderStructuralSibling(
+			record,
+			propertyName,
+			contextName,
+		);
+		if (structuralSibling) members.push(structuralSibling);
+
+		baseType = members
+			.map((member) =>
+				members.length > 1 && member.includes(" | ") ? `(${member})` : member,
+			)
+			.join(" & ");
 	} else if (schema.enum && schema.enum.length > 0) {
 		baseType = `${upperFirst(parentName)}${upperFirst(propertyName)}EnumValue`;
-	} else if (schema.oneOf || schema.anyOf) {
-		baseType = unionType(schema, propertyName, contextName);
-	} else if (schema.allOf) {
-		baseType = intersectionType(schema, propertyName, contextName);
 	} else {
 		baseType = resolveBaseType(schema, propertyName, contextName);
 	}
 
 	// 处理 nullable
 	if ("nullable" in schema && schema.nullable === true) {
-		return `${baseType} | null`;
+		return `${baseType.includes(" & ") ? `(${baseType})` : baseType} | null`;
 	}
 
 	return baseType;
@@ -65,6 +61,42 @@ export function schemaTemplate(
 // 处理引用
 function refType(schema: { $ref: string }): string {
 	return `${getUpperFirstRefAlias(schema.$ref)}`;
+}
+
+function renderStructuralSibling(
+	schema: SchemaObjectAndJSONSchema,
+	propertyName: string,
+	parentName: string,
+): string | undefined {
+	const sibling = { ...(schema as Record<string, unknown>) };
+	delete sibling.$ref;
+	delete sibling.oneOf;
+	delete sibling.anyOf;
+	delete sibling.allOf;
+	delete sibling.nullable;
+
+	if (
+		sibling.type === undefined &&
+		(sibling.properties !== undefined ||
+			sibling.additionalProperties !== undefined)
+	) {
+		sibling.type = "object";
+	}
+	if (sibling.type === undefined && sibling.items !== undefined) {
+		sibling.type = "array";
+	}
+
+	const hasStructuralKeyword = [
+		"type",
+		"properties",
+		"items",
+		"additionalProperties",
+		"enum",
+	].some((key) => sibling[key] !== undefined);
+	if (!hasStructuralKeyword) return undefined;
+
+	const rendered = schemaTemplate(sibling as Schema, propertyName, parentName);
+	return rendered === "unknown" ? undefined : rendered;
 }
 
 // union: oneOf / anyOf
@@ -102,7 +134,9 @@ function intersectionType(
 	const types = schemas.allOf.map((s) =>
 		schemaTemplate(s as SchemaObject, propertyName, parentName),
 	);
-	return types.join(" & ");
+	return types
+		.map((type) => (type.includes(" | ") ? `(${type})` : type))
+		.join(" & ");
 }
 
 // 基础类型

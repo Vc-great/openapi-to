@@ -33,8 +33,12 @@ An existing response Media Type Object without `schema` maps to
 currently validated by the Zod plugin, so header references are kept out of
 response-body imports. TypeScript request bodies pass schema-level `$ref`
 siblings such as `nullable`, type unions, and composition through the schema
-renderer. `$ref` sibling handling remains one uniform generator policy in
-OpenAPI 3.0 and 3.1.
+renderer. The current uniform OpenAPI 3.0/3.1 generator policy treats a `$ref`
+and its sibling schema as simultaneous constraints: TypeScript emits
+`Ref & (A | B)` for `$ref + anyOf/oneOf` and intersections for `allOf`, while
+Zod emits corresponding intersections. `nullable` remains the documented
+compatibility exception and emits `Ref | null`/a nullable ref. `oneOf` remains
+an ordinary union approximation, not exact-one validation.
 
 # Quick Start
 ## Install
@@ -494,6 +498,13 @@ selects the first declared Media Type deterministically. A selected Media Type
 without `schema` generates `z.unknown()`, while `schema: false` generates
 `z.never()`. These request-header schemas are distinct from response headers,
 which still do not receive validators.
+
+`pluginTSRequest` keeps its existing public call signature: generated header
+and cookie metadata does not add independent `headers` or `cookies` method
+parameters. Callers pass those values through the selected request
+configuration/client configuration (for example, request headers). This
+boundary avoids claiming complete request-client header/cookie transport,
+including browser-versus-Node cookie behavior and merge precedence.
 
 `oneOf` and `anyOf` are generated as ordinary `z.union([...])` schemas. This
 means at least one branch must parse; it does not enforce JSON Schema's

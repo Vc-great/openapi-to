@@ -23,3 +23,23 @@ without `schema` is `unknown`/`z.unknown()`, and a response without content is
 status member, including mixed `200 + 204` and only-204 operations, and routes
 request-body schema `$ref` siblings such as `nullable` and composition through
 the schema renderer.
+
+Schema `$ref` siblings now retain one cross-plugin meaning at every parameter,
+request-body, and response entry point: the referenced schema and sibling
+schema both apply. TypeScript renders `$ref + anyOf/oneOf` as
+`Ref & (A | B)`, `$ref + allOf` as intersections, and keeps nullable as
+`Ref | null`; Zod emits the matching intersections/nullable schema. Deep
+sibling refs are imported without duplicates, component response refs use
+their real named export, nullable/composed object responses bypass the
+plain-interface shortcut, and component parameters collect imports per file
+without self-imports.
+
+Core public Parameter Object types now include OpenAPI 3.1 parameters and keep
+boolean schemas and type arrays valid at parameter entry points. Generated
+header/cookie types and Zod schemas do not change the TypeScript request
+client's public method signature: callers still provide transport values
+through request/client configuration. Exact-one `oneOf`, dialect-specific
+`$ref` sibling rules, recursive `z.infer`, complete int64, leap seconds,
+response-header validation, intelligent multi-Media-Type selection, and
+independent request-client header/cookie parameters remain outside this
+change.

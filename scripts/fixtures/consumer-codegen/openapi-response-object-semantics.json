@@ -1,0 +1,159 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Response object semantics fixture",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/nullable-object": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "nullableObject",
+				"responses": {
+					"200": {
+						"description": "Nullable object",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"nullable": true,
+									"properties": { "id": { "type": "string" } }
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/composed-object": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "composedObject",
+				"responses": {
+					"200": {
+						"description": "Composed object",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["id"],
+									"properties": { "id": { "type": "string" } },
+									"anyOf": [{ "$ref": "#/components/schemas/Extra" }],
+									"allOf": [{ "$ref": "#/components/schemas/Base" }]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/ref-nullable": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "refNullable",
+				"responses": {
+					"200": {
+						"description": "Nullable ref",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Base",
+									"nullable": true
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/ref-all-of": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "refAllOf",
+				"responses": {
+					"200": {
+						"description": "Ref allOf",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Base",
+									"allOf": [{ "$ref": "#/components/schemas/Extra" }]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/no-content": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "semanticNoContent",
+				"responses": { "204": { "description": "No content" } }
+			}
+		},
+		"/unknown-media": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "semanticUnknownMedia",
+				"responses": {
+					"200": {
+						"description": "Unknown media",
+						"content": { "application/json": {} }
+					}
+				}
+			}
+		},
+		"/never": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "semanticNever",
+				"responses": {
+					"200": {
+						"description": "Never",
+						"content": { "application/json": { "schema": false } }
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Base": {
+				"type": "object",
+				"required": ["base"],
+				"properties": { "base": { "type": "string" } }
+			},
+			"Extra": {
+				"type": "object",
+				"required": ["extra"],
+				"properties": { "extra": { "type": "number" } }
+			}
+		},
+		"responses": {
+			"NullableComponent": {
+				"description": "Nullable component",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"nullable": true,
+							"properties": { "id": { "type": "string" } }
+						}
+					}
+				}
+			},
+			"ComposedComponent": {
+				"description": "Composed component",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/Base",
+							"allOf": [{ "$ref": "#/components/schemas/Extra" }]
+						}
+					}
+				}
+			}
+		}
+	}
+}

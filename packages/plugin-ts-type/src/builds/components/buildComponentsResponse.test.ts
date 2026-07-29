@@ -1,83 +1,50 @@
-//@ts-nocheck
-
-import { describe, expect, it, vi } from "vitest";
-import { buildComponentsResponse } from "@/builds/components/buildComponentsResponse.ts";
-import { componentResponseTemplate } from "@/templates/componentResponseTemplate.ts";
-import { createTypeAlias } from "@/templates/operationResponseTemplate.ts";
-import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
-
-// 模拟依赖
-vi.mock("@/utils/getUpperFirstRefAlias", () => ({
-	getUpperFirstRefAlias: vi
-		.fn()
-		.mockImplementation((ref) => `Mock${ref.split("/").pop()}Type`),
-}));
-
-vi.mock("@/templates/operationResponseTemplate", () => ({
-	createTypeAlias: vi
-		.fn()
-		.mockImplementation((name, type, docs) => ({ name, type, docs })),
-}));
-
-vi.mock("@/templates/componentResponseTemplate", () => ({
-	componentResponseTemplate: vi
-		.fn()
-		.mockImplementation((_responseObj, name) => ({
-			name,
-			responseType: "mocked",
-		})),
-}));
+import type { ComponentsResponsesValue } from "@openapi-to/core";
+import { StructureKind } from "ts-morph";
+import { describe, expect, it } from "vitest";
+import { buildComponentsResponse } from "./buildComponentsResponse.ts";
 
 describe("buildComponentsResponse", () => {
-	it("应该处理引用类型的响应", () => {
-		const response = { $ref: "#/components/responses/testResponse" };
-		const result = buildComponentsResponse(response, "TestResponse");
+	it("uses the real component response export for a Reference Object", () => {
+		const response: ComponentsResponsesValue = {
+			$ref: "#/components/responses/TestResponse",
+		};
 
-		expect(getUpperFirstRefAlias).toHaveBeenCalledWith(
-			"#/components/responses/testResponse",
-		);
-		expect(createTypeAlias).toHaveBeenCalledWith(
-			"TestResponse",
-			"MocktestResponseType",
-			[],
-		);
-		expect(result).toEqual({
+		expect(buildComponentsResponse(response, "TestResponse")).toMatchObject({
+			kind: StructureKind.TypeAlias,
 			name: "TestResponse",
-			type: "MocktestResponseType",
-			docs: [],
+			type: "ResponseTestResponse",
 		});
 	});
 
-	it("应该处理带content的响应", () => {
-		const response = {
+	it("renders a plain object response as an interface", () => {
+		const response: ComponentsResponsesValue = {
+			description: "Object",
 			content: {
 				"application/json": {
 					schema: {
 						type: "object",
-						properties: {},
+						properties: { id: { type: "string" } },
 					},
 				},
 			},
 		};
-		const result = buildComponentsResponse(response, "TestResponse");
 
-		expect(componentResponseTemplate).toHaveBeenCalledWith(
-			{ schema: response.content["application/json"].schema },
-			"TestResponse",
-		);
-		expect(result).toEqual({
+		expect(buildComponentsResponse(response, "TestResponse")).toMatchObject({
+			kind: StructureKind.Interface,
 			name: "TestResponse",
-			responseType: "mocked",
 		});
 	});
 
 	it("maps empty content to undefined", () => {
-		const response = { content: {} };
-		const result = buildComponentsResponse(response, "TestResponse");
-		expect(result).toEqual({
+		const response: ComponentsResponsesValue = {
+			description: "No content",
+			content: {},
+		};
+
+		expect(buildComponentsResponse(response, "TestResponse")).toMatchObject({
+			kind: StructureKind.TypeAlias,
 			name: "TestResponse",
 			type: "undefined",
-			docs: [],
 		});
 	});
 });

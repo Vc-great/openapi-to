@@ -5,10 +5,13 @@ export function getUpperFirstRefAlias($ref: string) {
   const alias: Record<string, string> = {
     parameters: 'Parameter',
     requestBodies: 'RequestBodies',
-    responses: 'Responses',
   }
   const prefix = nth(split($ref, '/'), 2) || ''
+  const refAlias = upperFirst(getRefAlias($ref))
 
+  if (prefix === 'responses') {
+    return `Response${refAlias}`
+  }
   const prefixAlias = prefix in alias ? alias[prefix] : ''
-  return `${prefixAlias}${upperFirst(getRefAlias($ref))}Model`
+  return `${prefixAlias}${refAlias}Model`
 }

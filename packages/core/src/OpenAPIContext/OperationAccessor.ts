@@ -116,6 +116,7 @@ export class OperationAccessor {
 			(parameter) =>
 				"schema" in parameter &&
 				parameter.schema &&
+				typeof parameter.schema === "object" &&
 				"type" in parameter.schema &&
 				parameter.schema.type === "array",
 		);

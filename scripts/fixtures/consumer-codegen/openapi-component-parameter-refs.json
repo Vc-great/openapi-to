@@ -1,0 +1,45 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Component parameter references fixture",
+		"version": "1.0.0"
+	},
+	"paths": {},
+	"components": {
+		"schemas": {
+			"Filter": {
+				"type": "object",
+				"properties": { "value": { "type": "string" } }
+			}
+		},
+		"parameters": {
+			"Target": {
+				"name": "target",
+				"in": "query",
+				"schema": { "type": "string" }
+			},
+			"Alias": {
+				"$ref": "#/components/parameters/Target"
+			},
+			"Nested": {
+				"name": "nested",
+				"in": "query",
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Filter" }
+					}
+				}
+			},
+			"SchemaNested": {
+				"name": "schemaNested",
+				"in": "query",
+				"schema": { "$ref": "#/components/schemas/Filter" }
+			},
+			"Unrelated": {
+				"name": "unrelated",
+				"in": "header",
+				"schema": { "type": "number" }
+			}
+		}
+	}
+}

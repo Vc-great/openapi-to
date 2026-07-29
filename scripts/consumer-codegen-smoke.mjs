@@ -621,6 +621,25 @@ async function assertContractOutput(consumerRoot) {
 		contentType,
 		nullableType,
 		componentNullableType,
+		deepOperationType,
+		deepOperationZod,
+		deepComponentBodyType,
+		deepComponentBodyZod,
+		deepComponentResponseType,
+		deepComponentResponseZod,
+		nullableResponseType,
+		nullableResponseZod,
+		nullableComponentType,
+		nullableComponentZod,
+		composedResponseType,
+		composedResponseZod,
+		neverResponseZod,
+		noContentResponseZod,
+		unknownMediaResponseZod,
+		targetParameter,
+		aliasParameter,
+		nestedParameter,
+		schemaNestedParameter,
 	] = await Promise.all([
 		readGenerated(
 			"generated-contract-parameters/contracts/parameter-matrix.schema.ts",
@@ -648,6 +667,63 @@ async function assertContractOutput(consumerRoot) {
 		),
 		readGenerated(
 			"generated-contract-siblings/types/requestBodies/nullable-body.model.ts",
+		),
+		readGenerated(
+			"generated-contract-ref-imports/imports/deep-operation.types.ts",
+		),
+		readGenerated(
+			"generated-contract-ref-imports/imports/deep-operation.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-ref-imports/types/requestBodies/deep-body.model.ts",
+		),
+		readGenerated(
+			"generated-contract-ref-imports/zod/requestBodies/deep-body.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-ref-imports/types/responses/deep-response.model.ts",
+		),
+		readGenerated(
+			"generated-contract-ref-imports/zod/responses/deep-response.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/nullable-object.types.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/nullable-object.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/types/responses/nullable-component.model.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/zod/responses/nullable-component.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/composed-object.types.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/composed-object.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/semantic-never.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/semantic-no-content.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-response-semantics/responses/semantic-unknown-media.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-component-parameters/types/parameters/target.model.ts",
+		),
+		readGenerated(
+			"generated-contract-component-parameters/types/parameters/alias.model.ts",
+		),
+		readGenerated(
+			"generated-contract-component-parameters/types/parameters/nested.model.ts",
+		),
+		readGenerated(
+			"generated-contract-component-parameters/types/parameters/schema-nested.model.ts",
 		),
 	]);
 
@@ -708,12 +784,94 @@ async function assertContractOutput(consumerRoot) {
 			),
 		"TypeScript request-body schema $ref siblings lost nullable.",
 	);
+	for (const [label, source, names] of [
+		[
+			"TypeScript operation",
+			deepOperationType,
+			["BaseModel", "ExtraModel", "AlternativeModel", "ChildModel"],
+		],
+		[
+			"Zod operation",
+			deepOperationZod,
+			["baseSchema", "extraSchema", "alternativeSchema", "childSchema"],
+		],
+		[
+			"TypeScript component request body",
+			deepComponentBodyType,
+			["BaseModel", "ExtraModel", "AlternativeModel", "ChildModel"],
+		],
+		[
+			"Zod component request body",
+			deepComponentBodyZod,
+			["baseSchema", "extraSchema", "alternativeSchema", "childSchema"],
+		],
+		[
+			"TypeScript component response",
+			deepComponentResponseType,
+			["BaseModel", "ExtraModel", "AlternativeModel", "ChildModel"],
+		],
+		[
+			"Zod component response",
+			deepComponentResponseZod,
+			["baseSchema", "extraSchema", "alternativeSchema", "childSchema"],
+		],
+	]) {
+		for (const name of names) {
+			assert(
+				source.includes(name),
+				`${label} omitted deep schema reference ${name}.`,
+			);
+			assert(
+				(source.match(new RegExp(`import(?: type)? \\{ ${name} \\}`, "g")) ??
+					[]).length === 1,
+				`${label} did not import ${name} exactly once.`,
+			);
+		}
+	}
+	assert(
+		/NullableObjectResponse200 = \{[\s\S]*\} \| null/.test(
+			nullableResponseType,
+		) &&
+			nullableResponseZod.includes(".nullable()") &&
+			/ResponseNullableComponent = \{[\s\S]*\} \| null/.test(
+				nullableComponentType,
+			) &&
+			nullableComponentZod.includes(".nullable()"),
+		"Nullable object response semantics diverged between TypeScript and Zod.",
+	);
+	assert(
+		composedResponseType.includes("BaseModel") &&
+			composedResponseType.includes("ExtraModel") &&
+			composedResponseZod.includes("z.intersection("),
+		"Object response composition was discarded.",
+	);
+	assert(
+		neverResponseZod.includes("z.never()") &&
+			noContentResponseZod.includes("z.undefined()") &&
+			unknownMediaResponseZod.includes("z.unknown()"),
+		"Response false/no-content/no-schema semantics regressed.",
+	);
+	assert(
+		!targetParameter.includes('from "./target.model"') &&
+			aliasParameter.includes("ParameterTargetModel") &&
+			aliasParameter.includes('from "./target.model"') &&
+			nestedParameter.includes("FilterModel") &&
+			!nestedParameter.includes("ParameterTargetModel") &&
+			!nestedParameter.includes("ParameterAliasModel") &&
+			schemaNestedParameter.includes("FilterModel") &&
+			!schemaNestedParameter.includes("ParameterTargetModel") &&
+			!schemaNestedParameter.includes("ParameterAliasModel"),
+		"Component parameter imports contain a self-import or unrelated reference.",
+	);
 
 	for (const directory of [
 		"generated-contract-parameters",
 		"generated-contract-responses",
 		"generated-contract-content",
 		"generated-contract-siblings",
+		"generated-contract-ref-imports",
+		"generated-contract-response-semantics",
+		"generated-contract-component-parameters",
 	]) {
 		const root = join(consumerRoot, directory);
 		const files = (await filesRecursively(root)).map((path) =>
@@ -934,6 +1092,9 @@ async function createConsumerFiles(
 		"openapi-mixed-success-no-content.json",
 		"openapi-parameter-content.json",
 		"openapi-ts-ref-siblings.json",
+		"openapi-ref-sibling-imports.json",
+		"openapi-response-object-semantics.json",
+		"openapi-component-parameter-refs.json",
 	]) {
 		await copyFile(
 			join(
@@ -1493,6 +1654,21 @@ export default defineConfig({
       input: { path: "./openapi-ts-ref-siblings.json" },
       output: { base: "workspace", dir: "generated-contract-siblings", clean: true },
     },
+    {
+      name: "refSiblingImports",
+      input: { path: "./openapi-ref-sibling-imports.json" },
+      output: { base: "workspace", dir: "generated-contract-ref-imports", clean: true },
+    },
+    {
+      name: "responseObjectSemantics",
+      input: { path: "./openapi-response-object-semantics.json" },
+      output: { base: "workspace", dir: "generated-contract-response-semantics", clean: true },
+    },
+    {
+      name: "componentParameterRefs",
+      input: { path: "./openapi-component-parameter-refs.json" },
+      output: { base: "workspace", dir: "generated-contract-component-parameters", clean: true },
+    },
   ],
   plugins: [
     pluginZod({ importWithExtension: false }),
@@ -1541,6 +1717,8 @@ import type {
 } from "./generated-contract-responses/contracts/mixed-success.types.ts";
 import type { NullableBodyMutationRequest } from "./generated-contract-siblings/contracts/nullable-body.types.ts";
 import type { RequestBodiesNullableBodyModel } from "./generated-contract-siblings/types/requestBodies/nullable-body.model.ts";
+import type { DeepOperationMutationRequest } from "./generated-contract-ref-imports/imports/deep-operation.types.ts";
+import type { NullableObjectResponse200 } from "./generated-contract-response-semantics/responses/nullable-object.types.ts";
 
 const created = await createWidgetService({
   name: "desk",
@@ -1575,6 +1753,15 @@ const mixedNoContent: MixedSuccessResponse204 = undefined;
 const unknownMedia: MixedSuccessResponse201 = { any: "value" };
 const nullableOperationBody: NullableBodyMutationRequest = null;
 const nullableComponentBody: RequestBodiesNullableBodyModel = null;
+const deepIntersection: DeepOperationMutationRequest = {
+  base: "base",
+  extra: 1,
+  alternative: true,
+  child: { value: "child" },
+};
+const nullableObjectResponse: NullableObjectResponse200 = null;
+// @ts-expect-error $ref + anyOf/allOf requires every intersected member
+const invalidDeepIntersection: DeepOperationMutationRequest = { base: "base" };
 // @ts-expect-error no-content members reject objects
 const invalidNoContent: OnlyNoContentResponse204 = {};
 void noContentMember;
@@ -1583,6 +1770,9 @@ void mixedNoContent;
 void unknownMedia;
 void nullableOperationBody;
 void nullableComponentBody;
+void deepIntersection;
+void nullableObjectResponse;
+void invalidDeepIntersection;
 void invalidNoContent;
 	`,
 	);
@@ -1651,6 +1841,13 @@ import {
   contentParametersQueryParamsSchema,
 } from "./generated-contract-content/contracts/content-parameters.schema";
 import { nullableBodyMutationRequestSchema } from "./generated-contract-siblings/contracts/nullable-body.schema";
+import { deepOperationMutationRequestSchema } from "./generated-contract-ref-imports/imports/deep-operation.schema";
+import { nullableObjectResponseSchema200 } from "./generated-contract-response-semantics/responses/nullable-object.schema";
+import { composedObjectResponseSchema200 } from "./generated-contract-response-semantics/responses/composed-object.schema";
+import { semanticNeverResponseSchema200 } from "./generated-contract-response-semantics/responses/semantic-never.schema";
+import { semanticNoContentResponseSchema204 } from "./generated-contract-response-semantics/responses/semantic-no-content.schema";
+import { semanticUnknownMediaResponseSchema200 } from "./generated-contract-response-semantics/responses/semantic-unknown-media.schema";
+import { ResponseNullableComponent } from "./generated-contract-response-semantics/zod/responses/nullable-component.schema";
 
 type IsUnknown<T> = unknown extends T ? ([keyof T] extends [never] ? true : false) : false;
 type Expect<T extends true> = T;
@@ -1773,6 +1970,25 @@ if (contentParametersCookieParamsSchema.safeParse({ deny: "value" }).success) {
   throw new Error("Parameter content schema:false accepted a value");
 }
 nullableBodyMutationRequestSchema.parse(null);
+deepOperationMutationRequestSchema.parse({
+  base: "base",
+  extra: 1,
+  alternative: true,
+  child: { value: "child" },
+});
+if (deepOperationMutationRequestSchema.safeParse({ base: "base" }).success) {
+  throw new Error("$ref composition accepted a value missing sibling constraints");
+}
+nullableObjectResponseSchema200.parse(null);
+ResponseNullableComponent.parse(null);
+if (composedObjectResponseSchema200.safeParse(null).success) {
+  throw new Error("non-nullable composed object response accepted null");
+}
+if (semanticNeverResponseSchema200.safeParse("value").success) {
+  throw new Error("schema:false response accepted a value");
+}
+semanticNoContentResponseSchema204.parse(undefined);
+semanticUnknownMediaResponseSchema200.parse({ any: "value" });
 console.log("zod4-runtime-parse:passed");
 `,
 	);
@@ -2045,7 +2261,7 @@ export async function runConsumerCodegenScenario({
 	assert(
 		contractGeneration.success === true &&
 			contractGeneration.servers?.map((server) => server.name).join(",") ===
-				"headerCookie,mixedResponses,parameterContent,refSiblings",
+				"headerCookie,mixedResponses,parameterContent,refSiblings,refSiblingImports,responseObjectSemantics,componentParameterRefs",
 		"Cross-plugin contract generation did not produce every fixture target.",
 	);
 	const contractCheck = parseJson(

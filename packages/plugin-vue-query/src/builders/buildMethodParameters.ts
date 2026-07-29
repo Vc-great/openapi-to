@@ -2,7 +2,7 @@ import type { OperationWrapper } from '@openapi-to/core'
 import { camelCase } from 'lodash-es'
 import { OpenAPIV3 } from 'openapi-types'
 import type { OptionalKind, ParameterDeclarationStructure } from 'ts-morph'
-import type {PluginConfig, RequiredPluginConfig} from '../types.ts'
+import type { RequiredPluginConfig } from '../types.ts'
 import { formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
 
 export function buildMethodParameters(operation: OperationWrapper, pluginConfig: RequiredPluginConfig): OptionalKind<ParameterDeclarationStructure>[] {
@@ -15,7 +15,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig:
     type: `MaybeRefOrGetter<${operation.accessor.operationTSType?.queryParams}>`,
   }
 
-  const pathParameters: OptionalKind<ParameterDeclarationStructure>[] = operation.accessor.pathParameters.map((item: OpenAPIV3.ParameterObject) => {
+  const pathParameters: OptionalKind<ParameterDeclarationStructure>[] = operation.accessor.pathParameters.map((item) => {
     return {
       name: camelCase(item.name),
       type: `MaybeRefOrGetter<${operation.accessor.operationTSType?.pathParams || ''}['${camelCase(item.name)}']>`,

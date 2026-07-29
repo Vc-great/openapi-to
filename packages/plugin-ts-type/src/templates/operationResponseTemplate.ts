@@ -2,6 +2,7 @@ import { buildSchemaPropertiesTypes } from "@/builds/components/buildSchemaPrope
 import { getResponseErrorTypeName } from "@/templates/operationTypeNameTemplate.ts";
 
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
+import { canRenderAsPlainInterface } from "@/templates/canRenderAsPlainInterface.ts";
 import { upperFirst } from "lodash-es";
 import {
 	type JSDocStructure,
@@ -41,14 +42,7 @@ export function operationResponseTemplate(
     return createTypeAlias(typeName, refType, docs)
   }*/
 
-	if (
-		typeof schema === "object" &&
-		schema !== null &&
-		"type" in schema &&
-		schema.type === "object" &&
-		"properties" in schema &&
-		schema.properties
-	) {
+	if (canRenderAsPlainInterface(schema)) {
 		return {
 			kind: StructureKind.Interface,
 			name: declarationName,

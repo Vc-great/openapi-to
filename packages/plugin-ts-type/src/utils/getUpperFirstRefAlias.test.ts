@@ -13,7 +13,7 @@ describe('getUpperFirstRefAlias 函数测试', () => {
   })
 
   test('当 $ref 包含 parameters 时应返回带 Parameter 前缀的结果', () => {
-    ;(coreUtils.getRefAlias as any).mockReturnValue('user')
+    vi.mocked(coreUtils.getRefAlias).mockReturnValue('user')
 
     const result = getUpperFirstRefAlias('#/components/parameters/User')
 
@@ -22,7 +22,7 @@ describe('getUpperFirstRefAlias 函数测试', () => {
   })
 
   test('当 $ref 包含 requestBodies 时应返回带 RequestBodies 前缀的结果', () => {
-    ;(coreUtils.getRefAlias as any).mockReturnValue('product')
+    vi.mocked(coreUtils.getRefAlias).mockReturnValue('product')
 
     const result = getUpperFirstRefAlias('#/components/requestBodies/Product')
 
@@ -30,17 +30,17 @@ describe('getUpperFirstRefAlias 函数测试', () => {
     expect(result).toBe('RequestBodiesProductModel')
   })
 
-  test('当 $ref 包含 responses 时应返回带 Responses 前缀的结果', () => {
-    ;(coreUtils.getRefAlias as any).mockReturnValue('error')
+  test('当 $ref 包含 responses 时应返回实际 component response 导出名', () => {
+    vi.mocked(coreUtils.getRefAlias).mockReturnValue('error')
 
     const result = getUpperFirstRefAlias('#/components/responses/Error')
 
     expect(coreUtils.getRefAlias).toHaveBeenCalledWith('#/components/responses/Error')
-    expect(result).toBe('ResponsesErrorModel')
+    expect(result).toBe('ResponseError')
   })
 
   test('当 $ref 包含未知组件类型时应返回不带前缀的结果', () => {
-    ;(coreUtils.getRefAlias as any).mockReturnValue('schema')
+    vi.mocked(coreUtils.getRefAlias).mockReturnValue('schema')
 
     const result = getUpperFirstRefAlias('#/components/schemas/Schema')
 
@@ -49,7 +49,7 @@ describe('getUpperFirstRefAlias 函数测试', () => {
   })
 
   test('当 $ref 没有足够部分时应正确处理', () => {
-    ;(coreUtils.getRefAlias as any).mockReturnValue('simple')
+    vi.mocked(coreUtils.getRefAlias).mockReturnValue('simple')
 
     const result = getUpperFirstRefAlias('simple')
 

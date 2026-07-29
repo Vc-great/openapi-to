@@ -50,6 +50,35 @@ function getState(store: Map<unknown, unknown>): PluginState {
 	return state as PluginState;
 }
 
+function buildRefImports(
+	refs: readonly string[],
+	filePath: string,
+	componentFolderPath: string,
+	importWithExtension: boolean | undefined,
+) {
+	const importsByPath = new Map<string, Set<string>>();
+	for (const ref of refs) {
+		const targetPath = getRefFilePath(ref, componentFolderPath);
+		if (!targetPath || path.resolve(targetPath) === path.resolve(filePath))
+			continue;
+		const names = importsByPath.get(targetPath) ?? new Set<string>();
+		names.add(getUpperFirstRefAlias(ref));
+		importsByPath.set(targetPath, names);
+	}
+
+	return [...importsByPath.entries()]
+		.sort(([left], [right]) => left.localeCompare(right))
+		.flatMap(([targetPath, names]) =>
+			buildTypeImports(
+				[...names].sort(),
+				formatterModuleSpecifier(
+					getRelativePath(filePath, targetPath),
+					importWithExtension,
+				),
+			),
+		);
+}
+
 export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 	return {
 		name: pluginEnum.TsType,
@@ -141,7 +170,6 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					ctx.store,
 				);
 				for (const [schemaName, schema] of Object.entries(schemas)) {
-
 					const formatterSchemaName =
 						ctx.openapiHelper.formatterName(schemaName);
 
@@ -206,8 +234,6 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				);
 				enumRegistry.adds(collectEnumsFromComponentParameters(parameters));
 
-				const refs = collectRefsFromComponentParameters(parameters);
-
 				forEach(parameters, (parameter, parameterName) => {
 					const formatterParameterName =
 						ctx.openapiHelper.formatterName(parameterName);
@@ -225,17 +251,13 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const statements: SchemaDeclarationStructure | undefined =
 						buildComponentParameters(parameter, formatterParameterName);
 					if (statements) {
-						const imports = refs.flatMap((ref) =>
-							buildTypeImports(
-								[getUpperFirstRefAlias(ref)],
-								formatterModuleSpecifier(
-									getRelativePath(
-										filePath,
-										getRefFilePath(ref, componentFolderPath),
-									),
-									pluginConfig?.importWithExtension,
-								),
-							),
+						const imports = buildRefImports(
+							collectRefsFromComponentParameters({
+								[parameterName]: parameter,
+							}),
+							filePath,
+							componentFolderPath,
+							pluginConfig?.importWithExtension,
 						);
 
 						parameterSourceFile.addStatements(imports);

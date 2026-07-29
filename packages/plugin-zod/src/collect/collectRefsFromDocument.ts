@@ -46,13 +46,7 @@ export function collectRefsFromOperationRequestBody(oasOperation: Operation) {
 		!Array.isArray(mediaTypeObject) &&
 		!isBoolean(mediaTypeObject)
 	) {
-		if (
-			mediaTypeObject.schema &&
-			typeof mediaTypeObject.schema === "object" &&
-			"$ref" in mediaTypeObject.schema
-		) {
-			refs.add(mediaTypeObject.schema.$ref);
-		} else if (mediaTypeObject.schema) {
+		if (mediaTypeObject.schema) {
 			collectRefsFromSchema(mediaTypeObject.schema).forEach((ref) => {
 				refs.add(ref);
 			});
@@ -135,13 +129,9 @@ export function collectRefsFromComponentResponse(
 	if (response && "content" in response && response.content) {
 		for (const media of Object.values(response.content)) {
 			if (media?.schema) {
-				if (typeof media.schema === "object" && "$ref" in media.schema) {
-					refs.add(media.schema.$ref);
-				} else {
-					collectRefsFromSchema(media.schema).forEach((ref) => {
-						refs.add(ref);
-					});
-				}
+				collectRefsFromSchema(media.schema).forEach((ref) => {
+					refs.add(ref);
+				});
 			}
 		}
 	}

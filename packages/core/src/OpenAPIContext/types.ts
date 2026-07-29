@@ -51,10 +51,28 @@ export type ComponentsParameters = NonNullable<
 	| OpenAPIV3.ComponentsObject["parameters"]
 	| OpenAPIV3_1.ComponentsObject["parameters"]
 >;
+
+type OpenAPIV3_1ParameterMediaTypeObject = Omit<
+	OpenAPIV3_1.MediaTypeObject,
+	"schema"
+> & {
+	schema?: Schema;
+};
+
+type OpenAPIV3_1ParameterObject = Omit<
+	OpenAPIV3_1.ParameterObject,
+	"schema" | "content"
+> & {
+	schema?: Schema;
+	content?: Record<string, OpenAPIV3_1ParameterMediaTypeObject>;
+};
+
 export type ComponentsParameterValue =
 	| OpenAPIV3.ReferenceObject
 	| OpenAPIV3_1.ReferenceObject
-	| OpenAPIV3.ParameterObject;
+	| OpenAPIV3.ParameterObject
+	| OpenAPIV3_1.ParameterObject
+	| OpenAPIV3_1ParameterObject;
 
 export type RequestBodyObject =
 	| OpenAPIV3.RequestBodyObject
@@ -79,11 +97,15 @@ export type ComponentsResponsesValue =
 
 export type HookTagObject = TagObject;
 
-export type ParameterObjectWithRef = OpenAPIV3.ParameterObject & {
-	$ref?: string;
-};
+export type ParameterObject =
+	| OpenAPIV3.ParameterObject
+	| OpenAPIV3_1.ParameterObject
+	| OpenAPIV3_1ParameterObject;
 
-export type ParameterObject = OpenAPIV3.ParameterObject;
+export type ParameterObjectWithRef =
+	| (OpenAPIV3.ParameterObject & { $ref?: string })
+	| (OpenAPIV3_1.ParameterObject & { $ref?: string })
+	| (OpenAPIV3_1ParameterObject & { $ref?: string });
 
 export type MediaTypeObject =
 	| OpenAPIV3.MediaTypeObject

@@ -21,12 +21,14 @@ arrays, records, additional properties, unions, intersections, and nested
 schemas. Escaped property names are covered by the plugin's focused generator
 and runtime tests.
 
-Ten focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
+Thirteen focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
 remaining edge cases reviewable: referenced optional/required/path parameters
 and boolean schemas; concrete plus `1XX`–`5XX` wildcard responses; operation
 and component Media Type Objects without `schema`; a referenced no-content
 component response; a response header reference isolated from its body schema;
-and schema `$ref` siblings at operation and component entry points. The
+schema `$ref` siblings and their deep imports at operation and component entry
+points; nullable/composed object responses; and per-file component parameter
+references without self-imports or unrelated imports. The
 wildcard fixture is compiled with both Zod and TypeScript response generation.
 The empty-media fixture runs all three formal plugins and statically rejects
 `undefined.parse(` in request services. Runtime checks prove optional query,
@@ -35,14 +37,18 @@ required path/query, `schema:false`, wildcard aggregates, no-content,
 `minLength`. Focused plugin tests also lock the established first-declared
 selection when a request or response advertises multiple media types.
 
-Four cross-plugin fixtures additionally run `pluginTSType`, `pluginZod`, and
+Seven cross-plugin fixtures additionally run `pluginTSType`, `pluginZod`, and
 `pluginTSRequest` together for operation header/cookie parameters, mixed
 schema/unknown-media/no-content success responses, Parameter Object `content`,
-and request-body schema `$ref` siblings. Their generated files are strictly
+request-body schema `$ref` siblings, deep sibling imports, response object
+semantics, and component parameter import isolation. Their generated files are strictly
 compiled, Zod parsing checks optional and required header/cookie objects,
-compile-time assignments distinguish `undefined` from `unknown`, every
-relative import is resolved, duplicate exports and `undefined.parse(` are
-rejected, and a second generation must be byte-stable.
+compile-time assignments distinguish `undefined` from `unknown` and prove
+`$ref + anyOf/allOf` remains an intersection, every relative named import is
+resolved, self-imports, duplicate exports, and `undefined.parse(` are rejected,
+and a second generation must be byte-stable. Header/cookie generation remains
+metadata-only for the request client signature: callers supply transport
+values through request/client configuration.
 
 The aggregate package supplies `pluginTSType`, `pluginZod`, and
 `pluginTSRequest`; the generated TypeScript and a consumer request stub are

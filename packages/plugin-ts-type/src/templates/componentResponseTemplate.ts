@@ -2,8 +2,7 @@ import { buildSchemaPropertiesTypes } from "@/builds/components/buildSchemaPrope
 import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
 import { createTypeAlias } from "@/templates/operationResponseTemplate.ts";
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
-import { getRefAlias } from "@openapi-to/core/utils";
-import { upperFirst } from "lodash-es";
+import { canRenderAsPlainInterface } from "@/templates/canRenderAsPlainInterface.ts";
 import type { Schema } from "@openapi-to/core";
 import type { SchemaObject } from "oas/types";
 import {
@@ -21,12 +20,7 @@ export function componentResponseTemplate(
 ): TypeAliasDeclarationStructure | InterfaceDeclarationStructure {
 	const schema = mediaTypeObject.schema;
 
-	if (schema && typeof schema === "object" && "$ref" in schema && schema.$ref) {
-		const refType = `${upperFirst(getRefAlias(schema.$ref))}Model`;
-		return createTypeAlias(responseName, refType, []);
-	}
-
-	if (!schema) {
+	if (schema === undefined) {
 		return createTypeAlias(responseName, "unknown", []);
 	}
 
@@ -34,12 +28,7 @@ export function componentResponseTemplate(
 		typeof schema === "object" && "description" in schema
 			? jsDocTemplateFromSchema(schema.description, schema)
 			: [];
-	if (
-		typeof schema === "object" &&
-		"type" in schema &&
-		schema.type === "object" &&
-		schema.properties
-	) {
+	if (canRenderAsPlainInterface(schema)) {
 		return {
 			kind: StructureKind.Interface,
 			name: responseName,
