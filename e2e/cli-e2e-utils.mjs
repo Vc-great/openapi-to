@@ -11,6 +11,11 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { sanitizeText } from "../scripts/ci-diagnostics/sanitize.mjs";
+
+const maxJsonStdoutCharacters = 1024 * 1024;
+const maxLogTailCharacters = 128 * 1024;
+
 export const repositoryRoot = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"..",
@@ -72,8 +77,13 @@ export async function runLogged({
 	env = process.env,
 	label,
 }) {
-	const stdout = [];
-	const stderr = [];
+	let stdout = "";
+	let stdoutTail = "";
+	let stderrTail = "";
+	let stdoutTruncated = false;
+	let stderrTruncated = false;
+	const appendTail = (current, value) =>
+		`${current}${value}`.slice(-maxLogTailCharacters);
 	const result = await new Promise((resolve, reject) => {
 		const child = spawn(command, args, {
 			cwd,
@@ -83,27 +93,43 @@ export async function runLogged({
 		});
 		child.stdout.on("data", (chunk) => {
 			const value = String(chunk);
-			stdout.push(value);
+			if (stdout.length < maxJsonStdoutCharacters) {
+				const remaining = maxJsonStdoutCharacters - stdout.length;
+				stdout += value.slice(0, remaining);
+				if (value.length > remaining) stdoutTruncated = true;
+			} else {
+				stdoutTruncated = true;
+			}
+			stdoutTail = appendTail(stdoutTail, value);
 			process.stdout.write(value);
 		});
 		child.stderr.on("data", (chunk) => {
 			const value = String(chunk);
-			stderr.push(value);
+			if (stderrTail.length + value.length > maxLogTailCharacters) {
+				stderrTruncated = true;
+			}
+			stderrTail = appendTail(stderrTail, value);
 			process.stderr.write(value);
 		});
 		child.once("error", reject);
 		child.once("close", (code, signal) => resolve({ code, signal }));
 	});
-	const output = stdout.join("");
-	const errors = stderr.join("");
 	await Promise.all([
-		writeFile(path.join(artifactDirectory, `${label}.stdout.log`), output),
-		writeFile(path.join(artifactDirectory, `${label}.stderr.log`), errors),
+		writeFile(
+			path.join(artifactDirectory, `${label}.stdout.log`),
+			`${stdoutTruncated ? "[earlier output truncated]\n" : ""}${sanitizeText(stdoutTail)}`,
+		),
+		writeFile(
+			path.join(artifactDirectory, `${label}.stderr.log`),
+			`${stderrTruncated ? "[earlier output truncated]\n" : ""}${sanitizeText(stderrTail)}`,
+		),
 	]);
 	return {
 		...result,
-		stdout: output,
-		stderr: errors,
+		stdout,
+		stderr: stderrTail,
+		stdoutTruncated,
+		stderrTruncated,
 		command: path.basename(command),
 		args,
 	};
@@ -113,6 +139,10 @@ export function parseJsonStdout(result, label) {
 	assert(
 		result.code === 0,
 		`${label} exited with ${result.code ?? result.signal ?? "unknown"}.`,
+	);
+	assert(
+		result.stdoutTruncated !== true,
+		`${label} stdout exceeded ${maxJsonStdoutCharacters} characters.`,
 	);
 	try {
 		return JSON.parse(result.stdout);

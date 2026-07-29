@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { sanitizeText } from "../../../scripts/ci-diagnostics/sanitize.mjs";
 
 const packageRoot = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -25,14 +26,14 @@ const observation = {
 	arch: process.arch,
 	node: process.version,
 	pnpm: rootManifest.packageManager,
-	processExecPath: process.execPath,
+	processExecPath: path.basename(process.execPath),
 	command: path.basename(process.execPath),
 	args: [
 		path.relative(repositoryRoot, bin).split(path.sep).join("/"),
 		"--workspace-root",
 		".",
 	],
-	cwd: repositoryRoot,
+	cwd: ".",
 	pid: null,
 	childExitCode: null,
 	childSignal: null,
@@ -45,13 +46,7 @@ const childClosed = new Promise((resolve) => {
 });
 
 function redact(value) {
-	return value
-		.replace(
-			/\b(authorization|cookie|x-api-key)\s*[:=]\s*[^\s]+/gi,
-			"$1=[REDACTED]",
-		)
-		.replace(/([?&](?:token|key|secret|signature)=)[^&\s]+/gi, "$1[REDACTED]")
-		.slice(0, 128 * 1024);
+	return sanitizeText(value).slice(0, 128 * 1024);
 }
 
 async function withDeadline(stage, operation, timeoutMs = 20_000) {
@@ -161,7 +156,9 @@ try {
 	observation.status = "passed";
 } catch (error) {
 	observation.status = "failed";
-	observation.error = error instanceof Error ? error.message : String(error);
+	observation.error = sanitizeText(
+		error instanceof Error ? error.message : String(error),
+	).slice(0, 2_000);
 	process.exitCode = 1;
 } finally {
 	if (!closed) {
@@ -189,8 +186,7 @@ try {
 					childClosed,
 					new Promise((_, reject) => {
 						const timer = setTimeout(
-							() =>
-								reject(new Error("child cleanup exceeded 5 seconds.")),
+							() => reject(new Error("child cleanup exceeded 5 seconds.")),
 							5_000,
 						);
 						timer.unref();

@@ -1,7 +1,10 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { sanitizeText } from "./ci-diagnostics/sanitize.mjs";
+import { MAX_KNOWN_REPORT_BYTES } from "./ci-diagnostics/schema.mjs";
 
 const repositoryRoot = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -96,6 +99,10 @@ const result = await new Promise((resolve, reject) => {
 
 let report;
 try {
+	const details = await stat(reportPath);
+	if (details.size > MAX_KNOWN_REPORT_BYTES) {
+		throw new Error("A1 Vitest report exceeded its bounded read limit.");
+	}
 	report = JSON.parse(await readFile(reportPath, "utf8"));
 } catch {
 	report = undefined;
@@ -104,15 +111,20 @@ const actualFiles = Array.isArray(report?.testResults)
 	? report.testResults.length
 	: 0;
 const actualTests = Number(report?.numTotalTests ?? 0);
-const failedTests = (report?.testResults ?? []).flatMap((file) =>
-	(file.assertionResults ?? [])
-		.filter((test) => test.status === "failed")
-		.map((test) => ({
-			file: file.name,
-			title: test.fullName ?? test.title,
-			failure: String(test.failureMessages?.[0] ?? "").slice(0, 2_000),
-		})),
-);
+const failedTests = (report?.testResults ?? [])
+	.flatMap((file) =>
+		(file.assertionResults ?? [])
+			.filter((test) => test.status === "failed")
+			.map((test) => ({
+				file: path
+					.relative(repositoryRoot, file.name)
+					.split(path.sep)
+					.join("/"),
+				title: sanitizeText(test.fullName ?? test.title).slice(0, 500),
+				failure: sanitizeText(test.failureMessages?.[0] ?? "").slice(0, 2_000),
+			})),
+	)
+	.slice(0, 10);
 const inventoryMatches =
 	actualFiles === files.length && actualTests === expectedTests;
 await writeFile(
