@@ -1,0 +1,116 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Schema reference siblings",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/inline": {
+			"post": {
+				"tags": ["siblings"],
+				"operationId": "inlineRefSibling",
+				"parameters": [
+					{
+						"name": "value",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"$ref": "#/components/schemas/BaseString",
+							"type": "string",
+							"minLength": 10
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/BaseString",
+								"type": "string",
+								"minLength": 10
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Long string",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BaseString",
+									"type": "string",
+									"minLength": 10
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/components": {
+			"post": {
+				"tags": ["siblings"],
+				"operationId": "componentRefSibling",
+				"parameters": [
+					{
+						"$ref": "#/components/parameters/LongValue"
+					}
+				],
+				"requestBody": {
+					"$ref": "#/components/requestBodies/LongBody"
+				},
+				"responses": {
+					"200": {
+						"$ref": "#/components/responses/NullableBody"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"BaseString": {
+				"type": "string"
+			}
+		},
+		"parameters": {
+			"LongValue": {
+				"name": "value",
+				"in": "query",
+				"required": true,
+				"schema": {
+					"$ref": "#/components/schemas/BaseString",
+					"type": "string",
+					"minLength": 10
+				}
+			}
+		},
+		"requestBodies": {
+			"LongBody": {
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/BaseString",
+							"type": "string",
+							"minLength": 10
+						}
+					}
+				}
+			}
+		},
+		"responses": {
+			"NullableBody": {
+				"description": "Nullable response",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/BaseString",
+							"nullable": true
+						}
+					}
+				}
+			}
+		}
+	}
+}

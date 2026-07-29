@@ -1,0 +1,46 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Response header references",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/message": {
+			"get": {
+				"tags": ["responses"],
+				"operationId": "responseWithHeader",
+				"responses": {
+					"200": {
+						"$ref": "#/components/responses/Success"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"headers": {
+			"RequestId": {
+				"schema": {
+					"type": "string"
+				}
+			}
+		},
+		"responses": {
+			"Success": {
+				"description": "Success",
+				"headers": {
+					"X-Request-Id": {
+						"$ref": "#/components/headers/RequestId"
+					}
+				},
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}

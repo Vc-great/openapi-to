@@ -21,8 +21,13 @@ export function buildJsonResponseTypes(
 ): StatementStructures[] {
 	const responseName = getResponseSuccessName(operation);
 
+	const documentedStatusCodes = Object.keys(
+		operation.accessor.operation.schema.responses ?? {},
+	);
 	const allStatusCodes =
-		operation.accessor.operation.getResponseStatusCodes?.() ?? [];
+		documentedStatusCodes.length > 0
+			? documentedStatusCodes
+			: (operation.accessor.operation.getResponseStatusCodes?.() ?? []);
 	const { success: successCodes, error: errorCodes } =
 		classifyResponseStatusCodes(allStatusCodes);
 
@@ -30,7 +35,12 @@ export function buildJsonResponseTypes(
 		...successCodes,
 		...errorCodes,
 	].map((code) => {
-		const rawResponse = operation.accessor.operation.schema.responses?.[code];
+		const sourceCode =
+			allStatusCodes.find(
+				(status) => String(status).toLowerCase() === code.toLowerCase(),
+			) ?? code;
+		const rawResponse =
+			operation.accessor.operation.schema.responses?.[sourceCode];
 		const responseRef =
 			rawResponse &&
 			typeof rawResponse === "object" &&
@@ -46,10 +56,11 @@ export function buildJsonResponseTypes(
 				? Object.values(rawResponse.content)[0]
 				: undefined;
 		const converted =
-			operation.accessor.operation.getResponseAsJSONSchema?.(code)?.[0] ??
+			operation.accessor.operation.getResponseAsJSONSchema?.(sourceCode)?.[0] ??
 			undefined;
 		const hasRawSchema =
 			typeof rawMedia === "object" && rawMedia !== null && "schema" in rawMedia;
+		const hasRawMedia = typeof rawMedia === "object" && rawMedia !== null;
 		return {
 			code,
 			jsonSchema: responseRef
@@ -59,7 +70,7 @@ export function buildJsonResponseTypes(
 						schema: { $ref: responseRef },
 						type: "object",
 					}
-				: hasRawSchema
+				: hasRawMedia
 					? {
 							description:
 								(rawResponse &&
@@ -69,7 +80,7 @@ export function buildJsonResponseTypes(
 								converted?.description ||
 								"",
 							label: converted?.label ?? code,
-							schema: rawMedia.schema,
+							schema: hasRawSchema ? rawMedia.schema : true,
 							type: converted?.type ?? "object",
 						}
 					: converted,

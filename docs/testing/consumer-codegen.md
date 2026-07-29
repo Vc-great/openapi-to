@@ -20,6 +20,21 @@ required/optional/nullable fields, RFC3339 offsets, numeric constraints, enums,
 arrays, records, additional properties, unions, intersections, and nested
 schemas. Escaped property names are covered by the plugin's focused generator
 and runtime tests.
+
+Six focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
+remaining edge cases reviewable: referenced optional/required/path parameters
+and boolean schemas; concrete plus `1XX`–`5XX` wildcard responses; operation
+and component Media Type Objects without `schema`; a referenced no-content
+component response; a response header reference isolated from its body schema;
+and schema `$ref` siblings at operation and component entry points. The
+wildcard fixture is compiled with both Zod and TypeScript response generation.
+The empty-media fixture runs all three formal plugins and statically rejects
+`undefined.parse(` in request services. Runtime checks prove optional query,
+required path/query, `schema:false`, wildcard aggregates, no-content,
+`z.unknown()` media, response-body/header isolation, nullable refs, and sibling
+`minLength`. Focused plugin tests also lock the established first-declared
+selection when a request or response advertises multiple media types.
+
 The aggregate package supplies `pluginTSType`, `pluginZod`, and
 `pluginTSRequest`; the generated TypeScript and a consumer request stub are
 then compiled in strict mode with `skipLibCheck: false`. A separate runtime

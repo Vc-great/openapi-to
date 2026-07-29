@@ -21,9 +21,10 @@ export function buildComponentsResponse(
 
 	if (response && "content" in response && response.content) {
 		const responseObject = head(values(response.content));
-		if (!responseObject) {
-			return;
+		if (responseObject) {
+			return componentResponseTemplate(responseObject, exportName, options);
 		}
-		return componentResponseTemplate(responseObject, exportName, options);
 	}
+
+	return createVariable(exportName, "z.undefined()", []);
 }

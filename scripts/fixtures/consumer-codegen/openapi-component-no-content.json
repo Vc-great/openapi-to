@@ -1,0 +1,40 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "No-content component response",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/users": {
+			"delete": {
+				"tags": ["responses"],
+				"operationId": "deleteUser",
+				"responses": {
+					"204": {
+						"$ref": "#/components/responses/NoContent"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"responses": {
+			"NoContent": {
+				"description": "No content",
+				"headers": {
+					"X-Request-Id": {
+						"$ref": "#/components/headers/RequestId"
+					}
+				},
+				"links": {}
+			}
+		},
+		"headers": {
+			"RequestId": {
+				"schema": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

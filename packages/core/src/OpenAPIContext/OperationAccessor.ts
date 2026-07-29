@@ -1,10 +1,4 @@
-import {
-	map as _map,
-	camelCase,
-	filter,
-	head,
-	some,
-} from "lodash-es";
+import { map as _map, camelCase, filter, head, some } from "lodash-es";
 
 import type { Operation } from "oas/operation";
 import { findSchemaDefinition } from "oas/utils";
@@ -199,11 +193,20 @@ export class OperationAccessor {
 	}
 
 	getResponseContentType(): string[] {
-		const successCode = selectSuccessResponseStatusCode(
-			this.operation.getResponseStatusCodes(),
+		const documentedStatusCodes = Object.keys(
+			this.operation.schema?.responses ?? {},
 		);
+		const statusCodes =
+			documentedStatusCodes.length > 0
+				? documentedStatusCodes
+				: this.operation.getResponseStatusCodes();
+		const successCode = selectSuccessResponseStatusCode(statusCodes);
 		if (!successCode) return [];
-		const successResponse = this.operation.getResponseByStatusCode(successCode);
+		const sourceCode =
+			statusCodes.find(
+				(status) => String(status).toLowerCase() === successCode.toLowerCase(),
+			) ?? successCode;
+		const successResponse = this.operation.getResponseByStatusCode(sourceCode);
 		if (
 			typeof successResponse !== "boolean" &&
 			successResponse &&

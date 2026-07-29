@@ -18,6 +18,18 @@ See the single [capability matrix](docs/capability-matrix.md) for exact package,
 - Provides stable `validate`, `inspect`, `diff`, and `generate` CLI contracts with deterministic JSON output and centralized exit codes.
 - Provides a local stdio MCP adapter with default read-only modes and operator-gated Prepare/Apply writes.
 
+Zod generation is Zod 4-only and remains a `Partial` capability. Referenced
+query parameters preserve optionality, path parameters remain required, and
+OpenAPI 3.1 boolean parameter schemas keep their accept-all/reject-all
+semantics. Concrete and wildcard responses are emitted deterministically:
+`2xx`/`2XX` are successful, `1xx`/`1XX` and `3xx`–`5xx` wildcards enter the
+non-success aggregate, and `default` retains its documented fallback policy.
+An existing Media Type Object without `schema` maps to `z.unknown()`; a
+documented response without content maps to `z.undefined()`. Response headers
+are not currently validated by the Zod plugin, so header references are kept
+out of response-body imports. Supported validation siblings beside a schema
+`$ref` use the same intersection policy in OpenAPI 3.0 and 3.1.
+
 # Quick Start
 ## Install
 ```shell

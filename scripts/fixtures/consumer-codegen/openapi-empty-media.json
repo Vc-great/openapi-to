@@ -1,0 +1,72 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Empty media types",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/inline": {
+			"post": {
+				"tags": ["media"],
+				"operationId": "inlineAnyBody",
+				"requestBody": {
+					"content": {
+						"application/json": {}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Any JSON response",
+						"content": {
+							"application/json": {}
+						}
+					}
+				}
+			}
+		},
+		"/component": {
+			"post": {
+				"tags": ["media"],
+				"operationId": "componentAnyBody",
+				"requestBody": {
+					"$ref": "#/components/requestBodies/AnyBody"
+				},
+				"responses": {
+					"204": {
+						"description": "Done"
+					}
+				}
+			}
+		},
+		"/never": {
+			"post": {
+				"tags": ["media"],
+				"operationId": "neverBody",
+				"requestBody": {
+					"$ref": "#/components/requestBodies/NeverBody"
+				},
+				"responses": {
+					"204": {
+						"description": "Done"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"requestBodies": {
+			"AnyBody": {
+				"content": {
+					"application/json": {}
+				}
+			},
+			"NeverBody": {
+				"content": {
+					"application/json": {
+						"schema": false
+					}
+				}
+			}
+		}
+	}
+}
