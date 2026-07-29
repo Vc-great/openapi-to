@@ -771,9 +771,9 @@ async function assertContractOutput(consumerRoot) {
 		"Parameter content did not use the first declared Media Type semantics.",
 	);
 	assert(
-		/filter: \{/.test(contentType) &&
+			/filter: \{/.test(contentType) &&
 			/"X-Anything": unknown/.test(contentType) &&
-			/deny: unknown/.test(contentType) &&
+			/deny: never/.test(contentType) &&
 			/multi: number/.test(contentType),
 		"TypeScript Parameter content fell back to string or chose another media type.",
 	);
@@ -895,6 +895,132 @@ async function assertContractOutput(consumerRoot) {
 			);
 		}
 	}
+}
+
+async function assertComponentSchemaOutput(consumerRoot) {
+	const directories = [
+		"generated-component-semantics",
+		"generated-component-additional",
+		"generated-component-recursive",
+		"generated-component-ref-siblings",
+	];
+	for (const directory of directories) {
+		const root = join(consumerRoot, directory);
+		const files = (await filesRecursively(root)).map((path) =>
+			relative(root, path).split(sep).join("/"),
+		);
+		await assertRelativeImportsResolve(root, files);
+		for (const relativePath of files.filter(
+			(path) => path.startsWith("types/models/") && path.endsWith(".model.ts"),
+		)) {
+			const source = await readFile(join(root, relativePath), "utf8");
+			assert(
+				source.trim().length > 0 &&
+					/\bexport\s+(?:type|interface)\s+[A-Za-z_$][\w$]*/.test(source),
+				`${directory}/${relativePath} is an empty component file or lacks a named export.`,
+			);
+			const ownSpecifier = `./${basename(relativePath, ".ts")}`;
+			assert(
+				!source.includes(`from "${ownSpecifier}"`) &&
+					!source.includes(`from "${ownSpecifier}.ts"`),
+				`${directory}/${relativePath} imports itself.`,
+			);
+		}
+	}
+
+	const readGenerated = (path) => readFile(join(consumerRoot, path), "utf8");
+	const [
+		userId,
+		tags,
+		anything,
+		impossible,
+		nullableUser,
+		extended,
+		numberMap,
+		mixedFixed,
+		booleanProperties,
+		node,
+		status,
+		fixedId,
+	] = await Promise.all([
+		readGenerated(
+			"generated-component-semantics/types/models/user-id.model.ts",
+		),
+		readGenerated("generated-component-semantics/types/models/tags.model.ts"),
+		readGenerated(
+			"generated-component-semantics/types/models/anything.model.ts",
+		),
+		readGenerated(
+			"generated-component-semantics/types/models/impossible.model.ts",
+		),
+		readGenerated(
+			"generated-component-semantics/types/models/nullable-user.model.ts",
+		),
+		readGenerated(
+			"generated-component-semantics/types/models/extended.model.ts",
+		),
+		readGenerated(
+			"generated-component-additional/types/models/number-map.model.ts",
+		),
+		readGenerated(
+			"generated-component-additional/types/models/mixed-fixed.model.ts",
+		),
+		readGenerated(
+			"generated-component-additional/types/models/boolean-properties.model.ts",
+		),
+		readGenerated(
+			"generated-component-recursive/types/models/node.model.ts",
+		),
+		readGenerated(
+			"generated-component-ref-siblings/types/models/status.model.ts",
+		),
+		readGenerated(
+			"generated-component-ref-siblings/types/models/fixed-id.model.ts",
+		),
+	]);
+	assert(
+		userId.includes("export type UserIdModel = string") &&
+			tags.includes("export type TagsModel = Array<string>") &&
+			anything.includes("export type AnythingModel = unknown") &&
+			impossible.includes("export type ImpossibleModel = never"),
+		"Primitive, array, or boolean component aliases are incomplete.",
+	);
+	assert(
+		/export type NullableUserModel = \{[\s\S]*\} \| null/.test(nullableUser),
+		"Nullable component object was rendered as a non-nullable interface.",
+	);
+	assert(
+		extended.includes("BaseModel & ExtraModel"),
+		"Component $ref composition siblings were discarded.",
+	);
+	assert(
+		numberMap.includes("[key: string]: number") &&
+			!numberMap.includes("Record<string, number>"),
+		"additionalProperties wrapped the index signature value in Record.",
+	);
+	assert(
+		mixedFixed.includes("[key: string]: number | string | undefined"),
+		"Fixed properties were not made compatible with the index signature.",
+	);
+	assert(
+		booleanProperties.includes("anything: unknown") &&
+			booleanProperties.includes("forbidden: never") &&
+			booleanProperties.includes("optionalAnything?: unknown") &&
+			booleanProperties.includes("optionalForbidden?: never"),
+		"Boolean properties were dropped or mapped inconsistently.",
+	);
+	assert(
+		!node.includes('from "./node.model"') &&
+			node.includes('from "./external.model"') &&
+			node.includes("child?: NodeModel") &&
+			node.includes("Array<NodeModel>"),
+		"Recursive component imports or local recursive references are invalid.",
+	);
+	assert(
+		status.includes("BaseStatusModel & StatusEnumValue") &&
+			fixedId.includes('UserIdModel & "fixed"'),
+		"$ref + enum/const component siblings are incomplete.",
+	);
 }
 
 async function assertSemanticOutput(outputRoot, consumerRoot, generatedFiles) {
@@ -1093,9 +1219,13 @@ async function createConsumerFiles(
 		"openapi-parameter-content.json",
 		"openapi-ts-ref-siblings.json",
 		"openapi-ref-sibling-imports.json",
-		"openapi-response-object-semantics.json",
-		"openapi-component-parameter-refs.json",
-	]) {
+			"openapi-response-object-semantics.json",
+			"openapi-component-parameter-refs.json",
+			"openapi-component-schema-semantics.json",
+			"openapi-additional-properties.json",
+			"openapi-recursive-component-schema.json",
+			"openapi-ref-enum-const-siblings.json",
+		]) {
 		await copyFile(
 			join(
 				repositoryRoot,
@@ -1686,9 +1816,43 @@ export default defineConfig({
   ],
 });
 `,
-	);
-	await writeFile(
-		join(consumerRoot, "request.ts"),
+		);
+		await writeFile(
+			join(consumerRoot, "openapi.component-schemas.config.ts"),
+			`import { defineConfig, pluginTSType, pluginZod } from "openapi-to";
+
+export default defineConfig({
+  servers: [
+    {
+      name: "componentSemantics",
+      input: { path: "./openapi-component-schema-semantics.json" },
+      output: { base: "workspace", dir: "generated-component-semantics", clean: true },
+    },
+    {
+      name: "additionalProperties",
+      input: { path: "./openapi-additional-properties.json" },
+      output: { base: "workspace", dir: "generated-component-additional", clean: true },
+    },
+    {
+      name: "recursiveComponents",
+      input: { path: "./openapi-recursive-component-schema.json" },
+      output: { base: "workspace", dir: "generated-component-recursive", clean: true },
+    },
+    {
+      name: "refEnumConstSiblings",
+      input: { path: "./openapi-ref-enum-const-siblings.json" },
+      output: { base: "workspace", dir: "generated-component-ref-siblings", clean: true },
+    },
+  ],
+  plugins: [
+    pluginZod({ importWithExtension: false }),
+    pluginTSType({ importWithExtension: false }),
+  ],
+});
+`,
+		);
+		await writeFile(
+			join(consumerRoot, "request.ts"),
 		`export interface RequestOptions {
   method?: string;
   url?: string;
@@ -1719,6 +1883,19 @@ import type { NullableBodyMutationRequest } from "./generated-contract-siblings/
 import type { RequestBodiesNullableBodyModel } from "./generated-contract-siblings/types/requestBodies/nullable-body.model.ts";
 import type { DeepOperationMutationRequest } from "./generated-contract-ref-imports/imports/deep-operation.types.ts";
 import type { NullableObjectResponse200 } from "./generated-contract-response-semantics/responses/nullable-object.types.ts";
+import type { UserIdModel } from "./generated-component-semantics/types/models/user-id.model.ts";
+import type { TagsModel } from "./generated-component-semantics/types/models/tags.model.ts";
+import type { NullableUserModel } from "./generated-component-semantics/types/models/nullable-user.model.ts";
+import type { AnythingModel } from "./generated-component-semantics/types/models/anything.model.ts";
+import type { ImpossibleModel } from "./generated-component-semantics/types/models/impossible.model.ts";
+import type { NumberMapModel } from "./generated-component-additional/types/models/number-map.model.ts";
+import type { ArrayMapModel } from "./generated-component-additional/types/models/array-map.model.ts";
+import type { TagMapModel } from "./generated-component-additional/types/models/tag-map.model.ts";
+import type { MixedFixedModel } from "./generated-component-additional/types/models/mixed-fixed.model.ts";
+import type { BooleanPropertiesModel } from "./generated-component-additional/types/models/boolean-properties.model.ts";
+import type { NodeModel } from "./generated-component-recursive/types/models/node.model.ts";
+import type { StatusModel } from "./generated-component-ref-siblings/types/models/status.model.ts";
+import type { FixedIdModel } from "./generated-component-ref-siblings/types/models/fixed-id.model.ts";
 
 const created = await createWidgetService({
   name: "desk",
@@ -1760,6 +1937,28 @@ const deepIntersection: DeepOperationMutationRequest = {
   child: { value: "child" },
 };
 const nullableObjectResponse: NullableObjectResponse200 = null;
+const componentId: UserIdModel = "id";
+const componentTags: TagsModel = ["one"];
+const nullableComponent: NullableUserModel = null;
+const anythingComponent: AnythingModel = { any: "value" };
+const numberMap: NumberMapModel = { one: 1 };
+const arrayMap: ArrayMapModel = { names: ["one"] };
+const tagMap: TagMapModel = { first: { label: "first" } };
+const mixedMap: MixedFixedModel = { name: "known", count: 1 };
+declare const booleanProperties: BooleanPropertiesModel;
+const anythingProperty: unknown = booleanProperties.anything;
+const forbiddenProperty: never = booleanProperties.forbidden;
+const recursiveNode: NodeModel = {
+  value: "root",
+  child: { value: "child" },
+  children: [{ value: "array child" }],
+  lookup: { nested: { value: "map child" } },
+  external: { id: "external" },
+};
+const statusSibling: StatusModel = "active";
+const fixedSibling: FixedIdModel = "fixed";
+type ImpossibleIsNever = ImpossibleModel extends never ? true : false;
+const impossibleIsNever: ImpossibleIsNever = true;
 // @ts-expect-error $ref + anyOf/allOf requires every intersected member
 const invalidDeepIntersection: DeepOperationMutationRequest = { base: "base" };
 // @ts-expect-error no-content members reject objects
@@ -1772,6 +1971,20 @@ void nullableOperationBody;
 void nullableComponentBody;
 void deepIntersection;
 void nullableObjectResponse;
+void componentId;
+void componentTags;
+void nullableComponent;
+void anythingComponent;
+void numberMap;
+void arrayMap;
+void tagMap;
+void mixedMap;
+void anythingProperty;
+void forbiddenProperty;
+void recursiveNode;
+void statusSibling;
+void fixedSibling;
+void impossibleIsNever;
 void invalidDeepIntersection;
 void invalidNoContent;
 	`,
@@ -1848,6 +2061,10 @@ import { semanticNeverResponseSchema200 } from "./generated-contract-response-se
 import { semanticNoContentResponseSchema204 } from "./generated-contract-response-semantics/responses/semantic-no-content.schema";
 import { semanticUnknownMediaResponseSchema200 } from "./generated-contract-response-semantics/responses/semantic-unknown-media.schema";
 import { ResponseNullableComponent } from "./generated-contract-response-semantics/zod/responses/nullable-component.schema";
+import { booleanPropertiesSchema } from "./generated-component-additional/zod/models/boolean-properties.schema";
+import { nodeSchema as componentNodeSchema } from "./generated-component-recursive/zod/models/node.schema";
+import { statusSchema } from "./generated-component-ref-siblings/zod/models/status.schema";
+import { fixedIdSchema } from "./generated-component-ref-siblings/zod/models/fixed-id.schema";
 
 type IsUnknown<T> = unknown extends T ? ([keyof T] extends [never] ? true : false) : false;
 type Expect<T extends true> = T;
@@ -1989,6 +2206,21 @@ if (semanticNeverResponseSchema200.safeParse("value").success) {
 }
 semanticNoContentResponseSchema204.parse(undefined);
 semanticUnknownMediaResponseSchema200.parse({ any: "value" });
+booleanPropertiesSchema.shape.anything.parse({ any: "value" });
+if (booleanPropertiesSchema.shape.forbidden.safeParse(undefined).success) {
+  throw new Error("boolean false property accepted a value");
+}
+componentNodeSchema.parse({
+  value: "root",
+  child: { value: "child" },
+  children: [{ value: "array child" }],
+  lookup: { nested: { value: "map child" } },
+  external: { id: "external" },
+});
+statusSchema.parse("active");
+if (statusSchema.safeParse("other").success) throw new Error("$ref + enum accepted an invalid value");
+fixedIdSchema.parse("fixed");
+if (fixedIdSchema.safeParse("other").success) throw new Error("$ref + const accepted an invalid value");
 console.log("zod4-runtime-parse:passed");
 `,
 	);
@@ -2015,6 +2247,7 @@ console.log("zod4-runtime-parse:passed");
 			"generated-ref-siblings/**/*.ts",
 			"generated-empty-media/**/*.ts",
 			"generated-contract-*/**/*.ts",
+			"generated-component-*/**/*.ts",
 			"request.ts",
 			"consumer-usage.ts",
 			"runtime-check.ts",
@@ -2042,6 +2275,7 @@ console.log("zod4-runtime-parse:passed");
 			"generated-ref-siblings/**/*.schema.ts",
 			"generated-empty-media/**/*.schema.ts",
 			"generated-contract-*/**/*.schema.ts",
+			"generated-component-*/**/*.schema.ts",
 			"runtime-check.ts",
 		],
 	});
@@ -2279,20 +2513,63 @@ export async function runConsumerCodegenScenario({
 		),
 		"cross-plugin contract check",
 	);
-	assert(
-		contractCheck.success === true &&
+		assert(
+			contractCheck.success === true &&
 			contractCheck.servers?.every(
 				(server) => server.manifest?.outdated === false,
 			),
-		"Cross-plugin contract output was not byte-stable.",
-	);
+			"Cross-plugin contract output was not byte-stable.",
+		);
+		const componentGeneration = parseJson(
+			runCommand(
+				"component schema contract generation",
+				cli,
+				[
+					"generate",
+					"--config",
+					"./openapi.component-schemas.config.ts",
+					"--json",
+				],
+				consumerRoot,
+			),
+			"component schema contract generation",
+		);
+		assert(
+			componentGeneration.success === true &&
+				componentGeneration.servers?.map((server) => server.name).join(",") ===
+					"componentSemantics,additionalProperties,recursiveComponents,refEnumConstSiblings",
+			"Component schema generation did not produce every fixture target.",
+		);
+		const componentCheck = parseJson(
+			runCommand(
+				"component schema contract check",
+				cli,
+				[
+					"generate",
+					"--config",
+					"./openapi.component-schemas.config.ts",
+					"--check",
+					"--json",
+				],
+				consumerRoot,
+			),
+			"component schema contract check",
+		);
+		assert(
+			componentCheck.success === true &&
+				componentCheck.servers?.every(
+					(server) => server.manifest?.outdated === false,
+				),
+			"Component schema output was not byte-stable.",
+		);
 	const generatedFiles = (await filesRecursively(outputRoot)).map((path) =>
 		relative(outputRoot, path).split(sep).join("/"),
 	);
 	assertGeneratedOutput(generatedFiles);
 	await assertSemanticOutput(outputRoot, consumerRoot, generatedFiles);
 	await assertEdgeCaseOutput(consumerRoot);
-	await assertContractOutput(consumerRoot);
+		await assertContractOutput(consumerRoot);
+		await assertComponentSchemaOutput(consumerRoot);
 	const ownershipPath = join(outputRoot, ".openapi-to-manifest.json");
 	const ownership = JSON.parse(await readFile(ownershipPath, "utf8"));
 	assert(

@@ -1,0 +1,93 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Reference enum and const siblings",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/status": {
+			"post": {
+				"tags": ["siblings"],
+				"operationId": "writeStatus",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/BaseStatus",
+								"enum": ["active", "disabled"]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Fixed identifier",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserId",
+									"const": "fixed"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"BaseStatus": {
+				"type": "string"
+			},
+			"UserId": {
+				"type": "string"
+			},
+			"Status": {
+				"$ref": "#/components/schemas/BaseStatus",
+				"enum": ["active", "disabled"]
+			},
+			"FixedId": {
+				"$ref": "#/components/schemas/UserId",
+				"const": "fixed"
+			}
+		},
+		"requestBodies": {
+			"StatusBody": {
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/BaseStatus",
+							"enum": ["active", "disabled"]
+						}
+					}
+				}
+			}
+		},
+		"responses": {
+			"StatusResponse": {
+				"description": "Status response",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/BaseStatus",
+							"enum": ["active", "disabled"]
+						}
+					}
+				}
+			},
+			"FixedResponse": {
+				"description": "Fixed response",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/UserId",
+							"const": "fixed"
+						}
+					}
+				}
+			}
+		}
+	}
+}

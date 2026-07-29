@@ -86,6 +86,7 @@ vi.mock('@/collect/collectEnumsFromDocument.ts', () => ({
   ]),
   collectEnumsFromComponentParameters: vi.fn(() => [{ name: 'ParamEnum', enumValue: 'Param' }]),
   collectEnumsFromComponentRequestBody: vi.fn(() => [{ name: 'BodyEnum', enumValue: 'Body' }]),
+  collectEnumsFromComponentResponse: vi.fn(() => [{ name: 'ResponseEnum', enumValue: 'Response' }]),
 }))
 
 vi.mock('@/collect/collectRefsFromDocument.ts', () => ({
@@ -368,7 +369,7 @@ describe('definePlugin', () => {
 
       // 验证收集了枚举
       const collectEnumsFromDocument = await import('@/collect/collectEnumsFromDocument.ts')
-      expect(collectEnumsFromDocument.collectEnumsFromComponentSchema).toHaveBeenCalled()
+      expect(collectEnumsFromDocument.collectEnumsFromComponentResponse).toHaveBeenCalled()
 
       // 验证构建响应
       const buildComponentsResponse = await import('@/builds/components/buildComponentsResponse.ts')

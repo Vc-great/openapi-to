@@ -12,6 +12,66 @@ describe("schemaTemplate", () => {
 		expect(schemaTemplate(schema, "testProperty")).toBe("TestRefModel");
 	});
 
+	it("maps boolean schemas consistently", () => {
+		expect(schemaTemplate(true, "anything")).toBe("unknown");
+		expect(schemaTemplate(false, "impossible")).toBe("never");
+	});
+
+	it("preserves scalar const, including beside $ref", () => {
+		expect(schemaTemplate({ const: "fixed" }, "fixed")).toBe('"fixed"');
+		expect(
+			schemaTemplate(
+				{
+					$ref: "#/components/schemas/UserId",
+					const: "fixed",
+				},
+				"fixedId",
+			),
+		).toBe('UserIdModel & "fixed"');
+		expect(
+			schemaTemplate(
+				{
+					$ref: "#/components/schemas/Count",
+					const: 1,
+				},
+				"fixedCount",
+			),
+		).toBe("CountModel & 1");
+	});
+
+	it("reports unsupported object and array const values explicitly", () => {
+		expect(() =>
+			schemaTemplate({ const: { id: "fixed" } }, "fixedObject"),
+		).toThrow(
+			"TypeScript schema const currently supports only JSON scalar values.",
+		);
+		expect(() => schemaTemplate({ const: ["fixed"] }, "fixedArray")).toThrow(
+			"TypeScript schema const currently supports only JSON scalar values.",
+		);
+	});
+
+	it("uses the declared enum value name for an enum sibling beside $ref", () => {
+		expect(
+			schemaTemplate(
+				{
+					$ref: "#/components/schemas/BaseStatus",
+					enum: ["active", "disabled"],
+				},
+				"status",
+			),
+		).toBe("BaseStatusModel & StatusEnumValue");
+		expect(
+			schemaTemplate(
+				{
+					$ref: "#/components/schemas/BaseStatus",
+					enum: ["active", "disabled"],
+				},
+				"status",
+				"Example",
+			),
+		).toBe("BaseStatusModel & ExampleStatusEnumValue");
+	});
+
 	it("preserves nullable and composition siblings beside $ref", () => {
 		expect(
 			schemaTemplate(
@@ -111,6 +171,20 @@ describe("schemaTemplate", () => {
 		expect(schemaTemplate(schema, "testProperty")).toBe(
 			"Record<string, unknown>",
 		);
+	});
+
+	it("renders schema-valued additionalProperties as the index value", () => {
+		expect(
+			schemaTemplate(
+				{
+					type: "object",
+					additionalProperties: { type: "number" },
+				},
+				"values",
+			),
+		).toBe(`{
+    [key: string]: number;
+}`);
 	});
 
 	it('should return "unknown" for unsupported types', () => {

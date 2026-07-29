@@ -7,7 +7,6 @@ import type { HttpMethods, TagObject } from "oas/types";
 
 export type { HttpMethods } from "oas/types";
 
-import type { SchemaObject } from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { OperationAccessor } from "./OperationAccessor.ts";
 
@@ -33,7 +32,7 @@ export type Schema =
 	| JSONSchema6Definition
 	| JSONSchema7Definition;
 
-export type ComponentsSchema = SchemaObject | OpenAPIV3.ReferenceObject;
+export type ComponentsSchema = Schema;
 
 export type ReferenceObject =
 	| OpenAPIV3.ReferenceObject

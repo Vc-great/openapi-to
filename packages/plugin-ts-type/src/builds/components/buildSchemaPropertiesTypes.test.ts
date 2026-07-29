@@ -1,123 +1,116 @@
-import * as jsDocTemplateModule from "@/templates/jsDocTemplateFromSchema";
-import * as schemaTemplateModule from "@/templates/schemaTemplate";
 import type { SchemaObject } from "oas/types";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildSchemaPropertiesTypes } from "./buildSchemaPropertiesTypes";
-
-vi.mock("@/templates/schemaTemplate.ts");
-vi.mock("@/templates/jsDocTemplateFromSchema.ts");
+import { describe, expect, it } from "vitest";
+import { buildSchemaPropertiesTypes } from "./buildSchemaPropertiesTypes.ts";
 
 describe("buildSchemaPropertiesTypes", () => {
-	beforeEach(() => {
-		vi.resetAllMocks();
-		vi.mocked(schemaTemplateModule.schemaTemplate).mockImplementation((schema) => {
-			if (typeof schema === "object" && schema !== null) {
-				if ("$ref" in schema && typeof schema.$ref === "string") {
-					return `${schema.$ref.split("/").at(-1)}Model`;
-				}
-				if ("type" in schema && typeof schema.type === "string")
-					return schema.type;
-			}
-			return "unknown";
-		});
-		vi.mocked(jsDocTemplateModule.jsDocTemplateFromSchema).mockReturnValue([
-			{ description: "jsdoc" },
-		]);
-	});
-
-	it("should return undefined when no properties are defined", () => {
+	it("returns undefined when no properties or index signature are defined", () => {
 		expect(
 			buildSchemaPropertiesTypes({} as SchemaObject, "TestModel"),
 		).toBeUndefined();
 	});
 
-	it("should generate property signatures for each property", () => {
-		const schema: SchemaObject = {
-			properties: {
-				name: { type: "string", description: "User name" },
-				age: { type: "number", description: "User age" },
+	it("preserves required and optional properties", () => {
+		const result = buildSchemaPropertiesTypes(
+			{
+				type: "object",
+				required: ["id"],
+				properties: {
+					id: { type: "string" },
+					name: { type: "string" },
+				},
 			},
-		};
+			"TestModel",
+		);
 
-		const result = buildSchemaPropertiesTypes(schema, "TestModel");
-		expect(result).toHaveLength(2);
-		expect(result?.[0]).toMatchObject({
-			name: "name?",
-			type: "string",
-			docs: [{ description: "jsdoc" }],
+		expect(result).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: "id", type: "string" }),
+				expect.objectContaining({ name: "name?", type: "string" }),
+			]),
+		);
+	});
+
+	it("preserves true and false boolean properties with optionality", () => {
+		const result = buildSchemaPropertiesTypes(
+			{
+				type: "object",
+				required: ["anything", "forbidden"],
+				properties: {
+					anything: true,
+					forbidden: false,
+					optionalAnything: true,
+					optionalForbidden: false,
+					name: { type: "string" },
+				},
+			} as unknown as SchemaObject,
+			"Example",
+		);
+
+		expect(result).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: "anything", type: "unknown" }),
+				expect.objectContaining({ name: "forbidden", type: "never" }),
+				expect.objectContaining({
+					name: "optionalAnything?",
+					type: "unknown",
+				}),
+				expect.objectContaining({
+					name: "optionalForbidden?",
+					type: "never",
+				}),
+				expect.objectContaining({ name: "name?", type: "string" }),
+			]),
+		);
+	});
+
+	it.each([
+		[true, "unknown"],
+		[{ type: "number" }, "number"],
+		[{ $ref: "#/components/schemas/Tag" }, "TagModel"],
+		[{ type: "array", items: { type: "string" } }, "Array<string>"],
+	] as const)(
+		"uses the additionalProperties schema as the index value for %j",
+		(additionalProperties, expected) => {
+			const result = buildSchemaPropertiesTypes(
+				{
+					type: "object",
+					additionalProperties,
+				} as SchemaObject,
+				"Example",
+			);
+
+			expect(result).toEqual([
+				expect.objectContaining({ name: "[key: string]", type: expected }),
+			]);
+		},
+	);
+
+	it("does not emit an index signature for additionalProperties=false", () => {
+		expect(
+			buildSchemaPropertiesTypes(
+				{ type: "object", additionalProperties: false },
+				"Example",
+			),
+		).toBeUndefined();
+	});
+
+	it("widens a schema-valued index signature for incompatible fixed properties", () => {
+		const result = buildSchemaPropertiesTypes(
+			{
+				type: "object",
+				required: ["count"],
+				properties: {
+					count: { type: "number" },
+					name: { type: "string" },
+				},
+				additionalProperties: { type: "number" },
+			},
+			"Example",
+		);
+
+		expect(result?.at(-1)).toMatchObject({
+			name: "[key: string]",
+			type: "number | string | undefined",
 		});
-		expect(result?.[1]).toMatchObject({
-			name: "age?",
-			type: "number",
-			docs: [{ description: "jsdoc" }],
-		});
-	});
-
-	it("should mark required properties correctly", () => {
-		const schema: SchemaObject = {
-			properties: {
-				id: { type: "string" },
-				name: { type: "string" },
-			},
-			required: ["id"],
-		};
-
-		const result = buildSchemaPropertiesTypes(schema, "TestModel");
-		expect(result?.[0]?.name).toBe("id");
-		expect(result?.[1]?.name).toBe("name?");
-	});
-
-	it("should handle referenced properties", () => {
-		const schema: SchemaObject = {
-			properties: {
-				user: { $ref: "#/components/schemas/User" },
-			},
-		};
-
-		const result = buildSchemaPropertiesTypes(schema, "TestModel");
-		expect(result?.[0]?.type).toBe("UserModel");
-		expect(result?.[0]?.name).toBe("user?");
-	});
-
-	it("should add index signature for additionalProperties=true", () => {
-		const schema: SchemaObject = {
-			properties: {
-				name: { type: "string" },
-			},
-			additionalProperties: true,
-		};
-
-		const result = buildSchemaPropertiesTypes(schema, "TestModel");
-		expect(result).toHaveLength(2);
-		expect(result?.[1]?.name).toBe("[key: string]");
-		expect(result?.[1]?.type).toBe("Record<string, unknown>");
-	});
-
-	it("should add index signature for additionalProperties schema object", () => {
-		const schema: SchemaObject = {
-			properties: {
-				name: { type: "string" },
-			},
-			additionalProperties: { type: "number" },
-		};
-
-		const result = buildSchemaPropertiesTypes(schema, "TestModel");
-		expect(result).toHaveLength(2);
-		expect(result?.[1]?.name).toBe("[key: string]");
-		expect(result?.[1]?.type).toBe("Record<string, number>");
-	});
-
-	it("should add index signature for referenced additionalProperties", () => {
-		const schema: SchemaObject = {
-			properties: {
-				name: { type: "string" },
-			},
-			additionalProperties: { $ref: "#/components/schemas/Tag" },
-		};
-
-		const result = buildSchemaPropertiesTypes(schema, "TestModel");
-		expect(result).toHaveLength(2);
-		expect(result?.[1]?.name).toBe("[key: string]");
-		expect(result?.[1]?.type).toBe("Record<string, TagModel>");
 	});
 });

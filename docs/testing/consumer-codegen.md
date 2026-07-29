@@ -21,7 +21,7 @@ arrays, records, additional properties, unions, intersections, and nested
 schemas. Escaped property names are covered by the plugin's focused generator
 and runtime tests.
 
-Thirteen focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
+Seventeen focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
 remaining edge cases reviewable: referenced optional/required/path parameters
 and boolean schemas; concrete plus `1XX`–`5XX` wildcard responses; operation
 and component Media Type Objects without `schema`; a referenced no-content
@@ -36,6 +36,17 @@ required path/query, `schema:false`, wildcard aggregates, no-content,
 `z.unknown()` media, response-body/header isolation, nullable refs, and sibling
 `minLength`. Focused plugin tests also lock the established first-declared
 selection when a request or response advertises multiple media types.
+
+Four component-schema fixtures run TypeScript and Zod together for primitive,
+array, enum, composition, nullable, type-array, and boolean components;
+schema-valued `additionalProperties` with compatible and incompatible fixed
+properties; direct/array/map recursion with an external reference; and
+`$ref + enum/const` across component and operation entry points. The smoke
+rejects empty component files, missing named exports, unresolved named imports,
+self-imports, undeclared enum value types, and unstable second-generation
+manifests. Strict assignments exercise the generated index signatures,
+boolean-property types, recursive types, and scalar literal intersections;
+Zod 4 executes the matching boolean, recursive, enum, and const schemas.
 
 Seven cross-plugin fixtures additionally run `pluginTSType`, `pluginZod`, and
 `pluginTSRequest` together for operation header/cookie parameters, mixed

@@ -1,12 +1,10 @@
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 
-import { isArray, isBoolean, isString, map } from "lodash-es";
+import { isArray, isBoolean, isString } from "lodash-es";
 
 import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
 import type { SchemaObjectAndJSONSchema } from "@/types.ts";
-import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
 import type { SchemaObject } from "oas/types";
-import { isRef } from "oas/types";
 import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
 
 type OptionalKindOfPropertySignatureStructure =
@@ -19,13 +17,8 @@ export function buildSchemaPropertiesTypes(
 	const properties = baseSchema.properties ?? {};
 	const requiredList = resolveRequiredList(baseSchema.required);
 
-	const typeStatements: OptionalKindOfPropertySignatureStructure[] = map(
-		properties,
-		(schema, propertyName) => {
-			if (isBoolean(schema)) {
-				return;
-			}
-
+	const typeStatements: OptionalKindOfPropertySignatureStructure[] =
+		Object.entries(properties).map(([propertyName, schema]) => {
 			const isRequired = requiredList.includes(propertyName);
 			const typeString = schemaTemplate(schema, propertyName, schemaModelName);
 			const propertyKey = propertyName + (isRequired ? "" : "?");
@@ -34,17 +27,25 @@ export function buildSchemaPropertiesTypes(
 				name: propertyKey,
 				type: typeString,
 				docs: jsDocTemplateFromSchema(
-					"description" in schema ? schema.description : undefined,
+					typeof schema === "object" &&
+						schema !== null &&
+						"description" in schema
+						? schema.description
+						: undefined,
 					schema,
 					propertyName,
 				),
 			};
-		},
-	).filter(Boolean);
+		});
 
-	// 支持 additionalProperties: true | SchemaObject
-	if (baseSchema.additionalProperties) {
-		const additionalPropType = resolveAdditionalPropertiesType(baseSchema);
+	if (
+		baseSchema.additionalProperties !== undefined &&
+		baseSchema.additionalProperties !== false
+	) {
+		const additionalPropType = widenIndexSignatureForProperties(
+			resolveAdditionalPropertiesType(baseSchema),
+			typeStatements,
+		);
 		typeStatements.push({
 			name: "[key: string]",
 			type: additionalPropType,
@@ -65,18 +66,35 @@ function resolveRequiredList(required: unknown): string[] {
 function resolveAdditionalPropertiesType(
 	schema: SchemaObjectAndJSONSchema,
 ): string {
-	if (!("additionalProperties" in schema && schema.additionalProperties)) {
+	if (
+		!("additionalProperties" in schema) ||
+		schema.additionalProperties === undefined ||
+		schema.additionalProperties === false
+	) {
 		throw new Error("additionalProperties is undefined");
 	}
 	const additional = schema.additionalProperties;
 	if (isBoolean(additional)) {
-		return "Record<string, unknown>";
+		return "unknown";
 	}
 
-	if (isRef(additional)) {
-		return `Record<string, ${getUpperFirstRefAlias(additional.$ref)}>`;
+	return schemaTemplate(additional, "");
+}
+
+function widenIndexSignatureForProperties(
+	additionalType: string,
+	properties: OptionalKindOfPropertySignatureStructure[],
+): string {
+	if (additionalType === "unknown" || properties.length === 0) {
+		return additionalType;
 	}
 
-	//todo
-	return `Record<string, ${schemaTemplate(additional, "")}>`;
+	const members = [additionalType];
+	for (const property of properties) {
+		if (typeof property.type === "string") members.push(property.type);
+		if (typeof property.name === "string" && property.name.endsWith("?")) {
+			members.push("undefined");
+		}
+	}
+	return [...new Set(members)].join(" | ");
 }

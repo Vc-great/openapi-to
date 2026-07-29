@@ -5,7 +5,7 @@ import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
 import { generateObjectType } from "@openapi-to/core/utils";
 
 import type { Schema } from "@openapi-to/core";
-import { isBoolean, isUndefined, upperFirst } from "lodash-es";
+import { isUndefined, upperFirst } from "lodash-es";
 import { type SchemaObject, isRef } from "oas/types";
 
 export function schemaTemplate(
@@ -13,9 +13,8 @@ export function schemaTemplate(
 	propertyName: string,
 	parentName?: string,
 ): string {
-	if (isBoolean(schema) || isUndefined(schema)) {
-		return "unknown";
-	}
+	if (schema === true || isUndefined(schema)) return "unknown";
+	if (schema === false) return "never";
 
 	const contextName = `${upperFirst(parentName)}${propertyName}`;
 	let baseType: string;
@@ -35,7 +34,7 @@ export function schemaTemplate(
 		const structuralSibling = renderStructuralSibling(
 			record,
 			propertyName,
-			contextName,
+			parentName ?? "",
 		);
 		if (structuralSibling) members.push(structuralSibling);
 
@@ -44,6 +43,8 @@ export function schemaTemplate(
 				members.length > 1 && member.includes(" | ") ? `(${member})` : member,
 			)
 			.join(" & ");
+	} else if ("const" in schema) {
+		baseType = renderConstType(schema.const);
 	} else if (schema.enum && schema.enum.length > 0) {
 		baseType = `${upperFirst(parentName)}${upperFirst(propertyName)}EnumValue`;
 	} else {
@@ -92,6 +93,7 @@ function renderStructuralSibling(
 		"items",
 		"additionalProperties",
 		"enum",
+		"const",
 	].some((key) => sibling[key] !== undefined);
 	if (!hasStructuralKeyword) return undefined;
 
@@ -145,9 +147,8 @@ export function resolveBaseType(
 	propertyName: string,
 	parentName: string,
 ): string {
-	if (isBoolean(schema)) {
-		return "unknown";
-	}
+	if (schema === true) return "unknown";
+	if (schema === false) return "never";
 	const type = "type" in schema ? schema.type : "";
 	if (Array.isArray(type)) {
 		return type
@@ -226,13 +227,30 @@ function resolveArrayType(
 
 // 对象类型
 function resolveObjectType(schema: Schema, parentName: string): string {
-	if (isBoolean(schema)) {
-		return "unknown";
-	}
-	if ("properties" in schema && schema.properties) {
+	if (schema === true) return "unknown";
+	if (schema === false) return "never";
+	if (
+		("properties" in schema && schema.properties) ||
+		("additionalProperties" in schema &&
+			schema.additionalProperties !== undefined)
+	) {
 		const properties =
 			buildSchemaPropertiesTypes(schema as SchemaObject, parentName) || [];
 		return generateObjectType(properties);
 	}
 	return "Record<string, unknown>";
+}
+
+function renderConstType(value: unknown): string {
+	if (
+		value === null ||
+		typeof value === "string" ||
+		typeof value === "number" ||
+		typeof value === "boolean"
+	) {
+		return JSON.stringify(value);
+	}
+	throw new Error(
+		"TypeScript schema const currently supports only JSON scalar values.",
+	);
 }

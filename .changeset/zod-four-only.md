@@ -43,3 +43,22 @@ through request/client configuration. Exact-one `oneOf`, dialect-specific
 response-header validation, intelligent multi-Media-Type selection, and
 independent request-client header/cookie parameters remain outside this
 change.
+
+TypeScript component schemas now use the common schema renderer unless the
+schema is a plain object that can be represented faithfully as an interface.
+Primitive, array, enum, composition, nullable, type-array, boolean, and
+`$ref`-sibling components always emit a real named export. Boolean `true` and
+`false` map to `unknown` and `never`, including required and optional
+properties. Schema-valued `additionalProperties` supplies the index-signature
+value directly and is widened with fixed-property types where TypeScript
+requires compatibility. Component imports are path-aware, deterministic, and
+exclude self-imports while retaining external recursive references.
+
+Enum collection now traverses validation siblings beside `$ref` without
+resolving the referenced target, so operation and component `$ref + enum`
+outputs import a declared enum value type. Scalar `$ref + const` values are
+rendered as literal intersections in TypeScript and matching intersections in
+Zod. Exact-one `oneOf`, dialect-specific `$ref` sibling rules, recursive
+`z.infer`, the complete int64 domain, leap seconds, response-header validation,
+intelligent multi-Media-Type selection, and independent request-client
+header/cookie parameters remain unchanged.

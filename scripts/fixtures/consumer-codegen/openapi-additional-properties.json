@@ -1,0 +1,68 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Additional properties semantics",
+		"version": "1.0.0"
+	},
+	"paths": {},
+	"components": {
+		"schemas": {
+			"Tag": {
+				"type": "object",
+				"required": ["label"],
+				"properties": { "label": { "type": "string" } }
+			},
+			"AnyMap": {
+				"type": "object",
+				"additionalProperties": true
+			},
+			"ClosedMap": {
+				"type": "object",
+				"additionalProperties": false
+			},
+			"NumberMap": {
+				"type": "object",
+				"additionalProperties": { "type": "number" }
+			},
+			"ArrayMap": {
+				"type": "object",
+				"additionalProperties": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			},
+			"NestedMap": {
+				"type": "object",
+				"additionalProperties": {
+					"type": "object",
+					"properties": { "enabled": { "type": "boolean" } }
+				}
+			},
+			"TagMap": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#/components/schemas/Tag" }
+			},
+			"CompatibleFixed": {
+				"type": "object",
+				"required": ["count"],
+				"properties": { "count": { "type": "number" } },
+				"additionalProperties": { "type": "number" }
+			},
+			"MixedFixed": {
+				"type": "object",
+				"properties": { "name": { "type": "string" } },
+				"additionalProperties": { "type": "number" }
+			},
+			"BooleanProperties": {
+				"type": "object",
+				"required": ["anything", "forbidden"],
+				"properties": {
+					"anything": true,
+					"forbidden": false,
+					"optionalAnything": true,
+					"optionalForbidden": false
+				}
+			}
+		}
+	}
+}
