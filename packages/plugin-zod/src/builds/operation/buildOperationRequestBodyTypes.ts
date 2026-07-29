@@ -1,5 +1,6 @@
 import { getRequestBodyTypeName } from "@/templates/operationTypeNameTemplate.ts";
 import { requestBodyTemplate } from "@/templates/requestBodyTemplate.ts";
+import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
 import type { OperationWrapper, ReferenceObject } from "@openapi-to/core";
 import { get, isArray, isBoolean } from "lodash-es";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
@@ -9,6 +10,7 @@ type MediaTypeObject = OpenAPIV3.MediaTypeObject | OpenAPIV3_1.MediaTypeObject;
 
 export function buildOperationRequestBodyTypes(
 	operation: OperationWrapper,
+	options: SchemaRenderOptions = {},
 ): VariableStatementStructure | undefined {
 	const bodyDataName = getRequestBodyTypeName(operation.accessor.operationName);
 
@@ -18,7 +20,7 @@ export function buildOperationRequestBodyTypes(
 	if (!bodySchema) {
 		return undefined;
 	}
-	return requestBodyTemplate(bodyDataName, bodySchema);
+	return requestBodyTemplate(bodyDataName, bodySchema, options);
 }
 
 // ---------------- 辅助函数 ----------------

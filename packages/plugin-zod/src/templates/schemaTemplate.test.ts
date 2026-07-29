@@ -16,8 +16,14 @@ describe("schemaTemplate Zod 4 output", () => {
 		[{ type: "string", format: "url" }, "z.url()"],
 		[{ type: "string", format: "uuid" }, "z.uuid()"],
 		[{ type: "string", format: "date" }, "z.iso.date()"],
-		[{ type: "string", format: "date-time" }, "z.iso.datetime()"],
-		[{ type: "string", format: "datetime" }, "z.iso.datetime()"],
+		[
+			{ type: "string", format: "date-time" },
+			"z.iso.datetime({ offset: true }).regex(/T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/)",
+		],
+		[
+			{ type: "string", format: "datetime" },
+			"z.iso.datetime({ offset: true }).regex(/T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/)",
+		],
 		[{ type: "string", format: "byte" }, "z.base64()"],
 		[{ type: "string", format: "binary" }, "z.string()"],
 	])("renders %j as %s", (schema, expected) => {
@@ -34,6 +40,135 @@ describe("schemaTemplate Zod 4 output", () => {
 				pattern: ".+@.+",
 			} as never),
 		).toBe('z.email().min(3).max(40).regex(new RegExp(".+@.+"))');
+	});
+
+	it("enforces the documented RFC3339 date-time profile", () => {
+		const schema = evaluate({ type: "string", format: "date-time" });
+		for (const value of [
+			"2026-07-28T12:30:00Z",
+			"2026-07-28T12:30:00.123Z",
+			"2026-07-28T12:30:00+08:00",
+			"2026-07-28T12:30:00-05:30",
+		]) {
+			expect(schema.safeParse(value).success, value).toBe(true);
+		}
+		for (const value of [
+			"2026-07-28T12:30Z",
+			"2026-07-28 12:30:00Z",
+			"2026-13-40T99:99:99Z",
+			"2026-07-28T12:30:00+24:00",
+		]) {
+			expect(schema.safeParse(value).success, value).toBe(false);
+		}
+	});
+
+	it("preserves boolean and empty JSON schemas", () => {
+		expect(schemaTemplate(true as never)).toBe("z.unknown()");
+		expect(schemaTemplate(false as never)).toBe("z.never()");
+		expect(schemaTemplate({} as never)).toBe("z.unknown()");
+		expect(evaluate(true).safeParse({ any: "value" }).success).toBe(true);
+		expect(evaluate({}).safeParse(null).success).toBe(true);
+		expect(evaluate(false).safeParse(undefined).success).toBe(false);
+		expect(
+			evaluate({ type: "array", items: false }).safeParse([]).success,
+		).toBe(true);
+		expect(
+			evaluate({ type: "array", items: false }).safeParse([1]).success,
+		).toBe(false);
+	});
+
+	it("enforces int32, safe integer, and password boundaries", () => {
+		const int32 = evaluate({ type: "integer", format: "int32" });
+		expect(int32.safeParse(-2147483648).success).toBe(true);
+		expect(int32.safeParse(2147483647).success).toBe(true);
+		expect(int32.safeParse(-2147483649).success).toBe(false);
+		expect(int32.safeParse(2147483648).success).toBe(false);
+		expect(evaluate({ type: "integer" }).safeParse(1.5).success).toBe(false);
+		expect(
+			evaluate({ type: "integer", format: "int64" }).safeParse(
+				Number.MAX_SAFE_INTEGER + 1,
+			).success,
+		).toBe(false);
+		expect(
+			evaluate({ type: "string", format: "password" }).safeParse("").success,
+		).toBe(true);
+		expect(
+			evaluate({
+				type: "string",
+				format: "password",
+				minLength: 1,
+			}).safeParse("").success,
+		).toBe(false);
+	});
+
+	it("combines validation-affecting sibling keywords", () => {
+		const impossibleEnum = evaluate({
+			type: "string",
+			enum: ["a"],
+			minLength: 2,
+		});
+		expect(impossibleEnum.safeParse("a").success).toBe(false);
+
+		const patternedEnum = evaluate({
+			enum: ["ab", "ac"],
+			pattern: "^ab$",
+		});
+		expect(patternedEnum.safeParse("ab").success).toBe(true);
+		expect(patternedEnum.safeParse("ac").success).toBe(false);
+
+		const constant = evaluate({ const: 1, type: "string" });
+		expect(constant.safeParse(1).success).toBe(false);
+		expect(
+			evaluate({
+				oneOf: [{ type: "string" }, { type: "number" }],
+				nullable: true,
+			}).safeParse(null).success,
+		).toBe(true);
+		expect(
+			evaluate({
+				type: ["string", "null"],
+				minLength: 2,
+			}).safeParse("a").success,
+		).toBe(false);
+
+		const refSiblingExpression = schemaTemplate({
+			$ref: "#/components/schemas/Base",
+			type: "string",
+			minLength: 2,
+		} as never);
+		expect(refSiblingExpression).toBe(
+			"z.intersection(baseSchema, z.string().min(2))",
+		);
+		const refSibling = Function(
+			"z",
+			"baseSchema",
+			`return (${refSiblingExpression});`,
+		)(z, z.string()) as z.ZodType;
+		expect(refSibling.safeParse("ab").success).toBe(true);
+		expect(refSibling.safeParse("a").success).toBe(false);
+	});
+
+	it("diagnoses allOf/additionalProperties sibling semantics it cannot express exactly", () => {
+		const diagnostics: string[] = [];
+		const expression = schemaTemplate(
+			{
+				allOf: [
+					{
+						type: "object",
+						properties: { value: { type: "string" } },
+					},
+				],
+				additionalProperties: false,
+			} as never,
+			"",
+			"",
+			{ onDiagnostic: ({ code }) => diagnostics.push(code) },
+		);
+		expect(diagnostics).toEqual(["ZOD_UNSUPPORTED_SCHEMA_SIBLINGS"]);
+		expect(
+			Function("z", `return (${expression});`)(z).safeParse({ value: "x" })
+				.success,
+		).toBe(true);
 	});
 
 	it("renders string, numeric, boolean, mixed, single and escaped enums", () => {

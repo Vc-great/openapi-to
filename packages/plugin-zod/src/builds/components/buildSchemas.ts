@@ -1,16 +1,16 @@
-import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
-import { createVariable } from "@/templates/operationResponseTemplate.ts";
-import {
-	schemaTemplate,
-	type SchemaRenderOptions,
-} from "@/templates/schemaTemplate.ts";
 import type { ComponentsSchema } from "@openapi-to/core";
-import { lowerFirst } from "lodash-es";
 import type {
 	InterfaceDeclarationStructure,
 	TypeAliasDeclarationStructure,
 	VariableStatementStructure,
 } from "ts-morph";
+import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
+import { createVariable } from "@/templates/operationResponseTemplate.ts";
+import {
+	type SchemaRenderOptions,
+	schemaTemplate,
+} from "@/templates/schemaTemplate.ts";
+import { getComponentExportName } from "@/utils/componentNaming.ts";
 
 export type SchemaDeclarationStructure =
 	| InterfaceDeclarationStructure
@@ -22,7 +22,7 @@ export function buildSchemas(
 	options: SchemaRenderOptions = {},
 	referenceName = schemaName,
 ): VariableStatementStructure {
-	const variableName = `${lowerFirst(schemaName)}Schema`;
+	const variableName = getComponentExportName("schemas", schemaName);
 	const variable =
 		typeof schema !== "object" || schema === null
 			? createVariable(

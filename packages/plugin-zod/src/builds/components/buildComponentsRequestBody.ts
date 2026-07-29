@@ -1,19 +1,27 @@
+import type { ReferenceObject, RequestBodyObject } from "@openapi-to/core";
+import { head, values } from "lodash-es";
+import type { VariableStatementStructure } from "ts-morph";
 import { createVariable } from "@/templates/operationResponseTemplate.ts";
 import { requestBodyTemplate } from "@/templates/requestBodyTemplate.ts";
-
-import { getlowerFirstRefAlias } from "@/utils/getlowerFirstRefAlias.ts";
-import type { ReferenceObject, RequestBodyObject } from "@openapi-to/core";
-import { head, lowerFirst, values } from "lodash-es";
-import type { VariableStatementStructure } from "ts-morph";
+import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
+import {
+	getComponentExportName,
+	getComponentRefExportName,
+} from "@/utils/componentNaming.ts";
 
 export function buildComponentsRequestBody(
 	requestName: string,
 	requestBody: ReferenceObject | RequestBodyObject,
+	options: SchemaRenderOptions = {},
 ): VariableStatementStructure | undefined {
-	const name = `${lowerFirst(requestName)}Schema`;
+	const name = getComponentExportName("requestBodies", requestName);
 	// 处理引用类型
 	if (requestBody && "$ref" in requestBody && requestBody.$ref) {
-		return createVariable(name, getlowerFirstRefAlias(requestBody.$ref), []);
+		return createVariable(
+			name,
+			getComponentRefExportName(requestBody.$ref),
+			[],
+		);
 	}
 
 	if ("content" in requestBody) {
@@ -22,11 +30,16 @@ export function buildComponentsRequestBody(
 			return undefined;
 		}
 
-		if (body.schema && "$ref" in body.schema) {
-			const refType = getlowerFirstRefAlias(body.schema.$ref);
+		if (
+			body.schema &&
+			typeof body.schema === "object" &&
+			"$ref" in body.schema
+		) {
+			const refType = getComponentRefExportName(body.schema.$ref);
 			return createVariable(name, refType, []);
 		}
 
-		if (body.schema) return requestBodyTemplate(name, body);
+		if (body.schema !== undefined)
+			return requestBodyTemplate(name, body, options);
 	}
 }

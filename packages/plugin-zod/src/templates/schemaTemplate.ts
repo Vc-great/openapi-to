@@ -1,5 +1,5 @@
 import type { Schema } from "@openapi-to/core";
-import { getlowerFirstRefAlias } from "@/utils/getlowerFirstRefAlias.ts";
+import { getComponentRefExportName } from "@/utils/componentNaming.ts";
 
 type SchemaRecord = Record<string, unknown>;
 
@@ -7,6 +7,7 @@ export type SchemaRenderDiagnostic = {
 	code:
 		| "ZOD_EMPTY_COMPOSITION"
 		| "ZOD_EMPTY_ENUM"
+		| "ZOD_UNSUPPORTED_SCHEMA_SIBLINGS"
 		| "ZOD_UNSUPPORTED_ENUM_VALUE";
 	message: string;
 };
@@ -149,13 +150,14 @@ function formatterString(schema: SchemaRecord): string {
 			break;
 		case "date-time":
 		case "datetime":
-			expression = "z.iso.datetime()";
+			expression =
+				"z.iso.datetime({ offset: true }).regex(/T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/)";
 			break;
 		case "byte":
 			expression = "z.base64()";
 			break;
 		case "password":
-			expression = "z.string().min(1)";
+			expression = "z.string()";
 			break;
 		default:
 			expression = "z.string()";
@@ -170,6 +172,10 @@ function formatterNumber(schema: SchemaRecord): string {
 		schema.type === "integer" || integerFormats.has(String(schema.format ?? ""))
 			? "z.int()"
 			: "z.number()";
+
+	if (schema.format === "int32") {
+		result += ".min(-2147483648).max(2147483647)";
+	}
 
 	if (typeof schema.minimum === "number") {
 		result +=
@@ -193,8 +199,110 @@ function formatterNumber(schema: SchemaRecord): string {
 }
 
 function refSchema(ref: string, options: SchemaRenderOptions): string {
-	const alias = getlowerFirstRefAlias(ref);
+	const alias = getComponentRefExportName(ref);
 	return options.lazyRefs?.has(ref) ? `z.lazy(() => ${alias})` : alias;
+}
+
+const validationKeywords = new Set([
+	"$ref",
+	"enum",
+	"const",
+	"oneOf",
+	"anyOf",
+	"allOf",
+	"type",
+	"format",
+	"minLength",
+	"maxLength",
+	"pattern",
+	"minimum",
+	"maximum",
+	"exclusiveMinimum",
+	"exclusiveMaximum",
+	"multipleOf",
+	"items",
+	"minItems",
+	"maxItems",
+	"properties",
+	"required",
+	"additionalProperties",
+]);
+
+function renderSiblingConstraints(
+	schema: SchemaRecord,
+	primaryKeyword: "$ref" | "enum" | "const" | "oneOf" | "anyOf" | "allOf",
+	propertyName: string,
+	parentName: string,
+	options: SchemaRenderOptions,
+): string | undefined {
+	const sibling = { ...schema };
+	delete sibling[primaryKeyword];
+	delete sibling.nullable;
+	if (
+		primaryKeyword === "allOf" &&
+		sibling.additionalProperties !== undefined &&
+		sibling.properties === undefined
+	) {
+		reportDiagnostic(options, {
+			code: "ZOD_UNSUPPORTED_SCHEMA_SIBLINGS",
+			message:
+				"allOf with sibling additionalProperties cannot be represented exactly by the current Zod renderer; the sibling keyword was not applied.",
+		});
+		delete sibling.additionalProperties;
+	}
+	const keys = Object.keys(sibling).filter((key) =>
+		validationKeywords.has(key),
+	);
+	if (keys.length === 0) return undefined;
+	if (
+		keys.some((key) =>
+			["$ref", "enum", "const", "oneOf", "anyOf", "allOf"].includes(key),
+		)
+	) {
+		return schemaTemplate(sibling as Schema, propertyName, parentName, options);
+	}
+
+	if (
+		sibling.type === undefined &&
+		keys.some((key) =>
+			["format", "minLength", "maxLength", "pattern"].includes(key),
+		)
+	) {
+		sibling.type = "string";
+	}
+	if (
+		sibling.type === undefined &&
+		keys.some((key) =>
+			[
+				"minimum",
+				"maximum",
+				"exclusiveMinimum",
+				"exclusiveMaximum",
+				"multipleOf",
+			].includes(key),
+		)
+	) {
+		sibling.type = "number";
+	}
+	if (
+		sibling.type === undefined &&
+		keys.some((key) => ["items", "minItems", "maxItems"].includes(key))
+	) {
+		sibling.type = "array";
+	}
+	if (
+		sibling.type === undefined &&
+		keys.some((key) =>
+			["properties", "required", "additionalProperties"].includes(key),
+		)
+	) {
+		sibling.type = "object";
+	}
+
+	const rendered =
+		resolveTypeArray(sibling, propertyName, parentName, options) ??
+		resolveBaseSchema(sibling as Schema, propertyName, parentName, options);
+	return rendered === "z.unknown()" ? undefined : rendered;
 }
 
 function arraySchema(
@@ -287,18 +395,33 @@ export function schemaTemplate(
 	if (schema === false) return "z.never()";
 	if (!isRecord(schema)) return "z.unknown()";
 	const record: SchemaRecord = schema;
-	if (typeof record.$ref === "string") return refSchema(record.$ref, options);
 
 	let result: string;
-	if (Array.isArray(record.enum)) {
+	let primaryKeyword:
+		| "$ref"
+		| "enum"
+		| "const"
+		| "oneOf"
+		| "anyOf"
+		| "allOf"
+		| undefined;
+	if (typeof record.$ref === "string") {
+		primaryKeyword = "$ref";
+		result = refSchema(record.$ref, options);
+	} else if (Array.isArray(record.enum)) {
+		primaryKeyword = "enum";
 		result = enumSchema(record.enum, options);
 	} else if ("const" in record) {
+		primaryKeyword = "const";
 		result = literal(record.const) ?? "z.never()";
 	} else if (Array.isArray(record.oneOf)) {
+		primaryKeyword = "oneOf";
 		result = unionSchema(record.oneOf, propertyName, parentName, options);
 	} else if (Array.isArray(record.anyOf)) {
+		primaryKeyword = "anyOf";
 		result = unionSchema(record.anyOf, propertyName, parentName, options);
 	} else if (Array.isArray(record.allOf)) {
+		primaryKeyword = "allOf";
 		result = intersectionSchema(
 			record.allOf,
 			propertyName,
@@ -311,6 +434,16 @@ export function schemaTemplate(
 			resolveBaseSchema(schema, propertyName, parentName, options);
 	}
 
+	if (primaryKeyword) {
+		const sibling = renderSiblingConstraints(
+			record,
+			primaryKeyword,
+			propertyName,
+			parentName,
+			options,
+		);
+		if (sibling) result = `z.intersection(${result}, ${sibling})`;
+	}
 	if (record.nullable === true && result !== "z.null()")
 		result += ".nullable()";
 	return result;

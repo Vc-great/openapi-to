@@ -13,17 +13,21 @@ tarball overrides for all aggregate dependencies, and invokes the installed
 `node_modules/.bin/openapi` entry. The consumer pins the repository's installed
 TypeScript version, explicitly requests `zod@^4`, and rejects any resolved Zod
 major other than 4. It does not copy a Zod version from an e2e workspace. Its
-local OpenAPI fixture exercises two
-operations, path and query parameters, a JSON body and response, component
-references, required/optional/nullable fields, formats, numeric constraints,
-enums, arrays, records, additional properties, unions, intersections, recursive
-schemas, and nested schemas. Escaped property names are covered by the plugin's
-focused generator and runtime tests.
+local fixtures exercise base request generation, multiple success and error
+responses, referenced component parameters/request bodies/responses, 204 and
+default responses, OpenAPI 3.1 boolean/empty schemas, recursive schemas,
+required/optional/nullable fields, RFC3339 offsets, numeric constraints, enums,
+arrays, records, additional properties, unions, intersections, and nested
+schemas. Escaped property names are covered by the plugin's focused generator
+and runtime tests.
 The aggregate package supplies `pluginTSType`, `pluginZod`, and
 `pluginTSRequest`; the generated TypeScript and a consumer request stub are
 then compiled in strict mode with `skipLibCheck: false`. A separate runtime
-entry executes the generated model, request body, query, and path schemas with
-Zod 4 and checks both accepted and rejected values.
+entry executes the generated model, request body, query, path, response,
+boolean/empty, and recursive schemas with Zod 4 and checks both accepted and
+rejected values. Compile-time assertions lock precise inference for ordinary
+model/response schemas and the documented `unknown` inference boundary for
+recursive schemas.
 
 This is broader than a plugin unit or snapshot test because it validates the
 packed aggregate export, installed CLI, config loading, cross-package plugin

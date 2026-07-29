@@ -3,6 +3,7 @@ import {
 	writeJSDoc,
 } from "@/templates/jsDocTemplateFromSchema.ts";
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
+import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
 
 import type { ParameterObjectWithRef } from "@openapi-to/core";
 import { CodeBlockWriter } from "ts-morph";
@@ -13,6 +14,7 @@ import { CodeBlockWriter } from "ts-morph";
 export function generateParameterSchema(
 	parameters: ParameterObjectWithRef[],
 	operationName: string,
+	options: SchemaRenderOptions = {},
 ): string {
 	const writer = new CodeBlockWriter({ indentNumberOfSpaces: 4 });
 
@@ -23,13 +25,13 @@ export function generateParameterSchema(
 
 			if ("$ref" in prop && prop.$ref) {
 				writer.writeLine(
-					`${JSON.stringify(name)}: ${schemaTemplate(prop, name, operationName)}${comma}`,
+					`${JSON.stringify(name)}: ${schemaTemplate(prop, name, operationName, options)}${comma}`,
 				);
 			} else {
 				writeJSDoc(writer, jsDocTemplateFromParameter(prop));
 				const optional = prop.required ? "" : ".optional()";
 				const schemaString = prop.schema
-					? schemaTemplate(prop.schema, name, operationName)
+					? schemaTemplate(prop.schema, name, operationName, options)
 					: "z.string()";
 
 				writer.writeLine(
