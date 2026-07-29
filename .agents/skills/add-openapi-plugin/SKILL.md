@@ -5,7 +5,7 @@ description: Add or substantially extend an openapi-to generator plugin, includi
 
 # Add an openapi-to plugin
 
-Read the root `AGENTS.md` first. Re-read current core lifecycle types and at least one similar official plugin; this Skill never substitutes for current code.
+Read the root `AGENTS.md` and `packages/core/AGENTS.md` first. Re-read current core lifecycle types and at least one similar official plugin; this Skill never substitutes for current code.
 
 ## Required inputs
 

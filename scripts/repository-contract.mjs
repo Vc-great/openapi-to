@@ -40,6 +40,16 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/testing/consumer-codegen.md",
 ];
 
+const AGENT_DOCUMENTS = [
+	"AGENTS.md",
+	"packages/core/AGENTS.md",
+	"packages/cli/AGENTS.md",
+	"packages/mcp/AGENTS.md",
+	".github/AGENTS.md",
+];
+
+const SKILL_ROOT = ".agents/skills";
+
 async function exists(path) {
 	try {
 		await access(path, constants.F_OK);
@@ -173,6 +183,241 @@ function documentedPnpmScripts(contents) {
 	return names;
 }
 
+export function parseSkillFrontmatter(contents) {
+	const normalized = contents.replaceAll("\r\n", "\n");
+	if (!normalized.startsWith("---\n"))
+		throw new Error("SKILL.md must start with YAML frontmatter");
+	const end = normalized.indexOf("\n---\n", 4);
+	if (end < 0) throw new Error("SKILL.md frontmatter is not terminated");
+	const entries = new Map();
+	for (const line of normalized.slice(4, end).split("\n")) {
+		if (!line.trim()) continue;
+		const match = line.match(/^([a-z][a-z0-9-]*):\s*(.+)$/);
+		if (!match) throw new Error(`unsupported frontmatter line: ${line}`);
+		const [, key, rawValue] = match;
+		if (entries.has(key)) throw new Error(`duplicate frontmatter key: ${key}`);
+		let value = rawValue.trim();
+		if (value.startsWith('"')) value = JSON.parse(value);
+		else if (value.startsWith("'")) {
+			if (!value.endsWith("'"))
+				throw new Error(`unterminated quoted frontmatter value: ${key}`);
+			value = value.slice(1, -1).replaceAll("''", "'");
+		}
+		entries.set(key, value);
+	}
+	if (
+		JSON.stringify([...entries.keys()].sort()) !==
+		JSON.stringify(["description", "name"])
+	) {
+		throw new Error(
+			"SKILL.md frontmatter must contain only name and description",
+		);
+	}
+	return {
+		name: entries.get("name"),
+		description: entries.get("description"),
+	};
+}
+
+export function parseOpenAiSkillYaml(contents) {
+	const lines = contents
+		.replaceAll("\r\n", "\n")
+		.split("\n")
+		.filter((line) => line.trim().length > 0);
+	if (lines[0] !== "interface:")
+		throw new Error("agents/openai.yaml must contain one interface mapping");
+	const values = new Map();
+	for (const line of lines.slice(1)) {
+		const match = line.match(/^ {2}([a-z][a-z0-9_]*):\s*("(?:[^"\\]|\\.)*")$/);
+		if (!match) throw new Error(`unsupported agents/openai.yaml line: ${line}`);
+		const [, key, rawValue] = match;
+		if (values.has(key))
+			throw new Error(`duplicate agents/openai.yaml key: ${key}`);
+		values.set(key, JSON.parse(rawValue));
+	}
+	if (
+		JSON.stringify([...values.keys()].sort()) !==
+		JSON.stringify(["default_prompt", "display_name", "short_description"])
+	) {
+		throw new Error(
+			"agents/openai.yaml interface must contain display_name, short_description, and default_prompt",
+		);
+	}
+	return Object.fromEntries(values);
+}
+
+function markdownRepositoryPathMentions(contents) {
+	const mentions = new Set();
+	for (const match of contents.matchAll(/`([^`\r\n]+)`/g)) {
+		const candidate = match[1].trim();
+		if (
+			/^(?:\.agents|\.github|\.changeset|packages|docs|scripts|e2e|configs)\//.test(
+				candidate,
+			)
+		)
+			mentions.add(candidate.replace(/[),;:]+$/, ""));
+	}
+	for (const match of contents.matchAll(
+		/(?:^|[\s("'=])((?:\.agents|\.github|\.changeset)\/[A-Za-z0-9_./*<>-]+)/gm,
+	)) {
+		mentions.add(match[1].replace(/[),;:]+$/, ""));
+	}
+	return [...mentions];
+}
+
+function stableMentionPrefix(mention) {
+	const marker = mention.search(/[*?[\]<>]/);
+	if (marker < 0) return mention;
+	const prefix = mention.slice(0, marker);
+	return prefix.endsWith("/") ? prefix.slice(0, -1) : dirname(prefix);
+}
+
+async function validateMentionedPaths(
+	root,
+	documentPath,
+	relativeDocument,
+	contents,
+	failures,
+) {
+	for (const target of markdownLinks(contents)) {
+		const localTarget = localMarkdownTarget(documentPath, target);
+		if (localTarget && !(await exists(localTarget)))
+			failures.push(`${relativeDocument} links to missing path ${target}`);
+	}
+	const mentions = markdownRepositoryPathMentions(contents);
+	if (relativeDocument.endsWith("AGENTS.md")) {
+		for (const match of contents.matchAll(/`(src\/[A-Za-z0-9_./-]+)`/g))
+			mentions.push(match[1]);
+	}
+	for (const mention of new Set(mentions)) {
+		const stable = stableMentionPrefix(mention);
+		const target = stable.startsWith("src/")
+			? resolve(dirname(documentPath), stable)
+			: resolve(root, stable);
+		if (!(await exists(target)))
+			failures.push(`${relativeDocument} references missing path ${mention}`);
+	}
+}
+
+function shellWords(line) {
+	return line
+		.trim()
+		.split(/\s+/)
+		.map((word) => word.replace(/^['"]|['"]$/g, ""));
+}
+
+function documentedPnpmInvocations(contents) {
+	const invocations = [];
+	for (const match of contents.matchAll(/^\s*pnpm\s+([^\r\n\\]+)/gm)) {
+		const words = shellWords(match[1]);
+		while (
+			words[0]?.startsWith("--") &&
+			!["--filter", "--dir"].includes(words[0])
+		) {
+			words.shift();
+		}
+		const filterIndex = words.findIndex(
+			(word) => word === "--filter" || word.startsWith("--filter="),
+		);
+		if (filterIndex >= 0) {
+			const selector = words[filterIndex].includes("=")
+				? words[filterIndex].slice(words[filterIndex].indexOf("=") + 1)
+				: words[filterIndex + 1];
+			const scriptIndex =
+				filterIndex + (words[filterIndex].includes("=") ? 1 : 2);
+			const script =
+				words[scriptIndex] === "run"
+					? words[scriptIndex + 1]
+					: words[scriptIndex];
+			if (selector && script)
+				invocations.push({ kind: "filter", selector, script });
+			continue;
+		}
+		const directoryIndex = words.indexOf("--dir");
+		if (directoryIndex >= 0) {
+			const directory = words[directoryIndex + 1];
+			const scriptIndex = directoryIndex + 2;
+			const script =
+				words[scriptIndex] === "run"
+					? words[scriptIndex + 1]
+					: words[scriptIndex];
+			if (directory && script)
+				invocations.push({ kind: "directory", directory, script });
+			continue;
+		}
+		let command = words[0];
+		if (command === "run") command = words[1];
+		if (
+			command &&
+			!["add", "dlx", "exec", "install", "pack", "publish", "remove"].includes(
+				command,
+			)
+		) {
+			invocations.push({ kind: "root", script: command });
+		}
+	}
+	return invocations;
+}
+
+async function validateDocumentedPnpmInvocations(
+	root,
+	relativeDocument,
+	contents,
+	rootManifest,
+	workspaceManifests,
+	failures,
+) {
+	const manifestsByName = new Map(
+		[...workspaceManifests.entries()].map(([directory, manifest]) => [
+			manifest.name,
+			{ directory, manifest },
+		]),
+	);
+	for (const invocation of documentedPnpmInvocations(contents)) {
+		if (
+			["<package-name>", "<plugin-package>"].includes(invocation.selector) ||
+			invocation.script?.includes("<")
+		) {
+			continue;
+		}
+		if (invocation.kind === "root") {
+			if (!rootManifest.scripts?.[invocation.script])
+				failures.push(
+					`${relativeDocument} names missing root script ${invocation.script}`,
+				);
+			continue;
+		}
+		if (invocation.kind === "filter") {
+			const selected = manifestsByName.get(invocation.selector);
+			if (!selected) {
+				failures.push(
+					`${relativeDocument} filters unknown package ${invocation.selector}`,
+				);
+			} else if (!selected.manifest.scripts?.[invocation.script]) {
+				failures.push(
+					`${relativeDocument} names missing ${invocation.selector} script ${invocation.script}`,
+				);
+			}
+			continue;
+		}
+		const directory = invocation.directory.replace(/^\.\//, "");
+		const manifest =
+			workspaceManifests.get(directory) ??
+			((await exists(join(root, directory, "package.json")))
+				? await readJson(join(root, directory, "package.json"))
+				: undefined);
+		if (!manifest) {
+			failures.push(
+				`${relativeDocument} uses unknown pnpm directory ${invocation.directory}`,
+			);
+		} else if (!manifest.scripts?.[invocation.script]) {
+			failures.push(
+				`${relativeDocument} names missing ${manifest.name} script ${invocation.script}`,
+			);
+		}
+	}
+}
+
 function toolMatrixSize(contents, testName) {
 	const testStart = contents.indexOf(testName);
 	if (testStart < 0) return undefined;
@@ -254,6 +499,162 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		}
 	}
 
+	for (const relativeDocument of AGENT_DOCUMENTS) {
+		const documentPath = join(root, relativeDocument);
+		if (!(await exists(documentPath))) {
+			failures.push(`missing Agent instruction entrypoint ${relativeDocument}`);
+			continue;
+		}
+		const contents = await readFile(documentPath, "utf8");
+		await validateMentionedPaths(
+			root,
+			documentPath,
+			relativeDocument,
+			contents,
+			failures,
+		);
+		await validateDocumentedPnpmInvocations(
+			root,
+			relativeDocument,
+			contents,
+			rootManifest,
+			workspaceManifests,
+			failures,
+		);
+	}
+
+	const discoveredSkills = [];
+	const skillRootPath = join(root, SKILL_ROOT);
+	if (!(await exists(skillRootPath))) {
+		failures.push(`missing authoritative Skill root ${SKILL_ROOT}`);
+	} else {
+		const skillDirectories = (
+			await readdir(skillRootPath, { withFileTypes: true })
+		)
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name)
+			.sort();
+		discoveredSkills.push(...skillDirectories);
+		if (skillDirectories.length === 0)
+			failures.push(`${SKILL_ROOT} must contain at least one Skill`);
+		const skillNames = new Set();
+		for (const directoryName of skillDirectories) {
+			const relativeSkill = `${SKILL_ROOT}/${directoryName}/SKILL.md`;
+			const skillPath = join(root, relativeSkill);
+			if (!(await exists(skillPath))) {
+				failures.push(`missing Skill entrypoint ${relativeSkill}`);
+				continue;
+			}
+			const contents = await readFile(skillPath, "utf8");
+			let metadata;
+			try {
+				metadata = parseSkillFrontmatter(contents);
+			} catch (error) {
+				failures.push(
+					`${relativeSkill} has invalid frontmatter: ${error.message}`,
+				);
+			}
+			if (metadata) {
+				if (metadata.name !== directoryName)
+					failures.push(
+						`${relativeSkill} name ${metadata.name} must match directory ${directoryName}`,
+					);
+				if (skillNames.has(metadata.name))
+					failures.push(`duplicate Skill name ${metadata.name}`);
+				skillNames.add(metadata.name);
+				if (
+					typeof metadata.description !== "string" ||
+					metadata.description.trim().length < 80 ||
+					!/\bUse (?:after|for|when)\b/.test(metadata.description)
+				) {
+					failures.push(
+						`${relativeSkill} description must be non-empty, specific, and state when to use the Skill`,
+					);
+				}
+			}
+
+			const relativeOpenAiYaml = `${SKILL_ROOT}/${directoryName}/agents/openai.yaml`;
+			const openAiYamlPath = join(root, relativeOpenAiYaml);
+			if (!(await exists(openAiYamlPath))) {
+				failures.push(`missing Skill interface ${relativeOpenAiYaml}`);
+			} else {
+				try {
+					const interfaceMetadata = parseOpenAiSkillYaml(
+						await readFile(openAiYamlPath, "utf8"),
+					);
+					if (!interfaceMetadata.display_name.trim())
+						failures.push(
+							`${relativeOpenAiYaml} display_name must not be empty`,
+						);
+					if (
+						interfaceMetadata.short_description.length < 25 ||
+						interfaceMetadata.short_description.length > 64
+					) {
+						failures.push(
+							`${relativeOpenAiYaml} short_description must be 25-64 characters`,
+						);
+					}
+					if (!interfaceMetadata.default_prompt.includes(`$${directoryName}`)) {
+						failures.push(
+							`${relativeOpenAiYaml} default_prompt must invoke $${directoryName}`,
+						);
+					}
+					const purposeTokens = directoryName
+						.split("-")
+						.filter(
+							(token) => !["add", "fix", "run", "upgrade"].includes(token),
+						);
+					const interfacePurpose =
+						`${interfaceMetadata.display_name} ${interfaceMetadata.short_description}`.toLowerCase();
+					if (
+						purposeTokens.length > 0 &&
+						!purposeTokens.some((token) => interfacePurpose.includes(token))
+					) {
+						failures.push(
+							`${relativeOpenAiYaml} purpose does not match Skill ${directoryName}`,
+						);
+					}
+				} catch (error) {
+					failures.push(`${relativeOpenAiYaml} is invalid: ${error.message}`);
+				}
+			}
+
+			await validateMentionedPaths(
+				root,
+				skillPath,
+				relativeSkill,
+				contents,
+				failures,
+			);
+			await validateDocumentedPnpmInvocations(
+				root,
+				relativeSkill,
+				contents,
+				rootManifest,
+				workspaceManifests,
+				failures,
+			);
+		}
+
+		try {
+			const { stdout } = await execFileAsync(
+				"git",
+				["ls-files", "--", ":(glob)**/SKILL.md"],
+				{ cwd: root },
+			);
+			for (const trackedSkill of stdout.split(/\r?\n/).filter(Boolean)) {
+				if (!trackedSkill.startsWith(`${SKILL_ROOT}/`))
+					failures.push(
+						`tracked Skill mirror outside ${SKILL_ROOT}: ${trackedSkill}`,
+					);
+			}
+		} catch (error) {
+			failures.push(
+				`unable to inspect tracked Skill mirrors: ${error.message}`,
+			);
+		}
+	}
+
 	if (
 		rootManifest.scripts?.["version:canary"] !==
 		"pnpm exec changeset version --snapshot canary"
@@ -275,9 +676,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		);
 	}
 	if (
-		!/(?:^|&&\s*)pnpm\s+verify:changeset-state(?:\s*&&|$)/.test(
-			releaseCheck,
-		)
+		!/(?:^|&&\s*)pnpm\s+verify:changeset-state(?:\s*&&|$)/.test(releaseCheck)
 	) {
 		failures.push(
 			"release:check must run the prerelease-aware verify:changeset-state gate",
@@ -325,19 +724,21 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		"utf8",
 	);
 	if (
-		!qualityWorkflow.includes(
-			"run: pnpm verify:changeset-state:development",
-		)
+		!qualityWorkflow.includes("run: pnpm verify:changeset-state:development")
 	) {
 		failures.push(
 			"Quality package smoke must run verify:changeset-state:development",
 		);
 	}
-	if (/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(qualityWorkflow)) {
+	if (
+		/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(qualityWorkflow)
+	) {
 		failures.push("Quality must not run the strict Changesets release gate");
 	}
 	if (qualityWorkflow.includes("continue-on-error")) {
-		failures.push("Quality must not continue on Changesets or other gate errors");
+		failures.push(
+			"Quality must not continue on Changesets or other gate errors",
+		);
 	}
 
 	const versionWorkflowPath = join(
@@ -392,14 +793,16 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			failures.push("Version Packages workflow must use changesets/action@v1");
 		}
 		if (workflow.includes("uses: changesets/action@v2")) {
-			failures.push("Version Packages workflow must not use changesets/action@v2");
+			failures.push(
+				"Version Packages workflow must not use changesets/action@v2",
+			);
 		}
 		if (!workflow.includes("version: pnpm run version")) {
-			failures.push("Version Packages workflow must use the root version script");
+			failures.push(
+				"Version Packages workflow must use the root version script",
+			);
 		}
-		if (
-			!/GITHUB_TOKEN:\s+\$\{\{\s*secrets\.GITHUB_TOKEN\s*}}/.test(workflow)
-		) {
+		if (!/GITHUB_TOKEN:\s+\$\{\{\s*secrets\.GITHUB_TOKEN\s*}}/.test(workflow)) {
 			failures.push(
 				"Version Packages workflow must use the repository GITHUB_TOKEN",
 			);
@@ -453,9 +856,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			if (!workflow.includes(required))
 				failures.push(`Version readiness workflow is missing ${required}`);
 		}
-		if (
-			!/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(workflow)
-		) {
+		if (!/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(workflow)) {
 			failures.push(
 				"Version readiness workflow must run strict verify:changeset-state",
 			);
@@ -718,6 +1119,8 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		failures: [...new Set(failures)].sort(),
 		workspaces: uniqueWorkspaceDirectories,
 		documents: DOCUMENT_ENTRYPOINTS,
+		agents: AGENT_DOCUMENTS,
+		skills: discoveredSkills,
 	};
 }
 
@@ -734,6 +1137,8 @@ export async function main() {
 				success: true,
 				workspaces: result.workspaces,
 				documents: result.documents,
+				agents: result.agents,
+				skills: result.skills,
 			},
 			null,
 			2,

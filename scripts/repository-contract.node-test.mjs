@@ -5,6 +5,8 @@ import test from "node:test";
 
 import {
 	auditRepositoryContracts,
+	parseOpenAiSkillYaml,
+	parseSkillFrontmatter,
 	parseWorkspacePatterns,
 	repositoryRoot,
 } from "./repository-contract.mjs";
@@ -16,6 +18,15 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 	assert.ok(result.workspaces.includes("packages/mcp"));
 	assert.ok(result.workspaces.includes("e2e/common"));
 	assert.ok(result.workspaces.includes("e2e/module"));
+	assert.deepEqual(result.agents, [
+		"AGENTS.md",
+		"packages/core/AGENTS.md",
+		"packages/cli/AGENTS.md",
+		"packages/mcp/AGENTS.md",
+		".github/AGENTS.md",
+	]);
+	assert.ok(result.skills.includes("fix-github-actions"));
+	assert.ok(result.skills.includes("fix-codegen-regression"));
 });
 
 test("blocking Actions workflows use controlled fixtures and retain diagnostic artifacts", async () => {
@@ -43,5 +54,51 @@ test("workspace parser accepts only quoted package entries", () => {
   - "e2e/*"
 `),
 		["packages/*", "e2e/*"],
+	);
+});
+
+test("Skill metadata parsers accept the repository schema and reject drift", () => {
+	assert.deepEqual(
+		parseSkillFrontmatter(`---
+name: fix-example
+description: Use when a sufficiently specific example workflow needs focused validation and repair without unrelated changes.
+---
+
+# Fix example
+`),
+		{
+			name: "fix-example",
+			description:
+				"Use when a sufficiently specific example workflow needs focused validation and repair without unrelated changes.",
+		},
+	);
+	assert.deepEqual(
+		parseOpenAiSkillYaml(`interface:
+  display_name: "Fix Example"
+  short_description: "Diagnose and repair one example workflow"
+  default_prompt: "Use $fix-example to repair the example."
+`),
+		{
+			display_name: "Fix Example",
+			short_description: "Diagnose and repair one example workflow",
+			default_prompt: "Use $fix-example to repair the example.",
+		},
+	);
+	assert.throws(
+		() =>
+			parseSkillFrontmatter(`---
+name: fix-example
+description: Duplicate keys are invalid.
+name: other
+---
+`),
+		/duplicate frontmatter key/,
+	);
+	assert.throws(
+		() =>
+			parseOpenAiSkillYaml(`interface:
+  display_name: Fix Example
+`),
+		/unsupported agents\/openai\.yaml line/,
 	);
 });

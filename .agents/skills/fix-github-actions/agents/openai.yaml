@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fix GitHub Actions"
+  short_description: "Diagnose and fix openapi-to Actions failures"
+  default_prompt: "Use $fix-github-actions to diagnose and minimally fix a failing openapi-to GitHub Actions check."

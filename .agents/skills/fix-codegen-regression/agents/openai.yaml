@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fix Codegen Regression"
+  short_description: "Diagnose and repair code generation regressions"
+  default_prompt: "Use $fix-codegen-regression to isolate and repair an openapi-to code generation regression."

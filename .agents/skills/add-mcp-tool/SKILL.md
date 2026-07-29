@@ -5,7 +5,7 @@ description: Add or substantially change a read-only tool in the openapi-to stdi
 
 # Add an MCP tool
 
-Read the root `AGENTS.md`, `packages/mcp/README.md`, and [mcp-tool-checklist.md](references/mcp-tool-checklist.md). Re-check the installed stable `@modelcontextprotocol/sdk` API instead of copying beta examples.
+Read the root `AGENTS.md`, `packages/mcp/AGENTS.md`, `packages/mcp/README.md`, and [mcp-tool-checklist.md](references/mcp-tool-checklist.md). Re-check the installed stable `@modelcontextprotocol/sdk` API instead of copying beta examples.
 
 ## Workflow
 

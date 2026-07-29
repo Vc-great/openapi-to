@@ -5,7 +5,7 @@ description: Prepare and verify an openapi-to monorepo release by identifying af
 
 # Prepare a monorepo release
 
-Read root `AGENTS.md` and [release-facts.md](references/release-facts.md), then re-verify every fact in current manifests and Git state. This Skill prepares evidence and a plan; it does not publish by default.
+Read root `AGENTS.md`, `.github/AGENTS.md`, and [release-facts.md](references/release-facts.md), then re-verify every fact in current manifests and Git state. This Skill prepares evidence and a plan; it does not publish by default.
 
 ## Required inputs
 
@@ -104,7 +104,7 @@ pnpm test:vitest
 pnpm typecheck
 pnpm build
 pnpm exec tsc -b
-pnpm lint:changed
+pnpm lint:ci
 pnpm test:release-scripts
 pnpm verify:repository-contract
 pnpm verify:package-surface
@@ -118,7 +118,7 @@ Also:
 - For generator changes, use the Codex `$run-codegen-tests` Skill. If Skill invocation is unavailable, read `.agents/skills/run-codegen-tests/SKILL.md` and execute its applicable workflow directly.
 - Run applicable CLI e2e smoke projects after a successful build when CLI/aggregate package behavior changes.
 - Re-run pack-install smoke after the final build/version state. Inspect its file-count/size summary and retain a temporary workspace only when debugging.
-- Run changed-file lint with warnings as failures. Do not use the historical full-lint backlog, `continue-on-error`, or a green wrapper job to hide new diagnostics.
+- Run `pnpm lint:changed` during local change preparation and the full tracked-file `pnpm lint:ci` gate for release readiness; both treat warnings as failures. Do not use the historical full-lint backlog, `continue-on-error`, or a green wrapper job to hide new diagnostics.
 - Ensure no uncommitted generated/test output was introduced.
 
 A failing required test, typecheck, build, generated compile, idempotency check, export target, or pack inspection blocks a “ready to publish” conclusion.

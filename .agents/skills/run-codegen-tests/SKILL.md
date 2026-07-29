@@ -5,7 +5,7 @@ description: Execute and interpret openapi-to code-generation regressions, inclu
 
 # Run codegen regression tests
 
-Read root `AGENTS.md` and the affected package manifests before running commands. A zero exit code proves only that the command completed; generated output still requires semantic review.
+Read root `AGENTS.md`, the deeper `AGENTS.md` for every affected package, and the affected package manifests before running commands. A zero exit code proves only that the command completed; generated output still requires semantic review.
 
 ## Required inputs
 

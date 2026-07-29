@@ -5,7 +5,7 @@ description: Add or substantially change an openapi-to CLI command while preserv
 
 # Add an openapi-to CLI command
 
-Read root `AGENTS.md`, `packages/cli/src/index.ts`, its integration tests, `packages/core/src/diagnostics.ts`, and `packages/core/src/exitCodes.ts` before editing. Current code is authoritative.
+Read root `AGENTS.md`, `packages/cli/AGENTS.md`, `packages/cli/src/index.ts`, its integration tests, `packages/core/src/diagnostics.ts`, and `packages/core/src/exitCodes.ts` before editing. Current code is authoritative.
 
 ## Required contract
 

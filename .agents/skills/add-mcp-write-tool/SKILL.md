@@ -7,7 +7,7 @@ description: Extend or repair openapi-to's operator-gated MCP generation Prepare
 
 Use this Skill only for the existing two-stage controlled generation writer. Prefer extending `openapi_prepare_generation` and `openapi_apply_generation` over introducing another Tool. Unless the user separately and explicitly authorizes a broader write surface, never add a direct-write Tool, OpenAPI/config modification, caller-selected path/content/plugin, shell execution, business API execution, `force`, or stale-plan bypass.
 
-Read root `AGENTS.md`, `docs/architecture/mcp-controlled-write.md`, and [the controlled-write checklist](references/controlled-write-checklist.md) before editing. Also read `.agents/skills/add-mcp-tool/SKILL.md` for protocol/schema/stdout requirements and `.agents/skills/release-monorepo/SKILL.md` when public packages change.
+Read root `AGENTS.md`, `packages/core/AGENTS.md`, `packages/mcp/AGENTS.md`, `docs/architecture/mcp-controlled-write.md`, and [the controlled-write checklist](references/controlled-write-checklist.md) before editing. Also read `.agents/skills/add-mcp-tool/SKILL.md` for protocol/schema/stdout requirements and `.agents/skills/release-monorepo/SKILL.md` when public packages change.
 
 ## Establish the boundary
 
@@ -20,7 +20,7 @@ Confirm a clean committed baseline and preserve user changes. Map the exact chan
 - CLI writes that must share the same output lock;
 - official Client subprocess tests, Inspector/Codex safety evaluation, docs, Changeset, and package smoke.
 
-Keep the registration matrix stable: three tools without config, five with config, seven only with config plus operator `allowWrite`. Tool arguments can never enable writes. Current first-release transaction scope is one target/output root per plan; fail visibly on multi-target requests rather than partially applying them.
+Keep the registration matrix stable: three total Tools without config, eight total with trusted config, and ten total only with trusted config plus operator `allowWrite`. Tool arguments can never enable writes. Current transaction scope is one target/output root per plan; fail visibly on multi-target requests rather than partially applying them.
 
 ## Preserve Prepare semantics
 

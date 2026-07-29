@@ -5,7 +5,7 @@ description: Upgrade or repair openapi-to handling of Swagger/OpenAPI dialects a
 
 # Upgrade OpenAPI support
 
-Read root `AGENTS.md`, then read [openapi-compatibility-checklist.md](references/openapi-compatibility-checklist.md). Treat the checklist's repository evidence as a starting point and re-verify it at the current revision.
+Read root `AGENTS.md` and `packages/core/AGENTS.md`, then read [openapi-compatibility-checklist.md](references/openapi-compatibility-checklist.md). Treat the checklist's repository evidence as a starting point and re-verify it at the current revision.
 
 ## Required inputs
 
