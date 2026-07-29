@@ -17,9 +17,7 @@ export function collectRefsFromOperationParameter(
 	parameters.forEach((parameter) => {
 		if ("$ref" in parameter && parameter.$ref) {
 			refs.add(parameter.$ref);
-		}
-
-		if (
+		} else if (
 			parameter.schema &&
 			typeof parameter.schema === "object" &&
 			"$ref" in parameter.schema
@@ -72,7 +70,13 @@ export function collectRefsFromOperationRequestBody(oasOperation: Operation) {
 
 export function collectRefsFromOperationResponse(oasOperation: Operation) {
 	const refs: Set<string> = new Set();
-	const statusCodes = oasOperation.getResponseStatusCodes();
+	const documentedStatusCodes = Object.keys(
+		oasOperation.schema.responses ?? {},
+	);
+	const statusCodes =
+		documentedStatusCodes.length > 0
+			? documentedStatusCodes
+			: oasOperation.getResponseStatusCodes();
 	for (const statusCode of statusCodes) {
 		const rawResponse = oasOperation.schema.responses?.[statusCode];
 		if (
@@ -154,23 +158,6 @@ export function collectRefsFromComponentResponse(
 					refs.add(media.schema.$ref);
 				} else {
 					collectRefsFromSchema(media.schema).forEach((ref) => {
-						refs.add(ref);
-					});
-				}
-			}
-		}
-	}
-
-	// 处理 headers 中可能的引用
-	if (response && "headers" in response && response.headers) {
-		for (const header of Object.values(response.headers)) {
-			if ("$ref" in header) {
-				refs.add(header.$ref);
-			} else if (header.schema) {
-				if (typeof header.schema === "object" && "$ref" in header.schema) {
-					refs.add(header.schema.$ref);
-				} else {
-					collectRefsFromSchema(header.schema).forEach((ref) => {
 						refs.add(ref);
 					});
 				}

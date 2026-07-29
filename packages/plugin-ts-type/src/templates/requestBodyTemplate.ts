@@ -10,16 +10,20 @@ import { type InterfaceDeclarationStructure, type JSDocStructure, type OptionalK
 type RequestBody = MediaTypeObject | ReferenceObject
 
 export function requestBodyTemplate(requestName: string, requestBody: RequestBody): InterfaceDeclarationStructure | TypeAliasDeclarationStructure | undefined {
-  const schema = 'schema' in requestBody && requestBody.schema
-  const $ref = '$ref' in requestBody ? requestBody.$ref : schema && '$ref' in schema && schema.$ref
-
-  // 处理引用类型
-  if ($ref) {
-    const refType = getUpperFirstRefAlias($ref)
+  if ('$ref' in requestBody && requestBody.$ref) {
+    const refType = getUpperFirstRefAlias(requestBody.$ref)
     return createTypeAlias(requestName, refType, [])
   }
+  const schema = 'schema' in requestBody ? requestBody.schema : undefined
+  if (schema === undefined) {
+    return createTypeAlias(requestName, 'unknown', [])
+  }
+  const $ref = typeof schema === 'object' && schema !== null && '$ref' in schema ? schema.$ref : undefined
+  if ($ref) {
+    return createTypeAlias(requestName, getUpperFirstRefAlias($ref), [])
+  }
   if (isBoolean(schema) || isEmpty(schema)) {
-    return undefined
+    return createTypeAlias(requestName, schemaTemplate(schema, requestName), [])
   }
 
   // 创建文档注释

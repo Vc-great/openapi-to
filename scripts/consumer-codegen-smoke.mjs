@@ -430,6 +430,152 @@ async function assertRelativeImportsResolve(outputRoot, generatedFiles) {
 	}
 }
 
+async function assertEdgeCaseOutput(consumerRoot) {
+	const readGenerated = (path) => readFile(join(consumerRoot, path), "utf8");
+	const [
+		parameters,
+		wildcards,
+		noContent,
+		headerResponse,
+		inlineSibling,
+		componentParameter,
+		componentRequestBody,
+		componentResponse,
+		inlineAnyBody,
+		componentAnyBody,
+		componentAnyBodyService,
+	] = await Promise.all([
+		readGenerated(
+			"generated-parameter-refs/parameters/referenced-parameters.schema.ts",
+		),
+		readGenerated(
+			"generated-wildcard-responses/responses/wildcard-responses.schema.ts",
+		),
+		readGenerated(
+			"generated-component-no-content/zod/responses/no-content.schema.ts",
+		),
+		readGenerated("generated-response-headers/zod/responses/success.schema.ts"),
+		readGenerated(
+			"generated-ref-siblings/siblings/inline-ref-sibling.schema.ts",
+		),
+		readGenerated("generated-ref-siblings/zod/parameters/long-value.schema.ts"),
+		readGenerated(
+			"generated-ref-siblings/zod/requestBodies/long-body.schema.ts",
+		),
+		readGenerated(
+			"generated-ref-siblings/zod/responses/nullable-body.schema.ts",
+		),
+		readGenerated("generated-empty-media/media/inline-any-body.schema.ts"),
+		readGenerated("generated-empty-media/media/component-any-body.schema.ts"),
+		readGenerated("generated-empty-media/media/component-any-body.service.ts"),
+	]);
+	assert(
+		/"search": ParameterSearchModel\.optional\(\)/.test(parameters),
+		"Referenced optional query parameter did not generate .optional().",
+	);
+	assert(
+		/"requiredSearch": ParameterRequiredSearchModel(?!\.optional)/.test(
+			parameters,
+		),
+		"Referenced required query parameter became optional.",
+	);
+	assert(
+		/"id": ParameterUserIdModel(?!\.optional)/.test(parameters),
+		"Referenced path parameter became optional.",
+	);
+	assert(
+		/ParameterNeverParameterModel\.optional\(\)/.test(parameters),
+		"Referenced schema:false parameter was not preserved.",
+	);
+	for (const suffix of [
+		"101",
+		"1XX",
+		"200",
+		"2XX",
+		"301",
+		"3XX",
+		"400",
+		"4XX",
+		"500",
+		"5XX",
+		"Default",
+	]) {
+		assert(
+			wildcards.includes(`wildcardResponsesResponseSchema${suffix}`),
+			`Wildcard response output omitted ${suffix}.`,
+		);
+	}
+	assert(
+		/ResponseNoContent = z\.undefined\(\)/.test(noContent),
+		"No-content component response was not generated as z.undefined().",
+	);
+	assert(
+		!headerResponse.includes("RequestId") &&
+			/ResponseSuccess = z\.string\(\)/.test(headerResponse),
+		"Response header reference leaked into the response body schema.",
+	);
+	for (const [label, source] of [
+		["operation request/response", inlineSibling],
+		["component parameter", componentParameter],
+		["component request body", componentRequestBody],
+	]) {
+		assert(
+			source.includes("z.intersection(baseStringSchema, z.string().min(10))"),
+			`${label} bypassed schema-level $ref sibling rendering.`,
+		);
+	}
+	assert(
+		componentResponse.includes("baseStringSchema.nullable()"),
+		"Nullable response $ref sibling was not preserved.",
+	);
+	assert(
+		/MutationRequestSchema = z\.unknown\(\)/.test(inlineAnyBody) &&
+			/MutationSchemaResponseSchema200 = z\.unknown\(\)/.test(inlineAnyBody),
+		"Empty operation Media Type Object was not mapped to z.unknown().",
+	);
+	assert(
+		/MutationRequestSchema = anyBodySchema/.test(componentAnyBody),
+		"Referenced empty component request body did not use a real schema export.",
+	);
+	assert(
+		!componentAnyBodyService.includes("undefined.parse(") &&
+			/componentAnyBodyMutationRequestSchema\.parse\(data\)/.test(
+				componentAnyBodyService,
+			),
+		"Request service emitted a missing or undefined parser.",
+	);
+
+	for (const directory of [
+		"generated-parameter-refs",
+		"generated-wildcard-responses",
+		"generated-wildcard-types",
+		"generated-component-no-content",
+		"generated-response-headers",
+		"generated-ref-siblings",
+		"generated-empty-media",
+	]) {
+		const root = join(consumerRoot, directory);
+		const files = (await filesRecursively(root)).map((path) =>
+			relative(root, path).split(sep).join("/"),
+		);
+		await assertRelativeImportsResolve(root, files);
+		for (const file of files.filter((path) => path.endsWith(".ts"))) {
+			const source = await readFile(join(root, file), "utf8");
+			const declarations = [
+				...source.matchAll(/export const ([A-Za-z_$][\w$]*)/g),
+			].map((match) => match[1]);
+			assert(
+				new Set(declarations).size === declarations.length,
+				`${directory}/${file} contains duplicate export const declarations.`,
+			);
+			assert(
+				!source.includes("undefined.parse("),
+				`${directory}/${file} contains undefined.parse().`,
+			);
+		}
+	}
+}
+
 async function assertSemanticOutput(outputRoot, consumerRoot, generatedFiles) {
 	const readGenerated = (path) => readFile(join(outputRoot, path), "utf8");
 	const [
@@ -614,6 +760,25 @@ async function createConsumerFiles(
 			},
 		},
 	});
+	for (const fixtureName of [
+		"openapi-parameter-refs.json",
+		"openapi-wildcard-responses.json",
+		"openapi-empty-media.json",
+		"openapi-component-no-content.json",
+		"openapi-response-headers.json",
+		"openapi-ref-siblings.json",
+	]) {
+		await copyFile(
+			join(
+				repositoryRoot,
+				"scripts",
+				"fixtures",
+				"consumer-codegen",
+				fixtureName,
+			),
+			join(consumerRoot, fixtureName),
+		);
+	}
 	await writeJson(join(consumerRoot, "openapi.json"), {
 		openapi: "3.0.3",
 		info: { title: "Consumer Widgets", version: "1.0.0" },
@@ -1049,6 +1214,88 @@ export default defineConfig({
 `,
 	);
 	await writeFile(
+		join(consumerRoot, "openapi.edge-cases.config.ts"),
+		`import { defineConfig, pluginZod } from "openapi-to";
+
+export default defineConfig({
+  servers: [
+    {
+      name: "parameterRefs",
+      input: { path: "./openapi-parameter-refs.json" },
+      output: { base: "workspace", dir: "generated-parameter-refs", clean: true },
+    },
+    {
+      name: "wildcardResponses",
+      input: { path: "./openapi-wildcard-responses.json" },
+      output: { base: "workspace", dir: "generated-wildcard-responses", clean: true },
+    },
+    {
+      name: "componentNoContent",
+      input: { path: "./openapi-component-no-content.json" },
+      output: { base: "workspace", dir: "generated-component-no-content", clean: true },
+    },
+    {
+      name: "responseHeaders",
+      input: { path: "./openapi-response-headers.json" },
+      output: { base: "workspace", dir: "generated-response-headers", clean: true },
+    },
+    {
+      name: "refSiblings",
+      input: { path: "./openapi-ref-siblings.json" },
+      output: { base: "workspace", dir: "generated-ref-siblings", clean: true },
+    },
+  ],
+  plugins: [pluginZod({ importWithExtension: false })],
+});
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "openapi.wildcard-types.config.ts"),
+		`import { defineConfig, pluginTSType } from "openapi-to";
+
+export default defineConfig({
+  servers: [{
+    name: "wildcardTypes",
+    input: { path: "./openapi-wildcard-responses.json" },
+    output: { base: "workspace", dir: "generated-wildcard-types", clean: true },
+  }],
+  plugins: [pluginTSType({ importWithExtension: false })],
+});
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "openapi.empty-media.config.ts"),
+		`import {
+  defineConfig,
+  pluginTSRequest,
+  pluginTSType,
+  pluginZod,
+} from "openapi-to";
+
+export default defineConfig({
+  servers: [{
+    name: "emptyMedia",
+    input: { path: "./openapi-empty-media.json" },
+    output: { base: "workspace", dir: "generated-empty-media", clean: true },
+  }],
+  plugins: [
+    pluginZod({ importWithExtension: false }),
+    pluginTSType({ importWithExtension: false }),
+    pluginTSRequest({
+      parser: "zod",
+      requestClient: "common",
+      requestImportDeclaration: { moduleSpecifier: "../../request.ts" },
+      requestConfigTypeImportDeclaration: {
+        namedImports: ["RequestOptions"],
+        moduleSpecifier: "../../request.ts",
+      },
+      importWithExtension: false,
+    }),
+  ],
+});
+`,
+	);
+	await writeFile(
 		join(consumerRoot, "request.ts"),
 		`export interface RequestOptions {
   method?: string;
@@ -1122,6 +1369,32 @@ import {
 import { anyValueSchema } from "./generated-31/zod/models/any-value.schema";
 import { emptySchemaSchema } from "./generated-31/zod/models/empty-schema.schema";
 import { noValueSchema } from "./generated-31/zod/models/no-value.schema";
+import {
+  referencedParametersPathParamsSchema,
+  referencedParametersQueryParamsSchema,
+} from "./generated-parameter-refs/parameters/referenced-parameters.schema";
+import {
+  wildcardResponsesResponseErrorSchema,
+  wildcardResponsesResponseSchema,
+  wildcardResponsesResponseSchema4XX,
+  wildcardResponsesResponseSchema5XX,
+} from "./generated-wildcard-responses/responses/wildcard-responses.schema";
+import { ResponseNoContent } from "./generated-component-no-content/zod/responses/no-content.schema";
+import { deleteUserMutationSchemaResponseSchema } from "./generated-component-no-content/responses/delete-user.schema";
+import {
+  inlineAnyBodyMutationRequestSchema,
+  inlineAnyBodyMutationSchemaResponseSchema,
+} from "./generated-empty-media/media/inline-any-body.schema";
+import { componentAnyBodyMutationRequestSchema } from "./generated-empty-media/media/component-any-body.schema";
+import { neverBodyMutationRequestSchema } from "./generated-empty-media/media/never-body.schema";
+import { anyBodySchema } from "./generated-empty-media/zod/requestBodies/any-body.schema";
+import { ResponseSuccess } from "./generated-response-headers/zod/responses/success.schema";
+import {
+  inlineRefSiblingMutationRequestSchema,
+  inlineRefSiblingMutationSchemaResponseSchema,
+  inlineRefSiblingQueryParamsSchema,
+} from "./generated-ref-siblings/siblings/inline-ref-sibling.schema";
+import { componentRefSiblingMutationRequestSchema } from "./generated-ref-siblings/siblings/component-ref-sibling.schema";
 
 type IsUnknown<T> = unknown extends T ? ([keyof T] extends [never] ? true : false) : false;
 type Expect<T extends true> = T;
@@ -1187,6 +1460,43 @@ if (booleanSchemasResponseErrorSchema.safeParse("forbidden").success) throw new 
 anyValueSchema.parse(Symbol("any"));
 emptySchemaSchema.parse(null);
 if (noValueSchema.safeParse(undefined).success) throw new Error("false component schema passed");
+if (!referencedParametersQueryParamsSchema.safeParse({ requiredSearch: "required" }).success) {
+  throw new Error("optional referenced query parameter rejected an omitted value");
+}
+if (referencedParametersQueryParamsSchema.safeParse({}).success) {
+  throw new Error("required referenced query parameter accepted an omitted value");
+}
+if (referencedParametersPathParamsSchema.safeParse({}).success) {
+  throw new Error("referenced path parameter accepted an omitted value");
+}
+if (referencedParametersQueryParamsSchema.safeParse({ requiredSearch: "required", never: "value" }).success) {
+  throw new Error("parameter schema:false accepted a value");
+}
+wildcardResponsesResponseSchema.parse("ok");
+wildcardResponsesResponseSchema.parse(2);
+wildcardResponsesResponseErrorSchema.parse("error");
+wildcardResponsesResponseSchema4XX.parse("client error");
+wildcardResponsesResponseSchema5XX.parse("server error");
+ResponseNoContent.parse(undefined);
+deleteUserMutationSchemaResponseSchema.parse(undefined);
+if (ResponseNoContent.safeParse({}).success) throw new Error("no-content component accepted an object");
+inlineAnyBodyMutationRequestSchema.parse({ any: "value" });
+inlineAnyBodyMutationRequestSchema.parse(null);
+inlineAnyBodyMutationSchemaResponseSchema.parse({ any: "response" });
+componentAnyBodyMutationRequestSchema.parse({ any: "component" });
+anyBodySchema.parse(null);
+if (neverBodyMutationRequestSchema.safeParse("value").success) throw new Error("never body accepted a value");
+ResponseSuccess.parse("message");
+if (ResponseSuccess.safeParse({ value: "message" }).success) throw new Error("response body schema was replaced by its header");
+for (const schema of [
+  inlineRefSiblingMutationRequestSchema,
+  inlineRefSiblingMutationSchemaResponseSchema,
+  inlineRefSiblingQueryParamsSchema.shape.value,
+  componentRefSiblingMutationRequestSchema,
+]) {
+  schema.parse("0123456789");
+  if (schema.safeParse("short").success) throw new Error("ref sibling minLength was skipped");
+}
 console.log("zod4-runtime-parse:passed");
 `,
 	);
@@ -1205,6 +1515,13 @@ console.log("zod4-runtime-parse:passed");
 			"generated-recursive/**/*.ts",
 			"generated-responses/**/*.ts",
 			"generated-31/**/*.ts",
+			"generated-parameter-refs/**/*.ts",
+			"generated-wildcard-responses/**/*.ts",
+			"generated-wildcard-types/**/*.ts",
+			"generated-component-no-content/**/*.ts",
+			"generated-response-headers/**/*.ts",
+			"generated-ref-siblings/**/*.ts",
+			"generated-empty-media/**/*.ts",
 			"request.ts",
 			"consumer-usage.ts",
 			"runtime-check.ts",
@@ -1225,6 +1542,12 @@ console.log("zod4-runtime-parse:passed");
 			"generated-recursive/**/*.schema.ts",
 			"generated-responses/**/*.schema.ts",
 			"generated-31/**/*.schema.ts",
+			"generated-parameter-refs/**/*.schema.ts",
+			"generated-wildcard-responses/**/*.schema.ts",
+			"generated-component-no-content/**/*.schema.ts",
+			"generated-response-headers/**/*.schema.ts",
+			"generated-ref-siblings/**/*.schema.ts",
+			"generated-empty-media/**/*.schema.ts",
 			"runtime-check.ts",
 		],
 	});
@@ -1386,6 +1709,21 @@ export async function runConsumerCodegenScenario({
 	for (const [label, config, expectedName] of [
 		["response Zod generation", "./openapi.responses.config.ts", "responses"],
 		["OpenAPI 3.1 Zod generation", "./openapi.31.config.ts", "openapi31"],
+		[
+			"remaining edge-case Zod generation",
+			"./openapi.edge-cases.config.ts",
+			"parameterRefs",
+		],
+		[
+			"wildcard TypeScript generation",
+			"./openapi.wildcard-types.config.ts",
+			"wildcardTypes",
+		],
+		[
+			"empty-media formal plugin generation",
+			"./openapi.empty-media.config.ts",
+			"emptyMedia",
+		],
 	]) {
 		const result = parseJson(
 			runCommand(
@@ -1411,7 +1749,9 @@ export async function runConsumerCodegenScenario({
 		);
 		assert(
 			currentResult.success === true &&
-				currentResult.servers?.[0]?.manifest?.outdated === false,
+				currentResult.servers?.every(
+					(server) => server.manifest?.outdated === false,
+				),
 			`${label} was not byte-stable on its second generation.`,
 		);
 	}
@@ -1420,6 +1760,7 @@ export async function runConsumerCodegenScenario({
 	);
 	assertGeneratedOutput(generatedFiles);
 	await assertSemanticOutput(outputRoot, consumerRoot, generatedFiles);
+	await assertEdgeCaseOutput(consumerRoot);
 	const ownershipPath = join(outputRoot, ".openapi-to-manifest.json");
 	const ownership = JSON.parse(await readFile(ownershipPath, "utf8"));
 	assert(

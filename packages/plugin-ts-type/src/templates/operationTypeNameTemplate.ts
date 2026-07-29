@@ -25,6 +25,11 @@ export function getResponseErrorTypeName(operationName: string) {
   return `${upperFirst(operationName)}ResponseError`
 }
 
+export function getResponseStatusTypeName(responseName: string, statusCode: string) {
+  const suffix = statusCode.toLowerCase() === 'default' ? 'Default' : statusCode.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+  return `${responseName}${suffix}`
+}
+
 export function getOperationTSTypeName(operation: OperationWrapper) {
   const operationName = operation.accessor.operationName
 

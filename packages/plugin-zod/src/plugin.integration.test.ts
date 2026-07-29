@@ -11,7 +11,10 @@ const fixture = {
 			get: {
 				operationId: "getUser",
 				tags: ["Users"],
-				parameters: [{ $ref: "#/components/parameters/TraceId" }],
+				parameters: [
+					{ $ref: "#/components/parameters/UserId" },
+					{ $ref: "#/components/parameters/TraceId" },
+				],
 				responses: {
 					"200": {
 						description: "Found",
@@ -52,6 +55,123 @@ const fixture = {
 						},
 					},
 					"404": { $ref: "#/components/responses/NotFound" },
+				},
+			},
+		},
+		"/required-search": {
+			get: {
+				operationId: "requiredSearch",
+				tags: ["Users"],
+				parameters: [
+					{ $ref: "#/components/parameters/RequiredSearch" },
+					{ $ref: "#/components/parameters/NeverParameter" },
+					{ $ref: "#/components/parameters/LongValue" },
+				],
+				responses: {
+					"200": {
+						description: "OK",
+						content: {
+							"application/json": { schema: { type: "string" } },
+						},
+					},
+				},
+			},
+		},
+		"/wildcard": {
+			get: {
+				operationId: "wildcardResponses",
+				tags: ["Users"],
+				responses: Object.fromEntries(
+					[
+						["101", "informational"],
+						["1XX", "informational wildcard"],
+						["200", "success"],
+						["2xx", "success wildcard"],
+						["301", "redirect"],
+						["3XX", "redirect wildcard"],
+						["400", "client error"],
+						["4xx", "client error wildcard"],
+						["500", "server error"],
+						["5XX", "server error wildcard"],
+						["default", "fallback"],
+					].map(([code, description]) => [
+						code,
+						{
+							description,
+							content: {
+								"application/json": { schema: { type: "string" } },
+							},
+						},
+					]),
+				),
+			},
+		},
+		"/component-no-content": {
+			delete: {
+				operationId: "deleteUser",
+				tags: ["Users"],
+				responses: {
+					"204": { $ref: "#/components/responses/NoContent" },
+				},
+			},
+		},
+		"/empty-operation-body": {
+			post: {
+				operationId: "emptyOperationBody",
+				tags: ["Users"],
+				requestBody: {
+					content: { "application/json": {} },
+				},
+				responses: {
+					"200": {
+						description: "Any response",
+						content: { "application/json": {} },
+					},
+				},
+			},
+		},
+		"/empty-component-body": {
+			post: {
+				operationId: "emptyComponentBody",
+				tags: ["Users"],
+				requestBody: { $ref: "#/components/requestBodies/AnyBody" },
+				responses: { "204": { description: "Done" } },
+			},
+		},
+		"/ref-sibling-body": {
+			post: {
+				operationId: "refSiblingBody",
+				tags: ["Users"],
+				requestBody: {
+					content: {
+						"application/json": {
+							schema: {
+								$ref: "#/components/schemas/BaseString",
+								type: "string",
+								minLength: 10,
+							},
+						},
+					},
+				},
+				responses: {
+					"200": { $ref: "#/components/responses/NullableBody" },
+				},
+			},
+		},
+		"/component-ref-sibling-body": {
+			post: {
+				operationId: "componentRefSiblingBody",
+				tags: ["Users"],
+				requestBody: { $ref: "#/components/requestBodies/LongBody" },
+				responses: { "204": { description: "Done" } },
+			},
+		},
+		"/response-headers": {
+			get: {
+				operationId: "responseHeaders",
+				tags: ["Users"],
+				responses: {
+					"200": { $ref: "#/components/responses/HeaderBody" },
 				},
 			},
 		},
@@ -136,6 +256,7 @@ const fixture = {
 	},
 	components: {
 		schemas: {
+			BaseString: { type: "string" },
 			AnyValue: true,
 			NoValue: false,
 			EmptySchema: {},
@@ -193,6 +314,12 @@ const fixture = {
 			},
 		},
 		parameters: {
+			UserId: {
+				name: "id",
+				in: "path",
+				required: true,
+				schema: { type: "string" },
+			},
 			TraceId: {
 				name: "X-Trace-Id",
 				in: "header",
@@ -203,6 +330,28 @@ const fixture = {
 				in: "query",
 				schema: { type: "string" },
 			},
+			RequiredSearch: {
+				name: "requiredSearch",
+				in: "query",
+				required: true,
+				schema: { type: "string" },
+			},
+			NeverParameter: {
+				name: "never",
+				in: "query",
+				required: true,
+				schema: false,
+			},
+			LongValue: {
+				name: "longValue",
+				in: "query",
+				required: true,
+				schema: {
+					$ref: "#/components/schemas/BaseString",
+					type: "string",
+					minLength: 10,
+				},
+			},
 		},
 		requestBodies: {
 			CreateUser: {
@@ -212,8 +361,30 @@ const fixture = {
 					},
 				},
 			},
+			AnyBody: {
+				content: { "application/json": {} },
+			},
+			LongBody: {
+				content: {
+					"application/json": {
+						schema: {
+							$ref: "#/components/schemas/BaseString",
+							type: "string",
+							minLength: 10,
+						},
+					},
+				},
+			},
 		},
 		responses: {
+			NoContent: {
+				description: "No content",
+				headers: {
+					"X-Request-Id": {
+						$ref: "#/components/headers/RequestId",
+					},
+				},
+			},
 			NotFound: {
 				description: "Not found",
 				content: {
@@ -221,6 +392,39 @@ const fixture = {
 						schema: { $ref: "#/components/schemas/ErrorBody" },
 					},
 				},
+			},
+			HeaderBody: {
+				description: "Success",
+				headers: {
+					"X-Request-Id": {
+						$ref: "#/components/headers/RequestId",
+					},
+				},
+				content: {
+					"application/json": {
+						schema: {
+							$ref: "#/components/schemas/BaseString",
+							type: "string",
+							minLength: 10,
+						},
+					},
+				},
+			},
+			NullableBody: {
+				description: "Nullable",
+				content: {
+					"application/json": {
+						schema: {
+							$ref: "#/components/schemas/BaseString",
+							nullable: true,
+						},
+					},
+				},
+			},
+		},
+		headers: {
+			RequestId: {
+				schema: { type: "string" },
 			},
 		},
 	},
@@ -269,6 +473,12 @@ describe("Zod 4 plugin integration", () => {
 		expect(Object.keys(first.files)).toContain(
 			"zod/responses/not-found.schema.ts",
 		);
+		expect(Object.keys(first.files)).toContain(
+			"zod/responses/no-content.schema.ts",
+		);
+		expect(Object.keys(first.files)).toContain(
+			"zod/requestBodies/any-body.schema.ts",
+		);
 		expect(Object.keys(first.files)).toContain("users/search-users.schema.ts");
 
 		const all = Object.values(first.files).join("\n");
@@ -316,6 +526,30 @@ describe("Zod 4 plugin integration", () => {
 		expect(first.files["zod/responses/not-found.schema.ts"]).toContain(
 			"export const ResponseNotFound = errorBodySchema",
 		);
+		expect(first.files["zod/responses/no-content.schema.ts"]).toContain(
+			"export const ResponseNoContent = z.undefined()",
+		);
+		expect(first.files["zod/requestBodies/any-body.schema.ts"]).toContain(
+			"export const anyBodySchema = z.unknown()",
+		);
+		expect(first.files["zod/parameters/never-parameter.schema.ts"]).toContain(
+			"export const ParameterNeverParameterModel = z.never()",
+		);
+		expect(first.files["zod/parameters/long-value.schema.ts"]).toContain(
+			"z.intersection(baseStringSchema, z.string().min(10))",
+		);
+		expect(first.files["zod/requestBodies/long-body.schema.ts"]).toContain(
+			"z.intersection(baseStringSchema, z.string().min(10))",
+		);
+		expect(first.files["zod/responses/header-body.schema.ts"]).toContain(
+			"z.intersection(baseStringSchema, z.string().min(10))",
+		);
+		expect(first.files["zod/responses/header-body.schema.ts"]).not.toContain(
+			"RequestId",
+		);
+		expect(first.files["zod/responses/nullable-body.schema.ts"]).toContain(
+			"baseStringSchema.nullable()",
+		);
 
 		const search = first.files["users/search-users.schema.ts"] ?? "";
 		expect(search).toContain(
@@ -335,6 +569,55 @@ describe("Zod 4 plugin integration", () => {
 		);
 		expect(search).toContain(
 			"export const searchUsersResponseErrorSchema = z.union([searchUsersResponseSchema400, searchUsersResponseSchema404])",
+		);
+		expect(search).toContain('"search": ParameterSearchModel.optional()');
+		const requiredSearch = first.files["users/required-search.schema.ts"] ?? "";
+		expect(requiredSearch).toContain(
+			'"requiredSearch": ParameterRequiredSearchModel',
+		);
+		expect(requiredSearch).toContain('"never": ParameterNeverParameterModel');
+		expect(requiredSearch).not.toContain(
+			'"requiredSearch": ParameterRequiredSearchModel.optional()',
+		);
+		const getUser = first.files["users/get-user.schema.ts"] ?? "";
+		expect(getUser).toContain('"id": ParameterUserIdModel');
+		expect(getUser).not.toContain('"id": ParameterUserIdModel.optional()');
+		const wildcard = first.files["users/wildcard-responses.schema.ts"] ?? "";
+		for (const suffix of [
+			"101",
+			"1XX",
+			"200",
+			"2XX",
+			"301",
+			"3XX",
+			"400",
+			"4XX",
+			"500",
+			"5XX",
+			"Default",
+		]) {
+			expect(wildcard).toContain(`wildcardResponsesResponseSchema${suffix}`);
+		}
+		expect(wildcard).toContain(
+			"z.union([wildcardResponsesResponseSchema200, wildcardResponsesResponseSchema2XX])",
+		);
+		expect(wildcard).toContain("wildcardResponsesResponseSchema1XX");
+		const deleteUser = first.files["users/delete-user.schema.ts"] ?? "";
+		expect(deleteUser).toContain(
+			"export const deleteUserMutationSchemaResponseSchema204 = ResponseNoContent",
+		);
+		const emptyOperationBody =
+			first.files["users/empty-operation-body.schema.ts"] ?? "";
+		expect(emptyOperationBody).toContain(
+			"export const emptyOperationBodyMutationRequestSchema = z.unknown()",
+		);
+		expect(emptyOperationBody).toContain(
+			"export const emptyOperationBodyMutationSchemaResponseSchema200 = z.unknown()",
+		);
+		const refSiblingBody =
+			first.files["users/ref-sibling-body.schema.ts"] ?? "";
+		expect(refSiblingBody).toContain(
+			"z.intersection(baseStringSchema, z.string().min(10))",
 		);
 		const noContent = first.files["users/no-content.schema.ts"] ?? "";
 		expect(noContent).toContain(

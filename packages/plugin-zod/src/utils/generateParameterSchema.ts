@@ -7,6 +7,7 @@ import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
 
 import type { ParameterObjectWithRef } from "@openapi-to/core";
 import { CodeBlockWriter } from "ts-morph";
+import { getComponentRefExportName } from "./componentNaming.ts";
 
 /**
  * 将一组属性描述生成成带 JSDoc 注释的 TypeScript 对象字面量
@@ -22,22 +23,23 @@ export function generateParameterSchema(
 		parameters.forEach((prop, idx) => {
 			const name = prop.name;
 			const comma = idx < parameters.length - 1 ? "," : "";
+			const optional =
+				prop.in === "path" || prop.required === true ? "" : ".optional()";
 
+			writeJSDoc(writer, jsDocTemplateFromParameter(prop));
+			let schemaString: string;
 			if ("$ref" in prop && prop.$ref) {
-				writer.writeLine(
-					`${JSON.stringify(name)}: ${schemaTemplate(prop, name, operationName, options)}${comma}`,
-				);
+				schemaString = getComponentRefExportName(prop.$ref);
 			} else {
-				writeJSDoc(writer, jsDocTemplateFromParameter(prop));
-				const optional = prop.required ? "" : ".optional()";
-				const schemaString = prop.schema
-					? schemaTemplate(prop.schema, name, operationName, options)
-					: "z.string()";
-
-				writer.writeLine(
-					`${JSON.stringify(name)}: ${schemaString}${optional}${comma}`,
-				);
+				schemaString =
+					prop.schema !== undefined
+						? schemaTemplate(prop.schema, name, operationName, options)
+						: "z.string()";
 			}
+
+			writer.writeLine(
+				`${JSON.stringify(name)}: ${schemaString}${optional}${comma}`,
+			);
 		});
 	});
 	return `z.object(${writer.toString()})`;

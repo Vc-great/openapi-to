@@ -28,15 +28,11 @@ export function buildComponentsRequestBody(
       return createTypeAlias(name, refType, [])
     }
 
-    // 数组类型且items有引用
     if (body.schema && 'type' in body.schema && body.schema.type === 'array' && body.schema.items && '$ref' in body.schema.items) {
       const refType = getUpperFirstRefAlias(body.schema.items.$ref)
       return createTypeAlias(name, `${refType}[]`, [])
     }
 
-    // 数组类型但items没有引用
-    if (body.schema && 'type' in body.schema && body.schema.type === 'array' && body.schema.items) {
-      return requestBodyTemplate(name, body)
-    }
+    return requestBodyTemplate(name, body)
   }
 }

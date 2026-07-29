@@ -20,21 +20,19 @@ export function requestBodyTemplate(
 	requestBody: RequestBody,
 	options: SchemaRenderOptions = {},
 ): VariableStatementStructure | undefined {
-	const schema = "schema" in requestBody && requestBody.schema;
-	const $ref =
-		"$ref" in requestBody
-			? requestBody.$ref
-			: schema && typeof schema === "object" && "$ref" in schema && schema.$ref;
-
-	// 处理引用类型
-	if ($ref) {
-		const refSchemaName = getComponentRefExportName($ref);
+	// A Request Body Reference Object aliases the component. Schema Object
+	// references, including siblings, must go through schemaTemplate instead.
+	if ("$ref" in requestBody && requestBody.$ref) {
+		const refSchemaName = getComponentRefExportName(requestBody.$ref);
 
 		return createVariable(requestName, refSchemaName, []);
 	}
-	if (schema === undefined) {
-		return undefined;
-	}
+
+	// An existing Media Type Object without a schema accepts any JSON value.
+	const schema =
+		"schema" in requestBody && requestBody.schema !== undefined
+			? requestBody.schema
+			: true;
 
 	// 创建文档注释
 	const docs: OptionalKind<JSDocStructure>[] = jsDocTemplateFromSchema(

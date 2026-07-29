@@ -30,16 +30,6 @@ export function buildComponentsRequestBody(
 			return undefined;
 		}
 
-		if (
-			body.schema &&
-			typeof body.schema === "object" &&
-			"$ref" in body.schema
-		) {
-			const refType = getComponentRefExportName(body.schema.$ref);
-			return createVariable(name, refType, []);
-		}
-
-		if (body.schema !== undefined)
-			return requestBodyTemplate(name, body, options);
+		return requestBodyTemplate(name, body, options);
 	}
 }

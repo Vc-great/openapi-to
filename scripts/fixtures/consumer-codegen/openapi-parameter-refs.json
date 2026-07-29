@@ -1,0 +1,58 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Referenced parameters",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/search/{id}": {
+			"get": {
+				"tags": ["parameters"],
+				"operationId": "referencedParameters",
+				"parameters": [
+					{ "$ref": "#/components/parameters/Search" },
+					{ "$ref": "#/components/parameters/RequiredSearch" },
+					{ "$ref": "#/components/parameters/UserId" },
+					{ "$ref": "#/components/parameters/NeverParameter" }
+				],
+				"responses": {
+					"204": {
+						"description": "Done"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"parameters": {
+			"Search": {
+				"name": "search",
+				"in": "query",
+				"schema": {
+					"type": "string"
+				}
+			},
+			"RequiredSearch": {
+				"name": "requiredSearch",
+				"in": "query",
+				"required": true,
+				"schema": {
+					"type": "string"
+				}
+			},
+			"UserId": {
+				"name": "id",
+				"in": "path",
+				"required": true,
+				"schema": {
+					"type": "string"
+				}
+			},
+			"NeverParameter": {
+				"name": "never",
+				"in": "query",
+				"schema": false
+			}
+		}
+	}
+}

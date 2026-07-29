@@ -1,8 +1,64 @@
 import { buildJsonResponseTypes } from '@/builds/operation/buildJsonResponseTypes'
+import type { OperationWrapper } from '@openapi-to/core'
 import { OpenAPIV3 } from 'openapi-types'
 import { describe, expect, it, vi } from 'vitest'
 
+function operationFixture(value: unknown): OperationWrapper {
+  return value as OperationWrapper
+}
+
 describe('buildJsonResponseTypes', () => {
+  it('generates unique declarations and aggregates concrete and wildcard responses', () => {
+    const statuses = ['101', '1XX', '200', '2xx', '301', '3XX', '400', '4xx', '500', '5XX', 'default']
+    const responses = Object.fromEntries(
+      statuses.map((status) => [
+        status,
+        {
+          description: status,
+          content: { 'application/json': { schema: { type: 'string' } } },
+        },
+      ]),
+    )
+    const result = buildJsonResponseTypes(
+      operationFixture({
+        accessor: {
+          operationName: 'statusMatrix',
+          operation: {
+            method: OpenAPIV3.HttpMethods.GET,
+            schema: { responses },
+            getResponseStatusCodes: () => statuses,
+            getResponseAsJSONSchema: (status: string) => [
+              {
+                description: status,
+                label: status,
+                schema: { type: 'string' },
+                type: 'string',
+              },
+            ],
+          },
+        },
+      }),
+    )
+    const declarations = result
+      .filter((statement): statement is typeof statement & { name: string } => 'name' in statement && typeof statement.name === 'string')
+      .map((statement) => statement.name)
+
+    expect(new Set(declarations).size).toBe(declarations.length)
+    expect(declarations).toEqual(
+      expect.arrayContaining([
+        'StatusMatrixResponse200',
+        'StatusMatrixResponse2XX',
+        'StatusMatrixResponse1XX',
+        'StatusMatrixResponse3XX',
+        'StatusMatrixResponse4XX',
+        'StatusMatrixResponse5XX',
+        'StatusMatrixResponseDefault',
+        'StatusMatrixResponse',
+        'StatusMatrixResponseError',
+      ]),
+    )
+  })
+
   it('应该构建成功和错误响应的类型', () => {
     const mockOperation = {
       accessor: {
@@ -27,7 +83,7 @@ describe('buildJsonResponseTypes', () => {
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     expect(result.length).toBeGreaterThan(0)
 
@@ -51,7 +107,7 @@ describe('buildJsonResponseTypes', () => {
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     const defaultSuccessType = result.find((stmt) => 'name' in stmt && stmt.name?.includes('EmptyResponseResponse'))
     expect(defaultSuccessType).toBeDefined()
@@ -70,7 +126,7 @@ describe('buildJsonResponseTypes', () => {
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     const mutationResponse = result.find((stmt) => 'name' in stmt && stmt.name?.includes('CreateUserMutationResponse'))
     expect(mutationResponse).toBeDefined()
@@ -89,7 +145,7 @@ describe('buildJsonResponseTypes', () => {
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     expect(result.length).toBeGreaterThan(0)
     const defaultType = result.find((stmt) => 'name' in stmt && stmt.name?.includes('NoStatusCodesResponse'))
@@ -107,7 +163,7 @@ describe('buildJsonResponseTypes', () => {
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     expect(result.length).toBeGreaterThan(0)
     const defaultType = result.find((stmt) => 'name' in stmt && stmt.name?.includes('NoMethodsResponse'))
@@ -124,7 +180,12 @@ describe('buildJsonResponseTypes', () => {
           getResponseStatusCodes: vi.fn().mockReturnValue(['300', '400']),
           getResponseAsJSONSchema: vi.fn((code) => {
             if (code === '300') {
-              return [{ type: 'object', properties: { location: { type: 'string' } } }]
+              return [
+                {
+                  type: 'object',
+                  properties: { location: { type: 'string' } },
+                },
+              ]
             }
             return undefined
           }),
@@ -132,7 +193,7 @@ describe('buildJsonResponseTypes', () => {
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     const successType = result.find((stmt) => 'name' in stmt && stmt.name?.includes('RedirectResponseResponse'))
     expect(successType).toBeDefined()
@@ -150,14 +211,14 @@ describe('buildJsonResponseTypes', () => {
         operation: {
           method: OpenAPIV3.HttpMethods.GET,
           getResponseStatusCodes: vi.fn().mockReturnValue(['400', '500']),
-          getResponseAsJSONSchema: vi.fn((code) => {
+          getResponseAsJSONSchema: vi.fn((_code) => {
             return [{ type: 'object', properties: { error: { type: 'string' } } }]
           }),
         },
       },
     }
 
-    const result = buildJsonResponseTypes(mockOperation as any)
+    const result = buildJsonResponseTypes(operationFixture(mockOperation))
 
     const defaultSuccessType = result.find((stmt) => 'name' in stmt && stmt.name?.includes('ErrorOnlyResponse'))
     expect(defaultSuccessType).toBeDefined()
