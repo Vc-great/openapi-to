@@ -15,6 +15,7 @@ import { promisify } from "node:util";
 
 import {
 	auditAgentAndSkillContracts,
+	auditCiDiagnosticsContracts,
 	auditRepositoryContracts,
 	discoverAgentDocuments,
 	parseOpenAiSkillYaml,
@@ -92,6 +93,38 @@ async function createContractFixture(t) {
 	return root;
 }
 
+async function createCiDiagnosticsContractFixture(t) {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-ci-contract-"));
+	t.after(async () => {
+		await rm(root, { recursive: true, force: true });
+	});
+	await git(root, "init", "--quiet");
+	for (const relativePath of [
+		"scripts/ci-diagnostics/schema.mjs",
+		"scripts/ci-diagnostics/sanitize.mjs",
+		"scripts/ci-diagnostics/filesystem.mjs",
+		"scripts/ci-diagnostics/plans.mjs",
+		"scripts/ci-diagnostics/initialize.mjs",
+		"scripts/ci-diagnostics/run-command.mjs",
+		"scripts/ci-diagnostics/finalize-job.mjs",
+		"scripts/ci-diagnostics/ci-diagnostics.node-test.mjs",
+		"docs/testing/ci-diagnostics.md",
+		".github/workflows/quality.yml",
+		".github/workflows/a1-cross-platform.yml",
+		".github/workflows/e2e.yaml",
+		".github/workflows/version-readiness.yml",
+		".github/workflows/version-packages.yml",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	await git(root, "add", "--", ".");
+	return root;
+}
+
 function assertFailure(result, pattern) {
 	assert.ok(
 		result.failures.some((failure) => pattern.test(failure)),
@@ -135,6 +168,151 @@ test("blocking Actions workflows use controlled fixtures and retain diagnostic a
 	assert.match(e2e, /pnpm test:e2e:remote/);
 	assert.match(e2e, /MCP_TEST_ARTIFACT_DIR/);
 	assert.match(e2e, /actions\/upload-artifact@v4/);
+});
+
+test("CI diagnostics repository contract accepts the tracked bounded integration", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	assert.deepEqual(await auditCiDiagnosticsContracts(root), []);
+});
+
+test("CI diagnostics repository contract rejects missing or untracked core files", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	await rm(join(root, "scripts/ci-diagnostics/run-command.mjs"));
+	let failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/missing CI diagnostics infrastructure scripts\/ci-diagnostics\/run-command\.mjs/.test(
+				failure,
+			),
+		),
+	);
+	await git(
+		root,
+		"rm",
+		"--cached",
+		"--force",
+		"--",
+		"scripts/ci-diagnostics/run-command.mjs",
+	);
+	await writeFixtureFile(
+		root,
+		"scripts/ci-diagnostics/run-command.mjs",
+		"export {};\n",
+	);
+	failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/not Git-tracked: scripts\/ci-diagnostics\/run-command\.mjs/.test(
+				failure,
+			),
+		),
+	);
+});
+
+test("CI diagnostics repository contract rejects schema and retention drift", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const schemaPath = join(root, "scripts/ci-diagnostics/schema.mjs");
+	const schema = await readFile(schemaPath, "utf8");
+	await writeFile(
+		schemaPath,
+		schema
+			.replace("SCHEMA_VERSION = 1", "SCHEMA_VERSION = 2")
+			.replace("ARTIFACT_RETENTION_DAYS = 14", "ARTIFACT_RETENTION_DAYS = 7"),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/schema entrypoint must declare version 1/.test(failure),
+		),
+	);
+	assert.ok(
+		failures.some((failure) =>
+			/retention contract must remain 14 days/.test(failure),
+		),
+	);
+});
+
+test("CI diagnostics repository contract rejects missing finalizers and hidden failures", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const workflowPath = join(root, ".github/workflows/quality.yml");
+	const workflow = await readFile(workflowPath, "utf8");
+	await writeFile(
+		workflowPath,
+		workflow
+			.replace("- name: Finalize CI diagnostics", "- name: Missing finalizer")
+			.replace("    steps:", "    continue-on-error: true\n    steps:"),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/must finalize all 5 covered Jobs/.test(failure),
+		),
+	);
+	assert.ok(
+		failures.some((failure) => /must not use continue-on-error/.test(failure)),
+	);
+});
+
+test("CI diagnostics repository contract rejects artifact-policy drift", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const workflowPath = join(root, ".github/workflows/version-readiness.yml");
+	const workflow = await readFile(workflowPath, "utf8");
+	await writeFile(
+		workflowPath,
+		workflow
+			.replace("if: failure()", "if: always()")
+			.replace("retention-days: 14", "retention-days: 30"),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/upload all 1 standard diagnostics with if: failure/.test(failure),
+		),
+	);
+	assert.ok(failures.some((failure) => /14-day retention/.test(failure)));
+});
+
+test("CI diagnostics repository contract rejects gate and matrix shrinkage", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const qualityPath = join(root, ".github/workflows/quality.yml");
+	await writeFile(
+		qualityPath,
+		(await readFile(qualityPath, "utf8")).replace(
+			"pnpm typecheck --concurrency=1",
+			"pnpm typecheck",
+		),
+	);
+	const a1Path = join(root, ".github/workflows/a1-cross-platform.yml");
+	await writeFile(
+		a1Path,
+		(await readFile(a1Path, "utf8")).replace(", windows-latest", ""),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/removed gate command: pnpm typecheck --concurrency=1/.test(failure),
+		),
+	);
+	assert.ok(
+		failures.some((failure) =>
+			/A1 diagnostics integration removed contract: os:/.test(failure),
+		),
+	);
+});
+
+test("CI diagnostics repository contract rejects Version Packages integration", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const workflowPath = join(root, ".github/workflows/version-packages.yml");
+	await writeFile(
+		workflowPath,
+		`${await readFile(workflowPath, "utf8")}\n# ci-diagnostics\n`,
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assert.ok(
+		failures.some((failure) =>
+			/Version Packages must remain outside CI diagnostics/.test(failure),
+		),
+	);
 });
 
 test("workspace parser accepts only quoted package entries", () => {

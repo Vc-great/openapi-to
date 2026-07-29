@@ -4,6 +4,10 @@ import { createServer } from "node:http";
 import path from "node:path";
 
 import {
+	sanitizeCommand,
+	sanitizeText,
+} from "../scripts/ci-diagnostics/sanitize.mjs";
+import {
 	assert,
 	exists,
 	listFiles,
@@ -147,8 +151,12 @@ async function run(label, args) {
 		exitCode: result.code,
 		signal: result.signal,
 		command: result.command,
-		args: result.args.map((argument) =>
-			argument.includes(`:${address.port}`) ? "<local-random-port>" : argument,
+		args: sanitizeCommand(
+			result.args.map((argument) =>
+				argument.includes(`:${address.port}`)
+					? "<local-random-port>"
+					: argument,
+			),
 		),
 	});
 	return result;
@@ -236,7 +244,9 @@ try {
 	summary.stage = "complete";
 } catch (error) {
 	summary.status = "failed";
-	summary.error = error instanceof Error ? error.message : String(error);
+	summary.error = sanitizeText(
+		error instanceof Error ? error.message : String(error),
+	).slice(0, 2_000);
 	process.exitCode = 1;
 } finally {
 	await collectFiles();

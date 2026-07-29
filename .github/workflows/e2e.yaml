@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: '23 3 * * 2'
 
+permissions:
+  contents: read
+
 jobs:
   common:
     name: CLI CommonJS E2E (${{ matrix.os }})
@@ -19,26 +22,47 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-common
+      CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-common
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-common
       - name: Setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm run build
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm run build
       - name: Run deterministic CommonJS CLI E2E
-        run: pnpm test:e2e:common
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-e2e -- pnpm test:e2e:common
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
-          CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-common
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-common --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-common-${{ matrix.os }}
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload CommonJS CLI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: cli-common-${{ matrix.os }}
-          path: ${{ runner.temp }}/cli-common
+          path: |
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-runtime.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-summary.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-fixture.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-files.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -51,26 +75,47 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-module
+      CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-module
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-module
       - name: Setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm run build
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm run build
       - name: Run deterministic ESM CLI E2E
-        run: pnpm test:e2e:module
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-e2e -- pnpm test:e2e:module
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
-          CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-module
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-module --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-module-${{ matrix.os }}
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload ESM CLI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: cli-module-${{ matrix.os }}
-          path: ${{ runner.temp }}/cli-module
+          path: |
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-runtime.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-summary.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-fixture.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-files.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -83,25 +128,45 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-remote
+      CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-remote
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-remote
       - name: Setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm run build
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm run build
       - name: Generate from controlled local HTTP fixtures
-        run: pnpm test:e2e:remote
-        env:
-          CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-remote
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-e2e -- pnpm test:e2e:remote
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-remote --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-remote-${{ matrix.os }}
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload remote CLI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: cli-remote-${{ matrix.os }}
-          path: ${{ runner.temp }}/cli-remote
+          path: |
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-runtime.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-summary.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-fixture.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/cli-files.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -110,23 +175,42 @@ jobs:
     if: github.event_name != 'schedule'
     timeout-minutes: 20
     runs-on: ubuntu-latest
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-stdio
+      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-stdio
+      MCP_DOCTOR_REPORT: ${{ runner.temp }}/mcp-doctor.json
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-stdio
       - name: Setup
         uses: ./.github/setup
       - name: Test built-bin stdio and controlled-write protocol
-        run: pnpm test:mcp:stdio
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-stdio -- pnpm test:mcp:stdio
       - name: Run MCP Doctor
-        run: pnpm mcp:check -- --json --output "${{ runner.temp }}/mcp-doctor.json"
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-doctor -- pnpm mcp:check -- --json --output "${{ env.MCP_DOCTOR_REPORT }}"
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-stdio --job-status "${{ job.status }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-mcp-stdio-e2e
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload sanitized MCP Doctor report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mcp-doctor-node20
-          path: ${{ runner.temp }}/mcp-doctor.json
+          path: ${{ env.MCP_DOCTOR_REPORT }}
           if-no-files-found: error
           retention-days: 14
 
@@ -139,23 +223,42 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-smoke
+      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-smoke
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-cross-platform
       - name: Setup Node 20 and pnpm
         uses: ./.github/setup
       - name: Initialize, list tools, validate, and close
-        run: pnpm test:mcp:smoke
-        env:
-          MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-smoke
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-smoke -- pnpm test:mcp:smoke
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-cross-platform --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-mcp-cross-platform-${{ matrix.os }}
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload MCP smoke failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: mcp-smoke-${{ matrix.os }}
-          path: ${{ runner.temp }}/mcp-smoke
+          path: |
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/mcp-runner.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/mcp-results.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/mcp-smoke.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -164,27 +267,63 @@ jobs:
     if: github.event_name != 'schedule'
     timeout-minutes: 25
     runs-on: ubuntu-latest
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-transaction
+      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-transaction
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-transaction-safety
       - name: Setup
         uses: ./.github/setup
       - name: Test rollback, recovery, cancellation, and locks
-        run: pnpm test:mcp:recovery
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-recovery -- pnpm test:mcp:recovery
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-transaction-safety --job-status "${{ job.status }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-mcp-transaction-safety
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
 
   mcp-performance:
     name: MCP performance and bounded stress
     if: github.event_name != 'pull_request'
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-performance
+      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-performance
+      CI_BASE_SHA: ''
+      CI_HEAD_SHA: ${{ github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-performance
       - name: Setup
         uses: ./.github/setup
       - name: Run benchmark regression and bounded stress
-        run: pnpm test:mcp:performance
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-performance -- pnpm test:mcp:performance
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-performance --job-status "${{ job.status }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-e2e-mcp-performance
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14

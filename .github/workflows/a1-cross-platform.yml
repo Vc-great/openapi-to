@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   contracts:
     name: A1 focused (${{ matrix.os }})
@@ -16,34 +19,57 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-a1
+      A1_TEST_ARTIFACT_DIR: ${{ runner.temp }}/a1-contracts
+      CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Initialize CI diagnostics
+        run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan a1-contracts
       - name: Setup Node 20 and pnpm
         uses: ./.github/setup
       - name: Build packages
-        run: pnpm build --concurrency=1
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
       - name: Run A1 focused contracts
-        run: pnpm test:a1-contracts
-        env:
-          A1_TEST_ARTIFACT_DIR: ${{ runner.temp }}/a1-contracts
-      - name: Verify aggregate CLI aliases
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id a1-contracts -- pnpm test:a1-contracts
+      - name: Verify openapi CLI alias
         working-directory: e2e/common
-        run: |
-          pnpm exec openapi --help
-          pnpm exec openapi-to --version
-          pnpm exec openapi-to-mcp --help
-      - name: Verify both shared MCP wrappers
-        run: |
-          node packages/openapi/bin/openapi-to-mcp.js --help
-          node packages/mcp/bin/openapi-to-mcp.js --help
+        run: pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-openapi-help --cwd . -- pnpm exec openapi --help
+      - name: Verify openapi-to CLI alias
+        working-directory: e2e/common
+        run: pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-openapi-to-version --cwd . -- pnpm exec openapi-to --version
+      - name: Verify aggregate MCP CLI alias
+        working-directory: e2e/common
+        run: pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-mcp-help --cwd . -- pnpm exec openapi-to-mcp --help
+      - name: Verify aggregate MCP wrapper
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-openapi-wrapper -- node packages/openapi/bin/openapi-to-mcp.js --help
+      - name: Verify package MCP wrapper
+        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-package-wrapper -- node packages/mcp/bin/openapi-to-mcp.js --help
+      - name: Finalize CI diagnostics
+        if: always()
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan a1-contracts --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}"
+      - name: Upload CI failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-diagnostics-a1-cross-platform-contracts-contracts-${{ matrix.os }}
+          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload A1 failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: a1-contracts-${{ matrix.os }}
-          path: ${{ runner.temp }}/a1-contracts
+          path: |
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-runtime.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-summary.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-inventory.json
+            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-vitest.json
           if-no-files-found: warn
           retention-days: 14

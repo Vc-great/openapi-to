@@ -45,6 +45,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/ai-hosts/cursor.md",
 	"docs/ai-hosts/generic-stdio.md",
 	"docs/testing/consumer-codegen.md",
+	"docs/testing/ci-diagnostics.md",
 ];
 
 export const REQUIRED_AGENT_DOCUMENTS = [
@@ -895,6 +896,219 @@ export async function auditAgentAndSkillContracts(
 	};
 }
 
+const CI_DIAGNOSTIC_CORE_PATHS = [
+	"scripts/ci-diagnostics/schema.mjs",
+	"scripts/ci-diagnostics/sanitize.mjs",
+	"scripts/ci-diagnostics/filesystem.mjs",
+	"scripts/ci-diagnostics/plans.mjs",
+	"scripts/ci-diagnostics/initialize.mjs",
+	"scripts/ci-diagnostics/run-command.mjs",
+	"scripts/ci-diagnostics/finalize-job.mjs",
+	"scripts/ci-diagnostics/ci-diagnostics.node-test.mjs",
+	"docs/testing/ci-diagnostics.md",
+];
+
+const CI_DIAGNOSTIC_WORKFLOWS = new Map([
+	[".github/workflows/quality.yml", 5],
+	[".github/workflows/a1-cross-platform.yml", 1],
+	[".github/workflows/e2e.yaml", 7],
+	[".github/workflows/version-readiness.yml", 1],
+]);
+
+function occurrences(contents, pattern) {
+	return [...contents.matchAll(pattern)].length;
+}
+
+export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
+	const failures = [];
+	for (const relativePath of CI_DIAGNOSTIC_CORE_PATHS) {
+		if (!(await exists(join(root, relativePath)))) {
+			failures.push(`missing CI diagnostics infrastructure ${relativePath}`);
+			continue;
+		}
+		if (!(await isGitTracked(root, relativePath))) {
+			failures.push(
+				`CI diagnostics infrastructure is not Git-tracked: ${relativePath}`,
+			);
+		}
+	}
+
+	const schemaPath = join(root, "scripts/ci-diagnostics/schema.mjs");
+	if (await exists(schemaPath)) {
+		const schema = await readFile(schemaPath, "utf8");
+		if (!/SCHEMA_VERSION\s*=\s*1\b/.test(schema)) {
+			failures.push("CI diagnostics schema entrypoint must declare version 1");
+		}
+		if (!schema.includes('DIAGNOSTIC_KIND = "openapi-to-ci-diagnostic"')) {
+			failures.push(
+				"CI diagnostics schema entrypoint must declare the stable kind",
+			);
+		}
+		if (!/ARTIFACT_RETENTION_DAYS\s*=\s*14\b/.test(schema)) {
+			failures.push(
+				"CI diagnostics artifact retention contract must remain 14 days",
+			);
+		}
+	}
+
+	for (const [relativePath, expectedJobs] of CI_DIAGNOSTIC_WORKFLOWS) {
+		const workflowPath = join(root, relativePath);
+		if (!(await exists(workflowPath))) {
+			failures.push(`missing CI diagnostics workflow ${relativePath}`);
+			continue;
+		}
+		const workflow = await readFile(workflowPath, "utf8");
+		const finalizers = occurrences(
+			workflow,
+			/^\s+- name: Finalize CI diagnostics\s*$/gm,
+		);
+		const uploads = occurrences(
+			workflow,
+			/^\s+- name: Upload CI failure diagnostics\s*$/gm,
+		);
+		const alwaysFinalizers = occurrences(
+			workflow,
+			/- name: Finalize CI diagnostics\s*\r?\n\s+if: always\(\)/g,
+		);
+		const failureUploads = occurrences(
+			workflow,
+			/- name: Upload CI failure diagnostics\s*\r?\n\s+if: failure\(\)/g,
+		);
+		if (finalizers !== expectedJobs || alwaysFinalizers !== expectedJobs) {
+			failures.push(
+				`${relativePath} must finalize all ${expectedJobs} covered Jobs with if: always()`,
+			);
+		}
+		if (uploads !== expectedJobs || failureUploads !== expectedJobs) {
+			failures.push(
+				`${relativePath} must upload all ${expectedJobs} standard diagnostics with if: failure()`,
+			);
+		}
+		if (
+			occurrences(
+				workflow,
+				/name: ci-diagnostics-[^\r\n]+\r?\n\s+path: \$\{\{ env\.CI_DIAGNOSTIC_DIR }}\r?\n\s+if-no-files-found: error\r?\n\s+retention-days: 14/g,
+			) !== expectedJobs
+		) {
+			failures.push(
+				`${relativePath} standard artifacts must use stable names, the diagnostic directory, if-no-files-found error, and 14-day retention`,
+			);
+		}
+		if (workflow.includes("continue-on-error")) {
+			failures.push(`${relativePath} must not use continue-on-error`);
+		}
+		if (!/permissions:\s*\r?\n\s+contents: read/.test(workflow)) {
+			failures.push(`${relativePath} must declare contents: read`);
+		}
+		for (const forbidden of [
+			"contents: write",
+			"pull-requests: write",
+			"issues: write",
+			"pull_request_target:",
+			"workflow_run:",
+		]) {
+			if (workflow.includes(forbidden)) {
+				failures.push(
+					`${relativePath} contains forbidden diagnostic authority: ${forbidden}`,
+				);
+			}
+		}
+	}
+
+	const qualityPath = join(root, ".github/workflows/quality.yml");
+	if (await exists(qualityPath)) {
+		const quality = await readFile(qualityPath, "utf8");
+		for (const command of [
+			"pnpm build --concurrency=1",
+			"pnpm typecheck --concurrency=1",
+			"pnpm exec tsc -b",
+			"pnpm test:vitest",
+			"pnpm test:release-scripts",
+			"pnpm lint:changed --base",
+			"pnpm verify:repository-contract",
+			"pnpm verify:package-surface",
+			"pnpm release:smoke",
+			"pnpm verify:changeset-state:development",
+		]) {
+			if (!quality.includes(command)) {
+				failures.push(
+					`Quality diagnostics integration removed gate command: ${command}`,
+				);
+			}
+		}
+	}
+
+	const a1Path = join(root, ".github/workflows/a1-cross-platform.yml");
+	if (await exists(a1Path)) {
+		const a1 = await readFile(a1Path, "utf8");
+		for (const required of [
+			"fail-fast: false",
+			"os: [ubuntu-latest, windows-latest, macos-latest]",
+			"pnpm test:a1-contracts",
+			"pnpm exec openapi --help",
+			"pnpm exec openapi-to --version",
+			"pnpm exec openapi-to-mcp --help",
+			"packages/openapi/bin/openapi-to-mcp.js --help",
+			"packages/mcp/bin/openapi-to-mcp.js --help",
+		]) {
+			if (!a1.includes(required)) {
+				failures.push(
+					`A1 diagnostics integration removed contract: ${required}`,
+				);
+			}
+		}
+	}
+
+	const e2ePath = join(root, ".github/workflows/e2e.yaml");
+	if (await exists(e2ePath)) {
+		const e2e = await readFile(e2ePath, "utf8");
+		for (const required of [
+			"common:",
+			"module:",
+			"remote:",
+			"mcp-stdio-e2e:",
+			"mcp-cross-platform:",
+			"mcp-transaction-safety:",
+			"mcp-performance:",
+			"os: [ubuntu-latest, windows-latest, macos-latest]",
+			"fail-fast: false",
+			"if: github.event_name != 'pull_request'",
+			"if: github.event_name != 'schedule'",
+			"if: always()",
+		]) {
+			if (!e2e.includes(required)) {
+				failures.push(
+					`E2E diagnostics integration removed contract: ${required}`,
+				);
+			}
+		}
+	}
+
+	const versionPackagesPath = join(
+		root,
+		".github/workflows/version-packages.yml",
+	);
+	if (await exists(versionPackagesPath)) {
+		const versionPackages = await readFile(versionPackagesPath, "utf8");
+		for (const forbidden of [
+			"ci-diagnostics",
+			"Finalize CI diagnostics",
+			"workflow_run:",
+			"pull_request_target:",
+			"openai",
+			"codex",
+		]) {
+			if (versionPackages.toLowerCase().includes(forbidden.toLowerCase())) {
+				failures.push(
+					`Version Packages must remain outside CI diagnostics and AI integration: ${forbidden}`,
+				);
+			}
+		}
+	}
+
+	return sortedUnique(failures);
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -972,6 +1186,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		workspaceManifests,
 	});
 	failures.push(...agentSkillAudit.failures);
+	failures.push(...(await auditCiDiagnosticsContracts(root)));
 
 	if (
 		rootManifest.scripts?.["version:canary"] !==
@@ -1041,9 +1256,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		join(root, ".github/workflows/quality.yml"),
 		"utf8",
 	);
-	if (
-		!qualityWorkflow.includes("run: pnpm verify:changeset-state:development")
-	) {
+	if (!qualityWorkflow.includes("-- pnpm verify:changeset-state:development")) {
 		failures.push(
 			"Quality package smoke must run verify:changeset-state:development",
 		);
@@ -1174,7 +1387,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			if (!workflow.includes(required))
 				failures.push(`Version readiness workflow is missing ${required}`);
 		}
-		if (!/run:\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(workflow)) {
+		if (!/--\s+pnpm verify:changeset-state\s*(?:\r?\n|$)/.test(workflow)) {
 			failures.push(
 				"Version readiness workflow must run strict verify:changeset-state",
 			);
