@@ -272,6 +272,77 @@ test("CI diagnostics repository contract rejects artifact-policy drift", async (
 	assert.ok(failures.some((failure) => /14-day retention/.test(failure)));
 });
 
+test("CI diagnostics repository contract rejects work-directory uploads and pnpm-hosted wrappers", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const workflowPath = join(root, ".github/workflows/version-readiness.yml");
+	const workflow = await readFile(workflowPath, "utf8");
+	await writeFile(
+		workflowPath,
+		workflow
+			.replace(
+				`path: \${{ steps.diagnostics-init.outputs.upload-dir }}`,
+				`path: \${{ env.CI_DIAGNOSTIC_DIR }}`,
+			)
+			.replace(
+				"run: node scripts/ci-diagnostics/run-command.mjs",
+				"run: pnpm exec node scripts/ci-diagnostics/run-command.mjs",
+			),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assertFailure({ failures }, /isolated upload directory/);
+	assertFailure(
+		{ failures },
+		/start the CI diagnostics wrapper directly with node/,
+	);
+});
+
+test("CI diagnostics repository contract rejects persisted checkout credentials and missing Action ids", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const workflowPath = join(root, ".github/workflows/version-readiness.yml");
+	const workflow = await readFile(workflowPath, "utf8");
+	await writeFile(
+		workflowPath,
+		workflow
+			.replace("          persist-credentials: false\n", "")
+			.replace("        id: setup\n", ""),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assertFailure({ failures }, /disable persisted credentials/);
+	assertFailure({ failures }, /stable setup ids/);
+});
+
+test("CI diagnostics repository contract rejects missing bounded reads, child environment policy, and upload materialization", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	const filesystemPath = join(root, "scripts/ci-diagnostics/filesystem.mjs");
+	await writeFile(
+		filesystemPath,
+		(await readFile(filesystemPath, "utf8")).replace(
+			"export async function readBoundedRegularFile",
+			"async function unsafeRead",
+		),
+	);
+	const runCommandPath = join(root, "scripts/ci-diagnostics/run-command.mjs");
+	await writeFile(
+		runCommandPath,
+		(await readFile(runCommandPath, "utf8")).replace(
+			"CHILD_ENV_DENYLIST",
+			"REMOVED_CHILD_POLICY",
+		),
+	);
+	const finalizerPath = join(root, "scripts/ci-diagnostics/finalize-job.mjs");
+	await writeFile(
+		finalizerPath,
+		(await readFile(finalizerPath, "utf8")).replaceAll(
+			"materializeUploadDirectory",
+			"unsafeUploadDirectory",
+		),
+	);
+	const failures = await auditCiDiagnosticsContracts(root);
+	assertFailure({ failures }, /bounded file reader is missing/);
+	assertFailure({ failures }, /child environment policy is missing/);
+	assertFailure({ failures }, /upload materialization is missing/);
+});
+
 test("CI diagnostics repository contract rejects gate and matrix shrinkage", async (t) => {
 	const root = await createCiDiagnosticsContractFixture(t);
 	const qualityPath = join(root, ".github/workflows/quality.yml");

@@ -1,21 +1,44 @@
 const command = (id, label) => ({ id, label });
-const report = (id, label, sourceEnv, relativePath, format = "json") => ({
+const report = (
+	id,
+	label,
+	sourceEnv,
+	relativePath,
+	format = "json",
+	options = {},
+) => ({
 	id,
 	label,
 	sourceEnv,
 	relativePath,
 	format,
+	...options,
 });
+const actionSteps = Object.freeze([
+	{ id: "checkout", label: "Check out code" },
+	{ id: "diagnostics-init", label: "Initialize CI diagnostics" },
+	{ id: "setup", label: "Setup" },
+]);
+
+function plan(definition) {
+	return {
+		...definition,
+		steps: actionSteps,
+		childEnv: [
+			...new Set(definition.reports.map(({ sourceEnv }) => sourceEnv)),
+		],
+	};
+}
 
 export const plans = Object.freeze({
-	"quality-build": {
+	"quality-build": plan({
 		workflow: "Quality",
 		jobId: "build",
 		jobName: "Build",
 		commands: [command("build", "Build")],
 		reports: [],
-	},
-	"quality-typecheck": {
+	}),
+	"quality-typecheck": plan({
 		workflow: "Quality",
 		jobId: "typecheck",
 		jobName: "Typecheck",
@@ -25,15 +48,15 @@ export const plans = Object.freeze({
 			command("project-reference-typecheck", "Project-reference typecheck"),
 		],
 		reports: [],
-	},
-	"quality-tests": {
+	}),
+	"quality-tests": plan({
 		workflow: "Quality",
 		jobId: "tests",
 		jobName: "Tests",
 		commands: [command("build", "Build"), command("test", "Test")],
 		reports: [],
-	},
-	"quality-lint-changed": {
+	}),
+	"quality-lint-changed": plan({
 		workflow: "Quality",
 		jobId: "lint-changed",
 		jobName: "Lint changed files",
@@ -42,8 +65,8 @@ export const plans = Object.freeze({
 			command("lint-changed", "Lint changed files"),
 		],
 		reports: [],
-	},
-	"quality-release-smoke": {
+	}),
+	"quality-release-smoke": plan({
 		workflow: "Quality",
 		jobId: "release-smoke",
 		jobName: "Package and install smoke",
@@ -55,8 +78,8 @@ export const plans = Object.freeze({
 			command("changesets-development", "Verify Changesets development state"),
 		],
 		reports: [],
-	},
-	"a1-contracts": {
+	}),
+	"a1-contracts": plan({
 		workflow: "A1 cross-platform contracts",
 		jobId: "contracts",
 		jobName: "A1 focused",
@@ -96,8 +119,8 @@ export const plans = Object.freeze({
 				"vitest.json",
 			),
 		],
-	},
-	"e2e-common": {
+	}),
+	"e2e-common": plan({
 		workflow: "E2E",
 		jobId: "common",
 		jobName: "CLI CommonJS E2E",
@@ -132,8 +155,8 @@ export const plans = Object.freeze({
 				"text",
 			),
 		],
-	},
-	"e2e-module": {
+	}),
+	"e2e-module": plan({
 		workflow: "E2E",
 		jobId: "module",
 		jobName: "CLI ESM E2E",
@@ -168,8 +191,8 @@ export const plans = Object.freeze({
 				"text",
 			),
 		],
-	},
-	"e2e-remote": {
+	}),
+	"e2e-remote": plan({
 		workflow: "E2E",
 		jobId: "remote",
 		jobName: "CLI local HTTP E2E",
@@ -204,8 +227,8 @@ export const plans = Object.freeze({
 				"text",
 			),
 		],
-	},
-	"e2e-mcp-stdio": {
+	}),
+	"e2e-mcp-stdio": plan({
 		workflow: "E2E",
 		jobId: "mcp-stdio-e2e",
 		jobName: "MCP stdio E2E",
@@ -222,6 +245,8 @@ export const plans = Object.freeze({
 				"MCP runner",
 				"MCP_TEST_ARTIFACT_DIR",
 				"runner.json",
+				"json",
+				{ expectedGroup: "stdio" },
 			),
 			report(
 				"mcp-results",
@@ -231,8 +256,8 @@ export const plans = Object.freeze({
 			),
 			report("mcp-doctor", "MCP Doctor report", "MCP_DOCTOR_REPORT", "."),
 		],
-	},
-	"e2e-mcp-cross-platform": {
+	}),
+	"e2e-mcp-cross-platform": plan({
 		workflow: "E2E",
 		jobId: "mcp-cross-platform",
 		jobName: "MCP cross-platform smoke",
@@ -245,6 +270,8 @@ export const plans = Object.freeze({
 				"MCP runner",
 				"MCP_TEST_ARTIFACT_DIR",
 				"runner.json",
+				"json",
+				{ expectedGroup: "smoke" },
 			),
 			report(
 				"mcp-results",
@@ -259,8 +286,8 @@ export const plans = Object.freeze({
 				"mcp-cross-platform-smoke.json",
 			),
 		],
-	},
-	"e2e-mcp-transaction-safety": {
+	}),
+	"e2e-mcp-transaction-safety": plan({
 		workflow: "E2E",
 		jobId: "mcp-transaction-safety",
 		jobName: "MCP transaction safety",
@@ -276,6 +303,8 @@ export const plans = Object.freeze({
 				"MCP runner",
 				"MCP_TEST_ARTIFACT_DIR",
 				"runner.json",
+				"json",
+				{ expectedGroup: "recovery" },
 			),
 			report(
 				"mcp-results",
@@ -284,8 +313,8 @@ export const plans = Object.freeze({
 				"results.json",
 			),
 		],
-	},
-	"e2e-mcp-performance": {
+	}),
+	"e2e-mcp-performance": plan({
 		workflow: "E2E",
 		jobId: "mcp-performance",
 		jobName: "MCP performance and bounded stress",
@@ -298,10 +327,12 @@ export const plans = Object.freeze({
 				"MCP runner",
 				"MCP_TEST_ARTIFACT_DIR",
 				"runner.json",
+				"json",
+				{ expectedGroup: "performance" },
 			),
 		],
-	},
-	"version-readiness": {
+	}),
+	"version-readiness": plan({
 		workflow: "Version Readiness",
 		jobId: "changeset-state",
 		jobName: "Verify strict Changesets state",
@@ -309,7 +340,7 @@ export const plans = Object.freeze({
 			command("changeset-state", "Verify release candidate Changesets state"),
 		],
 		reports: [],
-	},
+	}),
 });
 
 export function getPlan(id) {

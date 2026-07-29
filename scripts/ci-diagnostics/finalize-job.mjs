@@ -1,30 +1,47 @@
 #!/usr/bin/env node
 
-import { appendFile, lstat, readdir, readFile, rm } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import {
+	appendFile,
+	lstat,
+	mkdir,
+	readdir,
+	rename,
+	rm,
+} from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-	assertRegularFile,
 	atomicWrite,
 	ensureSafeDirectory,
-	readJsonFile,
+	readBoundedJsonFile,
+	readBoundedRegularFile,
 	repositoryRoot,
 	safeChild,
 } from "./filesystem.mjs";
 import { getPlan } from "./plans.mjs";
-import { markdownCell, sanitizeCommand, sanitizeText } from "./sanitize.mjs";
+import {
+	markdownCell,
+	sanitizeCommand,
+	sanitizeLine,
+	sanitizeText,
+} from "./sanitize.mjs";
 import {
 	COMMAND_STATUSES,
 	DIAGNOSTIC_KIND,
 	jsonBytes,
+	MAX_ARTIFACT_MANIFEST_BYTES,
 	MAX_COMMAND_REPORT_BYTES,
 	MAX_DIAGNOSTIC_BYTES,
 	MAX_ERROR_CANDIDATES,
 	MAX_KNOWN_REPORT_BYTES,
+	MAX_NORMALIZED_REPORT_BYTES,
+	MAX_PLAN_BYTES,
 	MAX_SUMMARY_CHARS,
 	SCHEMA_VERSION,
 	stableObject,
+	STEP_STATUSES,
 } from "./schema.mjs";
 
 const commandFailureStatuses = new Set([
@@ -34,43 +51,59 @@ const commandFailureStatuses = new Set([
 	"cancelled",
 	"infrastructure-error",
 ]);
+const jobStatuses = new Set(["success", "failure", "cancelled"]);
+const artifactManifestPath = "artifact-manifest.json";
 
 export function parseFinalizeArguments(argv) {
-	const result = { matrix: {} };
+	const result = { matrix: {}, steps: {} };
 	for (let index = 0; index < argv.length; index += 1) {
 		const argument = argv[index];
-		if (["--dir", "--plan", "--job-status"].includes(argument)) {
+		if (
+			["--dir", "--plan", "--job-status", "--upload-dir"].includes(argument)
+		) {
 			const value = argv[index + 1];
-			if (!value || value.startsWith("--")) {
+			if (
+				value === undefined ||
+				value.startsWith("--") ||
+				(argument !== "--upload-dir" && value.length === 0)
+			) {
 				throw new Error(`${argument} requires a value.`);
 			}
-			result[argument.slice(2).replace("-status", "Status")] = value;
+			result[
+				argument.slice(2).replace("-status", "Status").replace("-dir", "Dir")
+			] = value;
 			index += 1;
 			continue;
 		}
-		if (argument === "--matrix") {
+		if (argument === "--matrix" || argument === "--step") {
 			const value = argv[index + 1];
 			const separator = value?.indexOf("=") ?? -1;
-			if (separator < 1) throw new Error("--matrix requires key=value.");
+			if (separator < 1) throw new Error(`${argument} requires key=value.`);
 			const key = value.slice(0, separator);
 			if (!/^[a-z][a-z0-9-]*$/.test(key)) {
-				throw new Error("Matrix keys must be stable lowercase identifiers.");
+				throw new Error(
+					`${argument === "--matrix" ? "Matrix" : "Step"} keys must be stable lowercase identifiers.`,
+				);
 			}
-			result.matrix[key] = value.slice(separator + 1);
+			const collection = argument === "--matrix" ? result.matrix : result.steps;
+			if (Object.hasOwn(collection, key)) {
+				throw new Error(`${argument} key ${key} was provided more than once.`);
+			}
+			collection[key] = value.slice(separator + 1);
 			index += 1;
 			continue;
 		}
 		throw new Error(`Unknown finalize argument: ${argument}`);
 	}
-	if (!result.dir || !result.plan) {
-		throw new Error("finalize-job requires --dir and --plan.");
+	if (!result.dir || !result.plan || result.uploadDir === undefined) {
+		throw new Error("finalize-job requires --dir, --upload-dir, and --plan.");
 	}
 	return result;
 }
 
-function nullable(value, environment) {
+function nullable(value, environment, maxChars = 500) {
 	if (typeof value !== "string" || value.length === 0) return null;
-	return sanitizeText(value, environment).slice(0, 500);
+	return sanitizeText(value, environment).slice(0, maxChars);
 }
 
 function sha(value) {
@@ -96,8 +129,9 @@ function workflowMetadata(plan, environment) {
 async function runnerMetadata(environment) {
 	let pnpmVersion = null;
 	try {
-		const manifest = JSON.parse(
-			await readFile(path.join(repositoryRoot, "package.json"), "utf8"),
+		const { value: manifest } = await readBoundedJsonFile(
+			path.join(repositoryRoot, "package.json"),
+			{ maxBytes: MAX_PLAN_BYTES, rejectHardLinks: false },
 		);
 		pnpmVersion =
 			typeof manifest.packageManager === "string"
@@ -115,122 +149,443 @@ async function runnerMetadata(environment) {
 	};
 }
 
-function boundedCandidate(value, source, environment) {
-	if (value === undefined || value === null || value === "") return null;
+function isRecord(value) {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function createValidator(environment) {
+	const errors = [];
+	const issue = (field, expected) => {
+		if (errors.length < 20) errors.push(`${field}: expected ${expected}`);
+	};
 	return {
-		source,
-		kind: "structured-report",
-		text: sanitizeText(String(value), environment).slice(0, 1_000),
+		errors,
+		issue,
+		record(value, field, { optional = false } = {}) {
+			if (optional && value === undefined) return null;
+			if (!isRecord(value)) {
+				issue(field, "object");
+				return {};
+			}
+			return value;
+		},
+		array(value, field, { optional = false } = {}) {
+			if (optional && value === undefined) return null;
+			if (!Array.isArray(value)) {
+				issue(field, "array");
+				return [];
+			}
+			return value;
+		},
+		boolean(value, field, { optional = false } = {}) {
+			if (optional && value === undefined) return null;
+			if (typeof value !== "boolean") {
+				issue(field, "boolean");
+				return null;
+			}
+			return value;
+		},
+		integer(
+			value,
+			field,
+			{
+				min = 0,
+				max = 1_000_000_000,
+				nullable: allowNull = false,
+				optional = false,
+			} = {},
+		) {
+			if (optional && value === undefined) return null;
+			if (allowNull && value === null) return null;
+			if (!Number.isSafeInteger(value) || value < min || value > max) {
+				issue(field, `safe integer from ${min} to ${max}`);
+				return null;
+			}
+			return value;
+		},
+		number(
+			value,
+			field,
+			{ min = 0, max = 24 * 60 * 60 * 1_000, optional = false } = {},
+		) {
+			if (optional && value === undefined) return null;
+			if (!Number.isFinite(value) || value < min || value > max) {
+				issue(field, `finite number from ${min} to ${max}`);
+				return null;
+			}
+			return value;
+		},
+		string(
+			value,
+			field,
+			{ maxChars = 500, nullable: allowNull = false, optional = false } = {},
+		) {
+			if (optional && value === undefined) return null;
+			if (allowNull && value === null) return null;
+			if (typeof value !== "string") {
+				issue(field, "string");
+				return null;
+			}
+			return sanitizeText(value, environment).slice(0, maxChars);
+		},
+		stringArray(
+			value,
+			field,
+			{ maxItems = 10, maxCharsPerItem = 500, optional = false } = {},
+		) {
+			const items = this.array(value, field, { optional });
+			if (items === null) return [];
+			const result = [];
+			for (const [index, item] of items.slice(0, 1_000).entries()) {
+				const normalized = this.string(item, `${field}[${index}]`, {
+					maxChars: maxCharsPerItem,
+				});
+				if (normalized !== null && result.length < maxItems) {
+					result.push(normalized);
+				}
+			}
+			if (items.length > 1_000) issue(field, "at most 1000 input items");
+			return result;
+		},
 	};
 }
 
-function summarizeJson(id, value, environment) {
-	const summary = {};
+function boundedCandidate(value, source, environment) {
+	if (typeof value !== "string" || value.length === 0) return null;
+	return {
+		source,
+		kind: "structured-report",
+		text: sanitizeText(value, environment).slice(0, 1_000),
+	};
+}
+
+function runtimeSummary(value, validator) {
+	return {
+		platform: validator.string(value.platform, "platform", { maxChars: 50 }),
+		architecture: validator.string(value.arch, "arch", { maxChars: 50 }),
+		node: validator.string(value.node, "node", { maxChars: 100 }),
+		pnpm: validator.string(value.pnpm ?? value.pnpmEntrypoint, "pnpm", {
+			maxChars: 100,
+		}),
+	};
+}
+
+function a1Summary(value, validator, environment) {
+	const failedTests = validator.array(value.failedTests, "failedTests");
 	const candidates = [];
-	if (id === "a1-summary") {
-		Object.assign(summary, {
-			exitCode: value?.exitCode ?? null,
-			signal: value?.signal ?? null,
-			expectedFiles: value?.expectedFiles ?? null,
-			actualFiles: value?.actualFiles ?? null,
-			expectedTests: value?.expectedTests ?? null,
-			actualTests: value?.actualTests ?? null,
-			inventoryMatches: value?.inventoryMatches ?? null,
-			failedTests: Array.isArray(value?.failedTests)
-				? Math.min(value.failedTests.length, MAX_ERROR_CANDIDATES)
-				: 0,
-		});
-		for (const failure of value?.failedTests?.slice(0, MAX_ERROR_CANDIDATES) ??
-			[]) {
+	for (const [index, rawFailure] of failedTests
+		.slice(0, MAX_ERROR_CANDIDATES)
+		.entries()) {
+		const failure = validator.record(rawFailure, `failedTests[${index}]`);
+		const title = validator.string(
+			failure.title,
+			`failedTests[${index}].title`,
+			{
+				maxChars: 500,
+			},
+		);
+		const detail = validator.string(
+			failure.failure,
+			`failedTests[${index}].failure`,
+			{ maxChars: 2_000 },
+		);
+		const candidate = boundedCandidate(
+			`${title ?? "test failure"}: ${detail ?? ""}`,
+			"a1-summary",
+			environment,
+		);
+		if (candidate) candidates.push(candidate);
+	}
+	return {
+		summary: {
+			exitCode: validator.integer(value.exitCode, "exitCode", {
+				min: 0,
+				max: 255,
+				nullable: true,
+			}),
+			signal: validator.string(value.signal, "signal", {
+				maxChars: 50,
+				nullable: true,
+			}),
+			expectedFiles: validator.integer(value.expectedFiles, "expectedFiles"),
+			actualFiles: validator.integer(value.actualFiles, "actualFiles"),
+			expectedTests: validator.integer(value.expectedTests, "expectedTests"),
+			actualTests: validator.integer(value.actualTests, "actualTests"),
+			inventoryMatches: validator.boolean(
+				value.inventoryMatches,
+				"inventoryMatches",
+			),
+			failedTests: Math.min(failedTests.length, MAX_ERROR_CANDIDATES),
+		},
+		candidates,
+	};
+}
+
+function vitestSummary(id, value, validator, environment) {
+	const testResults = validator.array(value.testResults, "testResults");
+	const candidates = [];
+	let scannedAssertions = 0;
+	for (const [fileIndex, rawFile] of testResults.slice(0, 1_000).entries()) {
+		const file = validator.record(rawFile, `testResults[${fileIndex}]`);
+		const assertions = validator.array(
+			file.assertionResults,
+			`testResults[${fileIndex}].assertionResults`,
+		);
+		for (const [assertionIndex, rawAssertion] of assertions
+			.slice(0, 1_000)
+			.entries()) {
+			scannedAssertions += 1;
+			if (scannedAssertions > 10_000) break;
+			const assertion = validator.record(
+				rawAssertion,
+				`testResults[${fileIndex}].assertionResults[${assertionIndex}]`,
+			);
+			const status = validator.string(
+				assertion.status,
+				`testResults[${fileIndex}].assertionResults[${assertionIndex}].status`,
+				{ maxChars: 20 },
+			);
+			if (status !== "failed" || candidates.length >= MAX_ERROR_CANDIDATES) {
+				continue;
+			}
+			const title = validator.string(
+				assertion.fullName ?? assertion.title,
+				`testResults[${fileIndex}].assertionResults[${assertionIndex}].title`,
+				{ maxChars: 500 },
+			);
+			const messages = validator.stringArray(
+				assertion.failureMessages,
+				`testResults[${fileIndex}].assertionResults[${assertionIndex}].failureMessages`,
+				{ maxItems: 1, maxCharsPerItem: 2_000, optional: true },
+			);
 			const candidate = boundedCandidate(
-				`${failure?.title ?? "test failure"}: ${failure?.failure ?? ""}`,
-				"a1-summary",
+				`${title ?? "test failure"}: ${messages[0] ?? ""}`,
+				id,
 				environment,
 			);
 			if (candidate) candidates.push(candidate);
 		}
-	} else if (id === "a1-vitest" || id === "mcp-results") {
-		Object.assign(summary, {
-			success: value?.success ?? null,
-			totalTests: value?.numTotalTests ?? null,
-			passedTests: value?.numPassedTests ?? null,
-			failedTests: value?.numFailedTests ?? null,
-			testFiles: Array.isArray(value?.testResults)
-				? value.testResults.length
-				: null,
-		});
-		for (const file of value?.testResults ?? []) {
-			for (const assertion of file?.assertionResults ?? []) {
-				if (
-					assertion?.status === "failed" &&
-					candidates.length < MAX_ERROR_CANDIDATES
-				) {
-					const candidate = boundedCandidate(
-						`${assertion.fullName ?? assertion.title ?? "test failure"}: ${
-							assertion.failureMessages?.[0] ?? ""
-						}`,
-						id,
-						environment,
-					);
-					if (candidate) candidates.push(candidate);
-				}
-			}
-		}
-	} else if (id === "mcp-runner") {
-		Object.assign(summary, {
-			group: nullable(value?.group, environment),
-			files: Array.isArray(value?.files) ? value.files.length : null,
-			expectedTests: value?.expectedTests ?? null,
-			scripts: Array.isArray(value?.scripts) ? value.scripts.length : null,
-		});
-	} else if (id === "mcp-doctor") {
-		Object.assign(summary, {
-			success: value?.success ?? null,
-			status: nullable(value?.status, environment),
-			passed: value?.summary?.passed ?? null,
-			failed: value?.summary?.failed ?? null,
-			skipped: value?.summary?.skipped ?? null,
-			total: value?.summary?.total ?? null,
-			failureCodes: Array.isArray(value?.failureCodes)
-				? value.failureCodes.slice(0, MAX_ERROR_CANDIDATES)
-				: [],
-		});
-		for (const check of value?.checks ?? []) {
-			if (
-				check?.status === "failed" &&
-				candidates.length < MAX_ERROR_CANDIDATES
-			) {
-				const candidate = boundedCandidate(
-					`${check.id ?? "doctor-check"}: ${check.detail ?? check.failureCode ?? "failed"}`,
-					"mcp-doctor",
-					environment,
-				);
-				if (candidate) candidates.push(candidate);
-			}
-		}
-	} else if (id === "cli-summary" || id === "mcp-smoke") {
-		Object.assign(summary, {
-			status: nullable(value?.status, environment),
-			stage: nullable(value?.stage, environment),
-		});
-		const candidate = boundedCandidate(value?.error, id, environment);
-		if (candidate) candidates.push(candidate);
-	} else if (id === "a1-runtime" || id === "cli-runtime") {
-		Object.assign(summary, {
-			platform: nullable(value?.platform, environment),
-			architecture: nullable(value?.arch, environment),
-			node: nullable(value?.node, environment),
-			pnpm: nullable(value?.pnpm, environment),
-		});
-	} else {
-		Object.assign(summary, {
-			parsedType: Array.isArray(value) ? "array" : typeof value,
-		});
 	}
-	return { summary, candidates };
+	return {
+		summary: {
+			success: validator.boolean(value.success, "success"),
+			totalTests: validator.integer(value.numTotalTests, "numTotalTests"),
+			passedTests: validator.integer(value.numPassedTests, "numPassedTests"),
+			failedTests: validator.integer(value.numFailedTests, "numFailedTests"),
+			testFiles: testResults.length,
+		},
+		candidates,
+	};
 }
 
-async function reportSource(definition, environment) {
+function mcpRunnerSummary(definition, value, validator) {
+	const group = validator.string(value.group, "group", { maxChars: 50 });
+	if (group !== null && group !== definition.expectedGroup) {
+		validator.issue(
+			"group",
+			`the static plan value ${definition.expectedGroup}`,
+		);
+	}
+	const files = validator.array(value.files, "files");
+	const scripts = validator.array(value.scripts, "scripts");
+	return {
+		summary: {
+			group: group === definition.expectedGroup ? group : null,
+			expectedTests: validator.integer(value.expectedTests, "expectedTests"),
+			files: files.length,
+			scripts: scripts.length,
+		},
+		candidates: [],
+	};
+}
+
+function doctorSummary(value, validator, environment) {
+	const summaryValue = validator.record(value.summary, "summary");
+	const failureCodes = validator.stringArray(
+		value.failureCodes,
+		"failureCodes",
+		{
+			maxItems: MAX_ERROR_CANDIDATES,
+			maxCharsPerItem: 100,
+		},
+	);
+	const checks = validator.array(value.checks, "checks");
+	const candidates = [];
+	for (const [index, rawCheck] of checks.slice(0, 1_000).entries()) {
+		const check = validator.record(rawCheck, `checks[${index}]`);
+		const status = validator.string(check.status, `checks[${index}].status`, {
+			maxChars: 20,
+		});
+		if (status !== "failed" || candidates.length >= MAX_ERROR_CANDIDATES) {
+			continue;
+		}
+		const id = validator.string(check.id, `checks[${index}].id`, {
+			maxChars: 100,
+		});
+		const detail = validator.string(
+			check.detail ?? check.failureCode,
+			`checks[${index}].detail`,
+			{ maxChars: 2_000 },
+		);
+		const candidate = boundedCandidate(
+			`${id ?? "doctor-check"}: ${detail ?? "failed"}`,
+			"mcp-doctor",
+			environment,
+		);
+		if (candidate) candidates.push(candidate);
+	}
+	return {
+		summary: {
+			success: validator.boolean(value.success, "success"),
+			status: validator.string(value.status, "status", {
+				maxChars: 50,
+				optional: true,
+			}),
+			passed: validator.integer(summaryValue.passed, "summary.passed"),
+			failed: validator.integer(summaryValue.failed, "summary.failed"),
+			skipped: validator.integer(summaryValue.skipped, "summary.skipped"),
+			total: validator.integer(summaryValue.total, "summary.total"),
+			failureCodes,
+		},
+		candidates,
+	};
+}
+
+function cliSummary(id, value, validator, environment) {
+	const commands = validator.array(value.commands, "commands", {
+		optional: true,
+	});
+	const aliases = validator.stringArray(value.aliases, "aliases", {
+		maxItems: 10,
+		maxCharsPerItem: 100,
+		optional: true,
+	});
+	const error = validator.string(value.error, "error", {
+		maxChars: 2_000,
+		optional: true,
+	});
+	const candidate = boundedCandidate(error, id, environment);
+	return {
+		summary: {
+			status: validator.string(value.status, "status", { maxChars: 50 }),
+			stage: validator.string(value.stage, "stage", { maxChars: 100 }),
+			mode: validator.string(value.mode, "mode", {
+				maxChars: 50,
+				optional: true,
+			}),
+			target: validator.string(value.target, "target", {
+				maxChars: 100,
+				optional: true,
+			}),
+			generatedFiles: validator.integer(
+				value.generatedFiles,
+				"generatedFiles",
+				{ optional: true },
+			),
+			aliases,
+			commands: commands?.length ?? 0,
+		},
+		candidates: candidate ? [candidate] : [],
+	};
+}
+
+function smokeSummary(value, validator, environment) {
+	const milestones = validator.stringArray(value.milestones, "milestones", {
+		maxItems: 20,
+		maxCharsPerItem: 100,
+	});
+	const error = validator.string(value.error, "error", {
+		maxChars: 2_000,
+		optional: true,
+	});
+	const candidate = boundedCandidate(error, "mcp-smoke", environment);
+	return {
+		summary: {
+			status: validator.string(value.status, "status", { maxChars: 50 }),
+			stage: validator.string(value.stage, "stage", { maxChars: 100 }),
+			childExitCode: validator.integer(value.childExitCode, "childExitCode", {
+				min: 0,
+				max: 255,
+				nullable: true,
+			}),
+			childSignal: validator.string(value.childSignal, "childSignal", {
+				maxChars: 50,
+				nullable: true,
+			}),
+			milestones,
+		},
+		candidates: candidate ? [candidate] : [],
+	};
+}
+
+function fixtureSummary(value, validator) {
+	const routes = validator.array(value.routes, "routes", { optional: true });
+	return {
+		summary: {
+			kind: validator.string(value.kind, "kind", {
+				maxChars: 100,
+				optional: true,
+			}),
+			path: validator.string(value.path, "path", {
+				maxChars: 500,
+				optional: true,
+			}),
+			host: validator.string(value.host, "host", {
+				maxChars: 100,
+				optional: true,
+			}),
+			port: validator.string(value.port, "port", {
+				maxChars: 50,
+				optional: true,
+			}),
+			routes: routes?.length ?? 0,
+		},
+		candidates: [],
+	};
+}
+
+function summarizeJson(definition, value, environment) {
+	const validator = createValidator(environment);
+	const root = validator.record(value, "report");
+	let extracted;
+	switch (definition.id) {
+		case "a1-summary":
+			extracted = a1Summary(root, validator, environment);
+			break;
+		case "a1-vitest":
+		case "mcp-results":
+			extracted = vitestSummary(definition.id, root, validator, environment);
+			break;
+		case "mcp-runner":
+			extracted = mcpRunnerSummary(definition, root, validator);
+			break;
+		case "mcp-doctor":
+			extracted = doctorSummary(root, validator, environment);
+			break;
+		case "cli-summary":
+			extracted = cliSummary(definition.id, root, validator, environment);
+			break;
+		case "mcp-smoke":
+			extracted = smokeSummary(root, validator, environment);
+			break;
+		case "a1-runtime":
+		case "cli-runtime":
+			extracted = {
+				summary: runtimeSummary(root, validator),
+				candidates: [],
+			};
+			break;
+		case "cli-fixture":
+			extracted = fixtureSummary(root, validator);
+			break;
+		default:
+			validator.issue("report", `a known schema for ${definition.id}`);
+			extracted = { summary: {}, candidates: [] };
+	}
+	return { ...extracted, errors: validator.errors };
+}
+
+function reportSource(definition, environment) {
 	const configured = environment[definition.sourceEnv];
 	if (!configured) return null;
 	return definition.relativePath === "."
@@ -238,8 +593,22 @@ async function reportSource(definition, environment) {
 		: path.resolve(configured, definition.relativePath);
 }
 
-async function collectReport(definition, diagnosticDirectory, environment) {
-	const source = await reportSource(definition, environment);
+function boundedError(error, environment) {
+	return sanitizeText(
+		error?.message ?? "Diagnostic input was rejected.",
+		environment,
+	)
+		.replace(/\r?\n/g, " ")
+		.slice(0, 500);
+}
+
+async function collectReport(
+	definition,
+	diagnosticDirectory,
+	environment,
+	onAfterLstat,
+) {
+	const source = reportSource(definition, environment);
 	const base = {
 		id: definition.id,
 		label: definition.label,
@@ -252,63 +621,80 @@ async function collectReport(definition, diagnosticDirectory, environment) {
 		artifactPath: null,
 		summary: {},
 		candidates: [],
+		artifact: null,
 	};
 	if (!source) return base;
-	let details;
 	try {
 		await ensureSafeDirectory(path.dirname(source), environment);
-		details = await assertRegularFile(source);
-	} catch (error) {
-		if (error?.code === "ENOENT") return base;
-		return {
-			...base,
-			parseStatus: "rejected",
-			error: sanitizeText(error.message, environment).slice(0, 500),
-		};
-	}
-	base.exists = true;
-	base.bytes = details.size;
-	if (details.size > MAX_KNOWN_REPORT_BYTES) {
-		base.parseStatus = "too-large";
-		return base;
-	}
-	try {
-		const contents = await readFile(source, "utf8");
+		const input =
+			definition.format === "text"
+				? await readBoundedRegularFile(source, {
+						maxBytes: MAX_KNOWN_REPORT_BYTES,
+						onAfterLstat,
+					})
+				: await readBoundedJsonFile(source, {
+						maxBytes: MAX_KNOWN_REPORT_BYTES,
+						onAfterLstat,
+					});
+		base.exists = true;
+		base.bytes = input.bytes;
 		let normalized;
+		let schemaErrors = [];
 		if (definition.format === "text") {
-			const lines = contents.split(/\r?\n/).filter(Boolean);
+			const lines = input.contents.split(/\r?\n/).filter(Boolean);
 			normalized = {
 				lines: lines.length,
 				truncated: lines.length > 1_000,
 			};
 		} else {
-			const parsed = JSON.parse(contents);
-			normalized = summarizeJson(definition.id, parsed, environment);
-			base.candidates = normalized.candidates;
-			normalized = normalized.summary;
+			const extracted = summarizeJson(definition, input.value, environment);
+			normalized = extracted.summary;
+			base.candidates = extracted.candidates;
+			schemaErrors = extracted.errors;
 		}
-		base.parseStatus = "parsed";
+		base.parseStatus = schemaErrors.length > 0 ? "schema-invalid" : "parsed";
 		base.summary = normalized;
+		if (schemaErrors.length > 0) {
+			base.error =
+				`Rejected schema fields: ${schemaErrors.slice(0, 5).join("; ")}`.slice(
+					0,
+					500,
+				);
+		}
 		base.artifactPath = `known-reports/${definition.id}.json`;
+		const artifactValue = {
+			schemaVersion: SCHEMA_VERSION,
+			kind: "openapi-to-ci-known-report-summary",
+			id: definition.id,
+			sourceBytes: input.bytes,
+			parseStatus: base.parseStatus,
+			summary: normalized,
+			candidates: base.candidates,
+			...(schemaErrors.length > 0
+				? { schemaErrors: schemaErrors.slice(0, 5) }
+				: {}),
+		};
+		const contents = `${JSON.stringify(artifactValue, null, 2)}\n`;
+		if (Buffer.byteLength(contents) > MAX_NORMALIZED_REPORT_BYTES) {
+			throw new Error("Normalized known report exceeded its size limit.");
+		}
 		await atomicWrite(
 			safeChild(diagnosticDirectory, base.artifactPath),
-			`${JSON.stringify(
-				{
-					schemaVersion: SCHEMA_VERSION,
-					kind: "openapi-to-ci-known-report-summary",
-					id: definition.id,
-					sourceBytes: details.size,
-					summary: normalized,
-					candidates: base.candidates,
-				},
-				null,
-				2,
-			)}\n`,
+			contents,
 		);
+		base.artifact = {
+			path: base.artifactPath,
+			contents,
+			maxBytes: MAX_NORMALIZED_REPORT_BYTES,
+		};
 		return base;
 	} catch (error) {
-		base.parseStatus = "invalid";
-		base.error = sanitizeText(error.message, environment).slice(0, 500);
+		if (error?.code === "ENOENT") return base;
+		base.exists =
+			error?.diagnosticFileStatus === "too-large" ||
+			error?.diagnosticFileStatus === "invalid";
+		base.parseStatus = error?.diagnosticFileStatus ?? "rejected";
+		base.error = boundedError(error, environment);
 		return base;
 	}
 }
@@ -331,127 +717,230 @@ function notRun(expected) {
 	};
 }
 
-function nonNegativeNumber(value) {
-	return Number.isFinite(value) && value >= 0 ? value : null;
+function normalizeStream(value, field, validator, environment) {
+	const stream = validator.record(value, field);
+	const rawTail = validator.array(stream.tail, `${field}.tail`);
+	const tail = [];
+	for (const [index, line] of rawTail.slice(-100).entries()) {
+		const normalized = validator.string(line, `${field}.tail[${index}]`, {
+			maxChars: 1_024,
+		});
+		if (normalized !== null)
+			tail.push(sanitizeLine(normalized, environment).value);
+	}
+	const rawCandidates = validator.array(
+		stream.candidates,
+		`${field}.candidates`,
+	);
+	const candidates = [];
+	for (const [index, rawCandidate] of rawCandidates
+		.slice(0, MAX_ERROR_CANDIDATES)
+		.entries()) {
+		const candidate = validator.record(
+			rawCandidate,
+			`${field}.candidates[${index}]`,
+		);
+		const text = validator.string(
+			candidate.text,
+			`${field}.candidates[${index}].text`,
+			{ maxChars: 1_000 },
+		);
+		if (text !== null) {
+			candidates.push({ kind: "heuristic-candidate", text });
+		}
+	}
+	return {
+		tail,
+		totalLines:
+			validator.integer(stream.totalLines, `${field}.totalLines`) ?? 0,
+		truncated:
+			validator.boolean(stream.truncated, `${field}.truncated`) === true,
+		truncatedLines:
+			validator.integer(stream.truncatedLines, `${field}.truncatedLines`) ?? 0,
+		candidates,
+	};
 }
 
-function nonNegativeInteger(value) {
-	return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+function normalizeCommandReport(value, expected, environment) {
+	const validator = createValidator(environment);
+	const report = validator.record(value, "command");
+	if (
+		report.schemaVersion !== SCHEMA_VERSION ||
+		report.kind !== "openapi-to-ci-command" ||
+		report.id !== expected.id ||
+		report.label !== expected.label
+	) {
+		validator.issue("command", "the initialized command identity");
+	}
+	if (
+		!COMMAND_STATUSES.includes(report.status) ||
+		report.status === "not-run"
+	) {
+		validator.issue("status", "an executed command status");
+	}
+	const rawCommand = validator.array(report.command, "command.command");
+	const command = [];
+	for (const [index, argument] of rawCommand.slice(0, 100).entries()) {
+		const normalized = validator.string(argument, `command.command[${index}]`, {
+			maxChars: 1_000,
+		});
+		if (normalized !== null) command.push(normalized);
+	}
+	if (rawCommand.length > 100)
+		validator.issue("command.command", "at most 100 items");
+	const evidence = validator.record(report.evidence, "evidence");
+	const stdout = normalizeStream(
+		evidence.stdout,
+		"evidence.stdout",
+		validator,
+		environment,
+	);
+	const stderr = normalizeStream(
+		evidence.stderr,
+		"evidence.stderr",
+		validator,
+		environment,
+	);
+	const normalized = {
+		schemaVersion: SCHEMA_VERSION,
+		kind: "openapi-to-ci-command",
+		id: expected.id,
+		label: expected.label,
+		status: COMMAND_STATUSES.includes(report.status)
+			? report.status
+			: "failure",
+		exitCode: validator.integer(report.exitCode, "exitCode", {
+			min: 0,
+			max: 255,
+			nullable: true,
+		}),
+		signal: validator.string(report.signal, "signal", {
+			maxChars: 50,
+			nullable: true,
+		}),
+		durationMs: validator.number(report.durationMs, "durationMs"),
+		command: sanitizeCommand(command, environment),
+		cwd: validator.string(report.cwd, "cwd", { maxChars: 500 }),
+		evidence: {
+			stdout,
+			stderr,
+			spawnError: validator.string(evidence.spawnError, "evidence.spawnError", {
+				maxChars: 1_000,
+				nullable: true,
+			}),
+		},
+	};
+	if (validator.errors.length > 0) {
+		throw new Error(
+			`Command report schema is invalid: ${validator.errors.slice(0, 5).join("; ")}`,
+		);
+	}
+	return normalized;
 }
 
 async function collectCommands(plan, directory, environment) {
 	const commands = [];
 	const errors = [];
+	const artifacts = [];
 	await ensureSafeDirectory(safeChild(directory, "commands"), environment);
 	for (const expected of plan.commands) {
 		const filePath = safeChild(directory, "commands", `${expected.id}.json`);
 		try {
-			const details = await assertRegularFile(filePath);
-			if (details.size > MAX_COMMAND_REPORT_BYTES) {
-				throw new Error("Command report exceeds its size limit.");
+			const input = await readBoundedJsonFile(filePath, {
+				maxBytes: MAX_COMMAND_REPORT_BYTES,
+			});
+			const report = normalizeCommandReport(input.value, expected, environment);
+			const contents = `${JSON.stringify(report, null, 2)}\n`;
+			if (Buffer.byteLength(contents) > MAX_COMMAND_REPORT_BYTES) {
+				throw new Error("Normalized command report exceeded its size limit.");
 			}
-			const value = await readJsonFile(filePath);
-			if (
-				value?.schemaVersion !== SCHEMA_VERSION ||
-				value?.kind !== "openapi-to-ci-command" ||
-				value?.id !== expected.id ||
-				value?.label !== expected.label
-			) {
-				throw new Error("Command report does not match its initialized plan.");
-			}
-			if (
-				!COMMAND_STATUSES.includes(value.status) ||
-				value.status === "not-run"
-			) {
-				throw new Error("Command report contains an invalid executed status.");
-			}
+			await atomicWrite(filePath, contents);
+			artifacts.push({
+				path: `commands/${expected.id}.json`,
+				contents,
+				maxBytes: MAX_COMMAND_REPORT_BYTES,
+			});
 			commands.push({
-				id: value.id,
-				label: value.label,
-				status: value.status,
-				exitCode:
-					value.exitCode === null || Number.isSafeInteger(value.exitCode)
-						? value.exitCode
-						: null,
-				signal: value.signal
-					? sanitizeText(value.signal, environment).slice(0, 50)
-					: null,
-				durationMs: nonNegativeNumber(value.durationMs),
-				command: Array.isArray(value.command)
-					? sanitizeCommand(value.command, environment)
-					: null,
-				cwd: sanitizeText(value.cwd ?? "", environment).slice(0, 500),
+				id: report.id,
+				label: report.label,
+				status: report.status,
+				exitCode: report.exitCode,
+				signal: report.signal,
+				durationMs: report.durationMs,
+				command: report.command,
+				cwd: report.cwd,
 				evidence: {
 					stdout: {
-						totalLines: nonNegativeInteger(value.evidence?.stdout?.totalLines),
-						truncated: value.evidence?.stdout?.truncated === true,
-						truncatedLines: nonNegativeInteger(
-							value.evidence?.stdout?.truncatedLines,
-						),
-						lastLine: sanitizeText(
-							value.evidence?.stdout?.tail?.at(-1) ?? "",
-							environment,
-						).slice(0, 1_000),
+						totalLines: report.evidence.stdout.totalLines,
+						truncated: report.evidence.stdout.truncated,
+						truncatedLines: report.evidence.stdout.truncatedLines,
+						lastLine: report.evidence.stdout.tail.at(-1) ?? "",
 					},
 					stderr: {
-						totalLines: nonNegativeInteger(value.evidence?.stderr?.totalLines),
-						truncated: value.evidence?.stderr?.truncated === true,
-						truncatedLines: nonNegativeInteger(
-							value.evidence?.stderr?.truncatedLines,
-						),
-						lastLine: sanitizeText(
-							value.evidence?.stderr?.tail?.at(-1) ?? "",
-							environment,
-						).slice(0, 1_000),
+						totalLines: report.evidence.stderr.totalLines,
+						truncated: report.evidence.stderr.truncated,
+						truncatedLines: report.evidence.stderr.truncatedLines,
+						lastLine: report.evidence.stderr.tail.at(-1) ?? "",
 					},
 					candidates: [
-						...(value.evidence?.stderr?.candidates ?? []).map((candidate) => ({
+						...report.evidence.stderr.candidates.map((candidate) => ({
 							...candidate,
 							stream: "stderr",
 						})),
-						...(value.evidence?.stdout?.candidates ?? []).map((candidate) => ({
+						...report.evidence.stdout.candidates.map((candidate) => ({
 							...candidate,
 							stream: "stdout",
 						})),
-					]
-						.slice(0, MAX_ERROR_CANDIDATES)
-						.map((candidate) => ({
-							kind:
-								candidate?.kind === "heuristic-candidate"
-									? "heuristic-candidate"
-									: "heuristic-candidate",
-							stream: candidate.stream,
-							text: sanitizeText(candidate?.text ?? "", environment).slice(
-								0,
-								1_000,
-							),
-						})),
-					spawnError: value.evidence?.spawnError
-						? sanitizeText(value.evidence.spawnError, environment).slice(
-								0,
-								1_000,
-							)
-						: null,
+					].slice(0, MAX_ERROR_CANDIDATES),
+					spawnError: report.evidence.spawnError,
 				},
 			});
 		} catch (error) {
 			if (error?.code !== "ENOENT") {
-				errors.push(
-					`${expected.id}: ${sanitizeText(error.message, environment).slice(0, 500)}`,
-				);
+				errors.push(`${expected.id}: ${boundedError(error, environment)}`);
 			}
 			commands.push(notRun(expected));
 		}
 	}
-	return { commands, errors };
+	return { commands, errors, artifacts };
 }
 
-function selectEvidence(commands, reports) {
+function collectSteps(plan, supplied) {
+	const steps = [];
+	const errors = [];
+	const known = new Set(plan.steps.map(({ id }) => id));
+	for (const key of Object.keys(supplied)) {
+		if (!known.has(key)) errors.push(`unknown action step: ${key}`);
+	}
+	for (const expected of plan.steps) {
+		const raw = supplied[expected.id];
+		const status = STEP_STATUSES.includes(raw) ? raw : "unknown";
+		if (status === "unknown") {
+			errors.push(`${expected.id}: missing or invalid action outcome`);
+		}
+		steps.push({
+			id: expected.id,
+			label: expected.label,
+			kind: "action",
+			status,
+		});
+	}
+	return { steps, errors };
+}
+
+function selectEvidence(steps, commands, reports) {
+	const actionEvidence = steps
+		.filter(({ status }) => ["failure", "cancelled"].includes(status))
+		.map((step) => ({
+			source: step.id,
+			kind: "action-outcome",
+			text: `${step.label} finished with ${step.status}.`,
+		}));
 	const structured = reports.flatMap(({ candidates }) => candidates ?? []);
 	const commandCandidates = commands.flatMap((command) =>
 		(command.evidence?.candidates ?? []).map((candidate) => ({
 			source: `${command.id}/${candidate.stream ?? "output"}`,
-			kind: candidate.kind ?? "heuristic-candidate",
+			kind: "heuristic-candidate",
 			text: candidate.text,
 		})),
 	);
@@ -479,6 +968,7 @@ function selectEvidence(commands, reports) {
 				})),
 		);
 	return [
+		...actionEvidence,
 		...structured,
 		...exitEvidence,
 		...commandCandidates,
@@ -504,11 +994,23 @@ export function renderSummary(diagnostic, artifactName) {
 		`| Commit | ${markdownCell(diagnostic.workflow.commitSha?.slice(0, 7) ?? "unavailable")} |`,
 		`| Diagnostic schema | ${SCHEMA_VERSION} |`,
 		"",
+		"### Action steps",
+		"",
+		"| Step | Status |",
+		"| --- | --- |",
+	];
+	for (const step of diagnostic.steps) {
+		lines.push(
+			`| ${markdownCell(step.label)} | ${markdownCell(step.status)} |`,
+		);
+	}
+	lines.push(
+		"",
 		"### Commands",
 		"",
 		"| Command | Status | Exit | Duration |",
 		"| --- | --- | ---: | ---: |",
-	];
+	);
 	for (const command of diagnostic.commands) {
 		lines.push(
 			`| ${markdownCell(command.label)} | ${markdownCell(command.status)} | ${
@@ -522,7 +1024,7 @@ export function renderSummary(diagnostic, artifactName) {
 	} else {
 		for (const evidence of diagnostic.summary.failureEvidence.slice(0, 3)) {
 			lines.push(
-				`- Source: ${markdownCell(evidence.source)}; ${markdownCell(evidence.kind)}: \`${markdownCell(evidence.text)}\``,
+				`- Source: ${markdownCell(evidence.source)}; ${markdownCell(evidence.kind)}: ${markdownCell(evidence.text)}`,
 			);
 		}
 	}
@@ -531,7 +1033,7 @@ export function renderSummary(diagnostic, artifactName) {
 		"",
 		"### Artifact",
 		"",
-		`\`${markdownCell(artifactName)}\``,
+		markdownCell(artifactName),
 		"",
 	);
 	const rendered = lines.join("\n");
@@ -540,51 +1042,146 @@ export function renderSummary(diagnostic, artifactName) {
 		: `${rendered.slice(0, MAX_SUMMARY_CHARS)}\n\n_Summary truncated._\n`;
 }
 
-export function artifactAllowlist(plan, reports) {
-	return [
-		"ci-diagnostic.json",
-		"summary.md",
-		"plan.json",
-		...plan.commands.map(({ id }) => `commands/${id}.json`),
-		...reports
-			.filter(({ artifactPath }) => artifactPath)
-			.map(({ artifactPath }) => artifactPath),
-	].sort();
+export function artifactAllowlist(paths) {
+	return [...new Set([...paths, artifactManifestPath])].sort();
 }
 
-async function pruneArtifactDirectory(directory, allowlist) {
-	const allowed = new Set(allowlist);
-	async function visit(relativeDirectory = "") {
-		const absoluteDirectory = relativeDirectory
-			? safeChild(directory, relativeDirectory)
-			: directory;
-		for (const entry of await readdir(absoluteDirectory, {
-			withFileTypes: true,
-		})) {
+async function listUploadFiles(root) {
+	const files = [];
+	async function visit(directory, relativeDirectory = "") {
+		for (const entry of await readdir(directory, { withFileTypes: true })) {
 			const relativePath = relativeDirectory
 				? `${relativeDirectory}/${entry.name}`
 				: entry.name;
-			const requiredDirectory = [...allowed].some((candidate) =>
-				candidate.startsWith(`${relativePath}/`),
-			);
-			if (entry.isDirectory() && requiredDirectory) {
-				await visit(relativePath);
-				continue;
+			const absolutePath = safeChild(root, ...relativePath.split("/"));
+			if (entry.isSymbolicLink()) {
+				throw new Error("Upload directory must not contain symlinks.");
 			}
-			if (entry.isFile() && allowed.has(relativePath)) continue;
-			await rm(safeChild(directory, relativePath), {
-				recursive: true,
-				force: true,
-			});
+			if (entry.isDirectory()) {
+				await visit(absolutePath, relativePath);
+			} else if (entry.isFile()) {
+				files.push(relativePath);
+			} else {
+				throw new Error("Upload directory must contain only regular files.");
+			}
 		}
 	}
-	await visit();
+	await visit(root);
+	return files.sort();
 }
 
-function overallStatus(jobStatus, commands, finalizationErrors) {
+function pathsOverlap(left, right) {
+	const relative = path.relative(left, right);
+	return (
+		relative === "" ||
+		(!relative.startsWith("..") && !path.isAbsolute(relative))
+	);
+}
+
+async function materializeUploadDirectory({
+	directory,
+	uploadDirectory,
+	sources,
+	environment,
+}) {
+	const resolvedUpload = path.resolve(uploadDirectory);
+	if (
+		pathsOverlap(directory, resolvedUpload) ||
+		pathsOverlap(resolvedUpload, directory)
+	) {
+		throw new Error(
+			"Upload directory must be separate from the working diagnostic directory.",
+		);
+	}
+	await ensureSafeDirectory(path.dirname(resolvedUpload), environment);
+	let existing = null;
+	try {
+		existing = await lstat(resolvedUpload);
+		if (existing.isSymbolicLink() || !existing.isDirectory()) {
+			throw new Error(
+				"Upload directory must be a real directory, not a symlink.",
+			);
+		}
+		await listUploadFiles(resolvedUpload);
+	} catch (error) {
+		if (error?.code !== "ENOENT") throw error;
+	}
+
+	const staging = `${resolvedUpload}.staging-${process.pid}-${randomUUID()}`;
+	let published = false;
+	try {
+		await mkdir(staging, { recursive: false, mode: 0o700 });
+		const files = [];
+		for (const source of [...sources.values()].sort((left, right) =>
+			left.path.localeCompare(right.path),
+		)) {
+			const input = await readBoundedRegularFile(
+				safeChild(directory, ...source.path.split("/")),
+				{ maxBytes: source.maxBytes },
+			);
+			const expected = Buffer.from(source.contents);
+			if (!input.contents || !Buffer.from(input.contents).equals(expected)) {
+				throw new Error(
+					`Artifact source changed after validation: ${source.path}`,
+				);
+			}
+			const destination = safeChild(staging, ...source.path.split("/"));
+			await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+			await atomicWrite(destination, expected);
+			const copied = await readBoundedRegularFile(destination, {
+				maxBytes: source.maxBytes,
+				encoding: null,
+			});
+			files.push({
+				path: source.path,
+				bytes: copied.bytes,
+				sha256: createHash("sha256").update(copied.contents).digest("hex"),
+			});
+		}
+		const manifest = {
+			schemaVersion: SCHEMA_VERSION,
+			kind: "openapi-to-ci-artifact-manifest",
+			files,
+		};
+		const manifestContents = `${JSON.stringify(manifest, null, 2)}\n`;
+		if (Buffer.byteLength(manifestContents) > MAX_ARTIFACT_MANIFEST_BYTES) {
+			throw new Error("Artifact manifest exceeded its size limit.");
+		}
+		await atomicWrite(
+			safeChild(staging, artifactManifestPath),
+			manifestContents,
+		);
+		const expectedFiles = artifactAllowlist(sources.keys());
+		const stagedFiles = await listUploadFiles(staging);
+		if (JSON.stringify(stagedFiles) !== JSON.stringify(expectedFiles)) {
+			throw new Error("Upload directory did not match its static allowlist.");
+		}
+		if (existing) {
+			await rm(resolvedUpload, { recursive: true, force: true });
+		}
+		await rename(staging, resolvedUpload);
+		published = true;
+		const actualFiles = await listUploadFiles(resolvedUpload);
+		if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) {
+			throw new Error("Published upload directory did not match its manifest.");
+		}
+		return { manifest, files: actualFiles };
+	} catch (error) {
+		await rm(staging, { recursive: true, force: true }).catch(() => {});
+		if (published) {
+			await rm(resolvedUpload, { recursive: true, force: true }).catch(
+				() => {},
+			);
+		}
+		throw error;
+	}
+}
+
+function overallStatus(jobStatus, steps, commands, finalizationErrors) {
 	if (jobStatus === "cancelled") return "cancelled";
 	if (
 		jobStatus === "failure" ||
+		steps.some(({ status }) => ["failure", "cancelled"].includes(status)) ||
 		commands.some(({ status }) => commandFailureStatuses.has(status))
 	) {
 		return "failure";
@@ -598,40 +1195,126 @@ function overallStatus(jobStatus, commands, finalizationErrors) {
 	return "success";
 }
 
-export async function finalize(options, environment = process.env) {
-	const directory = await ensureSafeDirectory(options.dir, environment);
-	const manifest = await readJsonFile(safeChild(directory, "plan.json"));
-	const plan = getPlan(options.plan);
+function assertInitializedPlan(manifest, options, plan, directoryDetails) {
+	const expectedReports = plan.reports.map(
+		({ id, label, relativePath, format }) => ({
+			id,
+			label,
+			relativePath,
+			format,
+		}),
+	);
 	if (
-		manifest.planId !== options.plan ||
-		manifest.schemaVersion !== SCHEMA_VERSION
+		manifest?.planId !== options.plan ||
+		manifest.schemaVersion !== SCHEMA_VERSION ||
+		manifest.workflow !== plan.workflow ||
+		manifest.jobId !== plan.jobId ||
+		manifest.jobName !== plan.jobName ||
+		JSON.stringify(manifest.steps) !== JSON.stringify(plan.steps) ||
+		JSON.stringify(manifest.commands) !== JSON.stringify(plan.commands) ||
+		JSON.stringify(manifest.reports) !== JSON.stringify(expectedReports) ||
+		manifest.directoryIdentity?.dev !== String(directoryDetails.dev) ||
+		manifest.directoryIdentity?.ino !== String(directoryDetails.ino)
 	) {
 		throw new Error(
 			"Initialized diagnostic plan does not match finalizer input.",
 		);
 	}
-	await ensureSafeDirectory(safeChild(directory, "known-reports"), environment);
-	const { commands, errors } = await collectCommands(
-		plan,
-		directory,
-		environment,
+}
+
+async function appendJobSummary(summaryPath, summary) {
+	const details = await lstat(summaryPath).catch((error) => {
+		if (error?.code === "ENOENT") return null;
+		throw error;
+	});
+	if (details && (details.isSymbolicLink() || !details.isFile())) {
+		throw new Error("GITHUB_STEP_SUMMARY is not a regular file.");
+	}
+	await appendFile(summaryPath, summary);
+}
+
+export async function finalizeInitializationFailure(
+	options,
+	environment = process.env,
+) {
+	const plan = getPlan(options.plan);
+	const { steps } = collectSteps(plan, options.steps ?? {});
+	const initialization = steps.find(({ id }) => id === "diagnostics-init");
+	const summary = [
+		"# CI diagnostics initialization failure",
+		"",
+		`Workflow: ${markdownCell(plan.workflow, environment)}`,
+		`Job: ${markdownCell(plan.jobName, environment)}`,
+		"",
+		"| Step | Status |",
+		"| --- | --- |",
+		...steps.map(
+			({ id, status }) =>
+				`| ${markdownCell(id, environment)} | ${markdownCell(status, environment)} |`,
+		),
+		"",
+		`Failure evidence: diagnostics-init is ${markdownCell(initialization?.status ?? "unknown", environment)}.`,
+		"",
+		"No diagnostic artifact was materialized because initialization did not produce a trusted upload directory.",
+		"",
+	].join("\n");
+	if (!environment.GITHUB_STEP_SUMMARY) {
+		throw new Error(
+			"Initialization failed and GITHUB_STEP_SUMMARY is unavailable.",
+		);
+	}
+	await appendJobSummary(environment.GITHUB_STEP_SUMMARY, summary);
+	return { summary, steps };
+}
+
+export async function finalize(options, environment = process.env) {
+	const directory = await ensureSafeDirectory(options.dir, environment);
+	const planInput = await readBoundedJsonFile(
+		safeChild(directory, "plan.json"),
+		{ maxBytes: MAX_PLAN_BYTES },
 	);
+	const plan = getPlan(options.plan);
+	assertInitializedPlan(planInput.value, options, plan, await lstat(directory));
+	await ensureSafeDirectory(safeChild(directory, "known-reports"), environment);
+	const {
+		commands,
+		errors: commandErrors,
+		artifacts: commandArtifacts,
+	} = await collectCommands(plan, directory, environment);
 	const reports = [];
 	for (const definition of plan.reports) {
-		reports.push(await collectReport(definition, directory, environment));
+		reports.push(
+			await collectReport(
+				definition,
+				directory,
+				environment,
+				options.onKnownReportAfterLstat
+					? (details) => options.onKnownReportAfterLstat(definition, details)
+					: undefined,
+			),
+		);
 	}
+	const { steps, errors: stepErrors } = collectSteps(plan, options.steps ?? {});
 	const missingReports = reports
 		.filter(({ parseStatus }) => parseStatus !== "parsed")
 		.map(({ id, parseStatus }) => `${id}: ${parseStatus}`);
-	const allCommandsSuccessful = commands.every(
-		({ status }) => status === "success",
-	);
+	const normalizedJobStatus = jobStatuses.has(options.jobStatus)
+		? options.jobStatus
+		: "failure";
+	const successfulAuthority =
+		normalizedJobStatus === "success" &&
+		steps.every(({ status }) => status === "success") &&
+		commands.every(({ status }) => status === "success");
 	const finalizationErrors = [
-		...errors,
-		...(allCommandsSuccessful ? missingReports : []),
+		...commandErrors,
+		...stepErrors,
+		...(options.jobStatus && !jobStatuses.has(options.jobStatus)
+			? ["job-status: invalid"]
+			: []),
+		...(successfulAuthority ? missingReports : []),
 	];
 	const matrix = stableObject(
-		Object.entries(options.matrix).map(([key, value]) => [
+		Object.entries(options.matrix ?? {}).map(([key, value]) => [
 			key,
 			nullable(value, environment),
 		]),
@@ -646,6 +1329,21 @@ export async function finalize(options, environment = process.env) {
 					.replace(/[^a-z0-9-]+/g, "-")}`
 			: ""
 	}`;
+	const sources = new Map();
+	sources.set("plan.json", {
+		path: "plan.json",
+		contents: planInput.contents,
+		maxBytes: MAX_PLAN_BYTES,
+	});
+	for (const artifact of commandArtifacts) sources.set(artifact.path, artifact);
+	for (const report of reports) {
+		if (report.artifact) sources.set(report.artifact.path, report.artifact);
+	}
+	const expectedArtifactFiles = artifactAllowlist([
+		...sources.keys(),
+		"ci-diagnostic.json",
+		"summary.md",
+	]);
 	const diagnostic = {
 		schemaVersion: SCHEMA_VERSION,
 		kind: DIAGNOSTIC_KIND,
@@ -653,10 +1351,11 @@ export async function finalize(options, environment = process.env) {
 		workflow: workflowMetadata(plan, environment),
 		runner: await runnerMetadata(environment),
 		matrix,
+		steps,
 		commands,
-		reports: reports.map(({ candidates, ...report }) => report),
+		reports: reports.map(({ candidates, artifact, ...report }) => report),
 		summary: {
-			failureEvidence: selectEvidence(commands, reports),
+			failureEvidence: selectEvidence(steps, commands, reports),
 			outputTruncated: commands.some(
 				({ evidence }) =>
 					evidence.stdout.truncated || evidence.stderr.truncated,
@@ -664,7 +1363,8 @@ export async function finalize(options, environment = process.env) {
 			missingReports,
 			finalizationErrors,
 			artifactName,
-			artifactFiles: [],
+			artifactFiles: expectedArtifactFiles,
+			artifactManifest: artifactManifestPath,
 		},
 		sanitization: {
 			applied: true,
@@ -677,15 +1377,17 @@ export async function finalize(options, environment = process.env) {
 				lineCharacters: 1_024,
 				errorCandidates: MAX_ERROR_CANDIDATES,
 				diagnosticBytes: MAX_DIAGNOSTIC_BYTES,
+				planBytes: MAX_PLAN_BYTES,
+				knownReportBytes: MAX_KNOWN_REPORT_BYTES,
 			},
 		},
 	};
 	diagnostic.status = overallStatus(
-		options.jobStatus ?? "success",
+		normalizedJobStatus,
+		steps,
 		commands,
 		finalizationErrors,
 	);
-	diagnostic.summary.artifactFiles = artifactAllowlist(plan, reports);
 	let summary = renderSummary(diagnostic, artifactName);
 	if (jsonBytes(diagnostic) > MAX_DIAGNOSTIC_BYTES) {
 		diagnostic.summary.failureEvidence =
@@ -697,44 +1399,56 @@ export async function finalize(options, environment = process.env) {
 	if (jsonBytes(diagnostic) > MAX_DIAGNOSTIC_BYTES) {
 		throw new Error("Final diagnostic exceeded its size limit.");
 	}
+	let diagnosticContents = `${JSON.stringify(diagnostic, null, 2)}\n`;
 	await atomicWrite(
 		safeChild(directory, "ci-diagnostic.json"),
-		`${JSON.stringify(diagnostic, null, 2)}\n`,
+		diagnosticContents,
 	);
 	await atomicWrite(safeChild(directory, "summary.md"), summary);
 	let appendError = null;
 	if (environment.GITHUB_STEP_SUMMARY) {
 		try {
-			try {
-				const details = await lstat(environment.GITHUB_STEP_SUMMARY);
-				if (details.isSymbolicLink() || !details.isFile()) {
-					throw new Error("GITHUB_STEP_SUMMARY is not a regular file.");
-				}
-			} catch (error) {
-				if (error?.code !== "ENOENT") throw error;
-			}
-			await appendFile(environment.GITHUB_STEP_SUMMARY, summary);
+			await appendJobSummary(environment.GITHUB_STEP_SUMMARY, summary);
 		} catch (error) {
-			appendError = sanitizeText(error.message, environment).slice(0, 500);
+			appendError = boundedError(error, environment);
 			diagnostic.status = "failure";
 			diagnostic.summary.finalizationErrors.push(
 				`summary-append: ${appendError}`,
 			);
 			summary = renderSummary(diagnostic, artifactName);
+			diagnosticContents = `${JSON.stringify(diagnostic, null, 2)}\n`;
 			await atomicWrite(
 				safeChild(directory, "ci-diagnostic.json"),
-				`${JSON.stringify(diagnostic, null, 2)}\n`,
+				diagnosticContents,
 			);
 			await atomicWrite(safeChild(directory, "summary.md"), summary);
 		}
 	}
-	await pruneArtifactDirectory(directory, artifactAllowlist(plan, reports));
+	sources.set("ci-diagnostic.json", {
+		path: "ci-diagnostic.json",
+		contents: diagnosticContents,
+		maxBytes: MAX_DIAGNOSTIC_BYTES,
+	});
+	sources.set("summary.md", {
+		path: "summary.md",
+		contents: summary,
+		maxBytes: Buffer.byteLength(summary),
+	});
+	await options.onBeforeMaterialize?.({ directory, sources });
+	const upload = await materializeUploadDirectory({
+		directory,
+		uploadDirectory: options.uploadDir,
+		sources,
+		environment,
+	});
 	return {
 		diagnostic,
 		appendError,
+		upload,
 		exitCode:
 			appendError ||
-			(options.jobStatus !== "failure" && finalizationErrors.length)
+			(!["failure", "cancelled"].includes(normalizedJobStatus) &&
+				finalizationErrors.length > 0)
 				? 1
 				: 0,
 	};
@@ -743,6 +1457,14 @@ export async function finalize(options, environment = process.env) {
 async function main() {
 	try {
 		const options = parseFinalizeArguments(process.argv.slice(2));
+		if (!options.uploadDir) {
+			await finalizeInitializationFailure(options);
+			process.stderr.write(
+				`[ci-diagnostics] initialization failed for ${options.plan}; wrote emergency Job Summary and materialized no upload directory.\n`,
+			);
+			process.exitCode = 1;
+			return;
+		}
 		const result = await finalize(options);
 		if (result.appendError) {
 			process.stderr.write(
@@ -750,7 +1472,7 @@ async function main() {
 			);
 		} else {
 			process.stdout.write(
-				`[ci-diagnostics] finalized ${options.plan}: ${result.diagnostic.status}\n`,
+				`[ci-diagnostics] finalized ${options.plan}: ${result.diagnostic.status}; upload files=${result.upload.files.length}\n`,
 			);
 		}
 		if (result.diagnostic.summary.finalizationErrors.length > 0) {

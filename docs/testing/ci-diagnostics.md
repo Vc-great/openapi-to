@@ -15,13 +15,21 @@ Each covered Job has three explicit phases:
    streams sanitized output to the Actions log, and atomically records one
    command report. A failed command remains failed with its original numeric
    exit code.
-3. `finalize-job.mjs`, guarded by `if: always()`, fills unexecuted plan entries
-   with `not-run`, summarizes allowlisted reports, writes `ci-diagnostic.json`
-   and `summary.md`, and appends the Markdown to `GITHUB_STEP_SUMMARY`.
+3. `finalize-job.mjs`, guarded by `if: always()`, records explicit
+   Checkout/Initialize/Setup outcomes, fills unexecuted plan entries with
+   `not-run`, summarizes allowlisted reports, writes `ci-diagnostic.json` and
+   `summary.md`, and appends the Markdown to `GITHUB_STEP_SUMMARY`.
+4. The finalizer safely re-reads only validated outputs into a fresh,
+   initialize-selected random upload directory. It writes
+   `artifact-manifest.json`, checks the exact file set, and publishes that
+   directory only after materialization succeeds.
 
-The finalizer removes files outside its computed artifact allowlist. The
-failure artifact therefore contains only the plan, final diagnostic, Markdown
-summary, validated command reports, and normalized known-report summaries.
+The working diagnostic directory is never the standard artifact upload path.
+Unknown files can remain there without crossing the upload boundary. A
+materialization failure leaves no upload directory rather than falling back to
+the working directory. If Checkout succeeded but initialization produced no
+trusted upload directory, the finalizer writes a fixed emergency Job Summary
+with the Action outcomes, fails, and deliberately materializes no artifact.
 
 ## Version 1 envelope
 
@@ -34,11 +42,14 @@ summary, validated command reports, and normalized known-report summaries.
 - `runner`: OS, architecture, Node version, and repository-declared pnpm
   version;
 - `matrix`: explicitly supplied matrix dimensions in sorted key order;
+- `steps`: fixed Checkout, Initialize, and Setup Action outcomes using only
+  `success`, `failure`, `cancelled`, `skipped`, or `unknown`;
 - `commands`: plan-ordered command results;
 - `reports`: existence, byte size, parse status, artifact-relative normalized
   summary path, and bounded report-specific counts;
 - `summary`: prioritized failure candidates, truncation state, missing reports,
-  finalization errors, artifact name, and exact artifact allowlist;
+  finalization errors, artifact name, exact upload file allowlist, and manifest
+  path;
 - `sanitization`: applied collection boundaries and the best-effort redaction
   declaration.
 
@@ -61,6 +72,14 @@ A simplified failure looks like:
     "pnpmVersion": "10.14.0"
   },
   "matrix": {},
+  "steps": [
+    {
+      "id": "setup",
+      "label": "Setup",
+      "kind": "action",
+      "status": "failure"
+    }
+  ],
   "commands": [
     {
       "id": "build",
@@ -109,6 +128,9 @@ The wrapper records the original numeric exit code and signal separately. It
 returns the original nonzero code when one exists. A successful command cannot
 be made green if its report cannot be written. `durationMs` is observational
 only and is not used to determine pass/fail or deterministic content hashes.
+Workflows start the wrapper with `node` rather than `pnpm exec node`, so failure
+to spawn `pnpm` is recorded as `infrastructure-error`; `pnpm.cmd` remains the
+Windows fallback.
 
 ## Collection and boundaries
 
@@ -127,6 +149,20 @@ It does not collect:
   binaries;
 - complete OpenAPI documents or generated trees.
 
+Wrapped build and test commands receive a new child environment rather than
+the finalizer's complete environment. It retains only cross-platform execution
+variables (`PATH`, home/profile, temporary directories, Windows process
+variables, Node/CI/runner metadata, locale/color controls, and a small explicit
+npm/pnpm set) plus the static plan's domain artifact variables. It never
+receives the real `GITHUB_ENV`, `GITHUB_PATH`, `GITHUB_OUTPUT`,
+`GITHUB_STEP_SUMMARY`, event payload path, diagnostic working/upload paths,
+GitHub/GH/npm tokens, OIDC request credentials, or Actions runtime/result/cache
+tokens. This allowlist is an additional defense layer; it is not a claim that
+every retained variable is intrinsically trustworthy.
+All covered read-only workflows also set checkout
+`persist-credentials: false`; the write-capable Version Packages workflow
+remains outside this diagnostic integration.
+
 Each stdout and stderr tail retains at most 100 sanitized lines. Each retained
 line is at most 1,024 characters, each command report is at most 256 KiB, there
 are at most 10 heuristic error candidates, and the final diagnostic is at most
@@ -140,28 +176,49 @@ Redaction is defense in depth and cannot guarantee discovery of every secret.
 Collection minimization and an exact artifact allowlist are the primary
 controls.
 
-Known reports are treated as untrusted data. The finalizer rejects symlinks,
-enforces an 8 MiB read ceiling, parses JSON as data, and emits only a small
-report-specific summary. It never imports or executes report content. A1's
-authoritative test inventory, MCP runner counts, CLI E2E summary, and MCP
-Doctor status remain owned by their existing runners.
+Plans, command reports, known reports, and upload sources use the same bounded
+file-handle reader. It performs `lstat`, rejects symlinks and reported hard
+links, opens with `O_NOFOLLOW` where Node exposes it, compares the opened
+identity, checks size, reads at most `maxBytes + 1`, rechecks the opened handle,
+validates UTF-8, and closes the handle in every path. Plans have a separate
+64 KiB ceiling; command reports remain 256 KiB and known reports remain 8 MiB.
+
+Windows has no complete Node equivalent of POSIX `O_NOFOLLOW`. The reader uses
+the portable `lstat`/open/`fstat` identity comparison and rejects known
+symlink/junction/reparse paths, but does not claim an absolute race-free
+guarantee on every Windows filesystem. Hard links are rejected when Node
+reports `nlink > 1`; filesystems that do not reliably expose link counts are a
+platform limitation.
+
+Known-report JSON is parsed only as data. A1, Vitest, MCP runner, MCP Doctor,
+CLI runtime/summary/fixture/inventory, and MCP smoke reports use strict bounded
+extractors. Wrong primitives, negative/special/oversized numbers,
+object-for-string substitutions, and malformed arrays produce
+`schema-invalid`; unknown nested fields are never copied. `invalid`,
+`too-large`, `missing`, and `rejected` remain distinct. A schema-invalid
+authoritative report fails an otherwise successful Job.
 
 ## Job Summary and artifacts
 
 Every covered successful or failed Job attempts to write a compact Markdown
-table. Untrusted text is sanitized, length-bounded, and escaped so it cannot
-create HTML, links, or additional table structure. A missing local
+table. Untrusted text is rendered as escaped ordinary text rather than a code
+span, and is sanitized and length-bounded so backticks, HTML, links, line
+breaks, or pipes cannot create new Markdown structure. A missing local
 `GITHUB_STEP_SUMMARY` does not prevent `summary.md` generation. An Actions
 append failure is reported and fails an otherwise successful Job.
 
 Standard artifacts are uploaded only with `if: failure()`, use a stable
-workflow/Job/matrix name, fail when no diagnostic exists, and retain for 14
-days. The MCP Doctor's existing sanitized artifact remains `if: always()`.
+workflow/Job/matrix name, point only to the random isolated upload directory,
+fail when no diagnostic exists, and retain for 14 days. The manifest records
+the byte size and SHA-256 of every other upload file; it intentionally omits a
+self-hash. These hashes help detect corruption but do not prove a trusted
+origin. The MCP Doctor's existing sanitized artifact remains `if: always()`.
 
 Hard runner termination or GitHub cancellation can prevent any `if: always()`
-step from starting. When the finalizer does run after a failure, it records
-commands without reports as `not-run`; it does not infer skipped state from
-GitHub UI text.
+step from starting. A Checkout failure can also leave no repository finalizer
+to execute. When the finalizer does run after a failure, it records commands
+without reports as `not-run`; it does not infer skipped state from GitHub UI
+text.
 
 ## Local use
 
@@ -179,15 +236,21 @@ node scripts/ci-diagnostics/run-command.mjs \
 
 node scripts/ci-diagnostics/finalize-job.mjs \
   --dir .ci-artifacts/diagnostic-example \
+  --upload-dir .ci-artifacts/diagnostic-example-upload \
   --plan quality-build \
-  --job-status success
+  --job-status success \
+  --step checkout=success \
+  --step diagnostics-init=success \
+  --step setup=success
 ```
 
 Read `summary.md` for a quick view and `ci-diagnostic.json` for structured
 triage. Command JSON files retain the bounded sanitized tails.
 
-Any future AI triage must validate schema version 1, size, file count, paths,
-and symlink policy before reading these artifacts. Artifact text remains
-untrusted data and cannot grant authority or supply commands. There is
-currently no automated AI analysis, comment, fix, push, pull request, or
-workflow rerun.
+Any future AI triage must independently validate schema version 1, manifest,
+size, file count, paths, file types, and symlink policy before reading these
+artifacts. Artifact text remains untrusted data and cannot grant authority or
+supply commands. Regex redaction cannot discover every secret, bounded evidence
+can omit the complete root cause, and hard runner cancellation can prevent the
+finalizer from running. There is currently no automated AI analysis, comment,
+fix, push, pull request, or workflow rerun.

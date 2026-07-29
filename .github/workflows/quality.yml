@@ -20,24 +20,28 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-build
       - name: Setup
+        id: setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-build --job-status "${{ job.status }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan quality-build --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-quality-build
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14
 
@@ -51,28 +55,32 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-typecheck
       - name: Setup
+        id: setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
       - name: Package typecheck
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id package-typecheck -- pnpm typecheck --concurrency=1
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id package-typecheck -- pnpm typecheck --concurrency=1
       - name: Project-reference typecheck
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id project-reference-typecheck -- pnpm exec tsc -b
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id project-reference-typecheck -- pnpm exec tsc -b
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-typecheck --job-status "${{ job.status }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan quality-typecheck --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-quality-typecheck
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14
 
@@ -86,26 +94,30 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-tests
       - name: Setup
+        id: setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build
       - name: Test
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id test -- pnpm test:vitest
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id test -- pnpm test:vitest
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-tests --job-status "${{ job.status }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan quality-tests --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-quality-tests
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14
 
@@ -119,30 +131,34 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-lint-changed
       - name: Setup
+        id: setup
         uses: ./.github/setup
       - name: Test lint collector
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id test-lint-collector -- pnpm test:release-scripts
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id test-lint-collector -- pnpm test:release-scripts
       - name: Lint pull request files
         if: github.event_name == 'pull_request'
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id lint-changed -- pnpm lint:changed --base "${{ github.event.pull_request.base.sha }}"
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id lint-changed -- pnpm lint:changed --base "${{ github.event.pull_request.base.sha }}"
       - name: Lint pushed files
         if: github.event_name == 'push'
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id lint-changed -- pnpm lint:changed --base "${{ github.event.before }}"
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id lint-changed -- pnpm lint:changed --base "${{ github.event.before }}"
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-lint-changed --job-status "${{ job.status }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan quality-lint-changed --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-quality-lint-changed
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14
 
@@ -156,31 +172,35 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-release-smoke
       - name: Setup
+        id: setup
         uses: ./.github/setup
       - name: Build
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build
       - name: Verify repository contracts
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id repository-contracts -- pnpm verify:repository-contract
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id repository-contracts -- pnpm verify:repository-contract
       - name: Verify package surface
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id package-surface -- pnpm verify:package-surface
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id package-surface -- pnpm verify:package-surface
       - name: Pack and install packages
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id pack-install -- pnpm release:smoke
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id pack-install -- pnpm release:smoke
       - name: Verify Changesets development state
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id changesets-development -- pnpm verify:changeset-state:development
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id changesets-development -- pnpm verify:changeset-state:development
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan quality-release-smoke --job-status "${{ job.status }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan quality-release-smoke --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-quality-release-smoke
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14

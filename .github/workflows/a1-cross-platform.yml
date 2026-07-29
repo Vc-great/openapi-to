@@ -26,39 +26,43 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan a1-contracts
       - name: Setup Node 20 and pnpm
+        id: setup
         uses: ./.github/setup
       - name: Build packages
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
       - name: Run A1 focused contracts
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id a1-contracts -- pnpm test:a1-contracts
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id a1-contracts -- pnpm test:a1-contracts
       - name: Verify openapi CLI alias
         working-directory: e2e/common
-        run: pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-openapi-help --cwd . -- pnpm exec openapi --help
+        run: node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-openapi-help --cwd . -- pnpm exec openapi --help
       - name: Verify openapi-to CLI alias
         working-directory: e2e/common
-        run: pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-openapi-to-version --cwd . -- pnpm exec openapi-to --version
+        run: node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-openapi-to-version --cwd . -- pnpm exec openapi-to --version
       - name: Verify aggregate MCP CLI alias
         working-directory: e2e/common
-        run: pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-mcp-help --cwd . -- pnpm exec openapi-to-mcp --help
+        run: node ../../scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id cli-mcp-help --cwd . -- pnpm exec openapi-to-mcp --help
       - name: Verify aggregate MCP wrapper
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-openapi-wrapper -- node packages/openapi/bin/openapi-to-mcp.js --help
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-openapi-wrapper -- node packages/openapi/bin/openapi-to-mcp.js --help
       - name: Verify package MCP wrapper
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-package-wrapper -- node packages/mcp/bin/openapi-to-mcp.js --help
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id mcp-package-wrapper -- node packages/mcp/bin/openapi-to-mcp.js --help
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan a1-contracts --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan a1-contracts --job-status "${{ job.status }}" --matrix "os=${{ matrix.os }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-a1-cross-platform-contracts-contracts-${{ matrix.os }}
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14
       - name: Upload A1 failure diagnostics
@@ -67,9 +71,9 @@ jobs:
         with:
           name: a1-contracts-${{ matrix.os }}
           path: |
-            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-runtime.json
-            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-summary.json
-            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-inventory.json
-            ${{ env.CI_DIAGNOSTIC_DIR }}/known-reports/a1-vitest.json
+            ${{ steps.diagnostics-init.outputs.upload-dir }}/known-reports/a1-runtime.json
+            ${{ steps.diagnostics-init.outputs.upload-dir }}/known-reports/a1-summary.json
+            ${{ steps.diagnostics-init.outputs.upload-dir }}/known-reports/a1-inventory.json
+            ${{ steps.diagnostics-init.outputs.upload-dir }}/known-reports/a1-vitest.json
           if-no-files-found: warn
           retention-days: 14

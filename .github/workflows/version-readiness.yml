@@ -26,23 +26,27 @@ jobs:
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
       - name: Check out code
+        id: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Initialize CI diagnostics
+        id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan version-readiness
       - name: Setup
+        id: setup
         uses: ./.github/setup
       - name: Verify release candidate Changesets state
-        run: pnpm exec node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id changeset-state -- pnpm verify:changeset-state
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id changeset-state -- pnpm verify:changeset-state
       - name: Finalize CI diagnostics
         if: always()
-        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan version-readiness --job-status "${{ job.status }}"
+        run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan version-readiness --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"
       - name: Upload CI failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-diagnostics-version-readiness-changeset-state
-          path: ${{ env.CI_DIAGNOSTIC_DIR }}
+          path: ${{ steps.diagnostics-init.outputs.upload-dir }}
           if-no-files-found: error
           retention-days: 14

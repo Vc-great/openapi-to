@@ -951,6 +951,70 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 		}
 	}
 
+	const filesystemPath = join(root, "scripts/ci-diagnostics/filesystem.mjs");
+	const runCommandPath = join(root, "scripts/ci-diagnostics/run-command.mjs");
+	const finalizerPath = join(root, "scripts/ci-diagnostics/finalize-job.mjs");
+	if (
+		(await exists(filesystemPath)) &&
+		(await exists(runCommandPath)) &&
+		(await exists(finalizerPath))
+	) {
+		const [filesystem, runCommand, finalizer] = await Promise.all([
+			readFile(filesystemPath, "utf8"),
+			readFile(runCommandPath, "utf8"),
+			readFile(finalizerPath, "utf8"),
+		]);
+		for (const required of [
+			"export async function readBoundedRegularFile",
+			"export async function readBoundedJsonFile",
+			"handle.stat()",
+			"handle.read(",
+			"handle?.close()",
+		]) {
+			if (!filesystem.includes(required)) {
+				failures.push(
+					`CI diagnostics bounded file reader is missing ${required}`,
+				);
+			}
+		}
+		if (
+			!runCommand.includes("readBoundedJsonFile") ||
+			!runCommand.includes("MAX_PLAN_BYTES") ||
+			!finalizer.includes("readBoundedJsonFile") ||
+			!finalizer.includes("readBoundedRegularFile")
+		) {
+			failures.push(
+				"CI diagnostic plan, command, and known-report reads must use the bounded file reader",
+			);
+		}
+		for (const required of [
+			"CHILD_ENV_DENYLIST",
+			"CHILD_ENV_ALLOWLIST",
+			"buildChildEnvironment",
+			"GITHUB_STEP_SUMMARY",
+			"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+			"CI_DIAGNOSTIC_UPLOAD_DIR",
+		]) {
+			if (!runCommand.includes(required)) {
+				failures.push(
+					`CI diagnostics child environment policy is missing ${required}`,
+				);
+			}
+		}
+		for (const required of [
+			"materializeUploadDirectory",
+			"openapi-to-ci-artifact-manifest",
+			"artifact-manifest.json",
+			"sha256",
+		]) {
+			if (!finalizer.includes(required)) {
+				failures.push(
+					`CI diagnostics upload materialization is missing ${required}`,
+				);
+			}
+		}
+	}
+
 	for (const [relativePath, expectedJobs] of CI_DIAGNOSTIC_WORKFLOWS) {
 		const workflowPath = join(root, relativePath);
 		if (!(await exists(workflowPath))) {
@@ -987,11 +1051,53 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 		if (
 			occurrences(
 				workflow,
-				/name: ci-diagnostics-[^\r\n]+\r?\n\s+path: \$\{\{ env\.CI_DIAGNOSTIC_DIR }}\r?\n\s+if-no-files-found: error\r?\n\s+retention-days: 14/g,
+				/name: ci-diagnostics-[^\r\n]+\r?\n\s+path: \$\{\{ steps\.diagnostics-init\.outputs\.upload-dir }}\r?\n\s+if-no-files-found: error\r?\n\s+retention-days: 14/g,
 			) !== expectedJobs
 		) {
 			failures.push(
-				`${relativePath} standard artifacts must use stable names, the diagnostic directory, if-no-files-found error, and 14-day retention`,
+				`${relativePath} standard artifacts must use stable names, the isolated upload directory, if-no-files-found error, and 14-day retention`,
+			);
+		}
+		if (
+			workflow.includes(
+				"pnpm exec node scripts/ci-diagnostics/run-command.mjs",
+			) ||
+			workflow.includes(
+				"pnpm exec node ../../scripts/ci-diagnostics/run-command.mjs",
+			)
+		) {
+			failures.push(
+				`${relativePath} must start the CI diagnostics wrapper directly with node`,
+			);
+		}
+		if (
+			occurrences(workflow, /^\s+uses: actions\/checkout@v4\s*$/gm) !==
+				expectedJobs ||
+			occurrences(workflow, /^\s+persist-credentials: false\s*$/gm) !==
+				expectedJobs
+		) {
+			failures.push(
+				`${relativePath} read-only checkouts must disable persisted credentials`,
+			);
+		}
+		for (const id of ["checkout", "diagnostics-init", "setup"]) {
+			if (
+				occurrences(workflow, new RegExp(`^\\s+id: ${id}\\s*$`, "gm")) !==
+				expectedJobs
+			) {
+				failures.push(
+					`${relativePath} must assign stable ${id} ids in all covered Jobs`,
+				);
+			}
+		}
+		if (
+			occurrences(
+				workflow,
+				/--upload-dir "\$\{\{ steps\.diagnostics-init\.outputs\.upload-dir }}"[\s\S]*?--step "checkout=\$\{\{ steps\.checkout\.outcome }}" --step "diagnostics-init=\$\{\{ steps\.diagnostics-init\.outcome }}" --step "setup=\$\{\{ steps\.setup\.outcome }}"/g,
+			) !== expectedJobs
+		) {
+			failures.push(
+				`${relativePath} finalizers must receive the isolated upload path and stable Action outcomes`,
 			);
 		}
 		if (workflow.includes("continue-on-error")) {
