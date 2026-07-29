@@ -25,15 +25,10 @@ If the requested semantics are ambiguous between dialects, stop and obtain a con
 
 Run `git status --short`, preserve unexplained user changes, and verify current manifests/configuration before editing. Do not overwrite fixtures or generated expectations automatically.
 
-Map the implemented stages to current code:
-
-1. Source loading and parsing: `openapi/sourceLoader.ts` plus Swagger conversion.
-2. Reference resolution: `openapi/refResolver.ts`, including internal, relative-file, and policy-controlled remote references.
-3. Dialect-aware validation: `openapi/validator.ts`.
-4. Normalization and orchestration: `openapi/normalizer.ts` and `openapi/compiler.ts`.
-5. Legacy-compatible access: `OpenAPIContext/OpenAPIHelper.ts` and `OperationAccessor.ts`; current official plugins receive `compilation.document`, not the resolved or normalized document.
-6. Generation: official plugin collectors/builders/hooks.
-7. Output: typed `GeneratedArtifact` collection, formatting, comparison, ownership-aware writing, dry-run, or check.
+Use the pipeline and representation map in `packages/core/AGENTS.md` to trace
+the feature through current code. Record which compilation representation
+reaches official plugins, then follow the affected collectors/builders and
+artifact/check path. Do not copy that map into this Skill.
 
 Record the installed dependency capabilities from manifests/lockfile and their actual usage. Do not equate a dependency's theoretical support with repository support.
 
@@ -70,10 +65,8 @@ Do not fix only a version string or public type union when collectors/builders s
 - Preserve dialect-specific distinctions through shared types and helpers.
 - Keep nonstandard compatibility branches explicit and tested; label them policy, not specification requirements.
 - Prefer one semantic conversion point over repeated ad hoc checks across plugins, but do not refactor architecture beyond task scope.
-- Bound recursion and detect cycles for recursive schemas/references.
-- Keep output stable through explicit sorting and deterministic naming.
-- Return actionable, bounded diagnostics for unsupported shapes. Do not print full documents or sensitive remote request context.
-- Never execute examples, descriptions, extensions, or schema text.
+- Follow the Core Agent guide for recursion/cycle bounds, determinism,
+  diagnostic ownership/redaction, untrusted input, and writer safety.
 
 ### 5. State the support boundary
 

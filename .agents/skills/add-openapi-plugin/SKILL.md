@@ -5,7 +5,11 @@ description: Add or substantially extend an openapi-to generator plugin, includi
 
 # Add an openapi-to plugin
 
-Read the root `AGENTS.md` and `packages/core/AGENTS.md` first. Re-read current core lifecycle types and at least one similar official plugin; this Skill never substitutes for current code.
+Read the root `AGENTS.md` and `packages/core/AGENTS.md` first. Follow the Core
+Agent guide for permanent lifecycle, scheduling, state-isolation, artifact,
+diagnostic, writer, and determinism invariants. Re-read current Core lifecycle
+types and at least one similar official plugin; this Skill supplies the
+plugin-specific design and registration workflow.
 
 ## Required inputs
 
@@ -38,18 +42,11 @@ P0 provides the general `GeneratedArtifact` contract. Existing TypeScript plugin
 
 ### 2. Design the lifecycle
 
-Use only Hooks declared by `PluginDefinition` at the current revision:
-
-- `buildStart`: validate options and create build-local state.
-- `componentsSchemas`, `componentsParameters`, `componentsRequestBodies`, `componentsResponses`: derive files from the matching component collection.
-- `tagStart`: initialize state that does not depend on completed asynchronous operations.
-- `operation`: create one-operation output and attach operation metadata.
-- `tagEnd`: do not use as a completion barrier; the current runner can invoke it while scheduled operation work is still pending.
-- `buildEnd`: create aggregate/barrel output after scheduled component and operation work.
-
-Verify the await boundaries in `runPluginsByTags.ts`, not only the Hook names. In the current runner, component Hooks finish before the tag loop; operations within a tag can run concurrently; operations from different tags can overlap; `tagEnd` can run before its operations finish; and a later `tagStart` can run while an earlier tag still has operations in flight. All scheduled operations are awaited before `buildEnd`, making it the current final aggregation barrier. Never depend on shared `currentTag`/`currentOperation` variables or an unpartitioned mutable SourceFile/import/Set/Map. Partition state by build/tag/operation or synchronize it explicitly.
-
-`ctx.addArtifact()` registers synchronously, but asynchronous operation Hooks can complete in any order. Core sorts the final artifact set; it cannot make concurrently mutated aggregate content deterministic. Collect immutable operation facts and emit a shared aggregate artifact once in `buildEnd`.
+Verify the current Hook names and await boundaries in
+`runPluginsByTags.ts`. Record why the chosen component, operation, or
+`buildEnd` Hook owns each output and how concurrent operation facts reach any
+aggregate without shared mutable state. A final Core sort does not repair
+nondeterministic aggregate construction.
 
 Declare `dependencies` when the plugin reads metadata produced by another plugin. Verify names against `pluginEnum` and the current `PluginEnumType`; do not invent a name that core types cannot represent.
 
@@ -57,11 +54,12 @@ Declare `dependencies` when the plugin reads metadata produced by another plugin
 
 1. Define `PluginConfig` in `src/types.ts` and derive a required/internal config type only when it removes repeated defaulting.
 2. Apply defaults in the plugin factory or `buildStart`; keep user configuration immutable.
-3. Prefer existing build context such as namespaced `ctx.store` when it reliably isolates the required lifetime.
-4. If current architecture requires module-level compatibility storage, allow only a `WeakMap<OpenapiToSingleConfig, State>` whose value belongs exclusively to that key's build and is initialized in `buildStart`. Do not treat this as a general best practice.
-5. Never use module-level strong-reference `Map`, `Set`, array, counter, registry, or `Project` state. Never put a cross-build registry inside the allowed `WeakMap`.
-6. Run two consecutive builds with fresh configuration objects and assert that names, files, registries, and counters do not leak.
-7. Make missing state or missing dependency metadata a clear error, not a non-null assertion that later produces a vague exception.
+3. Choose the build-local state mechanism allowed by the Core Agent guide and
+   document its lifetime.
+4. Run two consecutive builds with fresh configuration objects and assert that
+   names, files, registries, and counters do not leak.
+5. Make missing state or dependency metadata a clear error, not a non-null
+   assertion that later produces a vague exception.
 
 ### 4. Produce deterministic artifacts
 
@@ -69,11 +67,10 @@ Declare `dependencies` when the plugin reads metadata produced by another plugin
 2. Derive names from normalized operation/schema names using existing utilities when they match the contract.
 3. Detect collisions after normalization, including case-only collisions relevant on Windows/macOS.
 4. Choose one output API: retain `ctx.setSourceFiles()` for a small change to an existing TypeScript plugin, otherwise register the correctly typed artifact with `ctx.addArtifact()`.
-5. Sort aggregate entries, imports, exports, schemas, and operations explicitly. Do not use timestamps, ambient locale, network data, or unseeded randomness.
-6. Create shared/barrel files once in `buildEnd`, never once per operation.
-7. Keep generated import specifiers consistent with the plugin's `importWithExtension` contract and existing `formatterModuleSpecifier`/`getRelativePath` helpers.
-8. Treat paths as output-root-relative artifact paths. Do not bypass normalization, case-collision, duplicate-content, traversal, symlink, size, or ownership-manifest checks.
-9. Identical paths with identical serialized bytes are deduplicated; identical or case-only paths with different identities/content are errors. Test the intended behavior rather than depending on Hook completion order.
+5. Define explicit ordering and import-extension policy, and create each
+   shared/barrel artifact once at its safe aggregation barrier.
+6. Test file identity, content, collision, path, size, and second-run behavior
+   through Core's artifact contract rather than bypassing it.
 
 ### 5. Register the plugin
 

@@ -5,7 +5,11 @@ description: Add or substantially change an openapi-to CLI command while preserv
 
 # Add an openapi-to CLI command
 
-Read root `AGENTS.md`, `packages/cli/AGENTS.md`, `packages/cli/src/index.ts`, its integration tests, `packages/core/src/diagnostics.ts`, and `packages/core/src/exitCodes.ts` before editing. Current code is authoritative.
+Read root `AGENTS.md`, `packages/cli/AGENTS.md`, `packages/cli/src/index.ts`, its
+integration tests, `packages/core/src/diagnostics.ts`, and
+`packages/core/src/exitCodes.ts` before editing. Follow the CLI Agent guide for
+the permanent ownership, stdout/stderr, read/write, exit-code, binary-alias, and
+validation invariants; this Skill adds the command-specific workflow.
 
 ## Required contract
 
@@ -13,19 +17,19 @@ Define before editing:
 
 - Command name, positional inputs, option defaults, aliases, and whether a config is required.
 - Text-mode audience and stable JSON envelope.
-- Owning compiler/library API; commands present results and do not reimplement Loader/Resolver/Validator/Artifact semantics.
+- Owning compiler/library API and any new presentation adapter.
 - Diagnostics and exit-code cases, including precedence when multiple failures exist.
 - Sensitive input, remote-source, output-write, and path boundaries.
 
 ## Workflow
 
 1. Establish `git status --short` and preserve unrelated changes.
-2. Register the command/options in `packages/cli/src/index.ts`; reuse core APIs and the shared `CLIIO`/JSON helpers.
-3. Keep `--json` usable before or after the command when it is global. JSON stdout must contain exactly one document with stable keys and sorted arrays; send progress, plugin console output, and debug information to stderr.
-4. Return structured diagnostics. Do not serialize raw `Error` objects or expose stacks, full documents, credentials, Authorization/Cookie headers, or URL queries.
-5. Select only centralized `ExitCode` values: 0 success, 1 general, 2 config, 3 OpenAPI, 4 input/remote, 5 plugin, 6 outdated output, 7 breaking changes. Library code never calls `process.exit`; the bin assigns `process.exitCode` after awaited work.
-6. Keep execution deterministic. Sort diagnostics/results, do not include timestamps/randomness/ambient locale, and do not write in inspect/validate/diff/dry-run/check paths.
-7. Preserve both aggregate binary aliases by checking `packages/openapi/package.json` and `bin/openapi.js` after a CLI build.
+2. Register the command/options in `packages/cli/src/index.ts`; reuse Core APIs
+   and the shared `CLIIO`/JSON helpers.
+3. Define focused text/JSON assertions, reachable diagnostic/exit precedence,
+   and before/after global-option placement before broad integration coverage.
+4. Check `packages/openapi/package.json` and `bin/openapi.js` after a CLI build
+   when the aggregate binary surface is affected.
 
 ## Tests
 

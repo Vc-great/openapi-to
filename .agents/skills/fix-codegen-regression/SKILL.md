@@ -50,20 +50,10 @@ to create the baseline.
 
 ## Locate the semantic owner
 
-Trace the first incorrect representation through the actual pipeline:
-
-1. loader/parser and source policy;
-2. Swagger conversion;
-3. reference resolver;
-4. dialect-aware validator;
-5. deterministic normalizer;
-6. legacy OpenAPI context or operation accessor;
-7. plugin collector or shared metadata producer;
-8. plugin builder/template;
-9. artifact materialization, formatter, comparison, ownership, or writer;
-10. CLI presentation only when compiler output is correct but surfaced
-    incorrectly;
-11. downstream plugin metadata consumer.
+Trace the first incorrect representation through the current pipeline stages
+and representation boundaries defined in `packages/core/AGENTS.md`, then
+continue through the affected plugin collector/builder, downstream metadata
+consumer, and CLI presentation when applicable.
 
 Record the first stage where expected and actual behavior diverge. Fix that
 owner once; do not add parallel patches to every plugin, reimplement Core
@@ -95,14 +85,8 @@ combination for shared metadata defects.
 ## Implement the narrow repair
 
 - Preserve the input document and user configuration.
-- Keep one semantic rule in its owning stage and diagnostics in their owning
-  layer.
-- Sort files, declarations, imports, exports, operations, schemas, and
-  aggregate entries explicitly where source order is not contractual.
-- Bound recursion, file count, size, and traversal; retain path, symlink,
-  collision, ownership, and clean protections.
-- Emit one aggregate file at the current safe lifecycle barrier rather than
-  mutating shared output from concurrent operation Hooks.
+- Follow the Core Agent guide for semantic ownership, diagnostics, scheduling,
+  determinism, resource bounds, artifact paths, and writer safety.
 - Change snapshots or checked-in generated examples only after the source fix
   and minimal fixture explain every semantic/file-set difference.
 - Add a changeset only when the resulting user-visible package fix requires it
