@@ -3,6 +3,7 @@ import {
 	collectRefsFromComponentParameters,
 	collectRefsFromComponentResponse,
 	collectRefsFromOperationParameter,
+	collectRefsFromOperationRequestBody,
 } from "./collectRefsFromDocument.ts";
 
 describe("collectRefsFromComponentResponse", () => {
@@ -22,6 +23,31 @@ describe("collectRefsFromComponentResponse", () => {
 				},
 			} as never),
 		).toEqual(["#/components/schemas/Message"]);
+	});
+
+	it("collects every schema ref sibling recursively", () => {
+		expect(
+			collectRefsFromComponentResponse({
+				description: "Composed",
+				content: {
+					"application/json": {
+						schema: {
+							$ref: "#/components/schemas/Base",
+							allOf: [{ $ref: "#/components/schemas/Extra" }],
+							anyOf: [{ $ref: "#/components/schemas/Alternative" }],
+							properties: {
+								child: { $ref: "#/components/schemas/Child" },
+							},
+						},
+					},
+				},
+			} as never),
+		).toEqual([
+			"#/components/schemas/Base",
+			"#/components/schemas/Child",
+			"#/components/schemas/Extra",
+			"#/components/schemas/Alternative",
+		]);
 	});
 });
 
@@ -48,5 +74,24 @@ describe("parameter reference collection", () => {
 		expect(
 			collectRefsFromComponentParameters({ Filter: parameter } as never),
 		).toEqual(["#/components/schemas/Filter"]);
+	});
+});
+
+describe("request body reference collection", () => {
+	it("does not short-circuit a schema carrying $ref siblings", () => {
+		expect(
+			collectRefsFromOperationRequestBody({
+				schema: { requestBody: {} },
+				getRequestBody: () => ({
+					schema: {
+						$ref: "#/components/schemas/Base",
+						oneOf: [{ $ref: "#/components/schemas/Extra" }],
+					},
+				}),
+			} as never),
+		).toEqual([
+			"#/components/schemas/Base",
+			"#/components/schemas/Extra",
+		]);
 	});
 });

@@ -291,6 +291,34 @@ describe('definePlugin', () => {
       // 验证 sourceFile 设置
       expect(mockCtx.setSourceFiles).toHaveBeenCalledWith([pluginEnum.TsType, 'componentsParameters', 'UserParam'], expect.anything())
     })
+
+    it('collects imports independently for each component parameter', async () => {
+      await plugin.hooks.buildStart(mockCtx)
+      const parameters = {
+        Target: {
+          name: 'target',
+          in: 'query',
+          schema: { type: 'string' },
+        },
+        Alias: { $ref: '#/components/parameters/Target' },
+        Nested: {
+          name: 'nested',
+          in: 'query',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/Filter' },
+            },
+          },
+        },
+      }
+
+      await plugin.hooks.componentsParameters(parameters, mockCtx)
+
+      const collector = await import('@/collect/collectRefsFromDocument.ts')
+      expect(collector.collectRefsFromComponentParameters).toHaveBeenNthCalledWith(1, { Target: parameters.Target })
+      expect(collector.collectRefsFromComponentParameters).toHaveBeenNthCalledWith(2, { Alias: parameters.Alias })
+      expect(collector.collectRefsFromComponentParameters).toHaveBeenNthCalledWith(3, { Nested: parameters.Nested })
+    })
   })
 
   describe('componentsRequestBodies hook', () => {

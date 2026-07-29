@@ -144,6 +144,26 @@ describe("collectRefsFromDocument", () => {
 			expect(result).toHaveLength(1);
 		});
 
+		it("does not short-circuit schema $ref siblings", () => {
+			const oasOperation = {
+				schema: {
+					requestBody: {},
+				},
+				getRequestBody: vi.fn().mockReturnValue({
+					schema: {
+						$ref: "#/components/schemas/Base",
+						allOf: [{ type: "object" }],
+					},
+				}),
+			};
+
+			collectRefsFromOperationRequestBody(oasOperation);
+
+			expect(
+				collectRefsFromSchemasModule.collectRefsFromSchema,
+			).toHaveBeenCalledWith(oasOperation.getRequestBody().schema);
+		});
+
 		it("应该处理数组形式的请求体", () => {
 			const oasOperation = {
 				schema: {
@@ -300,6 +320,21 @@ describe("collectRefsFromDocument", () => {
 			const result = collectRefsFromComponentResponse(response);
 			expect(result).toContain("#/components/responses/BaseResponse");
 			expect(result).toHaveLength(1);
+		});
+
+		it("does not short-circuit schema $ref siblings", () => {
+			const schema = {
+				$ref: "#/components/schemas/Base",
+				anyOf: [{ $ref: "#/components/schemas/Extra" }],
+			};
+			collectRefsFromComponentResponse({
+				description: "Composed",
+				content: { "application/json": { schema } },
+			});
+
+			expect(
+				collectRefsFromSchemasModule.collectRefsFromSchema,
+			).toHaveBeenCalledWith(schema);
 		});
 
 		it("应该从内容中收集模式引用", () => {
