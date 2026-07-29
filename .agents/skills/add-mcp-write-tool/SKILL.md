@@ -9,6 +9,12 @@ Use this Skill only for the existing two-stage controlled generation writer. Pre
 
 Read root `AGENTS.md`, `packages/core/AGENTS.md`, `packages/mcp/AGENTS.md`, `docs/architecture/mcp-controlled-write.md`, and [the controlled-write checklist](references/controlled-write-checklist.md) before editing. Also read `.agents/skills/add-mcp-tool/SKILL.md` for protocol/schema/stdout requirements and `.agents/skills/release-monorepo/SKILL.md` when public packages change.
 
+Follow `packages/mcp/AGENTS.md` for the permanent registration matrix,
+Prepare/Apply authority, token/plan, stale-state, transaction, cancellation,
+and recovery invariants. This Skill owns change mapping, test selection,
+security evaluation, and stop/report decisions rather than restating those
+module rules.
+
 ## Establish the boundary
 
 Confirm a clean committed baseline and preserve user changes. Map the exact change across:
@@ -22,37 +28,18 @@ Confirm a clean committed baseline and preserve user changes. Map the exact chan
 
 Keep the registration matrix stable: three total Tools without config, eight total with trusted config, and ten total only with trusted config plus operator `allowWrite`. Tool arguments can never enable writes. Current transaction scope is one target/output root per plan; fail visibly on multi-target requests rather than partially applying them.
 
-## Preserve Prepare semantics
+## Change-specific review
 
-Prepare runs the complete compiler/plugin/artifact comparison pipeline but creates no Workspace file, output directory, lock, staging area, journal, or ownership manifest. Bind the internal full plan to Server, Workspace, trusted config and config sources, selected target, local and remote inputs, every local `$ref`, output-root identity, ownership manifest, every affected file's before state, generator/plugin identity, and complete artifact hashes.
+Trace the proposed change through the complete internal plan and the bounded
+external review result. List every newly bound input, identity, hash,
+precondition, limit, or lifecycle transition. For Apply, identify the exact
+point at which the plan becomes consumed, the checks repeated under the shared
+lock, and the rollback/recovery behavior for each newly reachable failure.
 
-The external result is a bounded, deterministic review summary. Make deletions conspicuous. Truncating external changes must never truncate the internal applicable plan. Preview stays off by default, text-only, and bounded; never return binary bodies or full generated trees.
-
-Use a per-Server random HMAC key and constant-time verification. Plans remain in bounded per-instance memory with TTL, maximum count/bytes, deterministic eviction, once-only consumption, restart invalidation, and cleanup on close. Never store or log the HMAC secret or full token.
-
-## Preserve Apply semantics
-
-Apply accepts only `planId`, `token`, and `approvedPlanHash`. It cannot accept targets, change lists, output roots, content, deletes, config, plugins, `force`, skip-validation, or safety-policy overrides.
-
-Under the per-Server generation queue and shared filesystem lock:
-
-1. Verify existence, TTL, unused state, exact hash, and token.
-2. Revalidate Server/Workspace/config/source/reference/output/manifest/file identities and hashes.
-3. Re-run full deterministic generation and require exact artifact/plan equality.
-4. Require added paths still absent and modified/deleted paths unchanged.
-5. Delete only regular, unlinked files present in both ownership manifest and exact prepared deletion plan.
-6. Commit through Core's transaction writer; never implement a second MCP-only writer.
-7. Consume or invalidate the plan according to the documented phase and never auto-replan into a write.
-
-The Server proves plan continuity, not human identity. Tool descriptions and Codex evaluation must require explicit confirmation of the exact reviewed plan, and Host approval remains the final boundary. Ambiguous “generate/update/continue” requests must Prepare or ask, never Apply.
-
-## Transaction and cancellation rules
-
-Stage and hash all new bytes on the output filesystem before commit. Journal only bounded relative paths and hashes, back up old managed files and manifest, atomically rename where the platform supports it, switch the stable ownership manifest with the files, and clean only transaction-owned paths. Any failure after commit begins must fully roll back or return a high-severity recovery-required result; do not report success after partial restoration.
-
-CLI generation and MCP Apply share the same cross-process output lock. Validate lock/root identities and still recheck hashes under lock. Never trust PID, lock record, or journal checksum as the only authorization/integrity proof.
-
-Before commit, cancellation cleans staging/releases locks and must not strand the queue. After commit starts, defer cancellation until commit or rollback completes and retain the independent bounded commit deadline. A timed-out commit rolls back. Server restart or Apply must detect and safely recover phase journals; unsafe/tampered recovery fails closed.
+Review Tool descriptions and Codex evaluation cases whenever confirmation
+semantics change. The Server proves plan continuity, not human identity:
+ambiguous “generate/update/continue” requests must still Prepare or ask, never
+Apply.
 
 ## Required validation
 

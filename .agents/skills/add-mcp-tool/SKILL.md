@@ -5,22 +5,31 @@ description: Add or substantially change a read-only tool in the openapi-to stdi
 
 # Add an MCP tool
 
-Read the root `AGENTS.md`, `packages/mcp/AGENTS.md`, `packages/mcp/README.md`, and [mcp-tool-checklist.md](references/mcp-tool-checklist.md). Re-check the installed stable `@modelcontextprotocol/sdk` API instead of copying beta examples.
+Read the root `AGENTS.md`, `packages/mcp/AGENTS.md`,
+`packages/mcp/README.md`, and
+[mcp-tool-checklist.md](references/mcp-tool-checklist.md). Follow the MCP Agent
+guide for permanent stdio, startup-authority, Tool-matrix, result, cancellation,
+and controlled-write invariants. Re-check the installed stable
+`@modelcontextprotocol/sdk` API instead of copying beta examples.
 
 ## Workflow
 
 1. Confirm the requested tool is read-only, synchronous, bounded, and within the existing stdio-only server. Stop for separate authorization and design review if it writes, deletes, repairs, changes configuration, executes arbitrary code, or adds HTTP/auth/LLM features.
-2. Put compiler semantics in `@openapi-to/core`; keep the MCP handler an adapter over public Core APIs. Never spawn the CLI or parse CLI stdout.
-3. Define a stable snake_case name, human title, precise limitation-aware description, Zod input schema, Zod output schema, and supported stable tool annotations.
-4. Keep startup authority out of Tool arguments: no Workspace root, config path, plugins, environment variables, shell commands, private-network override, output-root override, or executable code.
-5. Return one short text summary plus schema-conforming `structuredContent`. Use `isError: true` for expected execution failures and reserve protocol errors for unknown tools, invalid schema input, and MCP lifecycle failures.
-6. Reuse result helpers for diagnostic sanitization, stable ordering, totals, truncation, and text-size enforcement. Never return full OpenAPI documents, unbounded generated text, binary Base64, errors, stacks, cyclic values, or absolute machine paths.
-7. Apply Workspace enforcement to entry files, transitive local `$ref`, config entry/imports, output/check paths, symlinks, traversal, Windows drive/UNC paths, and case-folded artifact collisions. Tool arguments must not loosen startup remote policy.
-8. Keep analysis calls isolated and concurrent. Route generation through the per-server `GenerationLock`; prove failure releases the lock and separate server instances do not share it.
-9. Accept the stable SDK handler cancellation signal, combine it with the bounded startup-owned Server timeout, propagate it to Core and queue waits, clear timers/listeners, and test cancellation/timeout as distinct outcomes. Use coarse standard progress only when the client supplies a progress token; never use Tasks.
-10. Preserve stdio: stdin/stdout are MCP JSON-RPC only. Route logs and plugin incidental console output to stderr without replacing `process.stdout.write` or installing per-call console restore races.
-11. Update the package-owned test layer, the root route, and repository Doctor for every Tool registration/schema change. Run focused unit/security tests and a real official SDK `Client` + `StdioClientTransport` subprocess test against the built bin. Include timeout, active/queued cancellation, disconnect/shutdown, TOCTOU, stress, bounded performance, schemas, stderr, determinism, and no filesystem mutation.
-12. Keep a named Node 20 stdio E2E job and Linux/Windows/macOS smoke coverage. Check the current official MCP Inspector help and run the foreground authenticated launcher for user-visible discovery/schema/result review; do not move failpoints, SIGKILL, or commit-critical synchronization into Inspector. Run a current Codex project-config and tool-selection smoke when the task requires and policy permits it; document observed results, not assumptions.
-13. Update README/ADR/AGENTS/Changeset/release scripts when public package behavior or surface changes. Run `pnpm test:mcp:all`, MCP Doctor, package test/typecheck/build, root tests/typecheck/build, changed-file lint, package-surface verification, pack-install smoke, and Changesets status as impact requires.
+2. Identify the public Core API the adapter will call and stop if new compiler
+   semantics are needed outside the authorized scope.
+3. Define the Tool name, title, limitation-aware description, Zod input/output
+   schemas, stable annotations, result bounds, and expected-error mapping.
+4. Map each input and returned field through Workspace, remote-policy,
+   sanitization, ordering, truncation, cancellation, and no-mutation tests in
+   the checklist.
+5. Update the package-owned test layer, root route, and Doctor for registration
+   or schema changes. Include a real official SDK
+   `Client` + `StdioClientTransport` subprocess test against the built bin.
+6. Check current Inspector help for user-visible discovery/schema/result
+   review. Keep failpoint, SIGKILL, journal, lock, and commit-critical evidence
+   in automated tests.
+7. Update README/ADR/AGENTS/Changeset/release surfaces only when the public
+   package impact requires them, then run the impact-selected matrix from the
+   checklist and MCP Agent guide.
 
 Do not create Claude Code files or mirror this Skill outside `.agents/skills`.

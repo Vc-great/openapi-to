@@ -1,7 +1,14 @@
 import { execFile } from "node:child_process";
 import { constants } from "node:fs";
-import { access, readdir, readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import {
+	access,
+	lstat,
+	readdir,
+	readFile,
+	realpath,
+	stat,
+} from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
@@ -40,7 +47,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/testing/consumer-codegen.md",
 ];
 
-const AGENT_DOCUMENTS = [
+export const REQUIRED_AGENT_DOCUMENTS = [
 	"AGENTS.md",
 	"packages/core/AGENTS.md",
 	"packages/cli/AGENTS.md",
@@ -49,6 +56,26 @@ const AGENT_DOCUMENTS = [
 ];
 
 const SKILL_ROOT = ".agents/skills";
+const OPENAI_INTERFACE_REQUIRED_FIELDS = [
+	"default_prompt",
+	"display_name",
+	"short_description",
+];
+const OPENAI_INTERFACE_OPTIONAL_FIELDS = [
+	"brand_color",
+	"icon_large",
+	"icon_small",
+];
+const OPENAI_TOOL_REQUIRED_FIELDS = ["type", "value"];
+const OPENAI_TOOL_OPTIONAL_FIELDS = ["description", "transport"];
+
+function comparePaths(left, right) {
+	return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function sortedUnique(values) {
+	return [...new Set(values)].sort(comparePaths);
+}
 
 async function exists(path) {
 	try {
@@ -72,6 +99,26 @@ async function isGitTracked(root, path) {
 	} catch {
 		return false;
 	}
+}
+
+async function gitTrackedRepositoryFiles(root) {
+	const { stdout } = await execFileAsync(
+		"git",
+		["ls-files", "-z", "--cached"],
+		{
+			cwd: root,
+			encoding: "buffer",
+			maxBuffer: 16 * 1024 * 1024,
+		},
+	);
+	return stdout.toString("utf8").split("\0").filter(Boolean);
+}
+
+export async function discoverAgentDocuments(root = repositoryRoot) {
+	const trackedFiles = await gitTrackedRepositoryFiles(root);
+	return sortedUnique(
+		trackedFiles.filter((path) => /(?:^|\/)AGENTS\.md$/.test(path)),
+	);
 }
 
 export function parseWorkspacePatterns(contents) {
@@ -147,18 +194,118 @@ function markdownLinks(contents) {
 	);
 }
 
-function localMarkdownTarget(documentPath, target) {
+function unwrapMarkdownTarget(target) {
 	const unwrapped = target.replace(/^<|>$/g, "");
 	if (
 		unwrapped.startsWith("#") ||
-		unwrapped.startsWith("/") ||
 		/^(?:https?:|mailto:|data:)/i.test(unwrapped)
 	) {
 		return undefined;
 	}
-	const withoutAnchor = unwrapped.split("#", 1)[0];
-	if (!withoutAnchor) return undefined;
-	return resolve(dirname(documentPath), decodeURIComponent(withoutAnchor));
+	return unwrapped.split("#", 1)[0] || undefined;
+}
+
+function isWindowsAbsolutePath(path) {
+	return /^[a-zA-Z]:[\\/]/.test(path) || /^(?:\\\\|\/\/)/.test(path);
+}
+
+function isInsideRepository(root, target) {
+	const repositoryRelative = relative(root, target);
+	return (
+		repositoryRelative === "" ||
+		(repositoryRelative !== ".." &&
+			!repositoryRelative.startsWith(`..${sep}`) &&
+			!isAbsolute(repositoryRelative))
+	);
+}
+
+function trackedTargetExists(trackedFiles, relativeTarget, isDirectory) {
+	if (relativeTarget === "") return trackedFiles.size > 0;
+	if (trackedFiles.has(relativeTarget)) return true;
+	return (
+		isDirectory &&
+		[...trackedFiles].some((path) => path.startsWith(`${relativeTarget}/`))
+	);
+}
+
+async function containsSymlink(root, target) {
+	// Formal Agent and Skill references reject every symlink segment, even when
+	// its real target would remain inside the repository.
+	const repositoryRelative = relative(root, target);
+	if (!repositoryRelative) return false;
+	let current = root;
+	for (const segment of repositoryRelative.split(sep)) {
+		current = join(current, segment);
+		if ((await lstat(current)).isSymbolicLink()) return true;
+	}
+	return false;
+}
+
+async function validateRepositoryReference({
+	root,
+	baseDirectory,
+	rawTarget,
+	relativeDocument,
+	trackedFiles,
+	failures,
+}) {
+	const targetWithoutAnchor = unwrapMarkdownTarget(rawTarget);
+	if (!targetWithoutAnchor) return;
+
+	let decoded;
+	try {
+		decoded = decodeURIComponent(targetWithoutAnchor);
+	} catch {
+		failures.push(
+			`${relativeDocument} contains malformed percent encoding in reference ${rawTarget}`,
+		);
+		return;
+	}
+	const normalized = decoded.replaceAll("\\", "/");
+	if (isAbsolute(normalized) || isWindowsAbsolutePath(decoded)) {
+		failures.push(
+			`${relativeDocument} reference escapes repository boundary: ${rawTarget}`,
+		);
+		return;
+	}
+
+	const stableTarget = stableMentionPrefix(normalized);
+	const target = resolve(baseDirectory, stableTarget);
+	if (!isInsideRepository(root, target)) {
+		failures.push(
+			`${relativeDocument} reference escapes repository boundary: ${rawTarget}`,
+		);
+		return;
+	}
+	if (!(await exists(target))) {
+		failures.push(`${relativeDocument} references missing path ${rawTarget}`);
+		return;
+	}
+	if (await containsSymlink(root, target)) {
+		failures.push(
+			`${relativeDocument} reference must not traverse a symlink: ${rawTarget}`,
+		);
+		return;
+	}
+	const [realRoot, realTarget] = await Promise.all([
+		realpath(root),
+		realpath(target),
+	]);
+	if (!isInsideRepository(realRoot, realTarget)) {
+		failures.push(
+			`${relativeDocument} reference resolves outside repository: ${rawTarget}`,
+		);
+		return;
+	}
+	const targetStat = await stat(target);
+	const relativeTarget = relative(root, target).split(sep).join("/");
+	if (
+		!trackedTargetExists(trackedFiles, relativeTarget, targetStat.isDirectory())
+	) {
+		failures.push(
+			`${relativeDocument} references path not tracked by Git: ${rawTarget}`,
+		);
+	}
 }
 
 function jsonCodeBlocks(contents) {
@@ -220,30 +367,141 @@ export function parseSkillFrontmatter(contents) {
 }
 
 export function parseOpenAiSkillYaml(contents) {
-	const lines = contents
-		.replaceAll("\r\n", "\n")
-		.split("\n")
-		.filter((line) => line.trim().length > 0);
-	if (lines[0] !== "interface:")
-		throw new Error("agents/openai.yaml must contain one interface mapping");
-	const values = new Map();
-	for (const line of lines.slice(1)) {
-		const match = line.match(/^ {2}([a-z][a-z0-9_]*):\s*("(?:[^"\\]|\\.)*")$/);
-		if (!match) throw new Error(`unsupported agents/openai.yaml line: ${line}`);
-		const [, key, rawValue] = match;
-		if (values.has(key))
-			throw new Error(`duplicate agents/openai.yaml key: ${key}`);
-		values.set(key, JSON.parse(rawValue));
-	}
-	if (
-		JSON.stringify([...values.keys()].sort()) !==
-		JSON.stringify(["default_prompt", "display_name", "short_description"])
-	) {
+	// This intentionally parses a documented repository subset, not arbitrary YAML.
+	// Keeping the accepted schema explicit avoids silently ignoring new authority or
+	// dependency metadata while allowing common Codex Skill interface fields.
+	const lines = contents.replaceAll("\r\n", "\n").split("\n");
+	const interfaceValues = new Map();
+	const tools = [];
+	let section;
+	let currentTool;
+
+	const parseQuotedValue = (line, pattern, context) => {
+		const match = line.match(pattern);
+		if (!match)
+			throw new Error(
+				`unsupported agents/openai.yaml ${context}; values must be double-quoted JSON strings: ${line}`,
+			);
+		return [match[1], JSON.parse(match[2])];
+	};
+
+	for (const line of lines) {
+		if (!line.trim()) continue;
+		if (line === "interface:") {
+			if (section)
+				throw new Error("duplicate or out-of-order agents/openai.yaml section");
+			section = "interface";
+			continue;
+		}
+		if (line === "dependencies:") {
+			if (section !== "interface")
+				throw new Error(
+					"agents/openai.yaml dependencies must follow interface",
+				);
+			section = "dependencies";
+			continue;
+		}
+		if (line === "  tools:") {
+			if (section !== "dependencies")
+				throw new Error(
+					"agents/openai.yaml tools must be nested under dependencies",
+				);
+			section = "tools";
+			continue;
+		}
+		if (section === "interface") {
+			const [key, value] = parseQuotedValue(
+				line,
+				/^ {2}([a-z][a-z0-9_]*):\s*("(?:[^"\\]|\\.)*")$/,
+				"interface line",
+			);
+			const supported = [
+				...OPENAI_INTERFACE_REQUIRED_FIELDS,
+				...OPENAI_INTERFACE_OPTIONAL_FIELDS,
+			];
+			if (!supported.includes(key))
+				throw new Error(
+					`unsupported agents/openai.yaml interface field ${key}; supported fields: ${supported.join(", ")}`,
+				);
+			if (interfaceValues.has(key))
+				throw new Error(`duplicate agents/openai.yaml key: ${key}`);
+			interfaceValues.set(key, value);
+			continue;
+		}
+		if (section === "tools") {
+			const item = line.match(
+				/^ {4}- ([a-z][a-z0-9_]*):\s*("(?:[^"\\]|\\.)*")$/,
+			);
+			const property = line.match(
+				/^ {6}([a-z][a-z0-9_]*):\s*("(?:[^"\\]|\\.)*")$/,
+			);
+			const match = item ?? property;
+			if (!match)
+				throw new Error(
+					`unsupported agents/openai.yaml dependency line; tool values must be double-quoted JSON strings: ${line}`,
+				);
+			if (item) {
+				currentTool = new Map();
+				tools.push(currentTool);
+			}
+			if (!currentTool)
+				throw new Error(
+					"agents/openai.yaml tool properties require a preceding list item",
+				);
+			const [, key, rawValue] = match;
+			const supported = [
+				...OPENAI_TOOL_REQUIRED_FIELDS,
+				...OPENAI_TOOL_OPTIONAL_FIELDS,
+			];
+			if (!supported.includes(key))
+				throw new Error(
+					`unsupported agents/openai.yaml tool field ${key}; supported fields: ${supported.join(", ")}`,
+				);
+			if (currentTool.has(key))
+				throw new Error(`duplicate agents/openai.yaml tool key: ${key}`);
+			currentTool.set(key, JSON.parse(rawValue));
+			continue;
+		}
 		throw new Error(
-			"agents/openai.yaml interface must contain display_name, short_description, and default_prompt",
+			`agents/openai.yaml must start with one interface mapping: ${line}`,
 		);
 	}
-	return Object.fromEntries(values);
+
+	const missingInterface = OPENAI_INTERFACE_REQUIRED_FIELDS.filter(
+		(field) => !interfaceValues.has(field),
+	);
+	if (missingInterface.length > 0) {
+		throw new Error(
+			`agents/openai.yaml interface is missing required fields: ${missingInterface.join(", ")}`,
+		);
+	}
+	if (
+		interfaceValues.has("brand_color") &&
+		!/^#[0-9A-Fa-f]{6}$/.test(interfaceValues.get("brand_color"))
+	) {
+		throw new Error(
+			"agents/openai.yaml brand_color must use quoted #RRGGBB format",
+		);
+	}
+	for (const [index, tool] of tools.entries()) {
+		const missing = OPENAI_TOOL_REQUIRED_FIELDS.filter(
+			(field) => !tool.has(field),
+		);
+		if (missing.length > 0)
+			throw new Error(
+				`agents/openai.yaml dependency tool ${index + 1} is missing required fields: ${missing.join(", ")}`,
+			);
+		if (tool.get("type") !== "mcp")
+			throw new Error('agents/openai.yaml dependency tool type must be "mcp"');
+	}
+
+	const parsed = Object.fromEntries(interfaceValues);
+	if (section === "dependencies" || section === "tools") {
+		parsed.dependencies = {
+			tools: tools.map((tool) => Object.fromEntries(tool)),
+		};
+	}
+	return parsed;
 }
 
 function markdownRepositoryPathMentions(contents) {
@@ -253,9 +511,11 @@ function markdownRepositoryPathMentions(contents) {
 		if (
 			/^(?:\.agents|\.github|\.changeset|packages|docs|scripts|e2e|configs)\//.test(
 				candidate,
-			)
-		)
+			) ||
+			candidate === "AGENTS.md"
+		) {
 			mentions.add(candidate.replace(/[),;:]+$/, ""));
+		}
 	}
 	for (const match of contents.matchAll(
 		/(?:^|[\s("'=])((?:\.agents|\.github|\.changeset)\/[A-Za-z0-9_./*<>-]+)/gm,
@@ -277,12 +537,18 @@ async function validateMentionedPaths(
 	documentPath,
 	relativeDocument,
 	contents,
+	trackedFiles,
 	failures,
 ) {
 	for (const target of markdownLinks(contents)) {
-		const localTarget = localMarkdownTarget(documentPath, target);
-		if (localTarget && !(await exists(localTarget)))
-			failures.push(`${relativeDocument} links to missing path ${target}`);
+		await validateRepositoryReference({
+			root,
+			baseDirectory: dirname(documentPath),
+			rawTarget: target,
+			relativeDocument,
+			trackedFiles,
+			failures,
+		});
 	}
 	const mentions = markdownRepositoryPathMentions(contents);
 	if (relativeDocument.endsWith("AGENTS.md")) {
@@ -290,12 +556,14 @@ async function validateMentionedPaths(
 			mentions.push(match[1]);
 	}
 	for (const mention of new Set(mentions)) {
-		const stable = stableMentionPrefix(mention);
-		const target = stable.startsWith("src/")
-			? resolve(dirname(documentPath), stable)
-			: resolve(root, stable);
-		if (!(await exists(target)))
-			failures.push(`${relativeDocument} references missing path ${mention}`);
+		await validateRepositoryReference({
+			root,
+			baseDirectory: mention.startsWith("src/") ? dirname(documentPath) : root,
+			rawTarget: mention,
+			relativeDocument,
+			trackedFiles,
+			failures,
+		});
 	}
 }
 
@@ -427,6 +695,206 @@ function toolMatrixSize(contents, testName) {
 	return assertion?.[1].match(/['"]openapi_[a-z_]+['"]/g)?.length ?? 0;
 }
 
+export async function auditAgentAndSkillContracts(
+	root,
+	{ rootManifest, workspaceManifests = new Map() } = {},
+) {
+	const failures = [];
+	const manifest = rootManifest ?? (await readJson(join(root, "package.json")));
+	let trackedFiles;
+	try {
+		trackedFiles = new Set(await gitTrackedRepositoryFiles(root));
+	} catch (error) {
+		return {
+			failures: [
+				`unable to discover Git-tracked Agent and Skill files: ${error.message}`,
+			],
+			agents: [],
+			skills: [],
+		};
+	}
+
+	for (const relativeDocument of REQUIRED_AGENT_DOCUMENTS) {
+		const documentPath = join(root, relativeDocument);
+		if (!(await exists(documentPath))) {
+			failures.push(`missing required Agent instruction ${relativeDocument}`);
+		} else if (!trackedFiles.has(relativeDocument)) {
+			failures.push(
+				`required Agent instruction is not tracked by Git: ${relativeDocument}`,
+			);
+		}
+	}
+
+	const discoveredAgentDocuments = sortedUnique(
+		[...trackedFiles].filter((path) => /(?:^|\/)AGENTS\.md$/.test(path)),
+	);
+	for (const relativeDocument of discoveredAgentDocuments) {
+		const documentPath = join(root, relativeDocument);
+		if (!(await exists(documentPath))) {
+			failures.push(`tracked Agent instruction is missing ${relativeDocument}`);
+			continue;
+		}
+		const contents = await readFile(documentPath, "utf8");
+		await validateMentionedPaths(
+			root,
+			documentPath,
+			relativeDocument,
+			contents,
+			trackedFiles,
+			failures,
+		);
+		await validateDocumentedPnpmInvocations(
+			root,
+			relativeDocument,
+			contents,
+			manifest,
+			workspaceManifests,
+			failures,
+		);
+	}
+
+	const trackedSkillPaths = [...trackedFiles].filter((path) =>
+		path.startsWith(`${SKILL_ROOT}/`),
+	);
+	const skillDirectories = sortedUnique(
+		trackedSkillPaths
+			.map((path) => path.match(/^\.agents\/skills\/([^/]+)\//)?.[1])
+			.filter(Boolean),
+	);
+	const skillRootPath = join(root, SKILL_ROOT);
+	if (!(await exists(skillRootPath))) {
+		failures.push(`missing authoritative Skill root ${SKILL_ROOT}`);
+	} else if (skillDirectories.length === 0) {
+		failures.push(`${SKILL_ROOT} must contain at least one Git-tracked Skill`);
+	}
+
+	const skillNames = new Set();
+	for (const directoryName of skillDirectories) {
+		const relativeSkill = `${SKILL_ROOT}/${directoryName}/SKILL.md`;
+		const skillPath = join(root, relativeSkill);
+		if (!trackedFiles.has(relativeSkill) || !(await exists(skillPath))) {
+			failures.push(`missing tracked Skill entrypoint ${relativeSkill}`);
+			continue;
+		}
+		const contents = await readFile(skillPath, "utf8");
+		let metadata;
+		try {
+			metadata = parseSkillFrontmatter(contents);
+		} catch (error) {
+			failures.push(
+				`${relativeSkill} has invalid frontmatter: ${error.message}`,
+			);
+		}
+		if (metadata) {
+			if (metadata.name !== directoryName)
+				failures.push(
+					`${relativeSkill} name ${metadata.name} must match directory ${directoryName}`,
+				);
+			if (skillNames.has(metadata.name))
+				failures.push(`duplicate Skill name ${metadata.name}`);
+			skillNames.add(metadata.name);
+			if (
+				typeof metadata.description !== "string" ||
+				metadata.description.trim().length < 80 ||
+				!/\bUse (?:after|for|when)\b/.test(metadata.description)
+			) {
+				failures.push(
+					`${relativeSkill} description must be non-empty, specific, and state when to use the Skill`,
+				);
+			}
+		}
+
+		const relativeOpenAiYaml = `${SKILL_ROOT}/${directoryName}/agents/openai.yaml`;
+		const openAiYamlPath = join(root, relativeOpenAiYaml);
+		if (!(await exists(openAiYamlPath))) {
+			failures.push(`missing Skill interface ${relativeOpenAiYaml}`);
+		} else if (!trackedFiles.has(relativeOpenAiYaml)) {
+			failures.push(
+				`Skill interface is not tracked by Git: ${relativeOpenAiYaml}`,
+			);
+		} else {
+			try {
+				const interfaceMetadata = parseOpenAiSkillYaml(
+					await readFile(openAiYamlPath, "utf8"),
+				);
+				if (!interfaceMetadata.display_name.trim())
+					failures.push(`${relativeOpenAiYaml} display_name must not be empty`);
+				if (
+					interfaceMetadata.short_description.length < 25 ||
+					interfaceMetadata.short_description.length > 64
+				) {
+					failures.push(
+						`${relativeOpenAiYaml} short_description must be 25-64 characters`,
+					);
+				}
+				if (!interfaceMetadata.default_prompt.includes(`$${directoryName}`)) {
+					failures.push(
+						`${relativeOpenAiYaml} default_prompt must invoke $${directoryName}`,
+					);
+				}
+				const purposeTokens = directoryName
+					.split("-")
+					.filter((token) => !["add", "fix", "run", "upgrade"].includes(token));
+				const interfacePurpose =
+					`${interfaceMetadata.display_name} ${interfaceMetadata.short_description}`.toLowerCase();
+				if (
+					purposeTokens.length > 0 &&
+					!purposeTokens.some((token) => interfacePurpose.includes(token))
+				) {
+					failures.push(
+						`${relativeOpenAiYaml} purpose does not match Skill ${directoryName}`,
+					);
+				}
+				for (const iconField of ["icon_small", "icon_large"]) {
+					if (!interfaceMetadata[iconField]) continue;
+					await validateRepositoryReference({
+						root,
+						baseDirectory: dirname(openAiYamlPath),
+						rawTarget: interfaceMetadata[iconField],
+						relativeDocument: relativeOpenAiYaml,
+						trackedFiles,
+						failures,
+					});
+				}
+			} catch (error) {
+				failures.push(`${relativeOpenAiYaml} is invalid: ${error.message}`);
+			}
+		}
+
+		await validateMentionedPaths(
+			root,
+			skillPath,
+			relativeSkill,
+			contents,
+			trackedFiles,
+			failures,
+		);
+		await validateDocumentedPnpmInvocations(
+			root,
+			relativeSkill,
+			contents,
+			manifest,
+			workspaceManifests,
+			failures,
+		);
+	}
+
+	for (const trackedSkill of sortedUnique(
+		[...trackedFiles].filter((path) => /(?:^|\/)SKILL\.md$/.test(path)),
+	)) {
+		if (!/^\.agents\/skills\/[^/]+\/SKILL\.md$/.test(trackedSkill))
+			failures.push(
+				`tracked Skill mirror outside ${SKILL_ROOT}: ${trackedSkill}`,
+			);
+	}
+
+	return {
+		failures: sortedUnique(failures),
+		agents: discoveredAgentDocuments,
+		skills: skillDirectories,
+	};
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -499,161 +967,11 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		}
 	}
 
-	for (const relativeDocument of AGENT_DOCUMENTS) {
-		const documentPath = join(root, relativeDocument);
-		if (!(await exists(documentPath))) {
-			failures.push(`missing Agent instruction entrypoint ${relativeDocument}`);
-			continue;
-		}
-		const contents = await readFile(documentPath, "utf8");
-		await validateMentionedPaths(
-			root,
-			documentPath,
-			relativeDocument,
-			contents,
-			failures,
-		);
-		await validateDocumentedPnpmInvocations(
-			root,
-			relativeDocument,
-			contents,
-			rootManifest,
-			workspaceManifests,
-			failures,
-		);
-	}
-
-	const discoveredSkills = [];
-	const skillRootPath = join(root, SKILL_ROOT);
-	if (!(await exists(skillRootPath))) {
-		failures.push(`missing authoritative Skill root ${SKILL_ROOT}`);
-	} else {
-		const skillDirectories = (
-			await readdir(skillRootPath, { withFileTypes: true })
-		)
-			.filter((entry) => entry.isDirectory())
-			.map((entry) => entry.name)
-			.sort();
-		discoveredSkills.push(...skillDirectories);
-		if (skillDirectories.length === 0)
-			failures.push(`${SKILL_ROOT} must contain at least one Skill`);
-		const skillNames = new Set();
-		for (const directoryName of skillDirectories) {
-			const relativeSkill = `${SKILL_ROOT}/${directoryName}/SKILL.md`;
-			const skillPath = join(root, relativeSkill);
-			if (!(await exists(skillPath))) {
-				failures.push(`missing Skill entrypoint ${relativeSkill}`);
-				continue;
-			}
-			const contents = await readFile(skillPath, "utf8");
-			let metadata;
-			try {
-				metadata = parseSkillFrontmatter(contents);
-			} catch (error) {
-				failures.push(
-					`${relativeSkill} has invalid frontmatter: ${error.message}`,
-				);
-			}
-			if (metadata) {
-				if (metadata.name !== directoryName)
-					failures.push(
-						`${relativeSkill} name ${metadata.name} must match directory ${directoryName}`,
-					);
-				if (skillNames.has(metadata.name))
-					failures.push(`duplicate Skill name ${metadata.name}`);
-				skillNames.add(metadata.name);
-				if (
-					typeof metadata.description !== "string" ||
-					metadata.description.trim().length < 80 ||
-					!/\bUse (?:after|for|when)\b/.test(metadata.description)
-				) {
-					failures.push(
-						`${relativeSkill} description must be non-empty, specific, and state when to use the Skill`,
-					);
-				}
-			}
-
-			const relativeOpenAiYaml = `${SKILL_ROOT}/${directoryName}/agents/openai.yaml`;
-			const openAiYamlPath = join(root, relativeOpenAiYaml);
-			if (!(await exists(openAiYamlPath))) {
-				failures.push(`missing Skill interface ${relativeOpenAiYaml}`);
-			} else {
-				try {
-					const interfaceMetadata = parseOpenAiSkillYaml(
-						await readFile(openAiYamlPath, "utf8"),
-					);
-					if (!interfaceMetadata.display_name.trim())
-						failures.push(
-							`${relativeOpenAiYaml} display_name must not be empty`,
-						);
-					if (
-						interfaceMetadata.short_description.length < 25 ||
-						interfaceMetadata.short_description.length > 64
-					) {
-						failures.push(
-							`${relativeOpenAiYaml} short_description must be 25-64 characters`,
-						);
-					}
-					if (!interfaceMetadata.default_prompt.includes(`$${directoryName}`)) {
-						failures.push(
-							`${relativeOpenAiYaml} default_prompt must invoke $${directoryName}`,
-						);
-					}
-					const purposeTokens = directoryName
-						.split("-")
-						.filter(
-							(token) => !["add", "fix", "run", "upgrade"].includes(token),
-						);
-					const interfacePurpose =
-						`${interfaceMetadata.display_name} ${interfaceMetadata.short_description}`.toLowerCase();
-					if (
-						purposeTokens.length > 0 &&
-						!purposeTokens.some((token) => interfacePurpose.includes(token))
-					) {
-						failures.push(
-							`${relativeOpenAiYaml} purpose does not match Skill ${directoryName}`,
-						);
-					}
-				} catch (error) {
-					failures.push(`${relativeOpenAiYaml} is invalid: ${error.message}`);
-				}
-			}
-
-			await validateMentionedPaths(
-				root,
-				skillPath,
-				relativeSkill,
-				contents,
-				failures,
-			);
-			await validateDocumentedPnpmInvocations(
-				root,
-				relativeSkill,
-				contents,
-				rootManifest,
-				workspaceManifests,
-				failures,
-			);
-		}
-
-		try {
-			const { stdout } = await execFileAsync(
-				"git",
-				["ls-files", "--", ":(glob)**/SKILL.md"],
-				{ cwd: root },
-			);
-			for (const trackedSkill of stdout.split(/\r?\n/).filter(Boolean)) {
-				if (!trackedSkill.startsWith(`${SKILL_ROOT}/`))
-					failures.push(
-						`tracked Skill mirror outside ${SKILL_ROOT}: ${trackedSkill}`,
-					);
-			}
-		} catch (error) {
-			failures.push(
-				`unable to inspect tracked Skill mirrors: ${error.message}`,
-			);
-		}
-	}
+	const agentSkillAudit = await auditAgentAndSkillContracts(root, {
+		rootManifest,
+		workspaceManifests,
+	});
+	failures.push(...agentSkillAudit.failures);
 
 	if (
 		rootManifest.scripts?.["version:canary"] !==
@@ -1052,8 +1370,19 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		}
 		const contents = await readFile(documentPath, "utf8");
 		for (const target of markdownLinks(contents)) {
-			const localTarget = localMarkdownTarget(documentPath, target);
-			if (localTarget && !(await exists(localTarget)))
+			const localTarget = unwrapMarkdownTarget(target);
+			if (!localTarget) continue;
+			let decodedTarget;
+			try {
+				decodedTarget = decodeURIComponent(localTarget);
+			} catch {
+				failures.push(
+					`${relativeDocument} contains malformed percent encoding in reference ${target}`,
+				);
+				continue;
+			}
+			const targetPath = resolve(dirname(documentPath), decodedTarget);
+			if (!(await exists(targetPath)))
 				failures.push(`${relativeDocument} links to missing path ${target}`);
 		}
 		for (const block of jsonCodeBlocks(contents)) {
@@ -1116,11 +1445,11 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	}
 
 	return {
-		failures: [...new Set(failures)].sort(),
+		failures: sortedUnique(failures),
 		workspaces: uniqueWorkspaceDirectories,
 		documents: DOCUMENT_ENTRYPOINTS,
-		agents: AGENT_DOCUMENTS,
-		skills: discoveredSkills,
+		agents: agentSkillAudit.agents,
+		skills: agentSkillAudit.skills,
 	};
 }
 
