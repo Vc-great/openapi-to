@@ -21,7 +21,7 @@ arrays, records, additional properties, unions, intersections, and nested
 schemas. Escaped property names are covered by the plugin's focused generator
 and runtime tests.
 
-Six focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
+Ten focused fixtures under `scripts/fixtures/consumer-codegen/` keep the
 remaining edge cases reviewable: referenced optional/required/path parameters
 and boolean schemas; concrete plus `1XX`–`5XX` wildcard responses; operation
 and component Media Type Objects without `schema`; a referenced no-content
@@ -34,6 +34,15 @@ required path/query, `schema:false`, wildcard aggregates, no-content,
 `z.unknown()` media, response-body/header isolation, nullable refs, and sibling
 `minLength`. Focused plugin tests also lock the established first-declared
 selection when a request or response advertises multiple media types.
+
+Four cross-plugin fixtures additionally run `pluginTSType`, `pluginZod`, and
+`pluginTSRequest` together for operation header/cookie parameters, mixed
+schema/unknown-media/no-content success responses, Parameter Object `content`,
+and request-body schema `$ref` siblings. Their generated files are strictly
+compiled, Zod parsing checks optional and required header/cookie objects,
+compile-time assignments distinguish `undefined` from `unknown`, every
+relative import is resolved, duplicate exports and `undefined.parse(` are
+rejected, and a second generation must be byte-stable.
 
 The aggregate package supplies `pluginTSType`, `pluginZod`, and
 `pluginTSRequest`; the generated TypeScript and a consumer request stub are

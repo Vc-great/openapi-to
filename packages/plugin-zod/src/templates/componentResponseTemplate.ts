@@ -1,4 +1,4 @@
-import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import type { Schema } from "@openapi-to/core";
 import type {
 	JSDocStructure,
 	OptionalKind,
@@ -12,7 +12,7 @@ import {
 	type SchemaRenderOptions,
 } from "@/templates/schemaTemplate.ts";
 
-type MediaTypeObject = OpenAPIV3_1.MediaTypeObject | OpenAPIV3.MediaTypeObject;
+type MediaTypeObject = { schema?: Schema };
 export function componentResponseTemplate(
 	mediaTypeObject: MediaTypeObject,
 	responseName: string,
@@ -40,7 +40,10 @@ export function componentResponseTemplate(
 		schema.type === "object" &&
 		schema.properties
 	) {
-		const propertiesString = buildSchemaPropertiesTypes(schema, responseName);
+		const propertiesString = buildSchemaPropertiesTypes(
+			schema as Parameters<typeof buildSchemaPropertiesTypes>[0],
+			responseName,
+		);
 		return createVariable(responseName, propertiesString, docs);
 	}
 

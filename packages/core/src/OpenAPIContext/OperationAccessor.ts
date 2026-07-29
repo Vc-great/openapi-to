@@ -1,4 +1,4 @@
-import { map as _map, camelCase, filter, head, some } from "lodash-es";
+import { map as _map, camelCase, head, some } from "lodash-es";
 
 import type { Operation } from "oas/operation";
 import { findSchemaDefinition } from "oas/utils";
@@ -12,6 +12,8 @@ import { selectSuccessResponseStatusCode } from "./responseStatus.ts";
 type OperationTSType = {
 	pathParams: string | undefined;
 	queryParams: string | undefined;
+	headerParams: string | undefined;
+	cookieParams: string | undefined;
 	body: string | undefined;
 	responseSuccess: string | undefined;
 	responseError: string | undefined;
@@ -21,6 +23,8 @@ type OperationTSType = {
 type OperationZodSchema = {
 	body: string;
 	responseSuccess: string;
+	headerParams: string;
+	cookieParams: string;
 	filePath: string;
 };
 
@@ -75,18 +79,31 @@ export class OperationAccessor {
 	}
 
 	get queryParameters(): ParameterObjectWithRef[] {
-		return filter(this.parameters, ["in", "query"]);
+		return this.parametersByLocation("query");
 	}
 
 	get pathParameters(): ParameterObjectWithRef[] {
-		return this.parameters
-			.map((x) => {
-				return {
-					...x,
-					name: camelCase(x.name),
-				};
-			})
-			.filter((x) => x.in === "path");
+		return this.parametersByLocation("path").map((x) => {
+			return {
+				...x,
+				name: camelCase(x.name),
+				required: true,
+			};
+		});
+	}
+
+	get headerParameters(): ParameterObjectWithRef[] {
+		return this.parametersByLocation("header");
+	}
+
+	get cookieParameters(): ParameterObjectWithRef[] {
+		return this.parametersByLocation("cookie");
+	}
+
+	parametersByLocation(
+		location: "path" | "query" | "header" | "cookie",
+	): ParameterObjectWithRef[] {
+		return this.parameters.filter((parameter) => parameter.in === location);
 	}
 
 	get hasQueryParameters(): boolean {
@@ -106,6 +123,14 @@ export class OperationAccessor {
 
 	get hasPathParameters(): boolean {
 		return some(this.parameters, ["in", "path"]);
+	}
+
+	get hasHeaderParameters(): boolean {
+		return some(this.parameters, ["in", "header"]);
+	}
+
+	get hasCookieParameters(): boolean {
+		return some(this.parameters, ["in", "cookie"]);
 	}
 
 	get isQueryParametersOptional(): boolean {

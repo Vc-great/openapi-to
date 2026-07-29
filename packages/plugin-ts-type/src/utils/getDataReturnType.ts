@@ -41,7 +41,13 @@ export function getDataReturnType(operation: OperationWrapper): string[] {
 	}
 
 	// 解析最终的 schema 对象
-	const finalSchema = resolveSchema(responseObject.schema);
+	if (
+		typeof responseObject.schema !== "object" ||
+		responseObject.schema === null
+	) {
+		return [];
+	}
+	const finalSchema = resolveSchema(responseObject.schema as SchemaObject);
 
 	// 判断是否为 object 类型
 	if (finalSchema.type === "object" && finalSchema.properties) {

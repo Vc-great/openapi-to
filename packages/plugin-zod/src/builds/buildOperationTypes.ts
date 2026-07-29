@@ -1,4 +1,6 @@
 import {
+	buildCookieParamsSchemas,
+	buildHeaderParamsSchemas,
 	buildOperationRequestBodyTypes,
 	buildPathParamsTypes,
 	buildQueryParamsSchemas,
@@ -15,9 +17,13 @@ export function buildOperationTypes(
 	const requestBodyTypes = buildOperationRequestBodyTypes(operation, options);
 	const queryParamsTypes = buildQueryParamsSchemas(operation, options);
 	const pathParamsTypes = buildPathParamsTypes(operation, options);
+	const headerParamsTypes = buildHeaderParamsSchemas(operation, options);
+	const cookieParamsTypes = buildCookieParamsSchemas(operation, options);
 	return [
 		...(pathParamsTypes ? [pathParamsTypes] : []),
 		...(queryParamsTypes ? [queryParamsTypes] : []),
+		...(headerParamsTypes ? [headerParamsTypes] : []),
+		...(cookieParamsTypes ? [cookieParamsTypes] : []),
 		...(requestBodyTypes ? [requestBodyTypes] : []),
 		...buildJsonResponseTypes(operation, options),
 	];

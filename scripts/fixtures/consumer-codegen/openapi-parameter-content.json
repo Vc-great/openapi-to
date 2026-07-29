@@ -1,0 +1,54 @@
+{
+	"openapi": "3.1.0",
+	"info": { "title": "Parameter content", "version": "1.0.0" },
+	"paths": {
+		"/content": {
+			"get": {
+				"tags": ["contracts"],
+				"operationId": "contentParameters",
+				"parameters": [
+					{
+						"name": "filter",
+						"in": "query",
+						"required": true,
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["status"],
+									"properties": { "status": { "type": "string" }, "page": { "type": "integer" } }
+								}
+							}
+						}
+					},
+					{ "name": "X-Anything", "in": "header", "required": true, "content": { "application/json": {} } },
+					{ "name": "deny", "in": "cookie", "required": true, "content": { "application/json": { "schema": false } } },
+					{ "$ref": "#/components/parameters/ReferencedFilter" },
+					{
+						"name": "multi",
+						"in": "query",
+						"required": true,
+						"content": {
+							"application/json": { "schema": { "type": "number" } },
+							"text/plain": { "schema": { "type": "string" } }
+						}
+					}
+				],
+				"responses": { "204": { "description": "No content" } }
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Filter": { "type": "object", "required": ["value"], "properties": { "value": { "type": "string" } } }
+		},
+		"parameters": {
+			"ReferencedFilter": {
+				"name": "componentFilter",
+				"in": "query",
+				"required": true,
+				"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Filter" } } }
+			}
+		}
+	}
+}

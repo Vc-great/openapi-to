@@ -1,5 +1,7 @@
 ---
 "@openapi-to/plugin-zod": major
+"@openapi-to/core": major
+"@openapi-to/plugin-ts-type": major
 ---
 
 Generate Zod 4-only schemas, including top-level string formats, explicit key/value records, executable unions and intersections, safe enum literals and property names, additional-properties policies, and recursive references. Generated consumers now require `zod@^4`; Zod 3 is no longer supported.
@@ -11,3 +13,13 @@ Referenced parameters now retain optional query/header/cookie and required path 
 Every legal component response now has a real export, with responses lacking content represented by `z.undefined()`. Existing Media Type Objects without `schema` are distinct from absent bodies and generate `z.unknown()` for operation/component request and response entry points, so Zod-backed request services never call an undefined parser. Response header references are excluded from body-schema imports because response-header validation is not currently generated.
 
 Schema-level `$ref` values with supported validation siblings now pass through the common renderer from operation and component parameter, request-body, and response builders. The renderer continues to apply one uniform intersection/nullable policy rather than dialect-specific OpenAPI 3.0 versus 3.1 behavior. Recursive inference, exact-one `oneOf`, the complete int64 domain, and RFC3339 leap seconds remain outside this change.
+
+Core now exposes stable path/query/header/cookie parameter classification,
+shared Parameter Object `schema`/`content` extraction, and response semantic
+descriptors. TypeScript and Zod consume those semantics consistently:
+request-header and cookie schemas/types are generated, a selected Media Type
+without `schema` is `unknown`/`z.unknown()`, and a response without content is
+`undefined`/`z.undefined()`. TypeScript retains every documented response
+status member, including mixed `200 + 204` and only-204 operations, and routes
+request-body schema `$ref` siblings such as `nullable` and composition through
+the schema renderer.

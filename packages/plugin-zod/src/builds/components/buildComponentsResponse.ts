@@ -1,5 +1,7 @@
-import type { ComponentsResponsesValue } from "@openapi-to/core";
-import { head, values } from "lodash-es";
+import {
+	type ComponentsResponsesValue,
+	describeResponse,
+} from "@openapi-to/core";
 import { componentResponseTemplate } from "@/templates/componentResponseTemplate.ts";
 import { createVariable } from "@/templates/operationResponseTemplate.ts";
 import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
@@ -19,12 +21,14 @@ export function buildComponentsResponse(
 		return createVariable(exportName, typeName, []);
 	}
 
-	if (response && "content" in response && response.content) {
-		const responseObject = head(values(response.content));
-		if (responseObject) {
-			return componentResponseTemplate(responseObject, exportName, options);
-		}
-	}
-
-	return createVariable(exportName, "z.undefined()", []);
+	const descriptor = describeResponse(response);
+	if (descriptor.kind === "no-content")
+		return createVariable(exportName, "z.undefined()", []);
+	if (descriptor.kind === "unknown-media")
+		return createVariable(exportName, "z.unknown()", []);
+	return componentResponseTemplate(
+		{ schema: descriptor.schema },
+		exportName,
+		options,
+	);
 }

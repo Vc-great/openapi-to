@@ -1,4 +1,8 @@
-import type { ComponentsParameterValue, Schema } from "@openapi-to/core";
+import {
+	type ComponentsParameterValue,
+	resolveParameterSchema,
+	type Schema,
+} from "@openapi-to/core";
 import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
 import { createVariable } from "@/templates/operationResponseTemplate.ts";
 import {
@@ -23,10 +27,9 @@ export function buildComponentParameters(
 	}
 
 	if (parameter && !("$ref" in parameter)) {
-		const schema: Schema =
-			"schema" in parameter && parameter.schema !== undefined
-				? parameter.schema
-				: { type: "string" };
+		const schema: Schema = resolveParameterSchema(parameter) ?? {
+			type: "string",
+		};
 		const typeString = schemaTemplate(schema, parameterTypeName, "", options);
 
 		return createVariable(

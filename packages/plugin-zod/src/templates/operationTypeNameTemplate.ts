@@ -18,6 +18,14 @@ export function getOperationPathParamsName(operationName: string) {
 	return `${lowerFirst(operationName)}PathParamsSchema`;
 }
 
+export function getHeaderParamsTypeName(operationName: string) {
+	return `${lowerFirst(operationName)}HeaderParamsSchema`;
+}
+
+export function getCookieParamsTypeName(operationName: string) {
+	return `${lowerFirst(operationName)}CookieParamsSchema`;
+}
+
 export function getRequestBodyTypeName(operationName: string) {
 	return `${operationName}MutationRequestSchema`;
 }
@@ -45,5 +53,11 @@ export function getOperationZodSchemaName(operation: OperationWrapper) {
 			? getRequestBodyTypeName(operationName)
 			: "",
 		responseSuccess: getResponseSuccessName(operation),
+		headerParams: operation.accessor.hasHeaderParameters
+			? getHeaderParamsTypeName(operationName)
+			: "",
+		cookieParams: operation.accessor.hasCookieParameters
+			? getCookieParamsTypeName(operationName)
+			: "",
 	};
 }

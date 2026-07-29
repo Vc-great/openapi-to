@@ -17,6 +17,8 @@ export function collectRefsFromOperation(
 			...collectRefsFromOperationParameter([
 				...operation.accessor.pathParameters,
 				...operation.accessor.queryParameters,
+				...operation.accessor.headerParameters,
+				...operation.accessor.cookieParameters,
 			]),
 			...collectRefsFromOperationRequestBody(oasOperation),
 			...collectRefsFromOperationResponse(oasOperation),

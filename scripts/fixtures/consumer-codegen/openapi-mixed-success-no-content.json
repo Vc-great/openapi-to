@@ -1,0 +1,36 @@
+{
+	"openapi": "3.0.3",
+	"info": { "title": "Response semantics", "version": "1.0.0" },
+	"paths": {
+		"/mixed": {
+			"get": {
+				"tags": ["contracts"],
+				"operationId": "mixedSuccess",
+				"responses": {
+					"200": { "description": "User", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+					"201": { "description": "Unknown body", "content": { "application/json": {} } },
+					"204": { "description": "No content" },
+					"2xx": { "description": "Wildcard", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Wildcard" } } } },
+					"400": { "description": "Error", "content": { "application/json": { "schema": { "type": "string" } } } },
+					"default": { "description": "Fallback", "content": { "application/json": { "schema": { "type": "boolean" } } } }
+				}
+			}
+		},
+		"/only-no-content": {
+			"get": {
+				"tags": ["contracts"],
+				"operationId": "onlyNoContent",
+				"responses": { "204": { "description": "No content" } }
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"User": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" } } },
+			"Wildcard": { "type": "object", "required": ["kind"], "properties": { "kind": { "type": "string" } } }
+		},
+		"responses": {
+			"NoContent": { "description": "No content" }
+		}
+	}
+}

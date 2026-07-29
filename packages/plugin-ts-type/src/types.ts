@@ -1,4 +1,5 @@
-import type { JSONSchema, SchemaObject } from "oas/types";
+import type { Schema } from "@openapi-to/core";
+import type { JSONSchema } from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 
 type MixedSchemaObject = Extract<
@@ -33,7 +34,7 @@ export interface JsonResponseObject {
 	jsonSchema?: {
 		description?: string;
 		label: string;
-		schema: SchemaObject;
+		schema: Schema;
 		type: string | string[];
 	};
 }

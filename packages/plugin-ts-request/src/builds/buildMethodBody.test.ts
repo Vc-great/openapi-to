@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { type RequestClient, RequestClientEnum } from "../types";
+import { RequestClientEnum } from "../types";
 import { buildMethodBody } from "./buildMethodBody";
 
 // 模拟URLPath工具类
@@ -15,7 +15,9 @@ vi.mock("@openapi-to/core/utils", () => ({
 describe("buildMethodBody", () => {
 	it("应该为Axios客户端生成正确的GET请求方法体", () => {
 		const operation = {
+			path: "/pet/{petId}",
 			method: "get",
+			tagName: "pets",
 			accessor: {
 				operation: {
 					path: "/pet/{petId}",
@@ -46,7 +48,7 @@ describe("buildMethodBody", () => {
 			dataReturnType: "",
 		};
 
-		const result = buildMethodBody(operation as any, pluginConfig);
+		const result = buildMethodBody(operation as never, pluginConfig);
 
 		expect(result).toContain(`method:'GET'`);
 		expect(result).toContain(`url:'/pet/{petId}'`);
@@ -56,7 +58,9 @@ describe("buildMethodBody", () => {
 
 	it("应该为Common客户端生成含请求体的POST方法体", () => {
 		const operation = {
+			path: "/pet",
 			method: "post",
+			tagName: "pets",
 			accessor: {
 				operation: {
 					path: "/pet",
@@ -87,7 +91,7 @@ describe("buildMethodBody", () => {
 			dataReturnType: "",
 		};
 
-		const result = buildMethodBody(operation as any, pluginConfig);
+		const result = buildMethodBody(operation as never, pluginConfig);
 
 		expect(result).toContain(`method:'POST'`);
 		expect(result).toContain(`url:'/pet'`);
@@ -98,7 +102,9 @@ describe("buildMethodBody", () => {
 
 	it("应该为文件下载请求生成正确方法体", () => {
 		const operation = {
+			path: "/download",
 			method: "get",
+			tagName: "downloads",
 			accessor: {
 				operation: {
 					path: "/download",
@@ -129,8 +135,50 @@ describe("buildMethodBody", () => {
 			dataReturnType: "",
 		};
 
-		const result = buildMethodBody(operation as any, pluginConfig);
+		const result = buildMethodBody(operation as never, pluginConfig);
 
 		expect(result).toContain(`responseType:'blob'`);
+	});
+
+	it("uses real request/response parsers for nullable bodies and 204 responses", () => {
+		const operation = {
+			path: "/nullable",
+			method: "post",
+			tagName: "nullable",
+			accessor: {
+				operation: {
+					path: "/nullable",
+					getContentType: () => "application/json",
+				},
+				hasQueryParameters: false,
+				hasRequestBody: true,
+				isDownLoad: false,
+				hasQueryParametersArray: false,
+				isJsonContainsDefaultCases: true,
+				operationTSType: {
+					responseSuccess: "NullableMutationResponse",
+					body: "NullableMutationRequest",
+				},
+				operationZodSchema: {
+					body: "nullableMutationRequestSchema",
+					responseSuccess: "nullableMutationResponseSchema",
+				},
+			},
+		};
+		const result = buildMethodBody(operation as never, {
+			requestClient: RequestClientEnum.COMMON,
+			parser: "zod",
+			requestImportDeclaration: { moduleSpecifier: "@/utils/request" },
+			requestConfigTypeImportDeclaration: {
+				namedImports: [],
+				moduleSpecifier: "",
+			},
+			importWithExtension: true,
+			dataReturnType: "",
+		});
+
+		expect(result).toContain("nullableMutationRequestSchema.parse(data)");
+		expect(result).toContain("nullableMutationResponseSchema.parse(res.data)");
+		expect(result).not.toContain("undefined.parse(");
 	});
 });

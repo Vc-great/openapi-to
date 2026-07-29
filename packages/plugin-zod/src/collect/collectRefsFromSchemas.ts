@@ -1,10 +1,10 @@
-import type { ComponentsSchema } from "@openapi-to/core";
+import type { Schema } from "@openapi-to/core";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function collectRefsFromSchema(schema: ComponentsSchema): string[] {
+export function collectRefsFromSchema(schema: Schema): string[] {
 	const refs = new Set<string>();
 
 	function walk(value: unknown): void {

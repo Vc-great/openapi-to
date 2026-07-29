@@ -18,17 +18,23 @@ See the single [capability matrix](docs/capability-matrix.md) for exact package,
 - Provides stable `validate`, `inspect`, `diff`, and `generate` CLI contracts with deterministic JSON output and centralized exit codes.
 - Provides a local stdio MCP adapter with default read-only modes and operator-gated Prepare/Apply writes.
 
-Zod generation is Zod 4-only and remains a `Partial` capability. Referenced
-query parameters preserve optionality, path parameters remain required, and
+Zod generation is Zod 4-only and remains a `Partial` capability. Operation
+path, query, header, and cookie parameters share location and requiredness
+rules: path is always required and the other locations follow
+`required: true`. Parameter Object `content` uses the first declared Media
+Type, including `unknown`/`z.unknown()` for a Media Type without `schema`.
 OpenAPI 3.1 boolean parameter schemas keep their accept-all/reject-all
 semantics. Concrete and wildcard responses are emitted deterministically:
 `2xx`/`2XX` are successful, `1xx`/`1XX` and `3xx`–`5xx` wildcards enter the
 non-success aggregate, and `default` retains its documented fallback policy.
-An existing Media Type Object without `schema` maps to `z.unknown()`; a
-documented response without content maps to `z.undefined()`. Response headers
-are not currently validated by the Zod plugin, so header references are kept
-out of response-body imports. Supported validation siblings beside a schema
-`$ref` use the same intersection policy in OpenAPI 3.0 and 3.1.
+An existing response Media Type Object without `schema` maps to
+`unknown`/`z.unknown()`; a documented response without content maps to
+`undefined`/`z.undefined()` in TypeScript/Zod. Response headers are not
+currently validated by the Zod plugin, so header references are kept out of
+response-body imports. TypeScript request bodies pass schema-level `$ref`
+siblings such as `nullable`, type unions, and composition through the schema
+renderer. `$ref` sibling handling remains one uniform generator policy in
+OpenAPI 3.0 and 3.1.
 
 # Quick Start
 ## Install
@@ -480,6 +486,14 @@ composition positions. Component schema, parameter, request-body, and response
 references share category-aware export naming. Operation responses use unique
 per-status schemas, success/error aggregates, and `z.undefined()` for
 documented responses without a body such as 204.
+
+Operation request parameters generate separate path, query, header, and cookie
+object schemas. Path entries are always required; query, header, and cookie
+entries are optional unless `required: true`. Parameter Object `content`
+selects the first declared Media Type deterministically. A selected Media Type
+without `schema` generates `z.unknown()`, while `schema: false` generates
+`z.never()`. These request-header schemas are distinct from response headers,
+which still do not receive validators.
 
 `oneOf` and `anyOf` are generated as ordinary `z.union([...])` schemas. This
 means at least one branch must parse; it does not enforce JSON Schema's

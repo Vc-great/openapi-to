@@ -1,0 +1,61 @@
+{
+	"openapi": "3.1.0",
+	"info": { "title": "TypeScript ref siblings", "version": "1.0.0" },
+	"paths": {
+		"/nullable": {
+			"post": {
+				"tags": ["contracts"],
+				"operationId": "nullableBody",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/Base", "nullable": true }
+						}
+					}
+				},
+				"responses": { "204": { "description": "No content" } }
+			}
+		},
+		"/component-nullable": {
+			"post": {
+				"tags": ["contracts"],
+				"operationId": "componentNullableBody",
+				"requestBody": { "$ref": "#/components/requestBodies/NullableBody" },
+				"responses": { "204": { "description": "No content" } }
+			}
+		},
+		"/composed": {
+			"post": {
+				"tags": ["contracts"],
+				"operationId": "composedBody",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/Base",
+								"anyOf": [{ "type": "null" }],
+								"allOf": [{ "type": "object", "properties": { "extra": { "type": "string" } } }]
+							}
+						}
+					}
+				},
+				"responses": { "204": { "description": "No content" } }
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Base": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string" } } }
+		},
+		"requestBodies": {
+			"NullableBody": {
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Base", "nullable": true }
+					}
+				}
+			}
+		}
+	}
+}

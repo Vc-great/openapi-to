@@ -3,6 +3,10 @@ import type {
 	ComponentsResponsesValue,
 	ParameterObjectWithRef,
 } from "@openapi-to/core";
+import {
+	describeOperationResponses,
+	resolveParameterSchema,
+} from "@openapi-to/core";
 import { isBoolean } from "lodash-es";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
@@ -17,14 +21,10 @@ export function collectRefsFromOperationParameter(
 	parameters.forEach((parameter) => {
 		if ("$ref" in parameter && parameter.$ref) {
 			refs.add(parameter.$ref);
-		} else if (
-			parameter.schema &&
-			typeof parameter.schema === "object" &&
-			"$ref" in parameter.schema
-		) {
-			refs.add(parameter.schema.$ref);
-		} else if (parameter.schema) {
-			collectRefsFromSchema(parameter.schema).forEach((ref) => {
+		}
+		const schema = resolveParameterSchema(parameter);
+		if (schema !== undefined) {
+			collectRefsFromSchema(schema).forEach((ref) => {
 				refs.add(ref);
 			});
 		}
@@ -70,30 +70,10 @@ export function collectRefsFromOperationRequestBody(oasOperation: Operation) {
 
 export function collectRefsFromOperationResponse(oasOperation: Operation) {
 	const refs: Set<string> = new Set();
-	const documentedStatusCodes = Object.keys(
-		oasOperation.schema.responses ?? {},
-	);
-	const statusCodes =
-		documentedStatusCodes.length > 0
-			? documentedStatusCodes
-			: oasOperation.getResponseStatusCodes();
-	for (const statusCode of statusCodes) {
-		const rawResponse = oasOperation.schema.responses?.[statusCode];
-		if (
-			rawResponse &&
-			typeof rawResponse === "object" &&
-			"$ref" in rawResponse &&
-			rawResponse.$ref
-		) {
-			refs.add(rawResponse.$ref);
-			continue;
-		}
-		const responses = oasOperation.getResponseAsJSONSchema(statusCode);
-		if (responses) {
-			responses.forEach((response) => {
-				collectRefsFromSchema(response.schema).forEach((ref) => {
-					refs.add(ref);
-				});
+	for (const response of describeOperationResponses(oasOperation)) {
+		if (response.schema !== undefined) {
+			collectRefsFromSchema(response.schema).forEach((ref) => {
+				refs.add(ref);
 			});
 		}
 	}
@@ -108,8 +88,9 @@ export function collectRefsFromComponentParameters(
 	for (const parameter of Object.values(parameters)) {
 		if ("$ref" in parameter) {
 			refs.add(parameter.$ref);
-		} else if (parameter.schema) {
-			const $refs = collectRefsFromSchema(parameter.schema);
+		} else {
+			const schema = resolveParameterSchema(parameter);
+			const $refs = schema === undefined ? [] : collectRefsFromSchema(schema);
 			$refs.forEach((ref) => {
 				refs.add(ref);
 			});

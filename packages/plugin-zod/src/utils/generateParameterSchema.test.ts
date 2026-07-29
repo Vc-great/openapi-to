@@ -76,4 +76,46 @@ describe("generateParameterSchema", () => {
 			]).safeParse({ deny: "value" }).success,
 		).toBe(false);
 	});
+
+	it("renders Parameter Object content schemas without falling back to string", () => {
+		const objectSchema = evaluate([
+			{
+				name: "filter",
+				in: "query",
+				required: true,
+				content: {
+					"application/json": {
+						schema: {
+							type: "object",
+							properties: { status: { type: "string" } },
+							required: ["status"],
+						},
+					},
+				},
+			},
+		]);
+		const unknownSchema = evaluate([
+			{
+				name: "anything",
+				in: "header",
+				required: true,
+				content: { "application/json": {} },
+			},
+		]);
+		const neverSchema = evaluate([
+			{
+				name: "never",
+				in: "cookie",
+				required: true,
+				content: { "application/json": { schema: false } },
+			},
+		]);
+
+		expect(
+			objectSchema.safeParse({ filter: { status: "active" } }).success,
+		).toBe(true);
+		expect(objectSchema.safeParse({ filter: "active" }).success).toBe(false);
+		expect(unknownSchema.safeParse({ anything: 1 }).success).toBe(true);
+		expect(neverSchema.safeParse({ never: "x" }).success).toBe(false);
+	});
 });

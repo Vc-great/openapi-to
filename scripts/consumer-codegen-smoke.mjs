@@ -427,6 +427,39 @@ async function assertRelativeImportsResolve(outputRoot, generatedFiles) {
 				`${relativePath} imports missing file ${match[1]}.`,
 			);
 		}
+		for (const match of source.matchAll(
+			/\bimport(?:\s+type)?\s*\{([^}]+)\}\s*from\s+["'](\.{1,2}\/[^"']+)["']/g,
+		)) {
+			const candidate = resolve(dirname(absolutePath), match[2]);
+			const alternatives = [
+				candidate,
+				`${candidate}.ts`,
+				join(candidate, "index.ts"),
+			];
+			const target = (
+				await Promise.all(
+					alternatives.map(async (item) => ((await exists(item)) ? item : null)),
+				)
+			).find(Boolean);
+			assert(
+				target,
+				`${relativePath} imports missing file ${match[2]}.`,
+			);
+			const targetSource = await readFile(target, "utf8");
+			for (const specifier of match[1].split(",")) {
+				const imported = specifier
+					.trim()
+					.replace(/^type\s+/, "")
+					.split(/\s+as\s+/)[0];
+				if (!imported) continue;
+				assert(
+					new RegExp(
+						`\\bexport\\s+(?:declare\\s+)?(?:async\\s+)?(?:const|type|interface|class|function|enum)\\s+${imported}\\b`,
+					).test(targetSource),
+					`${relativePath} imports missing export ${imported} from ${match[2]}.`,
+				);
+			}
+		}
 	}
 }
 
@@ -567,6 +600,136 @@ async function assertEdgeCaseOutput(consumerRoot) {
 			assert(
 				new Set(declarations).size === declarations.length,
 				`${directory}/${file} contains duplicate export const declarations.`,
+			);
+			assert(
+				!source.includes("undefined.parse("),
+				`${directory}/${file} contains undefined.parse().`,
+			);
+		}
+	}
+}
+
+async function assertContractOutput(consumerRoot) {
+	const readGenerated = (path) => readFile(join(consumerRoot, path), "utf8");
+	const [
+		parameterZod,
+		parameterType,
+		mixedZod,
+		mixedType,
+		noContentType,
+		contentZod,
+		contentType,
+		nullableType,
+		componentNullableType,
+	] = await Promise.all([
+		readGenerated(
+			"generated-contract-parameters/contracts/parameter-matrix.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-parameters/contracts/parameter-matrix.types.ts",
+		),
+		readGenerated(
+			"generated-contract-responses/contracts/mixed-success.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-responses/contracts/mixed-success.types.ts",
+		),
+		readGenerated(
+			"generated-contract-responses/types/responses/no-content.model.ts",
+		),
+		readGenerated(
+			"generated-contract-content/contracts/content-parameters.schema.ts",
+		),
+		readGenerated(
+			"generated-contract-content/contracts/content-parameters.types.ts",
+		),
+		readGenerated(
+			"generated-contract-siblings/contracts/nullable-body.types.ts",
+		),
+		readGenerated(
+			"generated-contract-siblings/types/requestBodies/nullable-body.model.ts",
+		),
+	]);
+
+	for (const name of [
+		"parameterMatrixHeaderParamsSchema",
+		"parameterMatrixCookieParamsSchema",
+	]) {
+		assert(parameterZod.includes(name), `Operation output omitted ${name}.`);
+	}
+	assert(
+		/"X-Optional": z\.string\(\)\.optional\(\)/.test(parameterZod) &&
+			/"X-Required": z\.string\(\)/.test(parameterZod) &&
+			/"optionalCookie": z\.string\(\)\.optional\(\)/.test(parameterZod) &&
+			/"requiredCookie": z\.string\(\)/.test(parameterZod),
+		"Header/cookie required semantics were not preserved in Zod output.",
+	);
+	assert(
+		/ParameterMatrixHeaderParams/.test(parameterType) &&
+			/ParameterMatrixCookieParams/.test(parameterType) &&
+			/"X-Optional"\?: string/.test(parameterType) &&
+			/"X-Required": string/.test(parameterType),
+		"Header/cookie types were not generated with matching optionality.",
+	);
+	assert(
+		/mixedSuccessResponseSchema204 = z\.undefined\(\)/.test(mixedZod) &&
+			/mixedSuccessResponseSchema201 = z\.unknown\(\)/.test(mixedZod),
+		"Zod mixed response members confused no-content and unknown media.",
+	);
+	assert(
+		/MixedSuccessResponse204 = undefined/.test(mixedType) &&
+			/MixedSuccessResponse201 = unknown/.test(mixedType) &&
+			/MixedSuccessResponse200/.test(mixedType) &&
+			/MixedSuccessResponse2XX/.test(mixedType),
+		"TypeScript mixed response members are incomplete.",
+	);
+	assert(
+		/ResponseNoContent = undefined/.test(noContentType),
+		"TypeScript no-content component response was not emitted.",
+	);
+	assert(
+		/"filter": z\.(?:looseObject|strictObject|object)\(/.test(contentZod) &&
+			/"X-Anything": z\.unknown\(\)/.test(contentZod) &&
+			/"deny": z\.never\(\)/.test(contentZod) &&
+			/"multi": z\.number\(\)/.test(contentZod),
+		"Parameter content did not use the first declared Media Type semantics.",
+	);
+	assert(
+		/filter: \{/.test(contentType) &&
+			/"X-Anything": unknown/.test(contentType) &&
+			/deny: unknown/.test(contentType) &&
+			/multi: number/.test(contentType),
+		"TypeScript Parameter content fell back to string or chose another media type.",
+	);
+	assert(
+		/NullableBodyMutationRequest = BaseModel \| null/.test(nullableType) &&
+			/RequestBodiesNullableBodyModel = BaseModel \| null/.test(
+				componentNullableType,
+			),
+		"TypeScript request-body schema $ref siblings lost nullable.",
+	);
+
+	for (const directory of [
+		"generated-contract-parameters",
+		"generated-contract-responses",
+		"generated-contract-content",
+		"generated-contract-siblings",
+	]) {
+		const root = join(consumerRoot, directory);
+		const files = (await filesRecursively(root)).map((path) =>
+			relative(root, path).split(sep).join("/"),
+		);
+		await assertRelativeImportsResolve(root, files);
+		for (const file of files.filter((path) => path.endsWith(".ts"))) {
+			const source = await readFile(join(root, file), "utf8");
+			const declarations = [
+				...source.matchAll(
+					/export (?:const|type|interface) ([A-Za-z_$][\w$]*)/g,
+				),
+			].map((match) => match[1]);
+			assert(
+				new Set(declarations).size === declarations.length,
+				`${directory}/${file} contains duplicate exports.`,
 			);
 			assert(
 				!source.includes("undefined.parse("),
@@ -767,6 +930,10 @@ async function createConsumerFiles(
 		"openapi-component-no-content.json",
 		"openapi-response-headers.json",
 		"openapi-ref-siblings.json",
+		"openapi-header-cookie-parameters.json",
+		"openapi-mixed-success-no-content.json",
+		"openapi-parameter-content.json",
+		"openapi-ts-ref-siblings.json",
 	]) {
 		await copyFile(
 			join(
@@ -1296,6 +1463,55 @@ export default defineConfig({
 `,
 	);
 	await writeFile(
+		join(consumerRoot, "openapi.contracts.config.ts"),
+		`import {
+  defineConfig,
+  pluginTSRequest,
+  pluginTSType,
+  pluginZod,
+} from "openapi-to";
+
+export default defineConfig({
+  servers: [
+    {
+      name: "headerCookie",
+      input: { path: "./openapi-header-cookie-parameters.json" },
+      output: { base: "workspace", dir: "generated-contract-parameters", clean: true },
+    },
+    {
+      name: "mixedResponses",
+      input: { path: "./openapi-mixed-success-no-content.json" },
+      output: { base: "workspace", dir: "generated-contract-responses", clean: true },
+    },
+    {
+      name: "parameterContent",
+      input: { path: "./openapi-parameter-content.json" },
+      output: { base: "workspace", dir: "generated-contract-content", clean: true },
+    },
+    {
+      name: "refSiblings",
+      input: { path: "./openapi-ts-ref-siblings.json" },
+      output: { base: "workspace", dir: "generated-contract-siblings", clean: true },
+    },
+  ],
+  plugins: [
+    pluginZod({ importWithExtension: false }),
+    pluginTSType({ importWithExtension: false }),
+    pluginTSRequest({
+      parser: "zod",
+      requestClient: "common",
+      requestImportDeclaration: { moduleSpecifier: "../../request.ts" },
+      requestConfigTypeImportDeclaration: {
+        namedImports: ["RequestOptions"],
+        moduleSpecifier: "../../request.ts",
+      },
+      importWithExtension: false,
+    }),
+  ],
+});
+`,
+	);
+	await writeFile(
 		join(consumerRoot, "request.ts"),
 		`export interface RequestOptions {
   method?: string;
@@ -1315,6 +1531,16 @@ export async function request<T>(_options: RequestOptions): Promise<{ data: unkn
 		`import { createWidgetService } from "./generated/widgets/create-widget.service.ts";
 import { getWidgetService } from "./generated/widgets/get-widget.service.ts";
 import type { WidgetModel } from "./generated/types/models/widget.model.ts";
+import type {
+  OnlyNoContentResponse,
+  OnlyNoContentResponse204,
+} from "./generated-contract-responses/contracts/only-no-content.types.ts";
+import type {
+  MixedSuccessResponse201,
+  MixedSuccessResponse204,
+} from "./generated-contract-responses/contracts/mixed-success.types.ts";
+import type { NullableBodyMutationRequest } from "./generated-contract-siblings/contracts/nullable-body.types.ts";
+import type { RequestBodiesNullableBodyModel } from "./generated-contract-siblings/types/requestBodies/nullable-body.model.ts";
 
 const created = await createWidgetService({
   name: "desk",
@@ -1343,6 +1569,21 @@ const fetched = await getWidgetService("widget-1", { includeHistory: true });
 void created;
 void fetched;
 	void widget;
+const noContentMember: OnlyNoContentResponse204 = undefined;
+const noContentAggregate: OnlyNoContentResponse = undefined;
+const mixedNoContent: MixedSuccessResponse204 = undefined;
+const unknownMedia: MixedSuccessResponse201 = { any: "value" };
+const nullableOperationBody: NullableBodyMutationRequest = null;
+const nullableComponentBody: RequestBodiesNullableBodyModel = null;
+// @ts-expect-error no-content members reject objects
+const invalidNoContent: OnlyNoContentResponse204 = {};
+void noContentMember;
+void noContentAggregate;
+void mixedNoContent;
+void unknownMedia;
+void nullableOperationBody;
+void nullableComponentBody;
+void invalidNoContent;
 	`,
 	);
 	await writeFile(
@@ -1395,6 +1636,21 @@ import {
   inlineRefSiblingQueryParamsSchema,
 } from "./generated-ref-siblings/siblings/inline-ref-sibling.schema";
 import { componentRefSiblingMutationRequestSchema } from "./generated-ref-siblings/siblings/component-ref-sibling.schema";
+import { optionalHeaderHeaderParamsSchema } from "./generated-contract-parameters/contracts/optional-header.schema";
+import { requiredHeaderHeaderParamsSchema } from "./generated-contract-parameters/contracts/required-header.schema";
+import { optionalCookieCookieParamsSchema } from "./generated-contract-parameters/contracts/optional-cookie.schema";
+import { requiredCookieCookieParamsSchema } from "./generated-contract-parameters/contracts/required-cookie.schema";
+import {
+  mixedSuccessResponseSchema201,
+  mixedSuccessResponseSchema204,
+} from "./generated-contract-responses/contracts/mixed-success.schema";
+import { onlyNoContentResponseSchema } from "./generated-contract-responses/contracts/only-no-content.schema";
+import {
+  contentParametersCookieParamsSchema,
+  contentParametersHeaderParamsSchema,
+  contentParametersQueryParamsSchema,
+} from "./generated-contract-content/contracts/content-parameters.schema";
+import { nullableBodyMutationRequestSchema } from "./generated-contract-siblings/contracts/nullable-body.schema";
 
 type IsUnknown<T> = unknown extends T ? ([keyof T] extends [never] ? true : false) : false;
 type Expect<T extends true> = T;
@@ -1497,6 +1753,26 @@ for (const schema of [
   schema.parse("0123456789");
   if (schema.safeParse("short").success) throw new Error("ref sibling minLength was skipped");
 }
+if (!optionalHeaderHeaderParamsSchema.safeParse({}).success) throw new Error("optional header became required");
+if (requiredHeaderHeaderParamsSchema.safeParse({}).success) throw new Error("required header became optional");
+requiredHeaderHeaderParamsSchema.parse({ "X-Request-Id": "abc" });
+if (!optionalCookieCookieParamsSchema.safeParse({}).success) throw new Error("optional cookie became required");
+if (requiredCookieCookieParamsSchema.safeParse({}).success) throw new Error("required cookie became optional");
+requiredCookieCookieParamsSchema.parse({ session: "abc" });
+mixedSuccessResponseSchema201.parse({ arbitrary: true });
+mixedSuccessResponseSchema204.parse(undefined);
+if (mixedSuccessResponseSchema204.safeParse({}).success) throw new Error("204 accepted a body");
+onlyNoContentResponseSchema.parse(undefined);
+contentParametersQueryParamsSchema.parse({
+  filter: { status: "active", page: 1 },
+  componentFilter: { value: "x" },
+  multi: 1,
+});
+contentParametersHeaderParamsSchema.parse({ "X-Anything": { any: "value" } });
+if (contentParametersCookieParamsSchema.safeParse({ deny: "value" }).success) {
+  throw new Error("Parameter content schema:false accepted a value");
+}
+nullableBodyMutationRequestSchema.parse(null);
 console.log("zod4-runtime-parse:passed");
 `,
 	);
@@ -1522,6 +1798,7 @@ console.log("zod4-runtime-parse:passed");
 			"generated-response-headers/**/*.ts",
 			"generated-ref-siblings/**/*.ts",
 			"generated-empty-media/**/*.ts",
+			"generated-contract-*/**/*.ts",
 			"request.ts",
 			"consumer-usage.ts",
 			"runtime-check.ts",
@@ -1548,6 +1825,7 @@ console.log("zod4-runtime-parse:passed");
 			"generated-response-headers/**/*.schema.ts",
 			"generated-ref-siblings/**/*.schema.ts",
 			"generated-empty-media/**/*.schema.ts",
+			"generated-contract-*/**/*.schema.ts",
 			"runtime-check.ts",
 		],
 	});
@@ -1755,12 +2033,50 @@ export async function runConsumerCodegenScenario({
 			`${label} was not byte-stable on its second generation.`,
 		);
 	}
+	const contractGeneration = parseJson(
+		runCommand(
+			"cross-plugin contract generation",
+			cli,
+			["generate", "--config", "./openapi.contracts.config.ts", "--json"],
+			consumerRoot,
+		),
+		"cross-plugin contract generation",
+	);
+	assert(
+		contractGeneration.success === true &&
+			contractGeneration.servers?.map((server) => server.name).join(",") ===
+				"headerCookie,mixedResponses,parameterContent,refSiblings",
+		"Cross-plugin contract generation did not produce every fixture target.",
+	);
+	const contractCheck = parseJson(
+		runCommand(
+			"cross-plugin contract check",
+			cli,
+			[
+				"generate",
+				"--config",
+				"./openapi.contracts.config.ts",
+				"--check",
+				"--json",
+			],
+			consumerRoot,
+		),
+		"cross-plugin contract check",
+	);
+	assert(
+		contractCheck.success === true &&
+			contractCheck.servers?.every(
+				(server) => server.manifest?.outdated === false,
+			),
+		"Cross-plugin contract output was not byte-stable.",
+	);
 	const generatedFiles = (await filesRecursively(outputRoot)).map((path) =>
 		relative(outputRoot, path).split(sep).join("/"),
 	);
 	assertGeneratedOutput(generatedFiles);
 	await assertSemanticOutput(outputRoot, consumerRoot, generatedFiles);
 	await assertEdgeCaseOutput(consumerRoot);
+	await assertContractOutput(consumerRoot);
 	const ownershipPath = join(outputRoot, ".openapi-to-manifest.json");
 	const ownership = JSON.parse(await readFile(ownershipPath, "utf8"));
 	assert(

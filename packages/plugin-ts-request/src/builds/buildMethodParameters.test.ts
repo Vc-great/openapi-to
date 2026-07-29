@@ -1,82 +1,123 @@
 //@ts-nocheck
-import { describe, expect, it } from 'vitest'
-import { RequestClientEnum } from '../types'
-import { buildMethodParameters } from './buildMethodParameters'
+import { describe, expect, it } from "vitest";
+import { RequestClientEnum } from "../types";
+import { buildMethodParameters } from "./buildMethodParameters";
 
-describe('buildMethodParameters 函数测试', () => {
-  it('应该生成请求体和查询参数', () => {
-    const operation = {
-      accessor: {
-        hasPathParameters: false,
-        hasRequestBody: true,
-        hasQueryParameters: true,
-        isQueryParametersOptional: true,
-        parameters: [],
-        operationTSType: {
-          body: 'Pet',
-          queryParams: 'PetQuery',
-        },
-      },
-    }
+type MethodParametersOperation = Parameters<typeof buildMethodParameters>[0];
+type MethodParametersConfig = Parameters<typeof buildMethodParameters>[1];
 
-    const ctx = {} as any
+describe("buildMethodParameters 函数测试", () => {
+	it("应该生成请求体和查询参数", () => {
+		const operation = {
+			accessor: {
+				hasPathParameters: false,
+				hasRequestBody: true,
+				hasQueryParameters: true,
+				isQueryParametersOptional: true,
+				parameters: [],
+				operationTSType: {
+					body: "Pet",
+					queryParams: "PetQuery",
+				},
+			},
+		};
 
-    const result = buildMethodParameters(operation as any, ctx)
+		const ctx = {} as MethodParametersConfig;
 
-    expect(result).toHaveLength(3) // body参数、query参数、requestConfig参数
+		const result = buildMethodParameters(
+			operation as MethodParametersOperation,
+			ctx,
+		);
 
-    const bodyParam = result.find((p) => p.name === 'data')
-    expect(bodyParam?.type).toBe('Pet')
+		expect(result).toHaveLength(3); // body参数、query参数、requestConfig参数
 
-    const queryParam = result.find((p) => p.name === 'params')
-    expect(queryParam?.type).toBe('PetQuery')
-    expect(queryParam?.hasQuestionToken).toBe(true)
-  })
+		const bodyParam = result.find((p) => p.name === "data");
+		expect(bodyParam?.type).toBe("Pet");
 
-  it('应该生成路径参数', () => {
-    const operation = {
-      accessor: {
-        hasPathParameters: true,
-        hasRequestBody: false,
-        hasQueryParameters: false,
-        parameters: [{ in: 'path', name: 'petId' }],
-        operationTSType: {
-          pathParams: 'PetParams',
-        },
-      },
-    }
+		const queryParam = result.find((p) => p.name === "params");
+		expect(queryParam?.type).toBe("PetQuery");
+		expect(queryParam?.hasQuestionToken).toBe(true);
+	});
 
-    const ctx = {} as any
+	it("应该生成路径参数", () => {
+		const operation = {
+			accessor: {
+				hasPathParameters: true,
+				hasRequestBody: false,
+				hasQueryParameters: false,
+				parameters: [{ in: "path", name: "petId" }],
+				operationTSType: {
+					pathParams: "PetParams",
+				},
+			},
+		};
 
-    const result = buildMethodParameters(operation as any, ctx)
+		const ctx = {} as MethodParametersConfig;
 
-    const pathParam = result.find((p: any) => p.name === 'petId')
-    expect(pathParam).toBeDefined()
-    expect(pathParam?.type).toContain("PetParams['petId']")
-  })
+		const result = buildMethodParameters(
+			operation as MethodParametersOperation,
+			ctx,
+		);
 
-  it('应该生成带有自定义请求配置类型的参数', () => {
-    const operation = {
-      accessor: {
-        hasPathParameters: false,
-        hasRequestBody: false,
-        hasQueryParameters: false,
-        parameters: [],
-        operationTSType: () => ({}),
-      },
-    }
+		const pathParam = result.find((p) => p.name === "petId");
+		expect(pathParam).toBeDefined();
+		expect(pathParam?.type).toContain("PetParams['petId']");
+	});
 
-    const ctx = {} as any
-    const pluginConfig = {
-      requestClient: RequestClientEnum.COMMON,
-      requestConfigTypeImportDeclaration: {
-        namedImports: ['CustomConfig'],
-      },
-    }
+	it("应该生成带有自定义请求配置类型的参数", () => {
+		const operation = {
+			accessor: {
+				hasPathParameters: false,
+				hasRequestBody: false,
+				hasQueryParameters: false,
+				parameters: [],
+				operationTSType: () => ({}),
+			},
+		};
 
-    const result = buildMethodParameters(operation, pluginConfig)
+		const pluginConfig = {
+			requestClient: RequestClientEnum.COMMON,
+			requestConfigTypeImportDeclaration: {
+				namedImports: ["CustomConfig"],
+			},
+		};
 
-    const configParam = result.find((p: any) => p.name === 'requestConfig')
-    expect(configParam?.type).toBe('Partial<CustomConfig>')
-  })
-})
+		const result = buildMethodParameters(operation, pluginConfig);
+
+		const configParam = result.find((p) => p.name === "requestConfig");
+		expect(configParam?.type).toBe("Partial<CustomConfig>");
+	});
+
+	it("keeps service parameters valid when an operation also has header and cookie parameters", () => {
+		const result = buildMethodParameters(
+			{
+				accessor: {
+					hasPathParameters: false,
+					hasRequestBody: false,
+					hasQueryParameters: false,
+					hasHeaderParameters: true,
+					hasCookieParameters: true,
+					parameters: [
+						{ in: "header", name: "X-Request-Id", required: true },
+						{ in: "cookie", name: "session", required: true },
+					],
+					operationTSType: {
+						headerParams: "HeaderParams",
+						cookieParams: "CookieParams",
+					},
+				},
+			} as MethodParametersOperation,
+			{
+				requestClient: RequestClientEnum.COMMON,
+			} as MethodParametersConfig,
+		);
+
+		expect(result).toEqual([
+			expect.objectContaining({
+				name: "requestConfig",
+				hasQuestionToken: true,
+			}),
+		]);
+		expect(JSON.stringify(result)).not.toContain('"type":"undefined"');
+	});
+});

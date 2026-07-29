@@ -5,7 +5,11 @@ import {
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
 
-import type { ParameterObjectWithRef } from "@openapi-to/core";
+import {
+	isParameterRequired,
+	type ParameterObjectWithRef,
+	resolveParameterSchema,
+} from "@openapi-to/core";
 import { CodeBlockWriter } from "ts-morph";
 import { getComponentRefExportName } from "./componentNaming.ts";
 
@@ -23,18 +27,18 @@ export function generateParameterSchema(
 		parameters.forEach((prop, idx) => {
 			const name = prop.name;
 			const comma = idx < parameters.length - 1 ? "," : "";
-			const optional =
-				prop.in === "path" || prop.required === true ? "" : ".optional()";
+			const optional = isParameterRequired(prop) ? "" : ".optional()";
 
 			writeJSDoc(writer, jsDocTemplateFromParameter(prop));
 			let schemaString: string;
 			if ("$ref" in prop && prop.$ref) {
 				schemaString = getComponentRefExportName(prop.$ref);
 			} else {
+				const schema = resolveParameterSchema(prop);
 				schemaString =
-					prop.schema !== undefined
-						? schemaTemplate(prop.schema, name, operationName, options)
-						: "z.string()";
+					schema === undefined
+						? "z.string()"
+						: schemaTemplate(schema, name, operationName, options);
 			}
 
 			writer.writeLine(
