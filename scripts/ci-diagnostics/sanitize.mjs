@@ -44,6 +44,12 @@ function sanitizeUrl(match) {
 
 export function sanitizeText(value, environment = process.env) {
 	let result = String(value ?? "").replace(ansiPattern, "");
+	result = result.replace(
+		// Preserve line boundaries and tabs for bounded logs; remove other C0/C1 controls.
+		// biome-ignore lint/suspicious/noControlCharactersInRegex: this is the control-character boundary.
+		/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,
+		"",
+	);
 	result = replaceKnownPath(
 		result,
 		environment.GITHUB_WORKSPACE,
@@ -124,7 +130,7 @@ export function markdownCell(value) {
 		.replaceAll(">", "&gt;")
 		.replaceAll("\\", "\\\\")
 		.replaceAll("|", "\\|")
-		.replaceAll("`", "\\`")
+		.replaceAll("`", "&#96;")
 		.replaceAll("[", "\\[")
 		.replaceAll("]", "\\]")
 		.replaceAll("(", "\\(")

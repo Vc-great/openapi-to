@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from "node:child_process";
+import { lstat } from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
@@ -8,10 +9,11 @@ import { fileURLToPath } from "node:url";
 import {
 	atomicWrite,
 	ensureSafeDirectory,
-	readJsonFile,
+	readBoundedJsonFile,
 	repositoryRoot,
 	safeChild,
 } from "./filesystem.mjs";
+import { getPlan } from "./plans.mjs";
 import {
 	normalizeCwd,
 	sanitizeCommand,
@@ -23,12 +25,144 @@ import {
 	jsonBytes,
 	MAX_COMMAND_REPORT_BYTES,
 	MAX_ERROR_CANDIDATES,
+	MAX_PLAN_BYTES,
 	MAX_TAIL_LINES,
 	SCHEMA_VERSION,
 } from "./schema.mjs";
 
 const errorCandidatePattern =
 	/\b(?:error|failed|err_[a-z0-9_]+|assertionerror|typeerror|enoent|eperm|timed?\s*out|timeout)\b/i;
+
+export const CHILD_ENV_DENYLIST = Object.freeze([
+	"GITHUB_ENV",
+	"GITHUB_PATH",
+	"GITHUB_OUTPUT",
+	"GITHUB_STEP_SUMMARY",
+	"GITHUB_TOKEN",
+	"GH_TOKEN",
+	"NODE_AUTH_TOKEN",
+	"NPM_TOKEN",
+	"NPM_AUTH_TOKEN",
+	"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+	"ACTIONS_ID_TOKEN_REQUEST_URL",
+	"ACTIONS_RUNTIME_TOKEN",
+	"ACTIONS_RUNTIME_URL",
+	"ACTIONS_RESULTS_URL",
+	"ACTIONS_CACHE_URL",
+	"GITHUB_EVENT_PATH",
+	"CI_DIAGNOSTIC_DIR",
+	"CI_DIAGNOSTIC_UPLOAD_DIR",
+]);
+
+export const CHILD_ENV_ALLOWLIST = Object.freeze([
+	"PATH",
+	"HOME",
+	"USERPROFILE",
+	"TMP",
+	"TEMP",
+	"TMPDIR",
+	"SystemRoot",
+	"ComSpec",
+	"PATHEXT",
+	"APPDATA",
+	"LOCALAPPDATA",
+	"NODE_OPTIONS",
+	"CI",
+	"RUNNER_OS",
+	"RUNNER_ARCH",
+	"LANG",
+	"LC_ALL",
+	"TZ",
+	"TERM",
+	"COLORTERM",
+	"FORCE_COLOR",
+	"NO_COLOR",
+	"SHELL",
+	"COREPACK_HOME",
+	"PNPM_HOME",
+	"NO_UPDATE_NOTIFIER",
+	"npm_execpath",
+	"npm_node_execpath",
+	"npm_config_cache",
+	"npm_config_store_dir",
+	"npm_config_user_agent",
+]);
+
+function environmentEntry(environment, requested) {
+	const key = Object.keys(environment).find(
+		(candidate) => candidate.toLowerCase() === requested.toLowerCase(),
+	);
+	return key && environment[key] !== undefined ? [key, environment[key]] : null;
+}
+
+function within(root, candidate) {
+	const relative = path.relative(root, candidate);
+	return (
+		relative === "" ||
+		(!relative.startsWith("..") && !path.isAbsolute(relative))
+	);
+}
+
+export async function buildChildEnvironment(environment, plan) {
+	const child = {};
+	for (const requested of CHILD_ENV_ALLOWLIST) {
+		const entry = environmentEntry(environment, requested);
+		if (entry) child[entry[0]] = entry[1];
+	}
+	const runnerTemp = environment.RUNNER_TEMP
+		? path.resolve(environment.RUNNER_TEMP)
+		: null;
+	for (const sourceEnv of plan.childEnv) {
+		const value = environment[sourceEnv];
+		if (!value) continue;
+		if (!runnerTemp) {
+			throw new Error(
+				`Domain artifact environment ${sourceEnv} requires RUNNER_TEMP.`,
+			);
+		}
+		const resolved = path.resolve(value);
+		if (!within(runnerTemp, resolved)) {
+			throw new Error(
+				`Domain artifact environment ${sourceEnv} must stay within RUNNER_TEMP.`,
+			);
+		}
+		const definition = plan.reports.find(
+			(report) => report.sourceEnv === sourceEnv,
+		);
+		const directory =
+			definition?.relativePath === "." ? path.dirname(resolved) : resolved;
+		await ensureSafeDirectory(directory, environment);
+		child[sourceEnv] = resolved;
+	}
+	return child;
+}
+
+function assertInitializedPlan(manifest, planId, plan, directoryDetails) {
+	const expectedReports = plan.reports.map(
+		({ id, label, relativePath, format }) => ({
+			id,
+			label,
+			relativePath,
+			format,
+		}),
+	);
+	if (
+		manifest?.schemaVersion !== SCHEMA_VERSION ||
+		manifest?.planId !== planId ||
+		manifest.workflow !== plan.workflow ||
+		manifest.jobId !== plan.jobId ||
+		manifest.jobName !== plan.jobName ||
+		JSON.stringify(manifest.commands) !== JSON.stringify(plan.commands) ||
+		JSON.stringify(manifest.steps) !== JSON.stringify(plan.steps) ||
+		JSON.stringify(manifest.reports) !== JSON.stringify(expectedReports) ||
+		manifest.directoryIdentity?.dev !== String(directoryDetails.dev) ||
+		manifest.directoryIdentity?.ino !== String(directoryDetails.ino)
+	) {
+		throw new Error(
+			"Initialized diagnostic plan does not match its static plan.",
+		);
+	}
+}
 
 export function parseRunArguments(argv) {
 	const separator = argv.indexOf("--");
@@ -191,8 +325,18 @@ export async function runCommand(
 ) {
 	assertCommandId(options.id);
 	const directory = await ensureSafeDirectory(options.dir, environment);
-	const manifest = await readJsonFile(safeChild(directory, "plan.json"));
-	const expected = manifest.commands?.find(({ id }) => id === options.id);
+	const { value: manifest } = await readBoundedJsonFile(
+		safeChild(directory, "plan.json"),
+		{ maxBytes: MAX_PLAN_BYTES },
+	);
+	const plan = getPlan(manifest.planId);
+	assertInitializedPlan(
+		manifest,
+		manifest.planId,
+		plan,
+		await lstat(directory),
+	);
+	const expected = plan.commands.find(({ id }) => id === options.id);
 	if (!expected)
 		throw new Error(
 			`Command ${options.id} is not present in the initialized plan.`,
@@ -207,7 +351,9 @@ export async function runCommand(
 	const invocation = resolveInvocation(
 		options.command[0],
 		options.command.slice(1),
+		{ npmExecPath: environment.npm_execpath },
 	);
+	const childEnvironment = await buildChildEnvironment(environment, plan);
 	const stdout = new BoundedOutput(process.stdout, environment);
 	const stderr = new BoundedOutput(process.stderr, environment);
 	const started = performance.now();
@@ -219,7 +365,7 @@ export async function runCommand(
 		let settled = false;
 		const child = spawn(invocation.command, invocation.args, {
 			cwd,
-			env: environment,
+			env: childEnvironment,
 			detached: process.platform !== "win32",
 			shell: false,
 			stdio: ["ignore", "pipe", "pipe"],

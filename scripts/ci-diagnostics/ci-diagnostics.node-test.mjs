@@ -3,7 +3,10 @@ import { execFile } from "node:child_process";
 import {
 	mkdir,
 	mkdtemp,
+	link,
 	readFile,
+	readdir,
+	rename as renameFile,
 	rm,
 	symlink,
 	writeFile,
@@ -13,18 +16,33 @@ import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 
-import { atomicWrite, repositoryRoot } from "./filesystem.mjs";
-import { artifactAllowlist, finalize, renderSummary } from "./finalize-job.mjs";
+import {
+	atomicWrite,
+	readBoundedJsonFile,
+	readBoundedRegularFile,
+	repositoryRoot,
+} from "./filesystem.mjs";
+import {
+	finalize,
+	finalizeInitializationFailure,
+	renderSummary,
+} from "./finalize-job.mjs";
 import { initialize } from "./initialize.mjs";
 import { getPlan } from "./plans.mjs";
-import { resolveInvocation, runCommand } from "./run-command.mjs";
+import {
+	buildChildEnvironment,
+	resolveInvocation,
+	runCommand,
+} from "./run-command.mjs";
 import { markdownCell, sanitizeCommand, sanitizeText } from "./sanitize.mjs";
 import {
 	DIAGNOSTIC_KIND,
 	jsonBytes,
 	MAX_COMMAND_REPORT_BYTES,
 	MAX_DIAGNOSTIC_BYTES,
+	MAX_KNOWN_REPORT_BYTES,
 	MAX_LINE_CHARS,
+	MAX_PLAN_BYTES,
 	MAX_TAIL_LINES,
 	SCHEMA_VERSION,
 } from "./schema.mjs";
@@ -33,6 +51,10 @@ const execFileAsync = promisify(execFile);
 const runCommandPath = path.join(
 	repositoryRoot,
 	"scripts/ci-diagnostics/run-command.mjs",
+);
+const finalizeJobPath = path.join(
+	repositoryRoot,
+	"scripts/ci-diagnostics/finalize-job.mjs",
 );
 
 async function fixture(t, planId = "quality-build") {
@@ -49,6 +71,22 @@ async function fixture(t, planId = "quality-build") {
 	};
 	await initialize({ dir: directory, plan: planId }, environment);
 	return { root, directory, environment, plan: getPlan(planId) };
+}
+
+function finalizationOptions(directory, plan, overrides = {}) {
+	return {
+		dir: directory,
+		uploadDir: `${directory}-upload`,
+		plan,
+		jobStatus: "success",
+		matrix: {},
+		steps: {
+			checkout: "success",
+			"diagnostics-init": "success",
+			setup: "success",
+		},
+		...overrides,
+	};
 }
 
 function commandReport(expected, overrides = {}) {
@@ -92,6 +130,98 @@ async function writeCommandReports(directory, plan, overrides = {}) {
 			`${JSON.stringify(report, null, 2)}\n`,
 		);
 	}
+}
+
+async function listFiles(directory, relativeDirectory = "") {
+	const result = [];
+	for (const entry of await readdir(directory, { withFileTypes: true })) {
+		const relativePath = relativeDirectory
+			? `${relativeDirectory}/${entry.name}`
+			: entry.name;
+		if (entry.isDirectory()) {
+			result.push(
+				...(await listFiles(path.join(directory, entry.name), relativePath)),
+			);
+		} else {
+			result.push(relativePath);
+		}
+	}
+	return result.sort();
+}
+
+async function writeCliReports(reportDirectory, overrides = {}) {
+	await mkdir(reportDirectory, { recursive: true });
+	const reports = {
+		"runtime.json": {
+			platform: "linux",
+			arch: "x64",
+			node: "v20.0.0",
+			pnpmEntrypoint: "pnpm.cjs",
+		},
+		"summary.json": {
+			mode: "common",
+			status: "passed",
+			stage: "complete",
+			commands: [],
+			...overrides.summary,
+		},
+		"fixture.json": {
+			kind: "local-json",
+			path: "petstore.json",
+			...overrides.fixture,
+		},
+	};
+	for (const [name, value] of Object.entries(reports)) {
+		await writeFile(
+			path.join(reportDirectory, name),
+			`${JSON.stringify(value, null, 2)}\n`,
+		);
+	}
+	await writeFile(
+		path.join(reportDirectory, "generated-files.txt"),
+		"10\tpet.model.ts\n",
+	);
+}
+
+async function writeA1Reports(reportDirectory, overrides = {}) {
+	await mkdir(reportDirectory, { recursive: true });
+	const reports = {
+		"runtime.json": {
+			platform: "linux",
+			arch: "x64",
+			node: "v20.0.0",
+			pnpm: "10.14.0",
+		},
+		"summary.json": {
+			exitCode: 0,
+			signal: null,
+			expectedFiles: 1,
+			actualFiles: 1,
+			expectedTests: 1,
+			actualTests: 1,
+			inventoryMatches: true,
+			failedTests: [],
+			...overrides.summary,
+		},
+		"vitest.json": {
+			success: true,
+			numTotalTests: 1,
+			numPassedTests: 1,
+			numFailedTests: 0,
+			testResults: [{ assertionResults: [] }],
+			...overrides.vitest,
+		},
+	};
+	for (const [name, value] of Object.entries(reports)) {
+		await writeFile(
+			path.join(reportDirectory, name),
+			`${JSON.stringify(value, null, 2)}\n`,
+		);
+	}
+	await writeFile(
+		path.join(reportDirectory, "test-files.txt"),
+		"one.test.ts\n",
+	);
 }
 
 async function withoutProcessOutput(operation) {
@@ -307,6 +437,215 @@ test("pnpm invocation uses npm_execpath and has a Windows fallback", () => {
 	);
 });
 
+test("child environment removes GitHub control files and credentials while retaining execution and plan domain variables", async (t) => {
+	const { root, directory, environment, plan } = await fixture(
+		t,
+		"a1-contracts",
+	);
+	const domainDirectory = path.join(root, "a1-domain");
+	const observedPath = path.join(root, "observed-env.json");
+	const controlPaths = Object.fromEntries(
+		["GITHUB_ENV", "GITHUB_PATH", "GITHUB_OUTPUT", "GITHUB_STEP_SUMMARY"].map(
+			(name) => [name, path.join(root, `${name}.txt`)],
+		),
+	);
+	for (const controlPath of Object.values(controlPaths)) {
+		await writeFile(controlPath, "parent\n");
+	}
+	const hostileEnvironment = {
+		...environment,
+		...controlPaths,
+		CI: "true",
+		A1_TEST_ARTIFACT_DIR: domainDirectory,
+		CI_DIAGNOSTIC_UPLOAD_DIR: path.join(root, "must-not-leak"),
+		GITHUB_EVENT_PATH: path.join(root, "event.json"),
+		GITHUB_TOKEN: "github-token",
+		GH_TOKEN: "gh-token",
+		NODE_AUTH_TOKEN: "node-token",
+		NPM_TOKEN: "npm-token",
+		ACTIONS_ID_TOKEN_REQUEST_TOKEN: "oidc-token",
+		ACTIONS_ID_TOKEN_REQUEST_URL: "https://oidc.invalid",
+		ACTIONS_RUNTIME_TOKEN: "runtime-token",
+		ACTIONS_RUNTIME_URL: "https://runtime.invalid",
+		ACTIONS_RESULTS_URL: "https://results.invalid",
+		ACTIONS_CACHE_URL: "https://cache.invalid",
+	};
+	const childEnvironment = await buildChildEnvironment(
+		hostileEnvironment,
+		plan,
+	);
+	for (const key of [
+		...Object.keys(controlPaths),
+		"GITHUB_TOKEN",
+		"GH_TOKEN",
+		"NODE_AUTH_TOKEN",
+		"NPM_TOKEN",
+		"ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+		"ACTIONS_RUNTIME_TOKEN",
+		"GITHUB_EVENT_PATH",
+		"CI_DIAGNOSTIC_DIR",
+		"CI_DIAGNOSTIC_UPLOAD_DIR",
+	]) {
+		assert.equal(childEnvironment[key], undefined, key);
+	}
+	assert.ok(childEnvironment.PATH);
+	assert.equal(childEnvironment.CI, "true");
+	assert.equal(childEnvironment.A1_TEST_ARTIFACT_DIR, domainDirectory);
+
+	const script = `
+		const fs = require("node:fs");
+		for (const key of ["GITHUB_ENV","GITHUB_PATH","GITHUB_OUTPUT","GITHUB_STEP_SUMMARY"]) {
+			if (process.env[key]) fs.appendFileSync(process.env[key], "child\\n");
+		}
+		const keys = ["PATH","TMP","TEMP","TMPDIR","CI","A1_TEST_ARTIFACT_DIR","GITHUB_TOKEN","GH_TOKEN","ACTIONS_RUNTIME_TOKEN","CI_DIAGNOSTIC_UPLOAD_DIR"];
+		fs.writeFileSync(process.argv[1], JSON.stringify(Object.fromEntries(keys.map((key) => [key, process.env[key] ?? null]))));
+	`;
+	await runCommand(
+		{
+			dir: directory,
+			id: "build",
+			command: [process.execPath, "-e", script, observedPath],
+			timeoutMs: null,
+		},
+		hostileEnvironment,
+	);
+	const observed = JSON.parse(await readFile(observedPath, "utf8"));
+	assert.ok(observed.PATH);
+	assert.ok(observed.TMP || observed.TEMP || observed.TMPDIR);
+	assert.equal(observed.CI, "true");
+	assert.equal(observed.A1_TEST_ARTIFACT_DIR, domainDirectory);
+	assert.equal(observed.GITHUB_TOKEN, null);
+	assert.equal(observed.GH_TOKEN, null);
+	assert.equal(observed.ACTIONS_RUNTIME_TOKEN, null);
+	assert.equal(observed.CI_DIAGNOSTIC_UPLOAD_DIR, null);
+	for (const controlPath of Object.values(controlPaths)) {
+		assert.equal(await readFile(controlPath, "utf8"), "parent\n");
+	}
+});
+
+test("a missing pnpm executable becomes infrastructure-error and remains visible to the finalizer", async (t) => {
+	const { root, directory, environment } = await fixture(t);
+	const emptyPath = path.join(root, "empty-path");
+	await mkdir(emptyPath);
+	const isolatedEnvironment = {
+		...environment,
+		PATH: emptyPath,
+		npm_execpath: "",
+	};
+	const command = await runCommand(
+		{
+			dir: directory,
+			id: "build",
+			command: ["pnpm", "--version"],
+			timeoutMs: null,
+		},
+		isolatedEnvironment,
+	);
+	assert.equal(command.report.status, "infrastructure-error");
+	const result = await finalize(
+		finalizationOptions(directory, "quality-build", {
+			jobStatus: "failure",
+		}),
+		isolatedEnvironment,
+	);
+	assert.equal(result.diagnostic.commands[0].status, "infrastructure-error");
+	assert.equal(result.diagnostic.status, "failure");
+});
+
+test("bounded readers reject oversize, replacement, symlink, hard-link, invalid UTF-8, and invalid JSON inputs", async (t) => {
+	const { root } = await fixture(t);
+	const oversized = path.join(root, "oversized.txt");
+	await writeFile(oversized, Buffer.alloc(33, 0x61));
+	await assert.rejects(
+		readBoundedRegularFile(oversized, { maxBytes: 32 }),
+		(error) => error.diagnosticFileStatus === "too-large",
+	);
+
+	const replaced = path.join(root, "replaced.txt");
+	const replacement = path.join(root, "replacement.txt");
+	await writeFile(replaced, "before");
+	await writeFile(replacement, "after");
+	await assert.rejects(
+		readBoundedRegularFile(replaced, {
+			maxBytes: 32,
+			onAfterLstat: async () => {
+				await rm(replaced);
+				await renameFile(replacement, replaced);
+			},
+		}),
+		/replaced|changed|opened|symlink/i,
+	);
+
+	const target = path.join(root, "target.txt");
+	const regularToLink = path.join(root, "regular-to-link.txt");
+	const symlinkProbe = path.join(root, "symlink-probe.txt");
+	await writeFile(target, "target");
+	await writeFile(regularToLink, "regular");
+	let canCreateSymlink = true;
+	try {
+		await symlink(target, symlinkProbe);
+		await rm(symlinkProbe);
+	} catch (error) {
+		if (process.platform === "win32" && error.code === "EPERM") {
+			canCreateSymlink = false;
+			t.diagnostic("file symlink creation is not permitted on this runner");
+		} else {
+			throw error;
+		}
+	}
+	if (canCreateSymlink) {
+		await assert.rejects(
+			readBoundedRegularFile(regularToLink, {
+				maxBytes: 32,
+				onAfterLstat: async () => {
+					await rm(regularToLink);
+					await symlink(target, regularToLink);
+				},
+			}),
+			/symlink|changed|opened/i,
+		);
+		const symlinkToRegular = path.join(root, "symlink-to-regular.txt");
+		await symlink(target, symlinkToRegular);
+		await assert.rejects(
+			readBoundedRegularFile(symlinkToRegular, { maxBytes: 32 }),
+			/symlink/,
+		);
+		await rm(symlinkToRegular);
+		await writeFile(symlinkToRegular, "now-regular");
+		assert.equal(
+			(
+				await readBoundedRegularFile(symlinkToRegular, {
+					maxBytes: 32,
+				})
+			).contents,
+			"now-regular",
+		);
+	}
+
+	const hardLink = path.join(root, "hard-link.txt");
+	await link(target, hardLink);
+	await assert.rejects(
+		readBoundedRegularFile(hardLink, { maxBytes: 32 }),
+		/hard-linked/,
+	);
+
+	const invalidUtf8 = path.join(root, "invalid-utf8.json");
+	await writeFile(invalidUtf8, Buffer.from([0xc3, 0x28]));
+	await assert.rejects(
+		readBoundedRegularFile(invalidUtf8, { maxBytes: 32 }),
+		/valid UTF-8/,
+	);
+	await rm(invalidUtf8);
+
+	const invalidJson = path.join(root, "invalid.json");
+	await writeFile(invalidJson, "{broken");
+	await assert.rejects(
+		readBoundedJsonFile(invalidJson, { maxBytes: 32 }),
+		(error) =>
+			error.diagnosticFileStatus === "invalid" && error.message.length < 100,
+	);
+});
+
 test("command ids and diagnostic path traversal are rejected", async (t) => {
 	const { directory, environment } = await fixture(t);
 	await assert.rejects(
@@ -406,12 +745,7 @@ test("replaced command and known-report directories are rejected", async (t) => 
 	);
 	await assert.rejects(
 		finalize(
-			{
-				dir: reportFixture.directory,
-				plan: "quality-build",
-				jobStatus: "success",
-				matrix: {},
-			},
+			finalizationOptions(reportFixture.directory, "quality-build"),
 			reportFixture.environment,
 		),
 		/symlink/,
@@ -471,11 +805,13 @@ test("sanitization preserves ordinary errors and redacts command secret argument
 
 test("Markdown and HTML from untrusted text cannot change summary structure", () => {
 	const escaped = markdownCell(
-		"</td></tr><script>alert(1)</script> | [click](https://evil.test)\nnext",
+		"` `` ``` ```` </code></td></tr><script>alert(1)</script> | [click](javascript:alert(1))\n# injected\n<details>",
 	);
-	assert.doesNotMatch(escaped, /<script>|\| \[click\]\(/);
+	assert.doesNotMatch(escaped, /<script>|\[click\]\(javascript:/);
 	assert.match(escaped, /&lt;\/td&gt;/);
 	assert.match(escaped, /\\\|/);
+	assert.match(escaped, /&#96;/);
+	assert.doesNotMatch(escaped, /\r|\n/);
 });
 
 test("finalizer records all-success commands in plan order", async (t) => {
@@ -485,12 +821,9 @@ test("finalizer records all-success commands in plan order", async (t) => {
 	);
 	await writeCommandReports(directory, plan);
 	const result = await finalize(
-		{
-			dir: directory,
-			plan: "quality-typecheck",
-			jobStatus: "success",
+		finalizationOptions(directory, "quality-typecheck", {
 			matrix: { zeta: "two", alpha: "one" },
-		},
+		}),
 		environment,
 	);
 	assert.equal(result.exitCode, 0);
@@ -519,12 +852,9 @@ test("finalizer records a failure followed by explicit not-run commands", async 
 		)}\n`,
 	);
 	const result = await finalize(
-		{
-			dir: directory,
-			plan: "quality-typecheck",
+		finalizationOptions(directory, "quality-typecheck", {
 			jobStatus: "failure",
-			matrix: {},
-		},
+		}),
 		environment,
 	);
 	assert.equal(result.exitCode, 0);
@@ -556,15 +886,10 @@ test("missing, corrupt, and symlink known reports are distinguished", async (t) 
 		}
 		throw error;
 	}
-	const result = await finalize(
-		{
-			dir: directory,
-			plan: "e2e-common",
-			jobStatus: "success",
-			matrix: {},
-		},
-		{ ...environment, CLI_E2E_ARTIFACT_DIR: reportDirectory },
-	);
+	const result = await finalize(finalizationOptions(directory, "e2e-common"), {
+		...environment,
+		CLI_E2E_ARTIFACT_DIR: reportDirectory,
+	});
 	assert.equal(result.exitCode, 1);
 	assert.deepEqual(
 		result.diagnostic.reports.slice(0, 2).map(({ parseStatus }) => parseStatus),
@@ -572,15 +897,234 @@ test("missing, corrupt, and symlink known reports are distinguished", async (t) 
 	);
 });
 
+test("a known report replaced after lstat is rejected by the same-handle reader", async (t) => {
+	const { root, directory, environment, plan } = await fixture(t, "e2e-common");
+	await writeCommandReports(directory, plan);
+	const reportDirectory = path.join(root, "race-reports");
+	await writeCliReports(reportDirectory);
+	const replacement = path.join(root, "replacement-runtime.json");
+	await writeFile(
+		replacement,
+		'{"platform":"spoofed","arch":"x64","node":"v20","pnpmEntrypoint":"pnpm"}\n',
+	);
+	let replaced = false;
+	const result = await finalize(
+		finalizationOptions(directory, "e2e-common", {
+			onKnownReportAfterLstat: async (definition) => {
+				if (definition.id !== "cli-runtime" || replaced) return;
+				replaced = true;
+				await rm(path.join(reportDirectory, "runtime.json"));
+				await renameFile(
+					replacement,
+					path.join(reportDirectory, "runtime.json"),
+				);
+			},
+		}),
+		{ ...environment, CLI_E2E_ARTIFACT_DIR: reportDirectory },
+	);
+	assert.equal(result.exitCode, 1);
+	assert.equal(result.diagnostic.reports[0].parseStatus, "rejected");
+	assert.ok(
+		!result.diagnostic.summary.artifactFiles.includes(
+			"known-reports/cli-runtime.json",
+		),
+	);
+});
+
+test("plan, command, and known-report byte ceilings fail closed before upload", async (t) => {
+	const planFixture = await fixture(t);
+	await writeFile(
+		path.join(planFixture.directory, "plan.json"),
+		Buffer.alloc(MAX_PLAN_BYTES + 1, 0x20),
+	);
+	await assert.rejects(
+		runCommand(
+			{
+				dir: planFixture.directory,
+				id: "build",
+				command: [process.execPath, "--version"],
+				timeoutMs: null,
+			},
+			planFixture.environment,
+		),
+		(error) => error.diagnosticFileStatus === "too-large",
+	);
+	await assert.rejects(
+		finalize(
+			finalizationOptions(planFixture.directory, "quality-build"),
+			planFixture.environment,
+		),
+		(error) => error.diagnosticFileStatus === "too-large",
+	);
+	await assert.rejects(readdir(`${planFixture.directory}-upload`), /ENOENT/);
+
+	const commandFixture = await fixture(t);
+	await writeFile(
+		path.join(commandFixture.directory, "commands/build.json"),
+		Buffer.alloc(MAX_COMMAND_REPORT_BYTES + 1, 0x20),
+	);
+	const commandResult = await finalize(
+		finalizationOptions(commandFixture.directory, "quality-build", {
+			jobStatus: "failure",
+		}),
+		commandFixture.environment,
+	);
+	assert.equal(commandResult.diagnostic.commands[0].status, "not-run");
+	assert.ok(
+		!commandResult.diagnostic.summary.artifactFiles.includes(
+			"commands/build.json",
+		),
+	);
+
+	const reportFixture = await fixture(t, "e2e-common");
+	const reportDirectory = path.join(reportFixture.root, "oversized-known");
+	await mkdir(reportDirectory);
+	await writeFile(
+		path.join(reportDirectory, "runtime.json"),
+		Buffer.alloc(MAX_KNOWN_REPORT_BYTES + 1, 0x20),
+	);
+	const reportResult = await finalize(
+		finalizationOptions(reportFixture.directory, "e2e-common", {
+			jobStatus: "failure",
+		}),
+		{
+			...reportFixture.environment,
+			CLI_E2E_ARTIFACT_DIR: reportDirectory,
+		},
+	);
+	assert.equal(reportResult.diagnostic.reports[0].parseStatus, "too-large");
+});
+
+test("A1 and Vitest schemas reject special numbers, wrong primitives, nested objects, and bound failure text", async (t) => {
+	const { root, directory, environment, plan } = await fixture(
+		t,
+		"a1-contracts",
+	);
+	await writeCommandReports(directory, plan);
+	const reportDirectory = path.join(root, "a1-reports");
+	await writeA1Reports(reportDirectory);
+	await writeFile(
+		path.join(reportDirectory, "summary.json"),
+		`{
+  "exitCode": 0,
+  "signal": null,
+  "expectedFiles": {},
+  "actualFiles": -1,
+  "expectedTests": 1e309,
+  "actualTests": 9007199254740992,
+  "inventoryMatches": "true",
+  "failedTests": [{"title":"failure","failure":"${"x".repeat(5_000)}","unknown":{"secret":"never-copy"}}],
+  "unknown":{"nested":"never-copy"}
+}\n`,
+	);
+	await writeFile(
+		path.join(reportDirectory, "vitest.json"),
+		`{"success":"true","numTotalTests":-1,"numPassedTests":{},"numFailedTests":1e309,"testResults":[],"unknown":{"secret":"never-copy"}}\n`,
+	);
+	const result = await finalize(
+		finalizationOptions(directory, "a1-contracts"),
+		{ ...environment, A1_TEST_ARTIFACT_DIR: reportDirectory },
+	);
+	assert.equal(result.exitCode, 1);
+	assert.deepEqual(
+		result.diagnostic.reports.slice(1).map(({ parseStatus }) => parseStatus),
+		["schema-invalid", "parsed", "schema-invalid"],
+	);
+	const summaryReport = result.diagnostic.reports[1];
+	assert.equal(summaryReport.summary.expectedFiles, null);
+	assert.equal(summaryReport.summary.actualFiles, null);
+	assert.equal(summaryReport.summary.inventoryMatches, null);
+	assert.ok(result.diagnostic.summary.failureEvidence[0].text.length <= 1_000);
+	const normalized = await readFile(
+		path.join(`${directory}-upload`, "known-reports/a1-summary.json"),
+		"utf8",
+	);
+	assert.doesNotMatch(normalized, /never-copy|unknown/);
+});
+
+test("CLI and MCP Doctor schemas copy only bounded allowlisted fields", async (t) => {
+	const cli = await fixture(t, "e2e-common");
+	await writeCommandReports(cli.directory, cli.plan);
+	const cliReports = path.join(cli.root, "cli-reports");
+	await writeCliReports(cliReports, {
+		summary: {
+			status: { spoofed: true },
+			error: { nested: "not-a-string" },
+			unknown: { secret: "never-copy" },
+		},
+	});
+	const cliResult = await finalize(
+		finalizationOptions(cli.directory, "e2e-common"),
+		{ ...cli.environment, CLI_E2E_ARTIFACT_DIR: cliReports },
+	);
+	assert.equal(cliResult.exitCode, 1);
+	assert.equal(cliResult.diagnostic.reports[1].parseStatus, "schema-invalid");
+	assert.doesNotMatch(
+		await readFile(
+			path.join(`${cli.directory}-upload`, "known-reports/cli-summary.json"),
+			"utf8",
+		),
+		/never-copy|spoofed/,
+	);
+
+	const mcp = await fixture(t, "e2e-mcp-stdio");
+	await writeCommandReports(mcp.directory, mcp.plan);
+	const mcpReports = path.join(mcp.root, "mcp-reports");
+	await mkdir(mcpReports);
+	await writeFile(
+		path.join(mcpReports, "runner.json"),
+		'{"group":"stdio","expectedTests":1,"files":["one"],"scripts":[]}\n',
+	);
+	await writeFile(
+		path.join(mcpReports, "results.json"),
+		'{"success":true,"numTotalTests":1,"numPassedTests":1,"numFailedTests":0,"testResults":[{"assertionResults":[]}]}\n',
+	);
+	const doctorPath = path.join(mcp.root, "doctor.json");
+	await writeFile(
+		doctorPath,
+		`${JSON.stringify({
+			success: false,
+			summary: { passed: 1, failed: 1, skipped: 0, total: 2 },
+			failureCodes: [{ object: true }],
+			checks: [
+				{
+					id: "doctor-check",
+					status: "failed",
+					detail: "x".repeat(5_000),
+				},
+			],
+			unknown: { secret: "never-copy" },
+		})}\n`,
+	);
+	const mcpResult = await finalize(
+		finalizationOptions(mcp.directory, "e2e-mcp-stdio"),
+		{
+			...mcp.environment,
+			MCP_TEST_ARTIFACT_DIR: mcpReports,
+			MCP_DOCTOR_REPORT: doctorPath,
+		},
+	);
+	const doctor = mcpResult.diagnostic.reports[2];
+	assert.equal(doctor.parseStatus, "schema-invalid");
+	assert.deepEqual(doctor.summary.failureCodes, []);
+	assert.ok(
+		mcpResult.diagnostic.summary.failureEvidence[0].text.length <= 1_000,
+	);
+	assert.doesNotMatch(
+		await readFile(
+			path.join(`${mcp.directory}-upload`, "known-reports/mcp-doctor.json"),
+			"utf8",
+		),
+		/never-copy/,
+	);
+});
+
 test("finalizer handles no command reports without guessing success", async (t) => {
 	const { directory, environment } = await fixture(t, "quality-tests");
 	const result = await finalize(
-		{
-			dir: directory,
-			plan: "quality-tests",
+		finalizationOptions(directory, "quality-tests", {
 			jobStatus: "failure",
-			matrix: {},
-		},
+		}),
 		environment,
 	);
 	assert.equal(result.diagnostic.status, "failure");
@@ -590,25 +1134,321 @@ test("finalizer handles no command reports without guessing success", async (t) 
 	);
 });
 
-test("artifact allowlist excludes unknown files", async (t) => {
+test("Action outcomes distinguish setup, checkout, skipped, and invalid infrastructure states", async (t) => {
+	const setupFixture = await fixture(t, "quality-tests");
+	const setupResult = await finalize(
+		finalizationOptions(setupFixture.directory, "quality-tests", {
+			jobStatus: "failure",
+			steps: {
+				checkout: "success",
+				"diagnostics-init": "success",
+				setup: "failure",
+			},
+		}),
+		setupFixture.environment,
+	);
+	assert.equal(setupResult.diagnostic.status, "failure");
+	assert.deepEqual(
+		setupResult.diagnostic.commands.map(({ status }) => status),
+		["not-run", "not-run"],
+	);
+	assert.equal(
+		setupResult.diagnostic.summary.failureEvidence[0].source,
+		"setup",
+	);
+
+	const checkoutFixture = await fixture(t);
+	const checkoutResult = await finalize(
+		finalizationOptions(checkoutFixture.directory, "quality-build", {
+			jobStatus: "failure",
+			steps: {
+				checkout: "failure",
+				"diagnostics-init": "skipped",
+				setup: "skipped",
+			},
+		}),
+		checkoutFixture.environment,
+	);
+	assert.equal(checkoutResult.diagnostic.steps[0].status, "failure");
+	assert.equal(checkoutResult.diagnostic.steps[1].status, "skipped");
+	assert.equal(
+		checkoutResult.diagnostic.summary.failureEvidence[0].source,
+		"checkout",
+	);
+
+	const invalidFixture = await fixture(t);
+	await writeCommandReports(invalidFixture.directory, invalidFixture.plan);
+	const invalidResult = await finalize(
+		finalizationOptions(invalidFixture.directory, "quality-build", {
+			steps: {
+				checkout: "success",
+				"diagnostics-init": "success",
+				setup: "not-a-status",
+			},
+		}),
+		invalidFixture.environment,
+	);
+	assert.equal(invalidResult.exitCode, 1);
+	assert.equal(invalidResult.diagnostic.steps[2].status, "unknown");
+	assert.equal(invalidResult.diagnostic.status, "failure");
+});
+
+test("initialization failure writes an emergency Summary without materializing an upload directory", async (t) => {
+	const root = await mkdtemp(
+		path.join(os.tmpdir(), "openapi-to-ci-diagnostics-emergency-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	const summaryPath = path.join(root, "github-summary.md");
+	const uploadDirectory = path.join(root, "must-not-exist");
+	await writeFile(summaryPath, "");
+	const result = await finalizeInitializationFailure(
+		{
+			dir: path.join(root, "missing-diagnostic"),
+			uploadDir: "",
+			plan: "quality-tests",
+			jobStatus: "failure",
+			matrix: {},
+			steps: {
+				checkout: "success",
+				"diagnostics-init": "failure",
+				setup: "skipped",
+			},
+		},
+		{
+			...process.env,
+			GITHUB_STEP_SUMMARY: summaryPath,
+		},
+	);
+	const summary = await readFile(summaryPath, "utf8");
+	assert.match(summary, /CI diagnostics initialization failure/);
+	assert.match(summary, /diagnostics-init \\| failure/);
+	assert.match(summary, /No diagnostic artifact was materialized/);
+	assert.equal(result.steps[1].status, "failure");
+	await assert.rejects(readFile(uploadDirectory), /ENOENT/);
+});
+
+test("finalizer CLI accepts an empty initialization output only for the no-artifact emergency path", async (t) => {
+	const root = await mkdtemp(
+		path.join(os.tmpdir(), "openapi-to-ci-diagnostics-emergency-cli-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	const summaryPath = path.join(root, "github-summary.md");
+	await writeFile(summaryPath, "");
+	await assert.rejects(
+		execFileAsync(
+			process.execPath,
+			[
+				finalizeJobPath,
+				"--dir",
+				path.join(root, "missing-diagnostic"),
+				"--upload-dir",
+				"",
+				"--plan",
+				"quality-tests",
+				"--job-status",
+				"failure",
+				"--step",
+				"checkout=success",
+				"--step",
+				"diagnostics-init=failure",
+				"--step",
+				"setup=skipped",
+			],
+			{
+				env: {
+					...process.env,
+					GITHUB_STEP_SUMMARY: summaryPath,
+				},
+			},
+		),
+		(error) => error?.code === 1,
+	);
+	const summary = await readFile(summaryPath, "utf8");
+	assert.match(summary, /diagnostics-init \\| failure/);
+	assert.match(summary, /No diagnostic artifact was materialized/);
+	assert.deepEqual(await readdir(root), ["github-summary.md"]);
+});
+
+test("upload directory symlinks and symlink entries are rejected", async (t) => {
+	const rootLinkFixture = await fixture(t);
+	await writeCommandReports(rootLinkFixture.directory, rootLinkFixture.plan);
+	const realUpload = path.join(rootLinkFixture.root, "real-upload");
+	await mkdir(realUpload);
+	try {
+		await symlink(
+			realUpload,
+			`${rootLinkFixture.directory}-upload`,
+			process.platform === "win32" ? "junction" : "dir",
+		);
+	} catch (error) {
+		if (process.platform === "win32" && error.code === "EPERM") {
+			t.skip("Creating upload symlinks is not permitted on this runner.");
+			return;
+		}
+		throw error;
+	}
+	await assert.rejects(
+		finalize(
+			finalizationOptions(rootLinkFixture.directory, "quality-build"),
+			rootLinkFixture.environment,
+		),
+		/symlink/,
+	);
+
+	const entryFixture = await fixture(t);
+	await writeCommandReports(entryFixture.directory, entryFixture.plan);
+	const uploadDirectory = `${entryFixture.directory}-upload`;
+	await mkdir(uploadDirectory);
+	await symlink(
+		path.join(entryFixture.directory, "plan.json"),
+		path.join(uploadDirectory, "unsafe-link"),
+	);
+	await assert.rejects(
+		finalize(
+			finalizationOptions(entryFixture.directory, "quality-build"),
+			entryFixture.environment,
+		),
+		/must not contain symlinks/,
+	);
+});
+
+test("validated artifact sources cannot be replaced or removed before materialization", async (t) => {
+	const replacedFixture = await fixture(t);
+	await writeCommandReports(replacedFixture.directory, replacedFixture.plan);
+	await assert.rejects(
+		finalize(
+			finalizationOptions(replacedFixture.directory, "quality-build", {
+				onBeforeMaterialize: async () => {
+					await writeFile(
+						path.join(replacedFixture.directory, "commands/build.json"),
+						'{"malicious":true}\n',
+					);
+				},
+			}),
+			replacedFixture.environment,
+		),
+		/changed after validation/,
+	);
+	await assert.rejects(
+		readdir(`${replacedFixture.directory}-upload`),
+		/ENOENT/,
+	);
+
+	const missingFixture = await fixture(t);
+	await writeCommandReports(missingFixture.directory, missingFixture.plan);
+	await assert.rejects(
+		finalize(
+			finalizationOptions(missingFixture.directory, "quality-build", {
+				onBeforeMaterialize: async () => {
+					await rm(path.join(missingFixture.directory, "commands/build.json"));
+				},
+			}),
+			missingFixture.environment,
+		),
+		/ENOENT/,
+	);
+	await assert.rejects(readdir(`${missingFixture.directory}-upload`), /ENOENT/);
+});
+
+test("isolated upload materialization excludes unknown files and matches its manifest", async (t) => {
 	const { directory, environment, plan } = await fixture(t);
 	await writeCommandReports(directory, plan);
 	await writeFile(path.join(directory, "unknown-secret.txt"), "do not upload");
+	await writeFile(path.join(directory, "unknown.json"), '{"secret":"no"}\n');
 	const result = await finalize(
+		finalizationOptions(directory, "quality-build"),
+		environment,
+	);
+	const uploadDirectory = `${directory}-upload`;
+	const actualFiles = await listFiles(uploadDirectory);
+	assert.deepEqual(actualFiles, result.diagnostic.summary.artifactFiles);
+	assert.ok(!actualFiles.includes("unknown-secret.txt"));
+	assert.ok(!actualFiles.includes("unknown.json"));
+	assert.equal(
+		await readFile(path.join(directory, "unknown-secret.txt"), "utf8"),
+		"do not upload",
+	);
+	const manifest = JSON.parse(
+		await readFile(
+			path.join(uploadDirectory, "artifact-manifest.json"),
+			"utf8",
+		),
+	);
+	assert.deepEqual(
+		manifest.files.map(({ path: filePath }) => filePath).sort(),
+		actualFiles.filter((filePath) => filePath !== "artifact-manifest.json"),
+	);
+	for (const entry of manifest.files) {
+		assert.match(entry.sha256, /^[0-9a-f]{64}$/);
+		assert.equal(
+			entry.bytes,
+			(await readFile(path.join(uploadDirectory, entry.path))).length,
+		);
+	}
+});
+
+test("a background child writing unknown JSON cannot contaminate the isolated upload", async (t) => {
+	const { root, directory, environment } = await fixture(t);
+	const unknownPath = path.join(directory, "background-unknown.json");
+	const pidPath = path.join(root, "background.pid");
+	const writer = `
+		const fs = require("node:fs");
+		const target = process.argv[1];
+		setInterval(() => fs.writeFileSync(target, JSON.stringify({unknown:true})), 5);
+	`;
+	const launcher = `
+		const fs = require("node:fs");
+		const { spawn } = require("node:child_process");
+		const child = spawn(process.execPath, ["-e", ${JSON.stringify(writer)}, process.argv[1]], {detached:true, stdio:"ignore"});
+		fs.writeFileSync(process.argv[2], String(child.pid));
+		child.unref();
+	`;
+	await runCommand(
 		{
 			dir: directory,
-			plan: "quality-build",
-			jobStatus: "success",
-			matrix: {},
+			id: "build",
+			command: [process.execPath, "-e", launcher, unknownPath, pidPath],
+			timeoutMs: null,
 		},
 		environment,
 	);
-	const allowlist = artifactAllowlist(plan, result.diagnostic.reports);
-	assert.ok(!allowlist.includes("unknown-secret.txt"));
-	assert.deepEqual(result.diagnostic.summary.artifactFiles, allowlist);
-	await assert.rejects(
-		readFile(path.join(directory, "unknown-secret.txt")),
-		/ENOENT/,
+	const backgroundPid = Number.parseInt(await readFile(pidPath, "utf8"), 10);
+	t.after(async () => {
+		if (!Number.isSafeInteger(backgroundPid)) return;
+		if (process.platform === "win32") {
+			await execFileAsync("taskkill.exe", [
+				"/pid",
+				String(backgroundPid),
+				"/t",
+				"/f",
+			]).catch(() => {});
+		} else {
+			try {
+				process.kill(backgroundPid, "SIGTERM");
+			} catch {}
+		}
+	});
+	for (let attempt = 0; attempt < 50; attempt += 1) {
+		try {
+			await readFile(unknownPath);
+			break;
+		} catch {
+			await new Promise((resolve) => setTimeout(resolve, 10));
+		}
+	}
+	const result = await finalize(
+		finalizationOptions(directory, "quality-build"),
+		environment,
+	);
+	assert.ok(
+		!result.diagnostic.summary.artifactFiles.includes(
+			"background-unknown.json",
+		),
+	);
+	assert.ok(
+		!(await listFiles(`${directory}-upload`)).includes(
+			"background-unknown.json",
+		),
 	);
 });
 
@@ -616,15 +1456,7 @@ test("local finalization creates summary.md without GITHUB_STEP_SUMMARY", async 
 	const { directory, environment, plan } = await fixture(t);
 	await writeCommandReports(directory, plan);
 	delete environment.GITHUB_STEP_SUMMARY;
-	await finalize(
-		{
-			dir: directory,
-			plan: "quality-build",
-			jobStatus: "success",
-			matrix: {},
-		},
-		environment,
-	);
+	await finalize(finalizationOptions(directory, "quality-build"), environment);
 	assert.match(
 		await readFile(path.join(directory, "summary.md"), "utf8"),
 		/## CI diagnostics/,
@@ -636,12 +1468,7 @@ test("finalizer creates and appends the GitHub Job Summary file", async (t) => {
 	await writeCommandReports(directory, plan);
 	const summaryPath = path.join(root, "github-summary.md");
 	const result = await finalize(
-		{
-			dir: directory,
-			plan: "quality-build",
-			jobStatus: "success",
-			matrix: {},
-		},
+		finalizationOptions(directory, "quality-build"),
 		{ ...environment, GITHUB_STEP_SUMMARY: summaryPath },
 	);
 	assert.equal(result.exitCode, 0);
@@ -654,12 +1481,9 @@ test("Job Summary append failure is explicit and preserves command evidence", as
 		build: { status: "failure", exitCode: 9 },
 	});
 	const result = await finalize(
-		{
-			dir: directory,
-			plan: "quality-build",
+		finalizationOptions(directory, "quality-build", {
 			jobStatus: "failure",
-			matrix: {},
-		},
+		}),
 		{
 			...environment,
 			GITHUB_STEP_SUMMARY: path.join(root, "missing-parent", "summary.md"),
@@ -680,6 +1504,7 @@ test("rendered summaries stay bounded and escape report-controlled evidence", ()
 			commitSha: null,
 		},
 		runner: { os: "Linux", architecture: "x64" },
+		steps: [],
 		commands: [
 			{
 				label: "bad | </td>",
@@ -692,14 +1517,21 @@ test("rendered summaries stay bounded and escape report-controlled evidence", ()
 			failureEvidence: Array.from({ length: 100 }, () => ({
 				source: "report",
 				kind: "structured-report",
-				text: "<script>x</script> | [link](https://evil.test)".repeat(100),
+				text: "` `` ``` </code></td></tr> [link](javascript:alert(1)) | fake column |\n# injected\n<details>".repeat(
+					100,
+				),
 			})),
 			outputTruncated: true,
 		},
 	};
 	const summary = renderSummary(diagnostic, "ci-diagnostics-quality-tests");
 	assert.ok(summary.length <= 24 * 1024 + 30);
-	assert.doesNotMatch(summary, /<script>|\| \[link\]\(/);
+	assert.doesNotMatch(
+		summary,
+		/<\/code>|<\/td>|\[link\]\(javascript:|<details>|^# injected/m,
+	);
+	assert.equal([...summary.matchAll(/^## CI diagnostics$/gm)].length, 1);
+	assert.equal([...summary.matchAll(/^### Failure evidence$/gm)].length, 1);
 });
 
 test("workflow contract keeps finalizers, failure artifacts, gates, and matrices", async () => {
@@ -743,6 +1575,32 @@ test("workflow contract keeps finalizers, failure artifacts, gates, and matrices
 			name,
 		);
 		assert.doesNotMatch(contents, /continue-on-error/);
+		assert.doesNotMatch(
+			contents,
+			/pnpm exec node (?:\.\.\/\.\.\/)?scripts\/ci-diagnostics\/run-command\.mjs/,
+		);
+		assert.doesNotMatch(contents, /path: \$\{\{ env\.CI_DIAGNOSTIC_DIR }}/);
+		assert.equal(
+			[
+				...contents.matchAll(
+					/path: \$\{\{ steps\.diagnostics-init\.outputs\.upload-dir }}/g,
+				),
+			].length,
+			jobs,
+			name,
+		);
+		assert.equal(
+			[...contents.matchAll(/persist-credentials: false/g)].length,
+			jobs,
+			name,
+		);
+		for (const id of ["checkout", "diagnostics-init", "setup"]) {
+			assert.equal(
+				[...contents.matchAll(new RegExp(`id: ${id}`, "g"))].length,
+				jobs,
+				`${name}:${id}`,
+			);
+		}
 		assert.match(contents, /retention-days: 14/);
 	}
 	const quality = workflows.find(({ name }) => name === "quality.yml").contents;

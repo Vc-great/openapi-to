@@ -14,10 +14,20 @@ export const MAX_TAIL_LINES = 100;
 export const MAX_LINE_CHARS = 1_024;
 export const MAX_ERROR_CANDIDATES = 10;
 export const MAX_COMMAND_REPORT_BYTES = 256 * 1024;
+export const MAX_PLAN_BYTES = 64 * 1024;
 export const MAX_DIAGNOSTIC_BYTES = 256 * 1024;
 export const MAX_SUMMARY_CHARS = 24 * 1024;
 export const MAX_KNOWN_REPORT_BYTES = 8 * 1024 * 1024;
+export const MAX_NORMALIZED_REPORT_BYTES = 256 * 1024;
+export const MAX_ARTIFACT_MANIFEST_BYTES = 64 * 1024;
 export const ARTIFACT_RETENTION_DAYS = 14;
+export const STEP_STATUSES = Object.freeze([
+	"success",
+	"failure",
+	"cancelled",
+	"skipped",
+	"unknown",
+]);
 
 export function assertCommandId(value) {
 	if (!COMMAND_ID_PATTERN.test(value ?? "")) {

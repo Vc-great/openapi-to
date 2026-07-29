@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { mkdir, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { appendFile, lstat, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,6 +35,10 @@ export async function initialize(
 	environment = process.env,
 ) {
 	const directory = await ensureSafeDirectory(dir, environment);
+	const uploadDirectory = path.join(
+		path.resolve(environment.RUNNER_TEMP ?? path.dirname(directory)),
+		`ci-diagnostics-upload-${randomUUID()}`,
+	);
 	const plan = getPlan(planId);
 	for (const relativePath of [
 		"commands",
@@ -49,6 +54,7 @@ export async function initialize(
 	}
 	await mkdir(safeChild(directory, "commands"), { recursive: true });
 	await mkdir(safeChild(directory, "known-reports"), { recursive: true });
+	const directoryDetails = await lstat(directory);
 	await atomicWrite(
 		safeChild(directory, "plan.json"),
 		`${JSON.stringify(
@@ -58,6 +64,11 @@ export async function initialize(
 				workflow: plan.workflow,
 				jobId: plan.jobId,
 				jobName: plan.jobName,
+				directoryIdentity: {
+					dev: String(directoryDetails.dev),
+					ino: String(directoryDetails.ino),
+				},
+				steps: plan.steps,
 				commands: plan.commands,
 				reports: plan.reports.map(({ id, label, relativePath, format }) => ({
 					id,
@@ -70,12 +81,25 @@ export async function initialize(
 			2,
 		)}\n`,
 	);
-	return directory;
+	return { directory, uploadDirectory };
 }
 
 async function main() {
 	const options = parseInitializeArguments(process.argv.slice(2));
-	const directory = await initialize(options);
+	const { directory, uploadDirectory } = await initialize(options);
+	if (process.env.GITHUB_OUTPUT) {
+		const details = await lstat(process.env.GITHUB_OUTPUT).catch((error) => {
+			if (error?.code === "ENOENT") return null;
+			throw error;
+		});
+		if (details && (details.isSymbolicLink() || !details.isFile())) {
+			throw new Error("GITHUB_OUTPUT is not a regular file.");
+		}
+		await appendFile(
+			process.env.GITHUB_OUTPUT,
+			`upload-dir=${uploadDirectory}\n`,
+		);
+	}
 	process.stdout.write(
 		`[ci-diagnostics] initialized ${options.plan} in ${directory}\n`,
 	);
