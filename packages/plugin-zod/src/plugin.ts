@@ -1,11 +1,11 @@
 import path from "node:path";
-import type { OpenapiToSingleConfig } from "@openapi-to/core";
+import type { Diagnostic, OpenapiToSingleConfig } from "@openapi-to/core";
 import { createPlugin, pluginEnum } from "@openapi-to/core";
 import {
 	formatterModuleSpecifier,
 	getRelativePath,
 } from "@openapi-to/core/utils";
-import { forEach, kebabCase, upperFirst } from "lodash-es";
+import { forEach, kebabCase } from "lodash-es";
 import { Project } from "ts-morph";
 import { buildSchemaImports } from "@/builds/buildSchemaImports.ts";
 import { buildComponentParameters } from "@/builds/components/buildComponentParameters.ts";
@@ -22,8 +22,11 @@ import { collectRefsFromSchema } from "@/collect/collectRefsFromSchemas.ts";
 import { findRecursiveSchemaRefs } from "@/collect/findRecursiveSchemaRefs.ts";
 import { importZodTemplate } from "@/templates/importZodTemplate.ts";
 import { getOperationZodSchemaName } from "@/templates/operationTypeNameTemplate.ts";
-import { getlowerFirstRefAlias } from "@/utils/getlowerFirstRefAlias.ts";
-import { getRefFilePath } from "@/utils/getRefFilePath.ts";
+import type { SchemaRenderOptions } from "@/templates/schemaTemplate.ts";
+import {
+	getComponentFilePath,
+	getComponentRefExportName,
+} from "@/utils/componentNaming.ts";
 import { buildOperationTypes } from "./builds/buildOperationTypes.ts";
 import type { PluginConfig } from "./types.ts";
 
@@ -43,6 +46,49 @@ function getState(config: OpenapiToSingleConfig) {
 		throw new Error("Zod plugin build state was not initialized.");
 	}
 	return state;
+}
+
+function schemaRenderOptions(
+	sink: { addDiagnostic(diagnostic: Diagnostic): void },
+	locationPath: string[],
+): SchemaRenderOptions {
+	return {
+		onDiagnostic(diagnostic) {
+			sink.addDiagnostic({
+				...diagnostic,
+				severity: "warning",
+				plugin: pluginEnum.Zod,
+				location: { path: locationPath },
+			});
+		},
+	};
+}
+
+function buildRefImports(
+	refs: readonly string[],
+	filePath: string,
+	componentOutputDir: string,
+	importWithExtension: boolean | undefined,
+) {
+	const importsByPath = new Map<string, Set<string>>();
+	for (const ref of refs) {
+		const targetPath = getComponentFilePath(ref, componentOutputDir);
+		if (path.resolve(targetPath) === path.resolve(filePath)) continue;
+		const names = importsByPath.get(targetPath) ?? new Set<string>();
+		names.add(getComponentRefExportName(ref));
+		importsByPath.set(targetPath, names);
+	}
+	return [...importsByPath.entries()]
+		.sort(([left], [right]) => left.localeCompare(right))
+		.flatMap(([targetPath, names]) =>
+			buildSchemaImports(
+				[...names],
+				formatterModuleSpecifier(
+					getRelativePath(filePath, targetPath),
+					importWithExtension,
+				),
+			),
+		);
 }
 
 export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
@@ -68,7 +114,14 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					kebabCase(operation.tagName),
 					fileName,
 				);
-				const operationStatements = buildOperationTypes(operation);
+				const operationStatements = buildOperationTypes(
+					operation,
+					schemaRenderOptions(ctx, [
+						"paths",
+						operation.accessor.operation.path,
+						operation.accessor.operation.method,
+					]),
+				);
 
 				//
 				operation.accessor.setOperationZodSchemaName({
@@ -80,18 +133,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					overwrite: true,
 				});
 
-				const imports = collectRefsFromOperation(operation).flatMap((ref) => {
-					return buildSchemaImports(
-						[getlowerFirstRefAlias(ref)],
-						formatterModuleSpecifier(
-							getRelativePath(
-								filePath,
-								getRefFilePath(ref, componentOutputDir),
-							),
-							pluginConfig?.importWithExtension,
-						),
-					);
-				});
+				const imports = buildRefImports(
+					collectRefsFromOperation(operation),
+					filePath,
+					componentOutputDir,
+					pluginConfig?.importWithExtension,
+				);
 
 				operationSourceFile.addStatements([
 					...imports,
@@ -123,17 +170,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						formatterSchemaName,
 						schema,
 						{
+							...schemaRenderOptions(ctx, [
+								"components",
+								"schemas",
+								schemaName,
+							]),
 							lazyRefs: recursiveRefs,
-							onDiagnostic(diagnostic) {
-								ctx.addDiagnostic({
-									...diagnostic,
-									severity: "warning",
-									plugin: pluginEnum.Zod,
-									location: {
-										path: ["components", "schemas", schemaName],
-									},
-								});
-							},
 						},
 						schemaName,
 					);
@@ -142,17 +184,11 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						(ref) => ref !== selfRef,
 					);
 
-					const imports = refs.flatMap((ref) =>
-						buildSchemaImports(
-							[getlowerFirstRefAlias(ref)],
-							formatterModuleSpecifier(
-								getRelativePath(
-									filePath,
-									getRefFilePath(ref, componentOutputDir),
-								),
-								pluginConfig?.importWithExtension,
-							),
-						),
+					const imports = buildRefImports(
+						refs,
+						filePath,
+						componentOutputDir,
+						pluginConfig?.importWithExtension,
 					);
 
 					schemaSourceFile.addStatements([
@@ -171,8 +207,6 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				const { project, componentOutputDir } = getState(
 					ctx.openapiToSingleConfig,
 				);
-				const refs = collectRefsFromComponentParameters(parameters);
-
 				forEach(parameters, (parameter, parameterName) => {
 					const formatterParameterName =
 						ctx.openapiHelper.formatterName(parameterName);
@@ -190,21 +224,22 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const statements = buildComponentParameters(
 						parameter,
 						formatterParameterName,
+						schemaRenderOptions(ctx, [
+							"components",
+							"parameters",
+							parameterName,
+						]),
 					);
 					if (!statements) {
 						return;
 					}
-					const imports = refs.flatMap((ref) =>
-						buildSchemaImports(
-							[getlowerFirstRefAlias(ref)],
-							formatterModuleSpecifier(
-								getRelativePath(
-									filePath,
-									getRefFilePath(ref, componentOutputDir),
-								),
-								pluginConfig?.importWithExtension,
-							),
-						),
+					const imports = buildRefImports(
+						collectRefsFromComponentParameters({
+							[parameterName]: parameter,
+						}),
+						filePath,
+						componentOutputDir,
+						pluginConfig?.importWithExtension,
 					);
 
 					parameterSourceFile.addStatements([
@@ -245,21 +280,20 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const statements = buildComponentsRequestBody(
 						formatterName,
 						requestObject,
+						schemaRenderOptions(ctx, [
+							"components",
+							"requestBodies",
+							requestBodyName,
+						]),
 					);
 					if (!statements) {
 						return;
 					}
-					const imports = refs.flatMap((ref) =>
-						buildSchemaImports(
-							[getlowerFirstRefAlias(ref)],
-							formatterModuleSpecifier(
-								getRelativePath(
-									filePath,
-									getRefFilePath(ref, componentOutputDir),
-								),
-								pluginConfig?.importWithExtension,
-							),
-						),
+					const imports = buildRefImports(
+						refs,
+						filePath,
+						componentOutputDir,
+						pluginConfig?.importWithExtension,
 					);
 
 					requestBodySourceFile.addStatements([
@@ -282,11 +316,10 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const formatterResponse =
 						ctx.openapiHelper.formatterName(responseName);
 
-					const responseTypeName = `Response${upperFirst(formatterResponse)}`;
-					//todo responses
 					const statements = buildComponentsResponse(
 						response,
-						responseTypeName,
+						formatterResponse,
+						schemaRenderOptions(ctx, ["components", "responses", responseName]),
 					);
 
 					const refs = collectRefsFromComponentResponse(response);
@@ -302,17 +335,11 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					if (!statements) {
 						return;
 					}
-					const imports = refs.flatMap((ref) =>
-						buildSchemaImports(
-							[getlowerFirstRefAlias(ref)],
-							formatterModuleSpecifier(
-								getRelativePath(
-									filePath,
-									getRefFilePath(ref, componentOutputDir),
-								),
-								pluginConfig?.importWithExtension,
-							),
-						),
+					const imports = buildRefImports(
+						refs,
+						filePath,
+						componentOutputDir,
+						pluginConfig?.importWithExtension,
 					);
 
 					responseSourceFile.addStatements([

@@ -453,14 +453,36 @@ pnpm add zod@^4
 Generated files use `import { z } from 'zod'`. Zod 3 is not supported and
 there is no compatibility option. OpenAPI string formats use Zod 4's top-level
 format schemas (`z.email()`, `z.url()`, `z.uuid()`, `z.iso.date()`,
-`z.iso.datetime()`, and `z.base64()`). Records always provide key and value
-schemas. Objects use strict, loose, or typed catch-all behavior according to
-`additionalProperties`.
+`z.iso.datetime({ offset: true })`, and `z.base64()`). Generated `date-time`
+schemas require RFC3339 seconds and an uppercase `Z` or bounded numeric offset;
+fractional seconds are accepted. Leap seconds are not accepted, so this is a
+tested RFC3339 profile rather than a claim of every RFC3339 edge case. The
+`password` format remains a UI hint and adds no minimum length by itself.
+`int32` enforces signed 32-bit bounds. Plain `integer` and `int64` use Zod's
+safe-integer number representation; values outside JavaScript's safe integer
+range require a different application-level representation.
+
+OpenAPI 3.1 boolean and empty schemas generate `z.unknown()` for `true`/`{}`
+and `z.never()` for `false`, including component, request, response, array, and
+composition positions. Component schema, parameter, request-body, and response
+references share category-aware export naming. Operation responses use unique
+per-status schemas, success/error aggregates, and `z.undefined()` for
+documented responses without a body such as 204.
 
 `oneOf` and `anyOf` are generated as ordinary `z.union([...])` schemas. This
 means at least one branch must parse; it does not enforce JSON Schema's
 exclusive “exactly one branch” interpretation of `oneOf`. `allOf` is generated
 with `z.intersection(...)`.
+
+Validation-affecting sibling keywords are intersected when the renderer can
+express them safely. Unsupported combinations produce a structured Zod plugin
+diagnostic instead of being silently ignored. This includes a uniform
+generator policy for preserved `$ref` siblings; the legacy plugin context does
+not currently select different rendering rules for OpenAPI 3.0 versus 3.1 at
+that call site. Recursive validators use `z.lazy()` and parse recursively at
+runtime, but their explicit
+`z.ZodType<unknown>` cycle annotation means `z.infer` is currently `unknown`;
+use `pluginTSType` when a precise recursive static type is required.
 
 **importWithExtension**
 

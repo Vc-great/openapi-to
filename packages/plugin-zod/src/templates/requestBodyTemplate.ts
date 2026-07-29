@@ -1,9 +1,4 @@
-import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
-import { schemaTemplate } from "@/templates/schemaTemplate.ts";
-import { getlowerFirstRefAlias } from "@/utils/getlowerFirstRefAlias.ts";
 import type { MediaTypeObject, ReferenceObject } from "@openapi-to/core";
-import { isBoolean, isEmpty } from "lodash-es";
-
 import {
 	type JSDocStructure,
 	type OptionalKind,
@@ -11,42 +6,62 @@ import {
 	VariableDeclarationKind,
 	type VariableStatementStructure,
 } from "ts-morph";
+import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
+import {
+	schemaTemplate,
+	type SchemaRenderOptions,
+} from "@/templates/schemaTemplate.ts";
+import { getComponentRefExportName } from "@/utils/componentNaming.ts";
 
 type RequestBody = MediaTypeObject | ReferenceObject;
 
 export function requestBodyTemplate(
 	requestName: string,
 	requestBody: RequestBody,
+	options: SchemaRenderOptions = {},
 ): VariableStatementStructure | undefined {
 	const schema = "schema" in requestBody && requestBody.schema;
 	const $ref =
 		"$ref" in requestBody
 			? requestBody.$ref
-			: schema && "$ref" in schema && schema.$ref;
+			: schema && typeof schema === "object" && "$ref" in schema && schema.$ref;
 
 	// 处理引用类型
 	if ($ref) {
-		const refSchemaName = getlowerFirstRefAlias($ref);
+		const refSchemaName = getComponentRefExportName($ref);
 
 		return createVariable(requestName, refSchemaName, []);
 	}
-	if (isBoolean(schema) || isEmpty(schema)) {
+	if (schema === undefined) {
 		return undefined;
 	}
 
 	// 创建文档注释
 	const docs: OptionalKind<JSDocStructure>[] = jsDocTemplateFromSchema(
-		("description" in schema && schema.description) || "",
+		(typeof schema === "object" &&
+			schema !== null &&
+			"description" in schema &&
+			schema.description) ||
+			"",
 		schema,
 	);
 
 	// 处理数组类型
-	if (!("$ref" in schema) && schema.type === "array") {
-		const type = schemaTemplate(schema, requestName);
+	if (
+		typeof schema === "object" &&
+		schema !== null &&
+		!("$ref" in schema) &&
+		schema.type === "array"
+	) {
+		const type = schemaTemplate(schema, requestName, "", options);
 		return createVariable(requestName, type, docs);
 	}
 
-	return createVariable(requestName, schemaTemplate(schema, requestName), docs);
+	return createVariable(
+		requestName,
+		schemaTemplate(schema, requestName, "", options),
+		docs,
+	);
 }
 
 export function createVariable(

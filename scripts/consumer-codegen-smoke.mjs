@@ -811,6 +811,169 @@ async function createConsumerFiles(
 			},
 		},
 	});
+	await writeJson(join(consumerRoot, "openapi-responses.json"), {
+		openapi: "3.0.3",
+		info: { title: "Response Zod 4 fixture", version: "1.0.0" },
+		paths: {
+			"/users": {
+				post: {
+					tags: ["users"],
+					operationId: "responseMatrix",
+					requestBody: { $ref: "#/components/requestBodies/CreateUser" },
+					responses: {
+						200: {
+							description: "Text",
+							content: { "application/json": { schema: { type: "string" } } },
+						},
+						201: {
+							description: "Number",
+							content: { "application/json": { schema: { type: "number" } } },
+						},
+						400: {
+							description: "Inline error",
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/ErrorBody" },
+								},
+							},
+						},
+						404: { $ref: "#/components/responses/NotFound" },
+					},
+				},
+			},
+			"/users/{id}": {
+				get: {
+					tags: ["users"],
+					operationId: "getResponseUser",
+					parameters: [{ $ref: "#/components/parameters/TraceId" }],
+					responses: {
+						200: {
+							description: "User",
+							content: {
+								"application/json": {
+									schema: { $ref: "#/components/schemas/UserInput" },
+								},
+							},
+						},
+						404: { $ref: "#/components/responses/NotFound" },
+					},
+				},
+			},
+			"/no-content": {
+				get: {
+					tags: ["users"],
+					operationId: "noContentResponse",
+					responses: {
+						204: { description: "No content" },
+						400: {
+							description: "Error",
+							content: { "application/json": { schema: { type: "string" } } },
+						},
+					},
+				},
+			},
+			"/errors-only": {
+				get: {
+					tags: ["users"],
+					operationId: "errorsOnly",
+					responses: {
+						400: {
+							description: "Inline error",
+							content: { "application/json": { schema: { type: "string" } } },
+						},
+						404: { $ref: "#/components/responses/NotFound" },
+					},
+				},
+			},
+			"/only-no-content": {
+				get: {
+					tags: ["users"],
+					operationId: "onlyNoContentResponse",
+					responses: { 204: { description: "No content" } },
+				},
+			},
+			"/default": {
+				get: {
+					tags: ["users"],
+					operationId: "defaultOnlyResponse",
+					responses: {
+						default: {
+							description: "Default",
+							content: { "application/json": { schema: { type: "boolean" } } },
+						},
+					},
+				},
+			},
+		},
+		components: {
+			schemas: {
+				UserInput: {
+					type: "object",
+					required: ["name"],
+					properties: { name: { type: "string" } },
+				},
+				ErrorBody: {
+					type: "object",
+					required: ["message"],
+					properties: { message: { type: "string" } },
+				},
+			},
+			parameters: {
+				TraceId: {
+					name: "X-Trace-Id",
+					in: "header",
+					schema: { type: "string" },
+				},
+			},
+			requestBodies: {
+				CreateUser: {
+					content: {
+						"application/json": {
+							schema: { $ref: "#/components/schemas/UserInput" },
+						},
+					},
+				},
+			},
+			responses: {
+				NotFound: {
+					description: "Not found",
+					content: {
+						"application/json": {
+							schema: { $ref: "#/components/schemas/ErrorBody" },
+						},
+					},
+				},
+			},
+		},
+	});
+	await writeJson(join(consumerRoot, "openapi-31.json"), {
+		openapi: "3.1.0",
+		info: { title: "OpenAPI 3.1 Zod fixture", version: "1.0.0" },
+		paths: {
+			"/boolean": {
+				post: {
+					tags: ["boolean"],
+					operationId: "booleanSchemas",
+					requestBody: {
+						content: { "application/json": { schema: true } },
+					},
+					responses: {
+						200: {
+							description: "Any",
+							content: { "application/json": { schema: {} } },
+						},
+						400: {
+							description: "Never",
+							content: { "application/json": { schema: false } },
+						},
+					},
+				},
+			},
+		},
+		components: {
+			schemas: { AnyValue: true, NoValue: false, EmptySchema: {} },
+		},
+	});
 	await writeFile(
 		join(consumerRoot, "openapi.config.ts"),
 		`import {
@@ -852,6 +1015,34 @@ export default defineConfig({
     name: "recursive",
     input: { path: "./openapi-recursive.json" },
     output: { base: "workspace", dir: "generated-recursive", clean: true },
+  }],
+  plugins: [pluginZod({ importWithExtension: false })],
+});
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "openapi.responses.config.ts"),
+		`import { defineConfig, pluginZod } from "openapi-to";
+
+export default defineConfig({
+  servers: [{
+    name: "responses",
+    input: { path: "./openapi-responses.json" },
+    output: { base: "workspace", dir: "generated-responses", clean: true },
+  }],
+  plugins: [pluginZod({ importWithExtension: false })],
+});
+`,
+	);
+	await writeFile(
+		join(consumerRoot, "openapi.31.config.ts"),
+		`import { defineConfig, pluginZod } from "openapi-to";
+
+export default defineConfig({
+  servers: [{
+    name: "openapi31",
+    input: { path: "./openapi-31.json" },
+    output: { base: "workspace", dir: "generated-31", clean: true },
   }],
   plugins: [pluginZod({ importWithExtension: false })],
 });
@@ -909,7 +1100,8 @@ void fetched;
 	);
 	await writeFile(
 		join(consumerRoot, "runtime-check.ts"),
-		`import { widgetSchema } from "./generated/zod/models/widget.schema";
+		`import { z } from "zod";
+import { widgetSchema } from "./generated/zod/models/widget.schema";
 import {
   getWidgetPathParamsSchema,
   getWidgetQueryParamsSchema,
@@ -917,6 +1109,28 @@ import {
 import { createWidgetMutationRequestSchema } from "./generated/widgets/create-widget.schema";
 import { nodeSchema } from "./generated-recursive/zod/models/node.schema";
 import { pairASchema } from "./generated-recursive/zod/models/pair-a.schema";
+import {
+  responseMatrixMutationSchemaResponseSchema,
+  responseMatrixResponseErrorSchema,
+} from "./generated-responses/users/response-matrix.schema";
+import { noContentResponseResponseSchema } from "./generated-responses/users/no-content-response.schema";
+import {
+  booleanSchemasMutationRequestSchema,
+  booleanSchemasMutationSchemaResponseSchema,
+  booleanSchemasResponseErrorSchema,
+} from "./generated-31/boolean/boolean-schemas.schema";
+import { anyValueSchema } from "./generated-31/zod/models/any-value.schema";
+import { emptySchemaSchema } from "./generated-31/zod/models/empty-schema.schema";
+import { noValueSchema } from "./generated-31/zod/models/no-value.schema";
+
+type IsUnknown<T> = unknown extends T ? ([keyof T] extends [never] ? true : false) : false;
+type Expect<T extends true> = T;
+type WidgetInferenceIsPrecise = Expect<IsUnknown<z.infer<typeof widgetSchema>> extends false ? true : false>;
+type RecursiveInferenceIsDocumentedUnknown = Expect<IsUnknown<z.infer<typeof nodeSchema>>>;
+type ResponseInferenceIsPrecise = Expect<IsUnknown<z.infer<typeof responseMatrixMutationSchemaResponseSchema>> extends false ? true : false>;
+void (0 as unknown as WidgetInferenceIsPrecise);
+void (0 as unknown as RecursiveInferenceIsDocumentedUnknown);
+void (0 as unknown as ResponseInferenceIsPrecise);
 
 const widget = {
   id: "widget-1",
@@ -941,6 +1155,12 @@ if (widgetSchema.safeParse({ ...widget, count: 2.5 }).success) throw new Error("
 if (widgetSchema.safeParse({ ...widget, bytes: "not base64!" }).success) throw new Error("invalid base64 passed");
 if (widgetSchema.safeParse({ ...widget, status: "unknown" }).success) throw new Error("invalid enum passed");
 if (widgetSchema.safeParse({ ...widget, combined: { left: "left" } }).success) throw new Error("invalid intersection passed");
+for (const value of ["2026-07-28T12:30:00.123Z", "2026-07-28T12:30:00+08:00", "2026-07-28T12:30:00-05:30"]) {
+  if (!widgetSchema.safeParse({ ...widget, createdAt: value }).success) throw new Error(\`valid RFC3339 offset failed: \${value}\`);
+}
+for (const value of ["2026-07-28T12:30Z", "2026-07-28 12:30:00Z", "2026-13-40T99:99:99Z"]) {
+  if (widgetSchema.safeParse({ ...widget, createdAt: value }).success) throw new Error(\`invalid RFC3339 value passed: \${value}\`);
+}
 if (!getWidgetPathParamsSchema.safeParse({ widgetId: "widget-1" }).success) throw new Error("valid path params failed");
 if (getWidgetPathParamsSchema.safeParse({}).success) throw new Error("missing path param passed");
 if (!getWidgetQueryParamsSchema.safeParse({ includeHistory: true }).success) throw new Error("valid query params failed");
@@ -956,6 +1176,17 @@ if (nodeSchema.safeParse({ value: "root", children: [{ value: 1 }] }).success) {
   throw new Error("invalid recursive node passed");
 }
 pairASchema.parse({ name: "a", pair: { count: 1, pair: { name: "nested" } } });
+responseMatrixMutationSchemaResponseSchema.parse("ok");
+responseMatrixMutationSchemaResponseSchema.parse(201);
+responseMatrixResponseErrorSchema.parse({ message: "bad" });
+noContentResponseResponseSchema.parse(undefined);
+if (noContentResponseResponseSchema.safeParse("body").success) throw new Error("204 body passed");
+booleanSchemasMutationRequestSchema.parse({ any: "request" });
+booleanSchemasMutationSchemaResponseSchema.parse({ any: "response" });
+if (booleanSchemasResponseErrorSchema.safeParse("forbidden").success) throw new Error("false response schema passed");
+anyValueSchema.parse(Symbol("any"));
+emptySchemaSchema.parse(null);
+if (noValueSchema.safeParse(undefined).success) throw new Error("false component schema passed");
 console.log("zod4-runtime-parse:passed");
 `,
 	);
@@ -972,6 +1203,8 @@ console.log("zod4-runtime-parse:passed");
 		include: [
 			"generated/**/*.ts",
 			"generated-recursive/**/*.ts",
+			"generated-responses/**/*.ts",
+			"generated-31/**/*.ts",
 			"request.ts",
 			"consumer-usage.ts",
 			"runtime-check.ts",
@@ -990,6 +1223,8 @@ console.log("zod4-runtime-parse:passed");
 		include: [
 			"generated/**/*.schema.ts",
 			"generated-recursive/**/*.schema.ts",
+			"generated-responses/**/*.schema.ts",
+			"generated-31/**/*.schema.ts",
 			"runtime-check.ts",
 		],
 	});
@@ -1148,6 +1383,38 @@ export async function runConsumerCodegenScenario({
 			recursiveGeneration.servers?.[0]?.name === "recursive",
 		"Recursive Zod-only generation did not succeed.",
 	);
+	for (const [label, config, expectedName] of [
+		["response Zod generation", "./openapi.responses.config.ts", "responses"],
+		["OpenAPI 3.1 Zod generation", "./openapi.31.config.ts", "openapi31"],
+	]) {
+		const result = parseJson(
+			runCommand(
+				label,
+				cli,
+				["generate", "--config", config, "--json"],
+				consumerRoot,
+			),
+			label,
+		);
+		assert(
+			result.success === true && result.servers?.[0]?.name === expectedName,
+			`${label} did not succeed.`,
+		);
+		const currentResult = parseJson(
+			runCommand(
+				`${label} check`,
+				cli,
+				["generate", "--config", config, "--check", "--json"],
+				consumerRoot,
+			),
+			`${label} check`,
+		);
+		assert(
+			currentResult.success === true &&
+				currentResult.servers?.[0]?.manifest?.outdated === false,
+			`${label} was not byte-stable on its second generation.`,
+		);
+	}
 	const generatedFiles = (await filesRecursively(outputRoot)).map((path) =>
 		relative(outputRoot, path).split(sep).join("/"),
 	);

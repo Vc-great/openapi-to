@@ -1,10 +1,3 @@
-import { buildSchemaPropertiesTypes } from "@/builds/components/buildSchemaPropertiesTypes.ts";
-import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
-import { getResponseErrorTypeName } from "@/templates/operationTypeNameTemplate.ts";
-
-import { schemaTemplate } from "@/templates/schemaTemplate.ts";
-import { getRefAlias } from "@openapi-to/core/utils";
-import { lowerFirst, upperFirst } from "lodash-es";
 import {
 	type JSDocStructure,
 	type OptionalKind,
@@ -13,38 +6,28 @@ import {
 	VariableDeclarationKind,
 	type VariableStatementStructure,
 } from "ts-morph";
+import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
+import {
+	schemaTemplate,
+	type SchemaRenderOptions,
+} from "@/templates/schemaTemplate.ts";
 import type { JsonResponseObject } from "../types.ts";
 
 export function operationResponseTemplate(
-	{ code, jsonSchema }: JsonResponseObject,
-	operationName: string,
+	{ jsonSchema }: JsonResponseObject,
+	declarationName: string,
+	options: SchemaRenderOptions = {},
 ): StatementStructures {
-	const isError = /^[3-5]\d{2}$/.test(code);
-	const suffix = isError ? code : "";
-	const typeName = `${operationName}${suffix}`;
 	const schema = jsonSchema?.schema;
 
 	const docs = jsDocTemplateFromSchema(jsonSchema?.description);
 
-	if (!schema) {
-		return createVariable(typeName, "z.unknown()", docs);
+	if (schema === undefined) {
+		return createVariable(declarationName, "z.undefined()", docs);
 	}
 
-	if (schema.$ref) {
-		const refType = `${lowerFirst(getRefAlias(schema.$ref))}Schema`;
-		return createVariable(typeName, refType, docs);
-	}
-
-	if (schema.type === "object" && schema.properties) {
-		const propertiesString = buildSchemaPropertiesTypes(schema, operationName);
-		const docs = jsDocTemplateFromSchema(schema.description, schema);
-
-		return createVariable(typeName, propertiesString, docs);
-	}
-
-	const baseName = `${operationName}${upperFirst(jsonSchema?.label || "")}`;
-	const aliasedType = schemaTemplate(schema, baseName);
-	return createVariable(typeName, aliasedType, docs);
+	const aliasedType = schemaTemplate(schema, declarationName, "", options);
+	return createVariable(declarationName, aliasedType, docs);
 }
 
 // ---------------- Helper: TypeAlias 构建 ----------------
@@ -70,39 +53,9 @@ export function createVariable(
 
 // ---------------- Helper: 错误类型联合 ----------------
 
-export function buildResponseErrorSchema(
-	errorCodes: string[],
-	operationName: string,
-	responseObjects: JsonResponseObject[],
-): VariableStatementStructure {
-	const relevantErrorTypes = errorCodes
-		.filter((code) => responseObjects.some((res) => res.code === code))
-		.map((code) => `${operationName}Response${code}`);
-
-	return {
-		kind: StructureKind.VariableStatement,
-		declarationKind: VariableDeclarationKind.Const,
-		isExported: true,
-		docs: [],
-		declarations: [
-			{
-				name: getResponseErrorTypeName(operationName),
-
-				initializer:
-					relevantErrorTypes.length === 0
-						? "z.unknown()"
-						: relevantErrorTypes.length === 1
-							? relevantErrorTypes[0]
-							: `z.union([${relevantErrorTypes.join(", ")}])`,
-			},
-		],
-	};
-}
-
-// ---------------- Helper: 无成功响应时 fallback ----------------
-
-export function buildDefaultSuccessSchema(
+export function buildResponseUnionSchema(
 	name: string,
+	memberNames: string[],
 ): VariableStatementStructure {
 	return {
 		kind: StructureKind.VariableStatement,
@@ -112,8 +65,15 @@ export function buildDefaultSuccessSchema(
 		declarations: [
 			{
 				name,
-				initializer: "z.unknown()",
+				initializer:
+					memberNames.length === 0
+						? "z.unknown()"
+						: memberNames.length === 1
+							? memberNames[0]
+							: `z.union([${memberNames.join(", ")}])`,
 			},
 		],
 	};
 }
+
+// ---------------- Helper: 无成功响应时 fallback ----------------
