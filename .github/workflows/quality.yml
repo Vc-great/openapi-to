@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-quality-build
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-quality-build
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-quality-typecheck
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-quality-typecheck
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -89,7 +89,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-quality-tests
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-quality-tests
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -126,7 +126,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-quality-lint-changed
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-quality-lint-changed
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -167,7 +167,7 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-quality-release-smoke
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-quality-release-smoke
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:

@@ -109,21 +109,21 @@ export async function buildChildEnvironment(environment, plan) {
 		const entry = environmentEntry(environment, requested);
 		if (entry) child[entry[0]] = entry[1];
 	}
-	const runnerTemp = environment.RUNNER_TEMP
-		? path.resolve(environment.RUNNER_TEMP)
-		: null;
+	const artifactRoots = [environment.GITHUB_WORKSPACE, environment.RUNNER_TEMP]
+		.filter(Boolean)
+		.map((root) => path.resolve(root));
 	for (const sourceEnv of plan.childEnv) {
 		const value = environment[sourceEnv];
 		if (!value) continue;
-		if (!runnerTemp) {
+		if (artifactRoots.length === 0) {
 			throw new Error(
-				`Domain artifact environment ${sourceEnv} requires RUNNER_TEMP.`,
+				`Domain artifact environment ${sourceEnv} requires GITHUB_WORKSPACE or RUNNER_TEMP.`,
 			);
 		}
 		const resolved = path.resolve(value);
-		if (!within(runnerTemp, resolved)) {
+		if (!artifactRoots.some((root) => within(root, resolved))) {
 			throw new Error(
-				`Domain artifact environment ${sourceEnv} must stay within RUNNER_TEMP.`,
+				`Domain artifact environment ${sourceEnv} must stay within GITHUB_WORKSPACE or RUNNER_TEMP.`,
 			);
 		}
 		const definition = plan.reports.find(

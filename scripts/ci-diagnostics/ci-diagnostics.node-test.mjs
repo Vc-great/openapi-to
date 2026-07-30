@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import {
+	link,
 	mkdir,
 	mkdtemp,
-	link,
-	readFile,
 	readdir,
+	readFile,
 	rename as renameFile,
 	rm,
 	symlink,
@@ -521,6 +521,45 @@ test("child environment removes GitHub control files and credentials while retai
 	for (const controlPath of Object.values(controlPaths)) {
 		assert.equal(await readFile(controlPath, "utf8"), "parent\n");
 	}
+});
+
+test("domain artifact paths allow the workspace or runner temp and reject other roots", async (t) => {
+	const root = await mkdtemp(
+		path.join(os.tmpdir(), "openapi-to-ci-artifact-roots-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	const workspace = path.join(root, "workspace");
+	const runnerTemp = path.join(root, "runner-temp");
+	const outside = path.join(root, "outside");
+	await Promise.all([
+		mkdir(workspace, { recursive: true }),
+		mkdir(runnerTemp, { recursive: true }),
+		mkdir(outside, { recursive: true }),
+	]);
+	const plan = getPlan("a1-contracts");
+	const environment = {
+		...process.env,
+		GITHUB_WORKSPACE: workspace,
+		RUNNER_TEMP: runnerTemp,
+		A1_TEST_ARTIFACT_DIR: path.join(workspace, ".ci-artifacts", "a1-contracts"),
+	};
+
+	const childEnvironment = await buildChildEnvironment(environment, plan);
+	assert.equal(
+		childEnvironment.A1_TEST_ARTIFACT_DIR,
+		environment.A1_TEST_ARTIFACT_DIR,
+	);
+
+	await assert.rejects(
+		buildChildEnvironment(
+			{
+				...environment,
+				A1_TEST_ARTIFACT_DIR: outside,
+			},
+			plan,
+		),
+		/must stay within GITHUB_WORKSPACE or RUNNER_TEMP/,
+	);
 });
 
 test("a missing pnpm executable becomes infrastructure-error and remains visible to the finalizer", async (t) => {

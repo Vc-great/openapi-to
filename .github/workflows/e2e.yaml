@@ -23,8 +23,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-common
-      CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-common
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-common
+      CLI_E2E_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/cli-common
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -80,8 +80,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-module
-      CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-module
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-module
+      CLI_E2E_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/cli-module
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -137,8 +137,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-remote
-      CLI_E2E_ARTIFACT_DIR: ${{ runner.temp }}/cli-remote
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-remote
+      CLI_E2E_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/cli-remote
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -188,9 +188,9 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-stdio
-      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-stdio
-      MCP_DOCTOR_REPORT: ${{ runner.temp }}/mcp-doctor.json
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-mcp-stdio
+      MCP_TEST_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/mcp-stdio
+      MCP_DOCTOR_REPORT: ${{ github.workspace }}/.ci-artifacts/mcp-doctor.json
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -240,8 +240,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-smoke
-      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-smoke
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-mcp-smoke
+      MCP_TEST_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/mcp-smoke
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -288,8 +288,8 @@ jobs:
     timeout-minutes: 25
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-transaction
-      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-transaction
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-mcp-transaction
+      MCP_TEST_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/mcp-transaction
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -325,8 +325,8 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-e2e-mcp-performance
-      MCP_TEST_ARTIFACT_DIR: ${{ runner.temp }}/mcp-performance
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-e2e-mcp-performance
+      MCP_TEST_ARTIFACT_DIR: ${{ github.workspace }}/.ci-artifacts/mcp-performance
       CI_BASE_SHA: ''
       CI_HEAD_SHA: ${{ github.sha }}
     steps:

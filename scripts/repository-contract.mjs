@@ -11,6 +11,7 @@ import {
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { load as loadYaml } from "js-yaml";
 
 const execFileAsync = promisify(execFile);
 
@@ -106,6 +107,84 @@ function comparePaths(left, right) {
 
 function sortedUnique(values) {
 	return [...new Set(values)].sort(comparePaths);
+}
+
+function isMapping(value) {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+async function discoverYamlFiles(root, relativeDirectory) {
+	const directory = join(root, relativeDirectory);
+	if (!(await exists(directory))) return [];
+	const files = [];
+	for (const entry of (await readdir(directory, { withFileTypes: true })).sort(
+		(left, right) => comparePaths(left.name, right.name),
+	)) {
+		const relativePath = `${relativeDirectory}/${entry.name}`;
+		if (entry.isDirectory()) {
+			files.push(...(await discoverYamlFiles(root, relativePath)));
+		} else if (entry.isFile() && /\.ya?ml$/i.test(entry.name)) {
+			files.push(relativePath);
+		}
+	}
+	return files;
+}
+
+function usesRunnerContext(value) {
+	return (
+		typeof value === "string" &&
+		[...value.matchAll(/\$\{\{([\s\S]*?)}}/g)].some((match) =>
+			/\brunner\.[a-zA-Z_]/.test(match[1]),
+		)
+	);
+}
+
+export async function auditGitHubWorkflowContexts(root = repositoryRoot) {
+	const failures = [];
+	const yamlFiles = (
+		await Promise.all(
+			[".github/workflows", ".github/actions", ".github/setup"].map(
+				(directory) => discoverYamlFiles(root, directory),
+			),
+		)
+	)
+		.flat()
+		.sort(comparePaths);
+
+	for (const relativePath of yamlFiles) {
+		let document;
+		try {
+			document = loadYaml(await readFile(join(root, relativePath), "utf8"), {
+				filename: relativePath,
+			});
+		} catch (error) {
+			const location = error?.mark
+				? `:${error.mark.line + 1}:${error.mark.column + 1}`
+				: "";
+			failures.push(
+				`${relativePath}${location}: invalid YAML: ${error?.reason ?? "parse failed"}`,
+			);
+			continue;
+		}
+		if (
+			!relativePath.startsWith(".github/workflows/") ||
+			!isMapping(document?.jobs)
+		) {
+			continue;
+		}
+		for (const [jobId, job] of Object.entries(document.jobs)) {
+			if (!isMapping(job) || !isMapping(job.env)) continue;
+			for (const [environmentName, value] of Object.entries(job.env)) {
+				if (usesRunnerContext(value)) {
+					failures.push(
+						`${relativePath}: jobs.${jobId}.env.${environmentName} must not use the runner context before a runner is assigned`,
+					);
+				}
+			}
+		}
+	}
+
+	return sortedUnique(failures);
 }
 
 function markdownSection(contents, heading) {
@@ -1811,6 +1890,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	});
 	failures.push(...agentSkillAudit.failures);
 	failures.push(...(await auditCiDiagnosticsContracts(root)));
+	failures.push(...(await auditGitHubWorkflowContexts(root)));
 
 	if (
 		rootManifest.scripts?.["version:canary"] !==

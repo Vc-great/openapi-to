@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      CI_DIAGNOSTIC_DIR: ${{ runner.temp }}/ci-diagnostics-version-readiness
+      CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-version-readiness
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:

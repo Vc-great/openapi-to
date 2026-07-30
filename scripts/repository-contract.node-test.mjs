@@ -16,12 +16,13 @@ import { promisify } from "node:util";
 import {
 	auditAgentAndSkillContracts,
 	auditCiDiagnosticsContracts,
+	auditGitHubWorkflowContexts,
 	auditRepositoryContracts,
 	discoverAgentDocuments,
 	EXPECTED_SKILL_ROLES,
 	parseOpenAiSkillYaml,
-	parseSkillRoutingTable,
 	parseSkillFrontmatter,
+	parseSkillRoutingTable,
 	parseWorkspacePatterns,
 	REQUIRED_AGENT_DOCUMENTS,
 	REQUIRED_SKILLS,
@@ -275,6 +276,75 @@ test("blocking Actions workflows use controlled fixtures and retain diagnostic a
 	assert.match(e2e, /pnpm test:e2e:remote/);
 	assert.match(e2e, /MCP_TEST_ARTIFACT_DIR/);
 	assert.match(e2e, /actions\/upload-artifact@v4/);
+});
+
+test("GitHub YAML contracts reject runner context in Job env without rejecting runner-assigned contexts", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-workflow-context-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	await writeFixtureFile(
+		root,
+		".github/workflows/invalid.yml",
+		`name: Invalid
+jobs:
+  build:
+    env:
+      CI_DIAGNOSTIC_DIR: \${{ runner.temp }}/diagnostics
+      SAFE_DIR: \${{ github.workspace }}/.ci-artifacts/safe
+      SAFE_TEXT: \${{ github.workspace }}/runner.temp
+    steps:
+      - run: echo ok
+        env:
+          STEP_TEMP: \${{ runner.temp }}/step
+`,
+	);
+	await writeFixtureFile(
+		root,
+		".github/workflows/second.yaml",
+		`name: Second invalid
+jobs:
+  test:
+    env:
+      RUNNER_HINT: \${{ runner.os }}
+    steps:
+      - run: echo test
+`,
+	);
+	await writeFixtureFile(
+		root,
+		".github/setup/action.yml",
+		`name: Setup
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo ok
+      env:
+        STEP_TEMP: \${{ runner.temp }}/composite
+`,
+	);
+
+	const failures = await auditGitHubWorkflowContexts(root);
+	assert.deepEqual(failures, [
+		".github/workflows/invalid.yml: jobs.build.env.CI_DIAGNOSTIC_DIR must not use the runner context before a runner is assigned",
+		".github/workflows/second.yaml: jobs.test.env.RUNNER_HINT must not use the runner context before a runner is assigned",
+	]);
+});
+
+test("GitHub YAML contracts parse composite actions and report syntax failures", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-workflow-yaml-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	await writeFixtureFile(
+		root,
+		".github/actions/example/action.yaml",
+		"name: Broken\nruns: [\n",
+	);
+
+	const failures = await auditGitHubWorkflowContexts(root);
+	assert.equal(failures.length, 1);
+	assert.match(
+		failures[0],
+		/^\.github\/actions\/example\/action\.yaml:\d+:\d+: invalid YAML:/,
+	);
 });
 
 test("CI diagnostics repository contract accepts the tracked bounded integration", async (t) => {
