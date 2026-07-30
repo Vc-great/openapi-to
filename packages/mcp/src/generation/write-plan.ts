@@ -75,14 +75,18 @@ interface PlanArtifact {
 
 interface SelectivePlanBinding {
   selectionManifestVersion: typeof OPERATION_SELECTION_MANIFEST_VERSION
+  mutationType: OperationSelectionMutation['type']
   selectionOwner: string
   selectionFileIdentity: string
   selectionFileSnapshot: OutputFileSnapshot
   previousSelectionExists: boolean
   previousSelectionHash: string
+  previousOperationKeys: string[]
   requestedOperationKeys: string[]
   newlyAddedOperationKeys: string[]
   alreadySelectedOperationKeys: string[]
+  retainedOperationKeys: string[]
+  removedOperationKeys: string[]
   desiredOperationKeys: string[]
   desiredSelectionHash: string
   desiredSelectionBytesSha256: string
@@ -388,6 +392,7 @@ export async function prepareSelectiveGenerationWritePlan(
     { type: 'operations', operationKeys: selection.merge.desiredOperationKeys },
     execution,
     'prepare',
+    mutation.type === 'replace',
   )
   const projectionHash = run.projection?.projectionHash
   if (!projectionHash || !run.projection) {
@@ -395,6 +400,7 @@ export async function prepareSelectiveGenerationWritePlan(
   }
   const binding: SelectivePlanBinding = {
     selectionManifestVersion: OPERATION_SELECTION_MANIFEST_VERSION,
+    mutationType: selection.merge.mutationType,
     selectionOwner: selection.selectionOwner,
     selectionFileIdentity: selection.selectionFileIdentity,
     selectionFileSnapshot: {
@@ -405,9 +411,12 @@ export async function prepareSelectiveGenerationWritePlan(
     },
     previousSelectionExists: selection.previousSelectionExists,
     previousSelectionHash: selection.previousSelectionHash,
+    previousOperationKeys: selection.merge.previousOperationKeys,
     requestedOperationKeys: selection.merge.requestedOperationKeys,
     newlyAddedOperationKeys: selection.merge.newlyAddedOperationKeys,
     alreadySelectedOperationKeys: selection.merge.alreadySelectedOperationKeys,
+    retainedOperationKeys: selection.merge.retainedOperationKeys,
+    removedOperationKeys: selection.merge.removedOperationKeys,
     desiredOperationKeys: selection.merge.desiredOperationKeys,
     desiredSelectionHash: selection.desiredSelectionHash,
     desiredSelectionBytesSha256: hash(selection.desiredSelectionBytes),
@@ -578,6 +587,7 @@ export async function applyGenerationWritePlan(
           { type: 'operations', operationKeys: selectiveBinding(plan).desiredOperationKeys },
           { ...execution, outputWriteLock: lock },
           'apply',
+          selectiveBinding(plan).mutationType === 'replace',
         ).then(async (run) => {
           assertSelectiveProjection(plan, run)
           return deterministicPlanFromRun(provider, options, run, execution, 'selective', selectiveBinding(plan))

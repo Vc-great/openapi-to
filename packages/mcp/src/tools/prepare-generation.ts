@@ -7,10 +7,16 @@ import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolCo
 
 export const prepareGenerationInputSchema = z.object({
   targets: z.array(z.string().min(1).max(200)).max(100).optional(),
-  selection: z.object({
-    type: z.literal('add'),
-    operationKeys: z.array(z.string().min(1).max(500)).max(500),
-  }).strict().optional(),
+  selection: z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('add'),
+      operationKeys: z.array(z.string().min(1).max(500)).max(500),
+    }).strict(),
+    z.object({
+      type: z.literal('replace'),
+      operationKeys: z.array(z.string().min(1).max(500)).min(1).max(500),
+    }).strict(),
+  ]).optional(),
   includePreview: z.boolean().optional(),
 }).strict()
 
@@ -44,15 +50,26 @@ export const prepareGenerationOutputSchema = z.object({
     }),
     changes: z.array(preparedChangeSchema),
     selection: z.object({
+      mutationType: z.enum(['add', 'replace']),
       previousOperationKeys: z.array(z.string()),
       requestedOperationKeys: z.array(z.string()),
       newlyAddedOperationKeys: z.array(z.string()),
       alreadySelectedOperationKeys: z.array(z.string()),
+      retainedOperationKeys: z.array(z.string()),
+      removedOperationKeys: z.array(z.string()),
       desiredOperationKeys: z.array(z.string()),
       previousSelectionHash: z.string(),
       desiredSelectionHash: z.string(),
       previousSelectionExists: z.boolean(),
-      counts: z.object({ previous: z.number().int(), requested: z.number().int(), newlyAdded: z.number().int(), alreadySelected: z.number().int(), desired: z.number().int() }),
+      counts: z.object({
+        previous: z.number().int(),
+        requested: z.number().int(),
+        newlyAdded: z.number().int(),
+        alreadySelected: z.number().int(),
+        retained: z.number().int(),
+        removed: z.number().int(),
+        desired: z.number().int(),
+      }),
       truncated: z.boolean(),
     }).optional(),
     projection: z.object({
@@ -123,10 +140,13 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
         const selectionLimit = Math.min(50, context.options.limits.maxChanges)
         const boundedSelection = selective
           ? {
+              mutationType: selective.merge.mutationType,
               previousOperationKeys: selective.merge.previousOperationKeys.slice(0, selectionLimit),
               requestedOperationKeys: selective.merge.requestedOperationKeys.slice(0, selectionLimit),
               newlyAddedOperationKeys: selective.merge.newlyAddedOperationKeys.slice(0, selectionLimit),
               alreadySelectedOperationKeys: selective.merge.alreadySelectedOperationKeys.slice(0, selectionLimit),
+              retainedOperationKeys: selective.merge.retainedOperationKeys.slice(0, selectionLimit),
+              removedOperationKeys: selective.merge.removedOperationKeys.slice(0, selectionLimit),
               desiredOperationKeys: selective.merge.desiredOperationKeys.slice(0, selectionLimit),
               previousSelectionHash: selective.previousSelectionHash,
               desiredSelectionHash: selective.desiredSelectionHash,
@@ -136,6 +156,8 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
                 requested: selective.merge.requestedOperationKeys.length,
                 newlyAdded: selective.merge.newlyAddedOperationKeys.length,
                 alreadySelected: selective.merge.alreadySelectedOperationKeys.length,
+                retained: selective.merge.retainedOperationKeys.length,
+                removed: selective.merge.removedOperationKeys.length,
                 desired: selective.merge.desiredOperationKeys.length,
               },
               truncated: [
@@ -143,6 +165,8 @@ export async function prepareGenerationTool(context: ToolContext, input: z.infer
                 selective.merge.requestedOperationKeys,
                 selective.merge.newlyAddedOperationKeys,
                 selective.merge.alreadySelectedOperationKeys,
+                selective.merge.retainedOperationKeys,
+                selective.merge.removedOperationKeys,
                 selective.merge.desiredOperationKeys,
               ].some((items) => items.length > selectionLimit),
             }

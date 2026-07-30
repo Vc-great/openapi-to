@@ -251,6 +251,7 @@ export async function executeSelectiveGeneration(
 	scope: OperationGenerationScope,
 	execution: GenerationExecution = {},
 	purpose: "preview" | "prepare" | "apply" = "preview",
+	forceManagedCleanup = false,
 ): Promise<GenerationRun> {
 	await execution.progress?.("Loading trusted configuration", 5);
 	const prepared = await prepareTargets(
@@ -321,12 +322,16 @@ export async function executeSelectiveGeneration(
 		{ mustExist: false },
 	);
 	// An ad-hoc selective preview must never propose deletion of unselected
-	// managed artifacts. Selective Prepare instead generates the complete desired
-	// persisted selection and therefore preserves the trusted cleanup setting.
+	// managed artifacts. A replace mutation derives managed cleanup internally so
+	// its exact desired selection cannot leave obsolete generated files orphaned.
 	single.output =
 		purpose === "preview"
 			? { ...single.output, dir: safeOutput, clean: false }
-			: { ...single.output, dir: safeOutput };
+			: {
+					...single.output,
+					dir: safeOutput,
+					...(forceManagedCleanup ? { clean: true } : {}),
+				};
 	const result = await buildFromCompilation(single, projected.compilation, {
 		json: true,
 		dryRun: true,

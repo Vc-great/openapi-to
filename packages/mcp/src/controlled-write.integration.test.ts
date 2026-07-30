@@ -46,7 +46,7 @@ paths:
   return root
 }
 
-async function selectiveFixtureWorkspace(): Promise<string> {
+async function selectiveFixtureWorkspace(clean = true): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-selective-prepare-'))
   await mkdir(path.join(root, '.openapi-to'))
   await writeFile(path.join(root, 'openapi.yaml'), `openapi: 3.1.0
@@ -66,7 +66,7 @@ components:
     UserUpdate: { type: object, properties: { name: { type: string } } }
 `)
   await writeFile(path.join(root, 'openapi.config.cjs'), `module.exports = {
-  servers: [{ name: 'main', input: { path: './openapi.yaml' }, output: { dir: 'generated', clean: true } }],
+  servers: [{ name: 'main', input: { path: './openapi.yaml' }, output: { dir: 'generated', clean: ${clean} } }],
   plugins: [{ name: 'selective-prepare-fixture', hooks: { operation(operation, ctx) {
     const id = operation.accessor.operationId;
     ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/' + id + '.txt', content: id + '\\n' });
@@ -174,9 +174,13 @@ describe.sequential('controlled-write stdio tools', () => {
       applySupported: true,
       targets: ['main'],
       selection: {
+        mutationType: 'add',
         previousOperationKeys: [],
         requestedOperationKeys: ['getUser'],
         newlyAddedOperationKeys: ['getUser'],
+        alreadySelectedOperationKeys: [],
+        retainedOperationKeys: [],
+        removedOperationKeys: [],
         desiredOperationKeys: ['getUser'],
         previousSelectionExists: false,
         truncated: false,
@@ -309,6 +313,102 @@ describe.sequential('controlled-write stdio tools', () => {
     expect(await readFile(path.join(output, 'updateUser.txt'), 'utf8')).toBe('updateUser\n')
     const appliedOwnership = JSON.parse(await readFile(path.join(output, '.openapi-to-manifest.json'), 'utf8')) as { files: Array<{ path: string }> }
     expect(appliedOwnership.files.map(({ path: ownedPath }) => ownedPath)).toEqual(['getUser.txt', 'updateUser.txt'])
+  })
+
+  it('replaces the complete desired selection and atomically deletes obsolete managed artifacts', async () => {
+    const root = await selectiveFixtureWorkspace(false)
+    const seeded = await seedSelection(root, ['updateUser', 'getUser'])
+    const output = path.join(root, '.openapi-to/generated')
+    const getUser = new TextEncoder().encode('getUser\n')
+    const updateUser = new TextEncoder().encode('updateUser\n')
+    const ownershipBytes = `${JSON.stringify({
+      version: 2,
+      generator: { name: 'openapi-to', version: 'test' },
+      files: [
+        { path: 'getUser.txt', sha256: hashArtifactContent(getUser), bytes: getUser.byteLength, kind: 'text' },
+        { path: 'updateUser.txt', sha256: hashArtifactContent(updateUser), bytes: updateUser.byteLength, kind: 'text' },
+      ],
+    }, null, 2)}\n`
+    await mkdir(output)
+    await writeFile(path.join(output, 'getUser.txt'), getUser)
+    await writeFile(path.join(output, 'updateUser.txt'), updateUser)
+    await writeFile(path.join(output, 'user-owned.txt'), 'preserve\n')
+    await writeFile(path.join(output, '.openapi-to-manifest.json'), ownershipBytes)
+    const connected = await connect(root, true)
+    clients.push(connected.client)
+
+    const prepared = await connected.client.callTool({
+      name: 'openapi_prepare_generation',
+      arguments: { targets: ['main'], selection: { type: 'replace', operationKeys: ['updateUser', 'updateUser'] } },
+    })
+    expect(prepared.isError).not.toBe(true)
+    const plan = structured(prepared).plan as {
+      planId: string
+      token: string
+      planHash: string
+      selection: {
+        mutationType: string
+        previousOperationKeys: string[]
+        requestedOperationKeys: string[]
+        newlyAddedOperationKeys: string[]
+        alreadySelectedOperationKeys: string[]
+        retainedOperationKeys: string[]
+        removedOperationKeys: string[]
+        desiredOperationKeys: string[]
+        counts: Record<string, number>
+      }
+      projection: { operationCount: number }
+      summary: { added: number; modified: number; deleted: number; unchanged: number }
+      changes: Array<{ path: string; status: string }>
+    }
+    expect(plan.selection).toEqual(expect.objectContaining({
+      mutationType: 'replace',
+      previousOperationKeys: ['getUser', 'updateUser'],
+      requestedOperationKeys: ['updateUser'],
+      newlyAddedOperationKeys: [],
+      alreadySelectedOperationKeys: ['updateUser'],
+      retainedOperationKeys: ['updateUser'],
+      removedOperationKeys: ['getUser'],
+      desiredOperationKeys: ['updateUser'],
+      counts: {
+        previous: 2,
+        requested: 1,
+        newlyAdded: 0,
+        alreadySelected: 1,
+        retained: 1,
+        removed: 1,
+        desired: 1,
+      },
+    }))
+    expect(plan.projection.operationCount).toBe(1)
+    expect(plan.summary).toEqual(expect.objectContaining({ added: 0, modified: 0, deleted: 1, unchanged: 1 }))
+    expect(plan.changes).toEqual([expect.objectContaining({ path: 'getUser.txt', status: 'deleted' })])
+    expect(JSON.stringify(prepared.content)).toContain('managed file deletion')
+    expect(await readFile(seeded.selectionFile, 'utf8')).toBe(seeded.bytes)
+    expect(await readFile(path.join(output, 'getUser.txt'), 'utf8')).toBe('getUser\n')
+    expect(await readFile(path.join(output, 'updateUser.txt'), 'utf8')).toBe('updateUser\n')
+    expect(await readFile(path.join(output, '.openapi-to-manifest.json'), 'utf8')).toBe(ownershipBytes)
+
+    const applied = await connected.client.callTool({
+      name: 'openapi_apply_generation',
+      arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash },
+    })
+    expect(applied.isError).not.toBe(true)
+    expect(structured(applied)).toMatchObject({
+      success: true,
+      applied: true,
+      planKind: 'selective',
+      selectionApplied: true,
+      selectedOperationCount: 1,
+      summary: { added: 0, modified: 0, deleted: 1, unchanged: 1 },
+      deletedFiles: ['getUser.txt'],
+    })
+    expect(JSON.parse(await readFile(seeded.selectionFile, 'utf8'))).toMatchObject({ operations: ['updateUser'] })
+    await expect(access(path.join(output, 'getUser.txt'))).rejects.toThrow()
+    expect(await readFile(path.join(output, 'updateUser.txt'), 'utf8')).toBe('updateUser\n')
+    expect(await readFile(path.join(output, 'user-owned.txt'), 'utf8')).toBe('preserve\n')
+    const ownership = JSON.parse(await readFile(path.join(output, '.openapi-to-manifest.json'), 'utf8')) as { files: Array<{ path: string }> }
+    expect(ownership.files.map(({ path: ownedPath }) => ownedPath)).toEqual(['updateUser.txt'])
   })
 
   it('keeps repeated add byte-stable and follows the full no-op token/apply semantics', async () => {

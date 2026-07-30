@@ -58,4 +58,4 @@ User asks for a user-detail page
 
 Selective dry-run uses only startup-trusted config, plugins, targets, Workspace, remote policy, and output root. It does not accept a source, config path, plugin, output path, content, clean/delete policy, or write authority. It does not create a plan, take the write lock, update an ownership manifest, stage files, or invoke Prepare/Apply. Artifact counts and previews remain under the existing MCP limits, and neither the projected document nor complete components are returned.
 
-Phase 2 B1 defines the project selection manifest, additive union, and selection/projection/artifact plan binding. It still writes nothing. Phase 2 B2 may revalidate and atomically commit the selected artifacts plus ownership and selection manifests.
+Persistent selection uses this projection for both additive union and exact non-empty replacement. Selective Prepare binds the complete desired projection and writes nothing; after explicit approval, Selective Apply regenerates the frozen projection and atomically commits selected artifacts, safe managed deletions, ownership, and selection.

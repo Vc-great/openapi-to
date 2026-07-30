@@ -441,6 +441,7 @@ function printChecklist({ allowWrite, clientPort, proxyPort, fixture }) {
 				"Call openapi_prepare_generation with targets ['fixture'] and selection { type: 'add', operationKeys: ['listPets'] }; confirm kind=selective, applySupported=true, a one-time token, bounded selection/projection summaries, and no Workspace changes.",
 				"Before approval, confirm old-managed.txt and user-owned.txt still exist, client.txt and the derived selection manifest do not, and Prepare wrote no lock, stage, backup, journal, output, ownership, or selection bytes.",
 				"After explicit human approval, call openapi_apply_generation with only the selective planId, token, and approvedPlanHash; confirm generated output, ownership, and the one-operation selection appear together while user-owned.txt stays byte-identical.",
+				"Prepare a non-empty replace selection and confirm mutationType plus previous/requested/added/already-selected/retained/removed/desired summaries, exact counts, truncation, and any managed deletions are visible before approval; never pass operation keys to Apply.",
 				"Replay the selective plan and confirm MCP_PLAN_ALREADY_USED. Then prepare/apply a full plan and confirm its established semantics still work against the now-current output.",
 				"Confirm check is current, a new Prepare is unchanged, no transaction internals remain, then press Ctrl-C and verify the temporary Workspace and both listeners are removed.",
 			]
