@@ -22,6 +22,7 @@ import {
 	parseSkillFrontmatter,
 	parseWorkspacePatterns,
 	REQUIRED_AGENT_DOCUMENTS,
+	REQUIRED_SKILLS,
 	repositoryRoot,
 } from "./repository-contract.mjs";
 
@@ -57,6 +58,25 @@ function skillInterface(name) {
 `;
 }
 
+function implementationSkillContents() {
+	return skillContents(
+		"implement-and-review",
+		`## Primary orchestrator
+
+## 1. Rule discovery
+
+## 3. Scope lock
+
+## 6. Focused validation
+
+## 7. Full diff review
+
+Grade \`P0\`, \`P1\`, and \`P2\`. Run a maximum of three complete review rounds.
+Report \`NOT READY\` when blocked and re-read final Git state.
+`,
+	);
+}
+
 async function createContractFixture(t) {
 	const root = await mkdtemp(join(tmpdir(), "openapi-to-contract-"));
 	t.after(async () => {
@@ -87,6 +107,25 @@ async function createContractFixture(t) {
 		root,
 		".agents/skills/example/agents/openai.yaml",
 		skillInterface("example"),
+	);
+	await writeFixtureFile(
+		root,
+		".agents/skills/implement-and-review/SKILL.md",
+		implementationSkillContents(),
+	);
+	await writeFixtureFile(
+		root,
+		".agents/skills/implement-and-review/agents/openai.yaml",
+		skillInterface("implement-and-review"),
+	);
+	await writeFixtureFile(
+		root,
+		"AGENTS.md",
+		`# AGENTS
+
+\`.agents/skills/example/SKILL.md\`
+\`.agents/skills/implement-and-review/SKILL.md\`
+`,
 	);
 	await writeFixtureFile(root, "scripts/known.mjs", "export {};\n");
 	await git(root, "add", "--", ".");
@@ -150,6 +189,8 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 	assert.deepEqual(result.skills, [...result.skills].sort());
 	assert.ok(result.skills.includes("fix-github-actions"));
 	assert.ok(result.skills.includes("fix-codegen-regression"));
+	assert.ok(result.skills.includes("implement-and-review"));
+	assert.deepEqual(REQUIRED_SKILLS, ["implement-and-review"]);
 });
 
 test("blocking Actions workflows use controlled fixtures and retain diagnostic artifacts", async () => {
@@ -591,7 +632,9 @@ test("legal relative links, anchors, and tracked glob prefixes pass while missin
 	await writeFixtureFile(
 		root,
 		"AGENTS.md",
-		`# references
+		`${await readFile(join(root, "AGENTS.md"), "utf8")}
+
+# references
 
 [valid](docs/valid.md#heading)
 [anchor](#heading)
@@ -648,6 +691,76 @@ test("Skill entrypoints, names, duplicate names, and interfaces fail with specif
 	await git(duplicateRoot, "add", "--", ".agents/skills/other");
 	result = await auditAgentAndSkillContracts(duplicateRoot);
 	assertFailure(result, /duplicate Skill name example/);
+});
+
+test("implementation orchestration lifecycle and routing are mandatory and unique", async (t) => {
+	const missingRequiredRoot = await createContractFixture(t);
+	await git(
+		missingRequiredRoot,
+		"rm",
+		"--cached",
+		"-r",
+		"--",
+		".agents/skills/implement-and-review",
+	);
+	await rm(
+		join(missingRequiredRoot, ".agents/skills/implement-and-review"),
+		{ recursive: true, force: true },
+	);
+	let result = await auditAgentAndSkillContracts(missingRequiredRoot);
+	assertFailure(
+		result,
+		/missing required repository Skill implement-and-review/,
+	);
+
+	const missingLifecycleRoot = await createContractFixture(t);
+	await writeFixtureFile(
+		missingLifecycleRoot,
+		".agents/skills/implement-and-review/SKILL.md",
+		skillContents("implement-and-review", "## Primary orchestrator\n"),
+	);
+	await git(
+		missingLifecycleRoot,
+		"add",
+		"--",
+		".agents/skills/implement-and-review/SKILL.md",
+	);
+	result = await auditAgentAndSkillContracts(missingLifecycleRoot);
+	assertFailure(
+		result,
+		/implement-and-review is missing required lifecycle marker ## 1\. Rule discovery/,
+	);
+
+	const duplicatePrimaryRoot = await createContractFixture(t);
+	await writeFixtureFile(
+		duplicatePrimaryRoot,
+		".agents/skills/example/SKILL.md",
+		skillContents("example", "## Primary orchestrator\n"),
+	);
+	await git(
+		duplicatePrimaryRoot,
+		"add",
+		"--",
+		".agents/skills/example/SKILL.md",
+	);
+	result = await auditAgentAndSkillContracts(duplicatePrimaryRoot);
+	assertFailure(
+		result,
+		/implement-and-review must be the only primary orchestrator/,
+	);
+
+	const missingRouteRoot = await createContractFixture(t);
+	await writeFixtureFile(
+		missingRouteRoot,
+		"AGENTS.md",
+		"# AGENTS\n\n`.agents/skills/implement-and-review/SKILL.md`\n",
+	);
+	await git(missingRouteRoot, "add", "--", "AGENTS.md");
+	result = await auditAgentAndSkillContracts(missingRouteRoot);
+	assertFailure(
+		result,
+		/AGENTS\.md Skill routing is missing \.agents\/skills\/example\/SKILL\.md/,
+	);
 });
 
 test("Skill commands and repository references must resolve to tracked contract inputs", async (t) => {

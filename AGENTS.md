@@ -1,9 +1,9 @@
 # openapi-to agent guide
 
-This file is the repository-wide authority for coding agents. More specific
-`AGENTS.md` files govern their own directory trees, and repeatable task
-procedures live only in `.agents/skills/`. Current tracked code and
-configuration take precedence over stale prose.
+This file is the repository-wide authority for coding agents. It contains
+stable policy, not task recipes. More specific `AGENTS.md` files govern their
+directory trees; repeatable workflows live only in `.agents/skills/`. Current
+tracked code and configuration take precedence over stale prose.
 
 ## Project purpose
 
@@ -34,7 +34,7 @@ The high-level package map is:
 Package builds emit `dist/`; integration tests may create `test-output/`.
 Neither is source unless a tracked fixture explicitly says otherwise.
 
-## Instruction and evidence priority
+## Rule discovery and precedence
 
 Apply constraints in this order:
 
@@ -51,10 +51,41 @@ constraints. Never promote a README claim, dependency capability, planned
 feature, or parallel task into implemented behavior without checking the
 current tree.
 
-Before working in a subtree, re-scan for deeper `AGENTS.md` files and inspect
-the available repository Skills. Invoke the matching Skill when available;
-otherwise read its canonical `SKILL.md`. Skills extend these rules and must not
-be mirrored into another tool/vendor directory.
+Before editing, discover all tracked `AGENTS.md` files and select the root file
+plus every file on the path to each target. A child file may add rules or
+explicitly override an ancestor for its subtree; all other ancestor rules
+continue to apply. Prefer the closest rule when an explicit override exists.
+Stop the affected change and report a blocker when two applicable rules cannot
+be reconciled.
+
+Inspect Skill metadata before loading a workflow. Use one primary workflow and
+only the domain or validation Skills needed by the task. Invoke a matching
+Skill when available; otherwise read its canonical `SKILL.md`. Do not mirror
+repository Skills into another tool/vendor directory.
+
+## Skill routing
+
+Use this table to select the primary workflow. General implementation uses
+`implement-and-review`; a listed domain Skill assists it unless the table
+explicitly names a specialized primary.
+
+| Task | Primary or supporting Skill |
+| --- | --- |
+| Feature, bug fix, refactor, CI/config/documentation change | Primary: `.agents/skills/implement-and-review/SKILL.md` |
+| Add or substantially change a CLI command | Support: `.agents/skills/add-cli-command/SKILL.md` |
+| Add or substantially change a read-only MCP Tool | Support: `.agents/skills/add-mcp-tool/SKILL.md` |
+| Change the MCP Prepare/Apply writer | Support: `.agents/skills/add-mcp-write-tool/SKILL.md` |
+| Add or substantially extend an official plugin | Support: `.agents/skills/add-openapi-plugin/SKILL.md` |
+| Repair generated output | Support: `.agents/skills/fix-codegen-regression/SKILL.md` |
+| Validate changed generated output | Support: `.agents/skills/run-codegen-tests/SKILL.md` |
+| Change OpenAPI/JSON Schema semantics | Support: `.agents/skills/upgrade-openapi-support/SKILL.md` |
+| Repair an existing GitHub Actions failure | Specialized primary: `.agents/skills/fix-github-actions/SKILL.md` |
+| Prepare or verify a release | Specialized primary: `.agents/skills/release-monorepo/SKILL.md` |
+
+Pure explanation, read-only analysis, summaries, status checks, and prompt
+writing do not trigger the write-oriented `implement-and-review` workflow.
+Publication, PR-review-comment handling, and other external operations use
+their host workflow only when the user explicitly requests that exact action.
 
 ## Runtime and tools
 
@@ -84,6 +115,14 @@ be mirrored into another tool/vendor directory.
   diff, including added, deleted, and renamed files, before accepting it.
 - Before changing a public API, inspect workspace call sites, package exports,
   declarations, files lists, aggregate exports, and direct dependents.
+
+## Multi-agent ownership
+
+The primary agent owns the plan, final writes, integration, validation, and
+report. Delegated agents are read-only unless the user explicitly grants a
+non-overlapping write scope. Never let agents edit the same file concurrently.
+Limit delegation to one level, require each delegate to return evidence and
+recommendations, and re-read shared files before integrating any result.
 
 ## Global security
 
@@ -125,9 +164,14 @@ publication.
 Before the final response:
 
 - Re-read the request and confirm the diff remains in scope.
-- Review `git diff --stat`, `git diff --check`, and relevant path-scoped diffs.
+- Review the complete working-tree and staged diff, not only remembered files.
+- Resolve every known P0 and every in-scope P1, then rerun affected validation
+  and review the complete diff again.
+- Require `git diff --check` to pass and verify there are no accidental files.
 - Run the focused checks required by the deeper `AGENTS.md` and matching Skill.
-- State exact commands run and their PASS/FAIL results; never claim an
+- Re-read final `git status --short`, branch, and HEAD after any commit or other
+  Git mutation.
+- State exact commands run with `PASS`, `FAIL`, or `SKIPPED`; never claim an
   unexecuted check passed.
 - List relevant checks not run and why.
 - Separate pre-existing failures from regressions introduced by the change.

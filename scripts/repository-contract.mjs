@@ -57,6 +57,20 @@ export const REQUIRED_AGENT_DOCUMENTS = [
 ];
 
 const SKILL_ROOT = ".agents/skills";
+export const REQUIRED_SKILLS = ["implement-and-review"];
+const PRIMARY_ORCHESTRATOR_MARKER = "## Primary orchestrator";
+const IMPLEMENT_AND_REVIEW_MARKERS = [
+	"## 1. Rule discovery",
+	"## 3. Scope lock",
+	"## 6. Focused validation",
+	"## 7. Full diff review",
+	"`P0`",
+	"`P1`",
+	"`P2`",
+	"maximum of three complete review rounds",
+	"`NOT READY`",
+	"final Git state",
+];
 const OPENAI_INTERFACE_REQUIRED_FIELDS = [
 	"default_prompt",
 	"display_name",
@@ -770,6 +784,8 @@ export async function auditAgentAndSkillContracts(
 	}
 
 	const skillNames = new Set();
+	const skillContentsByName = new Map();
+	const primaryOrchestrators = [];
 	for (const directoryName of skillDirectories) {
 		const relativeSkill = `${SKILL_ROOT}/${directoryName}/SKILL.md`;
 		const skillPath = join(root, relativeSkill);
@@ -778,6 +794,9 @@ export async function auditAgentAndSkillContracts(
 			continue;
 		}
 		const contents = await readFile(skillPath, "utf8");
+		skillContentsByName.set(directoryName, contents);
+		if (contents.includes(PRIMARY_ORCHESTRATOR_MARKER))
+			primaryOrchestrators.push(directoryName);
 		let metadata;
 		try {
 			metadata = parseSkillFrontmatter(contents);
@@ -878,6 +897,38 @@ export async function auditAgentAndSkillContracts(
 			workspaceManifests,
 			failures,
 		);
+	}
+
+	for (const requiredSkill of REQUIRED_SKILLS) {
+		if (!skillDirectories.includes(requiredSkill))
+			failures.push(`missing required repository Skill ${requiredSkill}`);
+	}
+	if (
+		primaryOrchestrators.length !== 1 ||
+		primaryOrchestrators[0] !== "implement-and-review"
+	) {
+		failures.push(
+			`implement-and-review must be the only primary orchestrator (found: ${primaryOrchestrators.join(", ") || "none"})`,
+		);
+	}
+	const implementationSkill = skillContentsByName.get("implement-and-review");
+	if (implementationSkill) {
+		for (const marker of IMPLEMENT_AND_REVIEW_MARKERS) {
+			if (!implementationSkill.includes(marker))
+				failures.push(
+					`implement-and-review is missing required lifecycle marker ${marker}`,
+				);
+		}
+	}
+
+	const rootAgentPath = join(root, "AGENTS.md");
+	if (await exists(rootAgentPath)) {
+		const rootAgent = await readFile(rootAgentPath, "utf8");
+		for (const skillName of skillDirectories) {
+			const route = `${SKILL_ROOT}/${skillName}/SKILL.md`;
+			if (!rootAgent.includes(route))
+				failures.push(`AGENTS.md Skill routing is missing ${route}`);
+		}
 	}
 
 	for (const trackedSkill of sortedUnique(
