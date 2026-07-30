@@ -207,13 +207,15 @@ route.
 
 ```text
 discover Git-tracked repository rules
+  -> require a clean worktree or establish an authorized isolation boundary
   -> classify one primary domain
   -> record task base SHA, initial Git state, scope, and authority
   -> plan
   -> implement
   -> focused validation
+  -> discover and fully review task-created untracked text files
   -> review unstaged/staged and task-base-to-current-tree diff
-  -> review task-base-to-HEAD diff, including after commit
+  -> review task-base-to-HEAD and untracked files again after commit
   -> grade P0/P1/P2
   -> repair in-scope P0/P1
   -> rerun affected validation and complete review (maximum three rounds)
@@ -236,7 +238,19 @@ is not automatically `origin/main`. Complete review includes unstaged and
 staged changes, the task base to the current working tree, and the two-dot task
 base to `HEAD` tree change. After a commit, an empty ordinary `git diff` cannot
 hide the task: the task-base-to-HEAD diff is reviewed again together with fresh
-status, branch, HEAD, and log evidence.
+status, branch, HEAD, log, and untracked-file evidence.
+
+A clean worktree is the ordinary write-task default. Pre-existing changes are
+recorded and preserved, not assumed to be agent work. Unrelated changes favor a
+clean isolated worktree; overlapping targets block editing without explicit
+authorization. If isolation is unavailable, the task-base-to-current-tree view
+is a combined diff and cannot be wholly attributed to the agent. This is a
+conservative ownership boundary, not arbitrary patch attribution.
+
+Untracked discovery uses `git ls-files --others --exclude-standard`. Every
+task-created text file is size-checked and read in full; unexpected or
+unreviewed files prevent readiness. Staging uses explicit authorized paths,
+followed by a complete cached stat, whitespace, and content review.
 
 Completion gates differ by authority. All tasks re-check the request, separate
 fact from inference, report limitations and external operations, and avoid
@@ -245,6 +259,27 @@ does not require build, test, or diff ceremony unless needed for the answer.
 Write tasks record the task base, validate the change, close in-scope P0/P1,
 and review the complete task diff. Discovering a P1 during a read-only task
 does not automatically authorize a repair.
+
+## Real-task Pilot PR gate
+
+```text
+Draft PR
+  -> local validation complete
+  -> autonomous review complete
+  -> repair P0/P1
+  -> push the latest commit
+  -> Ready for review
+  -> wait for remote required checks
+  -> human review of the PR diff
+  -> user decides whether to merge
+```
+
+Local `PASS` is not remote CI `PASS`; name the successful remote workflow or
+check and commit SHA before reporting remote success. `Draft` status is not
+completed remote acceptance. Query checks after the PR becomes Ready for
+review. If check evidence is absent, unavailable, or the repository has no
+verified required-check policy, report `REMOTE CI UNVERIFIED`, not `PASS`.
+Only the user may decide whether to merge; this Pilot never performs the merge.
 
 ## Real-task routing validation
 

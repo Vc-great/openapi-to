@@ -105,8 +105,11 @@ ${routes.join("\n")}
 
 ### Write tasks
 
+- A clean worktree preserves pre-existing changes or uses an isolated worktree.
+- A combined diff must not claim agent ownership.
 - Record the task base with \`git rev-parse HEAD\`.
 - Review the task-base-to-current tree and task-base-to-HEAD diff.
+- Run \`git ls-files --others --exclude-standard\` and read each task-created untracked text file in full.
 `;
 }
 
@@ -123,6 +126,23 @@ Tracked Skill count: \`${EXPECTED_SKILL_ROLES.size}\`.
 | Skill | Contract role |
 | --- | --- |
 ${roles.join("\n")}
+
+## Real-task Pilot PR gate
+
+Draft PR
+local validation complete
+autonomous review complete
+repair P0/P1
+push the latest commit
+Ready for review
+wait for remote required checks
+human review of the PR diff
+user decides whether to merge
+
+Local \`PASS\` is not remote CI \`PASS\`.
+\`Draft\` status is not completed remote acceptance.
+\`REMOTE CI UNVERIFIED\`
+Only the user may decide whether to merge.
 `;
 }
 
@@ -945,6 +965,67 @@ test("implementation lifecycle rejects unsafe discovery and incomplete task-base
 			await auditAgentAndSkillContracts(root),
 			contractCase.failure,
 		);
+	}
+});
+
+test("implementation lifecycle enforces clean-worktree ownership boundaries", async (t) => {
+	const cases = [
+		["A clean worktree is the default precondition", "A dirty worktree is acceptable", /missing required lifecycle marker A clean worktree/],
+		["pre-existing changes", "earlier edits", /missing required lifecycle marker pre-existing changes/],
+		["must not claim agent ownership", "may claim agent ownership", /missing required lifecycle marker must not claim agent ownership/],
+		["isolated worktree", "temporary checkout", /missing required lifecycle marker isolated worktree/],
+		["Never automatically remove or overwrite", "Automatically remove or overwrite", /missing required lifecycle marker Never automatically remove/],
+		["", "\n```sh\ngit clean -fd\n```", /must not recommend destructive command git clean/],
+		["", "\n```sh\ngit reset --hard\n```", /must not recommend destructive command git reset --hard/],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => (from ? contents.replaceAll(from, to) : `${contents}${to}\n`),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
+test("implementation lifecycle fully reviews untracked and staged files", async (t) => {
+	const cases = [
+		["git ls-files --others --exclude-standard", "git status --short", /missing required task-base diff command git ls-files/],
+		["Read every task-created untracked text file in full", "Review every untracked filename", /missing required lifecycle marker Read every task-created/],
+		["untracked file prevents `READY`", "untracked file is acceptable", /missing required lifecycle marker untracked file prevents/],
+		["Unexpected untracked files prevent `READY`", "Unexpected files may be silently ignored", /missing required lifecycle marker Unexpected untracked/],
+		["", "\n```sh\ngit add .\n```", /must not allow unbounded staging command git add \./],
+		["git diff --cached --stat", "git diff --cached --name-only", /missing required task-base diff command git diff --cached --stat/],
+		["After a commit, repeat untracked file discovery", "After a commit, skip untracked discovery", /missing required lifecycle marker After a commit/],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => (from ? contents.replaceAll(from, to) : `${contents}${to}\n`),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
+test("architecture contract enforces the Pilot Draft-to-Ready evidence gate", async (t) => {
+	const cases = [
+		["Ready for review", "Open for discussion", /ordered Pilot PR gate through Ready for review/],
+		["Local `PASS` is not remote CI `PASS`", "Local and remote PASS are equivalent", /missing Pilot PR evidence marker Local/],
+		["`Draft` status is not", "Draft status is", /missing Pilot PR evidence marker `Draft`/],
+		["`REMOTE CI UNVERIFIED`", "`PASS`", /missing Pilot PR evidence marker `REMOTE CI UNVERIFIED`/],
+		["Only the user may decide whether to merge", "The service may automatically merge", /must not allow automatic merge/],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			"docs/agents/agents-and-skills-architecture.md",
+			(contents) => contents.replaceAll(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
 	}
 });
 

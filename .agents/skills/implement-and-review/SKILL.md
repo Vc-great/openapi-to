@@ -50,7 +50,35 @@ failure and `release-monorepo` own release preparation.
 
 ## 3. Scope lock
 
-Before editing, record:
+Before editing, run:
+
+```sh
+git status --short
+git rev-parse HEAD
+```
+
+A clean worktree is the default precondition for an ordinary write task. When
+pre-existing changes exist, record every path and classify whether it is
+related, unrelated, or overlapping. Never automatically remove or overwrite
+pre-existing changes. Continue only with explicit user authorization and
+non-overlapping ownership, or use a clean isolated worktree. An overlapping
+target path blocks the edit until the user authorizes working on the combined
+content or a clean worktree is available.
+
+Prefer an isolated worktree for unrelated pre-existing changes when local Git
+operations are authorized and a safe new path and branch are available. Do not
+delete another worktree, overwrite a branch, prune worktrees, or remove the
+isolated worktree without authorization. Record its path and branch. If safe
+isolation is unsuitable for unrelated changes, stop and report a blocker.
+
+Before treating generated or temporary files as harmless, verify whether Git
+ignores them, who created them, and whether they can affect tests or diffs.
+
+Without a clean or isolated worktree, the task-base-to-current-tree result is a
+combined diff that may contain pre-existing changes. Separate files by their
+initial state. You must not claim agent ownership of the whole combined diff.
+
+Then record:
 
 - the immutable task base SHA from `git rev-parse HEAD`;
 - the initial branch, working tree, and staged state;
@@ -119,12 +147,31 @@ git diff --cached
 git diff --stat "$TASK_BASE_SHA"
 git diff --check "$TASK_BASE_SHA"
 git diff "$TASK_BASE_SHA"
+git ls-files --others --exclude-standard
 ```
 
 The cached commands may be omitted only when nothing is staged. The task base
 commands are the task-base-to-current-working-tree review and remain required
 even when ordinary unstaged or staged diffs are empty. Review the complete task
 diff rather than remembered edits.
+
+Classify each untracked result as task-created, pre-existing, or unexpected.
+Before reading content, inspect the path, type, and size so binary or oversized
+files remain bounded. Read every task-created untracked text file in full and
+review it for correctness, security, tests, documentation, credentials,
+temporary data, and absolute paths. Unexpected untracked files prevent `READY`
+unless they are verified, harmless, explained test output. An unreviewed
+untracked file prevents `READY`; never silently ignore or automatically delete
+one.
+
+Before committing, stage only explicit authorized paths:
+
+```sh
+git add -- <authorized-path-1> <authorized-path-2>
+git diff --cached --stat
+git diff --cached --check
+git diff --cached
+```
 
 After a commit, and after every later Git or remote mutation, also re-read:
 
@@ -136,6 +183,10 @@ git log -1 --oneline
 git diff --stat "$TASK_BASE_SHA"..HEAD
 git diff "$TASK_BASE_SHA"..HEAD
 ```
+
+After a commit, repeat untracked file discovery and the complete
+task-base-to-HEAD review. This verifies both committed additions and any
+unexpected files left outside the commit.
 
 Use the two-dot task-base-to-HEAD diff for the task's tree change. Do not
 substitute a three-dot merge-base diff. If the working tree is still dirty,
@@ -181,6 +232,10 @@ and list each blocker.
 Finish only when:
 
 - the request is implemented and the diff remains in scope;
+- the initial worktree was clean, a clean isolated worktree was used, or the
+  user authorized the recorded non-overlapping/combined ownership boundary;
+- every untracked file is classified and every task-created untracked text file
+  was read in full;
 - no known P0 or in-scope P1 remains;
 - required validation and `git diff --check` pass;
 - no accidental files exist and documentation matches behavior;

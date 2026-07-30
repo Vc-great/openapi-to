@@ -193,10 +193,20 @@ and repository research:
 
 For user-authorized implementation or modification:
 
+- A clean worktree is the default precondition for an ordinary write task. If
+  pre-existing changes exist, preserve and record every path, then continue
+  only with explicit user authorization and non-overlapping ownership or use a
+  clean isolated worktree. Overlapping target paths block the edit.
 - Record the pre-edit `git rev-parse HEAD` as the immutable task base SHA.
 - Review unstaged and staged changes plus the complete task-base-to-current
   working tree and task-base-to-HEAD diff. A commit must not make the task diff
   disappear from review.
+- Without a clean or isolated worktree, call the result a combined diff,
+  and separate paths by their initial state. You must not claim agent ownership
+  of all changes.
+- Run `git ls-files --others --exclude-standard`; classify every result and
+  read each task-created untracked text file in full. An unexplained or
+  unreviewed untracked file prevents readiness.
 - Resolve every known P0 and every in-scope P1, rerun affected validation, and
   review the complete task diff again after the last repair.
 - Require the applicable `git diff --check` checks to pass and verify there are
