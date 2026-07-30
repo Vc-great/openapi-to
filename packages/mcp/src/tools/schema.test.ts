@@ -138,6 +138,14 @@ describe('MCP Tool schemas', () => {
     expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'add', operationKeys: [] } }).success).toBe(true)
     expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'replace', operationKeys: ['getUser'] } }).success).toBe(true)
     expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'replace', operationKeys: [] } }).success).toBe(false)
+    const operationKeys = (count: number) => Array.from({ length: count }, (_, index) => `operation${index}`)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'add', operationKeys: operationKeys(500) } }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'add', operationKeys: operationKeys(501) } }).success).toBe(false)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'replace', operationKeys: operationKeys(500) } }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'replace', operationKeys: operationKeys(501) } }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'replace', operationKeys: operationKeys(5_000) } }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'replace', operationKeys: operationKeys(5_001) } }).success).toBe(false)
+    expect(prepareGenerationInputSchema.safeParse({ selection: { type: 'replace', operationKeys: ['界'.repeat(167)] } }).success).toBe(false)
     for (const selection of [
       { type: 'remove', operationKeys: ['getUser'] },
       { type: 'add', operationKeys: ['getUser'], path: 'selection.json' },

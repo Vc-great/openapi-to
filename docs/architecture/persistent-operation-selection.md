@@ -11,7 +11,7 @@ add:     desired = previous ∪ requested
 replace: desired = requested
 ```
 
-Both mutations deduplicate and code-point-sort operation keys. Replace must name at least one operation; an empty replace is reserved for a future clear capability and is rejected. Generating only additions or only differences would make tag/global aggregates, shared schemas, and the ownership manifest incomplete. Selective Prepare therefore projects and generates the complete desired selection on every request.
+Both mutations deduplicate and code-point-sort operation keys. Add retains its existing 500-key request batch limit because callers can build a selection incrementally. Replace accepts up to the complete 5,000-operation persisted-selection limit because it must express the desired set in one request. Replace must name at least one operation; an empty replace is reserved for a future clear capability and is rejected. Generating only additions or only differences would make tag/global aggregates, shared schemas, and the ownership manifest incomplete. Selective Prepare therefore projects and generates the complete desired selection on every request.
 
 Each current config target already determines one input, plugin set, Workspace, output root, and ownership manifest. B1 consequently uses the target as the selection owner and does not add a destination abstraction. The owner binds the trusted config display identity, target name, and normalized Workspace-relative output root. Its bounded opaque hashes avoid machine paths. State lives at a fixed internally derived path:
 
@@ -36,7 +36,7 @@ Callers may pass only a trusted target name. They cannot pass this path, an outp
 }
 ```
 
-Operations are unique and sorted by code-point lexical order, independent of request order. Version, target, owner, and sorted operations form the semantic SHA-256 hash. Metadata, timestamps, PIDs, random values, and machine paths do not affect it. Unknown fields are rejected. Core exports creation, parsing, strict validation, normalization, generic mutation application, the backward-compatible merge entry point, deterministic serialization, and semantic hashing helpers. Mutation results deterministically expose mutation type, previous, requested, newly added, already selected, retained, removed, and desired keys.
+Operations are unique and sorted by code-point lexical order, independent of request order. Version, target, owner, and sorted operations form the semantic SHA-256 hash. Metadata, timestamps, PIDs, random values, and machine paths do not affect it. Unknown fields are rejected. Core preserves the original add-only `OperationSelectionMutation`, `OperationSelectionMergeResult`, and `mergeOperationSelection()` contracts, including the legacy runtime result shape. New add-or-replace consumers use `PersistentOperationSelectionMutation`, `OperationSelectionMutationResult`, and `applyOperationSelectionMutation()`. Mutation results deterministically expose mutation type, previous, requested, newly added, already selected, retained, removed, and desired keys.
 
 The file is limited to 1 MiB, 5,000 operations, and 500 UTF-8 bytes per key. Reads are bounded and stable, reject symlinks, hard links, and Workspace escape, and compare file identity before/after reading. Corrupt JSON, unsupported versions, duplicate/empty/invalid keys, target/owner mismatch, and concurrent read drift fail closed. Prepare never creates the directory or writes the file.
 

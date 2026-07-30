@@ -64,16 +64,16 @@ const e2eFiles = unique([...integrationFiles, ...coreRecoveryFiles])
 const allVitestFiles = unique([...allMcpFiles, ...coreRecoveryFiles])
 
 const groups = {
-  test: { build: 'write', files: allMcpFiles, expectedTests: 128, timeoutMs: 300_000 },
-  unit: { build: 'core', files: unitFiles, expectedTests: 75, timeoutMs: 120_000 },
-  integration: { build: 'write', files: integrationFiles, expectedTests: 53, timeoutMs: 240_000 },
+  test: { build: 'write', files: allMcpFiles, expectedTests: 131, timeoutMs: 300_000 },
+  unit: { build: 'core', files: unitFiles, expectedTests: 77, timeoutMs: 120_000 },
+  integration: { build: 'write', files: integrationFiles, expectedTests: 54, timeoutMs: 240_000 },
   smoke: { build: 'write', files: smokeFiles, expectedTests: 6, scripts: crossPlatformSmokeScripts, timeoutMs: 120_000 },
-  stdio: { build: 'write', files: stdioFiles, expectedTests: 47, timeoutMs: 240_000 },
-  write: { build: 'write', files: writeFiles, expectedTests: 38, timeoutMs: 180_000 },
-  recovery: { build: 'write', files: recoveryFiles, expectedTests: 122, timeoutMs: 360_000 },
+  stdio: { build: 'write', files: stdioFiles, expectedTests: 48, timeoutMs: 240_000 },
+  write: { build: 'write', files: writeFiles, expectedTests: 39, timeoutMs: 180_000 },
+  recovery: { build: 'write', files: recoveryFiles, expectedTests: 125, timeoutMs: 360_000 },
   performance: { build: 'mcp', files: [], expectedTests: 0, scripts: performanceScripts, timeoutMs: 360_000 },
-  e2e: { build: 'write', files: e2eFiles, expectedTests: 107, scripts: crossPlatformSmokeScripts, timeoutMs: 480_000 },
-  all: { build: 'write', files: allVitestFiles, expectedTests: 182, scripts: [...crossPlatformSmokeScripts, ...performanceScripts], timeoutMs: 600_000 },
+  e2e: { build: 'write', files: e2eFiles, expectedTests: 108, scripts: crossPlatformSmokeScripts, timeoutMs: 480_000 },
+  all: { build: 'write', files: allVitestFiles, expectedTests: 185, scripts: [...crossPlatformSmokeScripts, ...performanceScripts], timeoutMs: 600_000 },
 }
 
 function fail(message) {

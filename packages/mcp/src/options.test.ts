@@ -1,13 +1,14 @@
 import { realpathSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { MAX_TOOL_TIMEOUT_MS, MIN_TOOL_TIMEOUT_MS, resolveMcpServerOptions } from './options.ts'
+import { DEFAULT_WRITE_OPTIONS, MAX_TOOL_TIMEOUT_MS, MIN_TOOL_TIMEOUT_MS, resolveMcpServerOptions } from './options.ts'
 
 describe('MCP timeout options', () => {
   it('uses bounded startup-owned defaults', () => {
     const options = resolveMcpServerOptions({ workspaceRoot: process.cwd() })
     expect(options.workspaceRoot).toBe(realpathSync.native(path.resolve(process.cwd())))
     expect(options.timeouts).toEqual({ validateMs: 30_000, inspectMs: 30_000, diffMs: 45_000, generationMs: 60_000 })
+    expect(options.write).toEqual(DEFAULT_WRITE_OPTIONS)
   })
 
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY, 99.5, MAX_TOOL_TIMEOUT_MS + 1])('rejects unsafe timeout %s', (value) => {

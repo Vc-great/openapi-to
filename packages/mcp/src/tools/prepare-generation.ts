@@ -1,20 +1,34 @@
 import { z } from 'zod'
+import {
+  DEFAULT_MAX_SELECTION_OPERATIONS,
+  MAX_OPERATION_SELECTION_KEY_BYTES,
+} from '@openapi-to/core'
 
 import { safeExecutionDiagnostic } from '../errors.ts'
+import { MAX_ADD_SELECTION_OPERATIONS } from '../generation/selection-state.ts'
 import { prepareGenerationWritePlan, prepareSelectiveGenerationWritePlan } from '../generation/write-plan.ts'
 import { createToolResult, diagnosticSchema, diagnosticSummarySchema, executionFailure, truncateDiagnostics } from '../result.ts'
 import { detachedHandlerExtra, loggedToolCall, type McpHandlerExtra, type ToolContext } from './context.ts'
+
+const encoder = new TextEncoder()
+const operationSelectionKeySchema = z.string()
+  .min(1)
+  .max(MAX_OPERATION_SELECTION_KEY_BYTES)
+  .refine(
+    (operationKey) => encoder.encode(operationKey).byteLength <= MAX_OPERATION_SELECTION_KEY_BYTES,
+    `operationKey must be at most ${MAX_OPERATION_SELECTION_KEY_BYTES} UTF-8 bytes.`,
+  )
 
 export const prepareGenerationInputSchema = z.object({
   targets: z.array(z.string().min(1).max(200)).max(100).optional(),
   selection: z.discriminatedUnion('type', [
     z.object({
       type: z.literal('add'),
-      operationKeys: z.array(z.string().min(1).max(500)).max(500),
+      operationKeys: z.array(operationSelectionKeySchema).max(MAX_ADD_SELECTION_OPERATIONS),
     }).strict(),
     z.object({
       type: z.literal('replace'),
-      operationKeys: z.array(z.string().min(1).max(500)).min(1).max(500),
+      operationKeys: z.array(operationSelectionKeySchema).min(1).max(DEFAULT_MAX_SELECTION_OPERATIONS),
     }).strict(),
   ]).optional(),
   includePreview: z.boolean().optional(),

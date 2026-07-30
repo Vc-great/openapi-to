@@ -64,16 +64,22 @@ describe('operation selection add mutation', () => {
   it('normalizes request order and reports newly added versus already selected keys', () => {
     const first = mergeOperationSelection(normalizeOperationSelection(target, owner, ['B', 'A']), { type: 'add', operationKeys: ['C', 'B', 'C'] })
     const second = mergeOperationSelection(normalizeOperationSelection(target, owner, ['A', 'B']), { type: 'add', operationKeys: ['B', 'C'] })
-    expect(first).toMatchObject({
-      mutationType: 'add',
+    expect(first).toEqual({
+      manifest: normalizeOperationSelection(target, owner, ['A', 'B', 'C']),
       previousOperationKeys: ['A', 'B'],
       requestedOperationKeys: ['B', 'C'],
       newlyAddedOperationKeys: ['C'],
       alreadySelectedOperationKeys: ['B'],
-      retainedOperationKeys: ['A', 'B'],
-      removedOperationKeys: [],
       desiredOperationKeys: ['A', 'B', 'C'],
     })
+    expect(Object.keys(first).sort()).toEqual([
+      'alreadySelectedOperationKeys',
+      'desiredOperationKeys',
+      'manifest',
+      'newlyAddedOperationKeys',
+      'previousOperationKeys',
+      'requestedOperationKeys',
+    ])
     expect(hashOperationSelection(first.manifest)).toBe(hashOperationSelection(second.manifest))
   })
 })
@@ -97,12 +103,10 @@ describe('operation selection replace mutation', () => {
     })
   })
 
-  it('is semantically stable for the same set and remains available through the legacy merge entry point', () => {
+  it('is semantically stable for the same set without widening the legacy merge entry point', () => {
     const previous = normalizeOperationSelection(target, owner, ['B', 'A'])
     const mutation = { type: 'replace' as const, operationKeys: ['A', 'B', 'A'] }
     const direct = applyOperationSelectionMutation(previous, mutation)
-    const compatible = mergeOperationSelection(previous, mutation)
-    expect(compatible).toEqual(direct)
     expect(direct).toMatchObject({
       newlyAddedOperationKeys: [],
       alreadySelectedOperationKeys: ['A', 'B'],
