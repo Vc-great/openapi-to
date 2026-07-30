@@ -18,7 +18,9 @@ import {
 	auditCiDiagnosticsContracts,
 	auditRepositoryContracts,
 	discoverAgentDocuments,
+	EXPECTED_SKILL_ROLES,
 	parseOpenAiSkillYaml,
+	parseSkillRoutingTable,
 	parseSkillFrontmatter,
 	parseWorkspacePatterns,
 	REQUIRED_AGENT_DOCUMENTS,
@@ -59,22 +61,69 @@ function skillInterface(name) {
 }
 
 function implementationSkillContents() {
-	return skillContents(
-		"implement-and-review",
-		`## Primary orchestrator
-
-## 1. Rule discovery
-
-## 3. Scope lock
-
-## 6. Focused validation
-
-## 7. Full diff review
-
-Grade \`P0\`, \`P1\`, and \`P2\`. Run a maximum of three complete review rounds.
-Report \`NOT READY\` when blocked and re-read final Git state.
-`,
+	return readFile(
+		join(repositoryRoot, ".agents/skills/implement-and-review/SKILL.md"),
+		"utf8",
 	);
+}
+
+function roleLabel(role) {
+	return {
+		"general-primary": "Primary",
+		"specialized-primary": "Specialized primary",
+		"domain-support": "Support",
+		"validation-helper": "Validation helper",
+	}[role];
+}
+
+function routingRow(name, role, task = `${name} task`) {
+	return `| ${task} | ${roleLabel(role)}: \`.agents/skills/${name}/SKILL.md\` |`;
+}
+
+function rootAgentContents() {
+	const routes = [...EXPECTED_SKILL_ROLES].map(
+		([name, role]) => routingRow(name, role),
+	);
+	return `# AGENTS
+
+## Skill routing
+
+| Task | Primary or supporting Skill |
+| --- | --- |
+${routes.join("\n")}
+
+## Definition of done
+
+### All tasks
+
+- Re-read the request and report external operations.
+
+### Read-only tasks
+
+- Do not modify files.
+- Finding a P1 does not grant automatic repair authorization.
+
+### Write tasks
+
+- Record the task base with \`git rev-parse HEAD\`.
+- Review the task-base-to-current tree and task-base-to-HEAD diff.
+`;
+}
+
+function architectureContents() {
+	const roles = [...EXPECTED_SKILL_ROLES].map(
+		([name, role]) => `| \`${name}\` | ${role} |`,
+	);
+	return `# Architecture
+
+## Contract-verified Skill roles
+
+Tracked Skill count: \`${EXPECTED_SKILL_ROLES.size}\`.
+
+| Skill | Contract role |
+| --- | --- |
+${roles.join("\n")}
+`;
 }
 
 async function createContractFixture(t) {
@@ -98,34 +147,25 @@ async function createContractFixture(t) {
 	);
 	for (const document of REQUIRED_AGENT_DOCUMENTS)
 		await writeFixtureFile(root, document, `# ${document}\n`);
+	for (const skillName of EXPECTED_SKILL_ROLES.keys()) {
+		await writeFixtureFile(
+			root,
+			`.agents/skills/${skillName}/SKILL.md`,
+			skillName === "implement-and-review"
+				? await implementationSkillContents()
+				: skillContents(skillName),
+		);
+		await writeFixtureFile(
+			root,
+			`.agents/skills/${skillName}/agents/openai.yaml`,
+			skillInterface(skillName),
+		);
+	}
+	await writeFixtureFile(root, "AGENTS.md", rootAgentContents());
 	await writeFixtureFile(
 		root,
-		".agents/skills/example/SKILL.md",
-		skillContents("example"),
-	);
-	await writeFixtureFile(
-		root,
-		".agents/skills/example/agents/openai.yaml",
-		skillInterface("example"),
-	);
-	await writeFixtureFile(
-		root,
-		".agents/skills/implement-and-review/SKILL.md",
-		implementationSkillContents(),
-	);
-	await writeFixtureFile(
-		root,
-		".agents/skills/implement-and-review/agents/openai.yaml",
-		skillInterface("implement-and-review"),
-	);
-	await writeFixtureFile(
-		root,
-		"AGENTS.md",
-		`# AGENTS
-
-\`.agents/skills/example/SKILL.md\`
-\`.agents/skills/implement-and-review/SKILL.md\`
-`,
+		"docs/agents/agents-and-skills-architecture.md",
+		architectureContents(),
 	);
 	await writeFixtureFile(root, "scripts/known.mjs", "export {};\n");
 	await git(root, "add", "--", ".");
@@ -169,6 +209,12 @@ function assertFailure(result, pattern) {
 		result.failures.some((failure) => pattern.test(failure)),
 		`expected failure ${pattern}, received:\n${result.failures.join("\n")}`,
 	);
+}
+
+async function mutateTrackedFixture(root, relativePath, mutate) {
+	const path = join(root, relativePath);
+	await writeFile(path, mutate(await readFile(path, "utf8")));
+	await git(root, "add", "--", relativePath);
 }
 
 test("repository scripts, workspaces, docs, packages, and binary claims stay aligned", async () => {
@@ -525,6 +571,65 @@ name: other
 	);
 });
 
+test("Skill routing parser accepts only the repository two-column role format", () => {
+	const routes = parseSkillRoutingTable(rootAgentContents());
+	assert.equal(routes.length, EXPECTED_SKILL_ROLES.size);
+	assert.deepEqual(routes[0], {
+		task: "implement-and-review task",
+		role: "general-primary",
+		roleLabel: "Primary",
+		skillPath: ".agents/skills/implement-and-review/SKILL.md",
+		skillName: "implement-and-review",
+	});
+	assert.throws(
+		() =>
+			parseSkillRoutingTable(
+				rootAgentContents().replace("## Skill routing", "## Other routing"),
+			),
+		/missing ## Skill routing section/,
+	);
+	assert.throws(
+		() =>
+			parseSkillRoutingTable(
+				rootAgentContents().replace(
+					"| Task | Primary or supporting Skill |",
+					"| Request | Skill |",
+				),
+			),
+		/must use the header "Task \| Primary or supporting Skill"/,
+	);
+	assert.throws(
+		() =>
+			parseSkillRoutingTable(
+				rootAgentContents().replace(
+					"Support: `.agents/skills/add-cli-command/SKILL.md`",
+					"support: `.agents/skills/add-cli-command/SKILL.md`",
+				),
+			),
+		/invalid role or Skill path/,
+	);
+	assert.throws(
+		() =>
+			parseSkillRoutingTable(
+				rootAgentContents().replace(
+					"Support: `.agents/skills/add-cli-command/SKILL.md`",
+					"Support: `.agents/skills/add-cli-command/SKILL.md` and `.agents/skills/add-mcp-tool/SKILL.md`",
+				),
+		),
+		/must reference exactly one Skill path/,
+	);
+	assert.throws(
+		() =>
+			parseSkillRoutingTable(
+				rootAgentContents().replace(
+					".agents/skills/add-cli-command/SKILL.md",
+					".agents/skills/../SKILL.md",
+				),
+			),
+		/invalid role or Skill path/,
+	);
+});
+
 test("Git-tracked AGENTS are discovered dynamically, sorted, and separated from untracked files", async (t) => {
 	const root = await createContractFixture(t);
 	await writeFixtureFile(root, "packages/zeta/AGENTS.md", "# zeta\n");
@@ -659,29 +764,32 @@ test("legal relative links, anchors, and tracked glob prefixes pass while missin
 test("Skill entrypoints, names, duplicate names, and interfaces fail with specific diagnostics", async (t) => {
 	const missingInterfaceRoot = await createContractFixture(t);
 	await rm(
-		join(missingInterfaceRoot, ".agents/skills/example/agents/openai.yaml"),
+		join(
+			missingInterfaceRoot,
+			".agents/skills/add-cli-command/agents/openai.yaml",
+		),
 	);
 	let result = await auditAgentAndSkillContracts(missingInterfaceRoot);
 	assertFailure(
 		result,
-		/missing Skill interface .*example\/agents\/openai\.yaml/,
+		/missing Skill interface .*add-cli-command\/agents\/openai\.yaml/,
 	);
 
 	const mismatchRoot = await createContractFixture(t);
 	await writeFixtureFile(
 		mismatchRoot,
-		".agents/skills/example/SKILL.md",
+		".agents/skills/add-cli-command/SKILL.md",
 		skillContents("other"),
 	);
-	await git(mismatchRoot, "add", "--", ".agents/skills/example/SKILL.md");
+	await git(mismatchRoot, "add", "--", ".agents/skills/add-cli-command/SKILL.md");
 	result = await auditAgentAndSkillContracts(mismatchRoot);
-	assertFailure(result, /name other must match directory example/);
+	assertFailure(result, /name other must match directory add-cli-command/);
 
 	const duplicateRoot = await createContractFixture(t);
 	await writeFixtureFile(
 		duplicateRoot,
 		".agents/skills/other/SKILL.md",
-		skillContents("example"),
+		skillContents("add-cli-command"),
 	);
 	await writeFixtureFile(
 		duplicateRoot,
@@ -690,7 +798,7 @@ test("Skill entrypoints, names, duplicate names, and interfaces fail with specif
 	);
 	await git(duplicateRoot, "add", "--", ".agents/skills/other");
 	result = await auditAgentAndSkillContracts(duplicateRoot);
-	assertFailure(result, /duplicate Skill name example/);
+	assertFailure(result, /duplicate Skill name add-cli-command/);
 });
 
 test("implementation orchestration lifecycle and routing are mandatory and unique", async (t) => {
@@ -734,32 +842,382 @@ test("implementation orchestration lifecycle and routing are mandatory and uniqu
 	const duplicatePrimaryRoot = await createContractFixture(t);
 	await writeFixtureFile(
 		duplicatePrimaryRoot,
-		".agents/skills/example/SKILL.md",
-		skillContents("example", "## Primary orchestrator\n"),
+		".agents/skills/add-cli-command/SKILL.md",
+		skillContents("add-cli-command", "## Primary orchestrator\n"),
 	);
 	await git(
 		duplicatePrimaryRoot,
 		"add",
 		"--",
-		".agents/skills/example/SKILL.md",
+		".agents/skills/add-cli-command/SKILL.md",
 	);
 	result = await auditAgentAndSkillContracts(duplicatePrimaryRoot);
 	assertFailure(
 		result,
-		/implement-and-review must be the only primary orchestrator/,
+		/add-cli-command must not use the formal ## Primary orchestrator heading/,
 	);
 
 	const missingRouteRoot = await createContractFixture(t);
+	const rootAgent = await readFile(join(missingRouteRoot, "AGENTS.md"), "utf8");
 	await writeFixtureFile(
 		missingRouteRoot,
 		"AGENTS.md",
-		"# AGENTS\n\n`.agents/skills/implement-and-review/SKILL.md`\n",
+		rootAgent.replace(
+			"| add-cli-command task | Support: `.agents/skills/add-cli-command/SKILL.md` |\n",
+			"",
+		),
 	);
 	await git(missingRouteRoot, "add", "--", "AGENTS.md");
 	result = await auditAgentAndSkillContracts(missingRouteRoot);
 	assertFailure(
 		result,
-		/AGENTS\.md Skill routing is missing \.agents\/skills\/example\/SKILL\.md/,
+		/AGENTS\.md Skill routing must include add-cli-command exactly once, found 0/,
+	);
+});
+
+test("implementation lifecycle rejects unsafe discovery and incomplete task-base review", async (t) => {
+	const cases = [
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"git ls-files '*AGENTS.md'",
+					"find .. -name AGENTS.md -print",
+				),
+			failure: /must not discover Agent rules with a parent-directory find/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"If Git discovery fails, report a blocker.",
+					"If rule discovery fails, continue carefully.",
+				),
+			failure: /block on Git discovery failure without a filesystem fallback/,
+		},
+		{
+			mutate: (contents) =>
+				contents
+					.replaceAll("task base", "starting point")
+					.replaceAll("task-base", "starting-point"),
+			failure: /must record an immutable task base/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replaceAll("git rev-parse HEAD", "git show HEAD"),
+			failure: /record the task base with git rev-parse HEAD/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace('git diff "$TASK_BASE_SHA"\n', "git diff\n"),
+			failure: /missing required task-base diff command git diff "\$TASK_BASE_SHA"/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					'git diff "$TASK_BASE_SHA"..HEAD',
+					"git diff HEAD",
+				),
+			failure: /missing required task-base diff command git diff "\$TASK_BASE_SHA"\.\.HEAD/,
+		},
+		{
+			mutate: (contents) =>
+				contents
+					.replace("After a commit", "After implementation")
+					.replace("clean post-commit", "clean final"),
+			failure: /require complete diff review after a commit/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replaceAll(
+					"git branch --show-current",
+					"git symbolic-ref --short HEAD",
+				),
+			failure: /missing final Git state command git branch --show-current/,
+		},
+	];
+	for (const contractCase of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			contractCase.mutate,
+		);
+		assertFailure(
+			await auditAgentAndSkillContracts(root),
+			contractCase.failure,
+		);
+	}
+});
+
+test("root Definition of done distinguishes all, read-only, and write tasks", async (t) => {
+	const cases = [
+		{
+			mutate: (contents) => contents.replace("### All tasks", "### Every task"),
+			failure: /Definition of done is missing ### All tasks/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace("### Read-only tasks", "### Analysis tasks"),
+			failure: /Definition of done is missing ### Read-only tasks/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace("### Write tasks", "### Implementation tasks"),
+			failure: /Definition of done is missing ### Write tasks/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace("Do not modify files.", "Modify files when useful."),
+			failure: /read-only tasks must prohibit file writes/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"does not grant automatic repair authorization",
+					"grants automatic repair authorization",
+				),
+			failure: /must not grant automatic repair authorization/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace("task-base-to-HEAD", "current HEAD"),
+			failure: /write tasks must require task-base-to-current and task-base-to-HEAD review/,
+		},
+	];
+	for (const contractCase of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(root, "AGENTS.md", contractCase.mutate);
+		assertFailure(
+			await auditAgentAndSkillContracts(root),
+			contractCase.failure,
+		);
+	}
+});
+
+test("Skill routing audit rejects missing, duplicate, unknown, untracked, and prose-only routes", async (t) => {
+	const missingRoot = await createContractFixture(t);
+	await mutateTrackedFixture(missingRoot, "AGENTS.md", (contents) =>
+		contents.replace("## Skill routing", "## Workflow routing"),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(missingRoot),
+		/missing ## Skill routing section/,
+	);
+
+	const brokenHeaderRoot = await createContractFixture(t);
+	await mutateTrackedFixture(brokenHeaderRoot, "AGENTS.md", (contents) =>
+		contents.replace(
+			"| Task | Primary or supporting Skill |",
+			"| Request | Workflow |",
+		),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(brokenHeaderRoot),
+		/must use the header "Task \| Primary or supporting Skill"/,
+	);
+
+	const duplicateRoot = await createContractFixture(t);
+	await mutateTrackedFixture(duplicateRoot, "AGENTS.md", (contents) =>
+		contents.replace(
+			"\n\n## Definition of done",
+			`\n${routingRow("add-cli-command", "domain-support", "duplicate CLI task")}\n\n## Definition of done`,
+		),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(duplicateRoot),
+		/must include add-cli-command exactly once, found 2/,
+	);
+
+	const proseOnlyRoot = await createContractFixture(t);
+	await mutateTrackedFixture(proseOnlyRoot, "AGENTS.md", (contents) =>
+		`${contents.replace(`${routingRow("add-cli-command", "domain-support")}\n`, "")}
+
+The Skill \`.agents/skills/add-cli-command/SKILL.md\` is discussed here.
+`,
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(proseOnlyRoot),
+		/must include add-cli-command exactly once, found 0/,
+	);
+
+	const unknownRoot = await createContractFixture(t);
+	await mutateTrackedFixture(unknownRoot, "AGENTS.md", (contents) =>
+		contents.replace(
+			"\n\n## Definition of done",
+			`\n${routingRow("unknown", "domain-support")}\n\n## Definition of done`,
+		),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(unknownRoot),
+		/references unknown or untracked Skill .*unknown\/SKILL\.md/,
+	);
+
+	const untrackedRoot = await createContractFixture(t);
+	await writeFixtureFile(
+		untrackedRoot,
+		".agents/skills/local-only/SKILL.md",
+		skillContents("local-only"),
+	);
+	await mutateTrackedFixture(untrackedRoot, "AGENTS.md", (contents) =>
+		contents.replace(
+			"\n\n## Definition of done",
+			`\n${routingRow("local-only", "domain-support")}\n\n## Definition of done`,
+		),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(untrackedRoot),
+		/references unknown or untracked Skill .*local-only\/SKILL\.md/,
+	);
+});
+
+test("Skill routing audit enforces every explicit role", async (t) => {
+	const cases = [
+		{
+			name: "implement-and-review",
+			from: "Primary",
+			to: "Support",
+			failure: /role for implement-and-review must be general-primary, found domain-support/,
+		},
+		{
+			name: "fix-github-actions",
+			from: "Specialized primary",
+			to: "Support",
+			failure: /role for fix-github-actions must be specialized-primary, found domain-support/,
+		},
+		{
+			name: "release-monorepo",
+			from: "Specialized primary",
+			to: "Primary",
+			failure: /role for release-monorepo must be specialized-primary, found general-primary/,
+		},
+		{
+			name: "run-codegen-tests",
+			from: "Validation helper",
+			to: "Specialized primary",
+			failure: /role for run-codegen-tests must be validation-helper, found specialized-primary/,
+		},
+		{
+			name: "add-mcp-tool",
+			from: "Support",
+			to: "Primary",
+			failure: /role for add-mcp-tool must be domain-support, found general-primary/,
+		},
+	];
+	for (const contractCase of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(root, "AGENTS.md", (contents) =>
+			contents.replace(
+				`${contractCase.from}: \`.agents/skills/${contractCase.name}/SKILL.md\``,
+				`${contractCase.to}: \`.agents/skills/${contractCase.name}/SKILL.md\``,
+			),
+		);
+		assertFailure(
+			await auditAgentAndSkillContracts(root),
+			contractCase.failure,
+		);
+	}
+});
+
+test("Skill role mapping is independent of prose and covers exactly tracked Skills", async (t) => {
+	const proseRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		proseRoot,
+		".agents/skills/add-cli-command/SKILL.md",
+		(contents) =>
+			`${contents}\nThis support Skill may discuss the phrase Primary orchestrator without changing its role.\n`,
+	);
+	assert.deepEqual(
+		(await auditAgentAndSkillContracts(proseRoot)).failures,
+		[],
+	);
+
+	const missingHeadingRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		missingHeadingRoot,
+		".agents/skills/implement-and-review/SKILL.md",
+		(contents) =>
+			contents.replace("## Primary orchestrator", "## General workflow"),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(missingHeadingRoot),
+		/missing required lifecycle marker ## Primary orchestrator/,
+	);
+
+	const unmappedTrackedRoot = await createContractFixture(t);
+	await writeFixtureFile(
+		unmappedTrackedRoot,
+		".agents/skills/new-domain/SKILL.md",
+		skillContents("new-domain"),
+	);
+	await writeFixtureFile(
+		unmappedTrackedRoot,
+		".agents/skills/new-domain/agents/openai.yaml",
+		skillInterface("new-domain"),
+	);
+	await git(unmappedTrackedRoot, "add", "--", ".agents/skills/new-domain");
+	assertFailure(
+		await auditAgentAndSkillContracts(unmappedTrackedRoot),
+		/EXPECTED_SKILL_ROLES is missing tracked Skill new-domain/,
+	);
+
+	const nonexistentMappedRoot = await createContractFixture(t);
+	await git(
+		nonexistentMappedRoot,
+		"rm",
+		"--cached",
+		"-r",
+		"--",
+		".agents/skills/release-monorepo",
+	);
+	await rm(join(nonexistentMappedRoot, ".agents/skills/release-monorepo"), {
+		recursive: true,
+		force: true,
+	});
+	assertFailure(
+		await auditAgentAndSkillContracts(nonexistentMappedRoot),
+		/EXPECTED_SKILL_ROLES contains nonexistent Skill release-monorepo/,
+	);
+});
+
+test("architecture role inventory stays aligned with tracked Skills and routing guarantees", async (t) => {
+	const countRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		countRoot,
+		"docs/agents/agents-and-skills-architecture.md",
+		(contents) => contents.replace("Tracked Skill count: `10`.", "Tracked Skill count: `9`."),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(countRoot),
+		/tracked Skill count must equal 10/,
+	);
+
+	const roleRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		roleRoot,
+		"docs/agents/agents-and-skills-architecture.md",
+		(contents) =>
+			contents.replace(
+				"| `run-codegen-tests` | validation-helper |",
+				"| `run-codegen-tests` | specialized-primary |",
+			),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(roleRoot),
+		/role for run-codegen-tests must be validation-helper, found specialized-primary/,
+	);
+
+	const duplicateRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		duplicateRoot,
+		"docs/agents/agents-and-skills-architecture.md",
+		(contents) =>
+			contents.replace(
+				"| `run-codegen-tests` | validation-helper |",
+				"| `run-codegen-tests` | validation-helper |\n| `run-codegen-tests` | validation-helper |",
+			),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(duplicateRoot),
+		/must document run-codegen-tests exactly once, found 2/,
 	);
 });
 
@@ -769,9 +1227,9 @@ test("Skill commands and repository references must resolve to tracked contract 
 	await writeFixtureFile(root, "scripts/local.mjs", "export {};\n");
 	await writeFixtureFile(
 		root,
-		".agents/skills/example/SKILL.md",
+		".agents/skills/add-cli-command/SKILL.md",
 		skillContents(
-			"example",
+			"add-cli-command",
 			`[local reference](../../../references/local.md)
 
 \`scripts/local.mjs\`
@@ -782,7 +1240,7 @@ pnpm missing-script
 `,
 		),
 	);
-	await git(root, "add", "--", ".agents/skills/example/SKILL.md");
+	await git(root, "add", "--", ".agents/skills/add-cli-command/SKILL.md");
 
 	const result = await auditAgentAndSkillContracts(root);
 	assertFailure(result, /names missing root script missing-script/);
