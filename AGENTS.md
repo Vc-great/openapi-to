@@ -159,6 +159,27 @@ configure secrets, or modify remote settings unless the user explicitly asks
 for that exact action. Never describe the Version Packages workflow as npm
 publication.
 
+## Solo-maintainer delivery
+
+Ordinary repository changes should be completed on a short-lived branch or
+Codex worktree and enter `main` through a pull request. Do not default to
+editing, committing, or pushing directly on `main`; an emergency exception
+requires explicit user authorization for the current task.
+
+When commit, push, and pull-request operations are authorized, keep the pull
+request Draft until local validation and P0/P1 review are complete. The latest
+pushed PR head must equal the exact locally reviewed SHA before local handoff
+can be called complete. Local `PASS` is never remote CI `PASS`.
+
+The user remains the merge authority for every pull request. Without explicit
+authorization for that PR, never enable auto-merge, merge it, or bypass
+required checks. Squash merge is the recommended ordinary merge method.
+
+The Version Packages PR prepares versions and changelogs only; it is not npm
+publication. Once the maintained publication workflow exists, npm packages
+must be published through `.github/workflows/publish.yml`, not directly by an
+ordinary implementation task.
+
 ## Definition of done
 
 ### All tasks

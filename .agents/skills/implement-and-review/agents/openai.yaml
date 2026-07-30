@@ -1,4 +1,4 @@
 interface:
   display_name: "Implement and Review"
-  short_description: "Implement, validate, review, and repair scoped changes"
-  default_prompt: "Use $implement-and-review to implement this repository change and close the validation and review loop."
+  short_description: "Implement, review, and hand off scoped repository changes"
+  default_prompt: "Use $implement-and-review to implement this repository change, decide its Changeset, close the review loop, and perform only explicitly authorized remote handoff."

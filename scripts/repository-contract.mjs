@@ -14,6 +14,7 @@ import { promisify } from "node:util";
 import { load as loadYaml } from "js-yaml";
 
 const execFileAsync = promisify(execFile);
+const DOLLAR_SIGN = "$";
 
 export const repositoryRoot = resolve(
 	dirname(fileURLToPath(import.meta.url)),
@@ -66,8 +67,10 @@ const IMPLEMENT_AND_REVIEW_HEADINGS = [
 	"## 6. Focused validation",
 	"## 7. Full diff review",
 	"## 8. Severity and repair loop",
-	"## 9. Completion gate",
+	"## 9. Authorized remote handoff",
+	"## 10. Completion gate",
 ];
+const PUBLISH_WORKFLOW_PATH = ".github/workflows/publish.yml";
 const ARCHITECTURE_DOCUMENT =
 	"docs/agents/agents-and-skills-architecture.md";
 export const EXPECTED_SKILL_ROLES = new Map([
@@ -180,6 +183,534 @@ export async function auditGitHubWorkflowContexts(root = repositoryRoot) {
 						`${relativePath}: jobs.${jobId}.env.${environmentName} must not use the runner context before a runner is assigned`,
 					);
 				}
+			}
+		}
+	}
+
+	return sortedUnique(failures);
+}
+
+function mappingKeys(value) {
+	return isMapping(value) ? Object.keys(value).sort(comparePaths) : [];
+}
+
+function normalizedNeeds(value) {
+	if (typeof value === "string") return [value];
+	if (Array.isArray(value) && value.every((item) => typeof item === "string"))
+		return [...value];
+	return [];
+}
+
+function workflowRunText(job) {
+	if (!isMapping(job) || !Array.isArray(job.steps)) return "";
+	return job.steps
+		.filter(isMapping)
+		.map((step) => (typeof step.run === "string" ? step.run : ""))
+		.join("\n");
+}
+
+function jobEnvironmentName(job) {
+	if (typeof job?.environment === "string") return job.environment;
+	if (isMapping(job?.environment) && typeof job.environment.name === "string")
+		return job.environment.name;
+	return undefined;
+}
+
+async function readWorkflowDocument(root, relativePath, failures) {
+	const path = join(root, relativePath);
+	if (!(await exists(path))) {
+		failures.push(`missing workflow ${relativePath}`);
+		return undefined;
+	}
+	try {
+		const document = loadYaml(await readFile(path, "utf8"), {
+			filename: relativePath,
+		});
+		if (!isMapping(document))
+			failures.push(`${relativePath} must contain one YAML mapping`);
+		return document;
+	} catch (error) {
+		failures.push(
+			`${relativePath} contains invalid YAML: ${error?.reason ?? "parse failed"}`,
+		);
+		return undefined;
+	}
+}
+
+function validateExactJobPermissions(
+	relativePath,
+	jobId,
+	job,
+	expected,
+	failures,
+) {
+	const actual = isMapping(job?.permissions) ? job.permissions : {};
+	if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+		failures.push(
+			`${relativePath} jobs.${jobId}.permissions must equal ${JSON.stringify(expected)}`,
+		);
+	}
+}
+
+export async function auditPublicationContracts(root = repositoryRoot) {
+	const failures = [];
+	const document = await readWorkflowDocument(
+		root,
+		PUBLISH_WORKFLOW_PATH,
+		failures,
+	);
+	if (!document) return sortedUnique(failures);
+	if (!(await isGitTracked(root, PUBLISH_WORKFLOW_PATH))) {
+		failures.push(`${PUBLISH_WORKFLOW_PATH} must be tracked by Git`);
+	}
+
+	const triggers = document.on;
+	if (
+		!isMapping(triggers) ||
+		JSON.stringify(mappingKeys(triggers)) !==
+			JSON.stringify(["workflow_dispatch"])
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must use workflow_dispatch as its only trigger`,
+		);
+	}
+	const dispatch = triggers?.workflow_dispatch;
+	const inputs = isMapping(dispatch?.inputs) ? dispatch.inputs : {};
+	if (
+		JSON.stringify(mappingKeys(inputs)) !==
+		JSON.stringify(["channel", "expected_sha", "expected_version"])
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} workflow_dispatch must define only expected_sha, expected_version, and channel`,
+		);
+	}
+	for (const inputName of ["expected_sha", "expected_version"]) {
+		const input = inputs[inputName];
+		if (
+			!isMapping(input) ||
+			input.required !== true ||
+			input.type !== "string"
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} input ${inputName} must be a required string`,
+			);
+		}
+	}
+	const channelInput = inputs.channel;
+	if (
+		!isMapping(channelInput) ||
+		channelInput.required !== true ||
+		channelInput.type !== "choice" ||
+		JSON.stringify(channelInput.options) !== JSON.stringify(["rc", "latest"])
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} channel must be a required rc/latest choice`,
+		);
+	}
+
+	if (
+		!isMapping(document.concurrency) ||
+		document.concurrency["cancel-in-progress"] !== false ||
+		typeof document.concurrency.group !== "string" ||
+		!document.concurrency.group.includes("inputs.channel")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must serialize publication by channel with cancel-in-progress false`,
+		);
+	}
+	if (
+		isMapping(document.permissions) &&
+		(document.permissions["id-token"] === "write" ||
+			document.permissions.contents === "write")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must not grant write permissions at workflow scope`,
+		);
+	}
+
+	const jobs = isMapping(document.jobs) ? document.jobs : {};
+	for (const jobId of [
+		"preflight",
+		"publish",
+		"verify-registry",
+		"github-release",
+	]) {
+		if (!isMapping(jobs[jobId])) {
+			failures.push(`${PUBLISH_WORKFLOW_PATH} is missing jobs.${jobId}`);
+		}
+	}
+	if (mappingKeys(jobs).some((jobId) => !isMapping(jobs[jobId]))) {
+		failures.push(`${PUBLISH_WORKFLOW_PATH} jobs must all be mappings`);
+	}
+
+	validateExactJobPermissions(
+		PUBLISH_WORKFLOW_PATH,
+		"preflight",
+		jobs.preflight,
+		{ contents: "read" },
+		failures,
+	);
+	validateExactJobPermissions(
+		PUBLISH_WORKFLOW_PATH,
+		"publish",
+		jobs.publish,
+		{ contents: "read", "id-token": "write" },
+		failures,
+	);
+	validateExactJobPermissions(
+		PUBLISH_WORKFLOW_PATH,
+		"verify-registry",
+		jobs["verify-registry"],
+		{ contents: "read" },
+		failures,
+	);
+	validateExactJobPermissions(
+		PUBLISH_WORKFLOW_PATH,
+		"github-release",
+		jobs["github-release"],
+		{ contents: "write" },
+		failures,
+	);
+
+	for (const [jobId, job] of Object.entries(jobs)) {
+		if (!isMapping(job?.permissions)) continue;
+		if (
+			job.permissions["id-token"] === "write" &&
+			jobId !== "publish"
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} only jobs.publish may receive id-token: write`,
+			);
+		}
+		if (
+			job.permissions.contents === "write" &&
+			jobId !== "github-release"
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} only jobs.github-release may receive contents: write`,
+			);
+		}
+	}
+
+	if (
+		JSON.stringify(normalizedNeeds(jobs.publish?.needs)) !==
+		JSON.stringify(["preflight"])
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} jobs.publish must need only preflight`,
+		);
+	}
+	if (
+		JSON.stringify(normalizedNeeds(jobs["verify-registry"]?.needs).sort()) !==
+		JSON.stringify(["preflight", "publish"])
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} jobs.verify-registry must need preflight and publish`,
+		);
+	}
+	if (
+		!normalizedNeeds(jobs["github-release"]?.needs).includes(
+			"verify-registry",
+		)
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} jobs.github-release must depend on registry verification`,
+		);
+	}
+	if (Object.hasOwn(jobs["github-release"] ?? {}, "if")) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} jobs.github-release must use the default successful-needs gate`,
+		);
+	}
+	if (jobEnvironmentName(jobs.publish) !== "npm-production") {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} jobs.publish must use environment npm-production`,
+		);
+	}
+
+	const preflightRuns = workflowRunText(jobs.preflight);
+	for (const marker of [
+		"git fetch --no-tags origin main",
+		"publication.mjs verify-sha",
+		`--expected-sha "${DOLLAR_SIGN}{EXPECTED_SHA}"`,
+		`--github-sha "${DOLLAR_SIGN}{GITHUB_SHA}"`,
+		`--github-ref "${DOLLAR_SIGN}{GITHUB_REF}"`,
+		".success == true",
+		".expectedSha",
+		"publication.mjs preflight",
+		"pnpm release:check",
+	]) {
+		if (!preflightRuns.includes(marker)) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} preflight is missing blocking guard ${marker}`,
+			);
+		}
+	}
+	const guardStep = jobs.preflight?.steps?.find(
+		(step) => isMapping(step) && step.id === "guard",
+	);
+	if (
+		!isMapping(guardStep) ||
+		guardStep.env?.EXPECTED_SHA !==
+			`${DOLLAR_SIGN}{{ inputs.expected_sha }}` ||
+		typeof guardStep.run !== "string" ||
+		!guardStep.run.includes(
+			'guard="$(node scripts/release/publication.mjs verify-sha',
+		)
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} preflight guard must bind the dispatch expected SHA to the maintained SHA verifier`,
+		);
+	}
+	const readinessStep = jobs.preflight?.steps?.find(
+		(step) => isMapping(step) && step.id === "release-readiness",
+	);
+	if (
+		!isMapping(readinessStep) ||
+		readinessStep.run !== "pnpm release:check" ||
+		Object.hasOwn(readinessStep, "if") ||
+		Object.hasOwn(readinessStep, "continue-on-error")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} preflight release readiness must be an unconditional blocking step`,
+		);
+	}
+	const publishRuns = workflowRunText(jobs.publish);
+	for (const marker of [
+		"npm@12.0.2",
+		"publication.mjs preflight",
+		"publication.mjs publish",
+		`--expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}"`,
+		`--channel "${DOLLAR_SIGN}{CHANNEL}"`,
+		"--npm-version 12.0.2",
+		`test "${DOLLAR_SIGN}{CHANNEL}" = "${DOLLAR_SIGN}{DIST_TAG}"`,
+	]) {
+		if (!publishRuns.includes(marker)) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} publish is missing required behavior ${marker}`,
+			);
+		}
+	}
+	if (
+		publishRuns.includes("pnpm exec changeset publish") ||
+		publishRuns.includes("pnpm publish")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} publish must not bypass the pinned npm publication adapter`,
+		);
+	}
+	const publicationStep = jobs.publish?.steps?.find(
+		(step) => isMapping(step) && step.id === "publish",
+	);
+	const expectedPublicationRun = [
+		`test "${DOLLAR_SIGN}{CHANNEL}" = "${DOLLAR_SIGN}{DIST_TAG}"`,
+		"node scripts/release/publication.mjs publish \\",
+		`  --expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}" \\`,
+		`  --channel "${DOLLAR_SIGN}{CHANNEL}" \\`,
+		"  --npm-version 12.0.2",
+		"",
+	].join("\n");
+	if (
+		!isMapping(publicationStep) ||
+		publicationStep.run !== expectedPublicationRun ||
+		Object.hasOwn(publicationStep, "if") ||
+		Object.hasOwn(publicationStep, "continue-on-error")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} npm publication must be an exact unconditional blocking step`,
+		);
+	}
+	const publicationScriptPath = "scripts/release/publication.mjs";
+	const publicationScript = await readFile(
+		join(root, publicationScriptPath),
+		"utf8",
+	);
+	for (const marker of [
+		"publishWithChangesetsNpm",
+		`manifest.packageManager = \`npm@${DOLLAR_SIGN}{npmVersion}\``,
+		'join(root, "node_modules/.bin/changeset")',
+		'join(root, ".changeset/pre.json")',
+		"await unlink(preStatePath)",
+		'"--tag"',
+		"facts.distTag",
+		"finally {",
+		"writeFile(manifestPath, originalManifest)",
+		"writeFile(preStatePath, originalPreState)",
+	]) {
+		if (!publicationScript.includes(marker)) {
+			failures.push(
+				`${publicationScriptPath} is missing pinned npm/Changesets adapter behavior ${marker}`,
+			);
+		}
+	}
+	const recoveryStep = jobs.publish?.steps?.find(
+		(step) =>
+			isMapping(step) &&
+			step.name === "Report partial-publication recovery facts",
+	);
+	if (
+		!isMapping(recoveryStep) ||
+		recoveryStep.if !==
+			`${DOLLAR_SIGN}{{ failure() && steps.publish.outcome == 'failure' }}` ||
+		recoveryStep.run !==
+			`node scripts/release/publication.mjs verify-registry --expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}" --channel "${DOLLAR_SIGN}{CHANNEL}" --attempts 1 --delay-ms 0 --timeout-ms 5000`
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} publish failure must run explicit non-masking partial-publication recovery`,
+		);
+	}
+	const publishSetupNode = jobs.publish?.steps?.find(
+		(step) => isMapping(step) && step.uses === "actions/setup-node@v6",
+	);
+	if (
+		!isMapping(publishSetupNode?.with) ||
+		publishSetupNode.with["node-version"] !== "24.15.0" ||
+		publishSetupNode.with["package-manager-cache"] !== false ||
+		Object.hasOwn(publishSetupNode.with, "cache")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} publish must use explicit Node 24.15.0 with setup-node caching disabled`,
+		);
+	}
+	const verifyRuns = workflowRunText(jobs["verify-registry"]);
+	if (
+		!verifyRuns.includes("publication.mjs verify-registry") ||
+		!verifyRuns.includes("--attempts 6") ||
+		!verifyRuns.includes("--delay-ms 10000") ||
+		!verifyRuns.includes("--timeout-ms 10000")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} registry verification must use bounded maintained-script retries`,
+		);
+	}
+	const registryVerificationStep = jobs["verify-registry"]?.steps?.find(
+		(step) => isMapping(step) && step.id === "registry-verification",
+	);
+	if (
+		!isMapping(registryVerificationStep) ||
+		registryVerificationStep.run !==
+			`node scripts/release/publication.mjs verify-registry --expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}" --channel "${DOLLAR_SIGN}{CHANNEL}" --attempts 6 --delay-ms 10000 --timeout-ms 10000` ||
+		Object.hasOwn(registryVerificationStep, "if") ||
+		Object.hasOwn(registryVerificationStep, "continue-on-error")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} registry verification must be an unconditional blocking step`,
+		);
+	}
+	const releaseRuns = workflowRunText(jobs["github-release"]);
+	for (const marker of [
+		"EXPECTED_SHA",
+		"EXPECTED_VERSION",
+		"VERIFIED_CHANNEL",
+		"packages/openapi/CHANGELOG.md",
+		"/git/refs",
+		"gh release create",
+		"--verify-tag",
+	]) {
+		if (!releaseRuns.includes(marker)) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} GitHub release is missing verified behavior ${marker}`,
+			);
+		}
+	}
+	for (const [jobId, job] of Object.entries(jobs)) {
+		if (jobId === "github-release") continue;
+		const runs = workflowRunText(job);
+		for (const forbidden of [
+			"gh release",
+			"/git/refs",
+			"git tag",
+			"git push --tags",
+		]) {
+			if (runs.includes(forbidden)) {
+				failures.push(
+					`${PUBLISH_WORKFLOW_PATH} ${forbidden} must occur only after registry verification`,
+				);
+			}
+		}
+	}
+
+	const source = await readFile(join(root, PUBLISH_WORKFLOW_PATH), "utf8");
+	for (const forbidden of [
+		"NPM_TOKEN",
+		"NODE_AUTH_TOKEN",
+		"continue-on-error",
+		"pull_request_target:",
+	]) {
+		if (source.includes(forbidden)) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} contains forbidden publication behavior ${forbidden}`,
+			);
+		}
+	}
+	if (/secrets\.[A-Z0-9_]*(?:NPM|NODE_AUTH|AUTOMATION)/i.test(source)) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must not reference an npm automation secret`,
+		);
+	}
+
+	const templatePath = ".github/pull_request_template.md";
+	if (!(await exists(join(root, templatePath)))) {
+		failures.push(`missing pull request template ${templatePath}`);
+	} else {
+		if (!(await isGitTracked(root, templatePath))) {
+			failures.push(`${templatePath} must be tracked by Git`);
+		}
+		const template = await readFile(join(root, templatePath), "utf8");
+		for (const marker of [
+			"## Summary",
+			"## Scope",
+			"## Non-goals",
+			"## Public impact",
+			"## Changeset",
+			"Not required — reason",
+			"## Validation",
+			"## Autonomous review",
+			"Remaining P0 / P1 / P2",
+			"## Remote state",
+			"Local reviewed SHA",
+			"PR head SHA",
+			"Remote CI",
+			"## External operations",
+			"Publication / tag / GitHub Release",
+		]) {
+			if (!template.includes(marker)) {
+				failures.push(`${templatePath} is missing handoff field ${marker}`);
+			}
+		}
+	}
+
+	const versionPath = ".github/workflows/version-packages.yml";
+	const versionDocument = await readWorkflowDocument(
+		root,
+		versionPath,
+		failures,
+	);
+	if (versionDocument) {
+		const versionSource = await readFile(join(root, versionPath), "utf8");
+		if (
+			JSON.stringify(mappingKeys(versionDocument.permissions)) !==
+				JSON.stringify(["contents", "pull-requests"]) ||
+			versionDocument.permissions.contents !== "write" ||
+			versionDocument.permissions["pull-requests"] !== "write"
+		) {
+			failures.push(
+				`${versionPath} must grant only contents: write and pull-requests: write`,
+			);
+		}
+		for (const forbidden of [
+			"changeset publish",
+			"npm publish",
+			"pnpm publish",
+			"id-token: write",
+			"npm-production",
+			"NPM_TOKEN",
+			"NODE_AUTH_TOKEN",
+		]) {
+			if (versionSource.includes(forbidden)) {
+				failures.push(
+					`${versionPath} contains forbidden publication behavior ${forbidden}`,
+				);
 			}
 		}
 	}
@@ -1052,11 +1583,112 @@ function validateImplementationSkill(contents, failures) {
 		"Unexpected untracked files prevent `READY`",
 		"untracked file prevents `READY`",
 		"After a commit, repeat untracked file discovery",
+		"Changeset decision",
+		"Draft PR",
+		"exact locally reviewed",
+		"`REMOTE CI PENDING`",
+		"`REMOTE CI UNVERIFIED`",
+		"Never enable auto-merge",
+		"always the merge authority",
 	]) {
 		if (!contents.includes(marker))
 			failures.push(
 				`implement-and-review is missing required lifecycle marker ${marker}`,
 			);
+	}
+
+	let remoteHandoff;
+	try {
+		remoteHandoff = markdownSection(
+			contents,
+			"## 9. Authorized remote handoff",
+		).join("\n");
+	} catch (error) {
+		failures.push(`implement-and-review ${error.message}`);
+		return;
+	}
+	const orderedRemoteMarkers = [
+		"### A. Remote operations not authorized",
+		"`LOCAL READY`",
+		"Do not commit, push, or create/update a pull request.",
+		"### B. Commit, push, and pull request explicitly authorized",
+		"Draft PR",
+		"current head SHA",
+		"Ready for review",
+		"`REMOTE CI PENDING`",
+		"`REMOTE CI FAILED`",
+		"`REMOTE CI UNVERIFIED`",
+		"`REMOTE CI PASS`",
+		"Never enable auto-merge",
+	];
+	let priorIndex = -1;
+	for (const marker of orderedRemoteMarkers) {
+		const markerIndex = remoteHandoff.indexOf(marker);
+		if (markerIndex < 0 || markerIndex <= priorIndex) {
+			failures.push(
+				`implement-and-review remote handoff must preserve the ordered safety gate through ${marker}`,
+			);
+			break;
+		}
+		priorIndex = markerIndex;
+	}
+}
+
+function validateReleaseSkill(contents, failures) {
+	for (const heading of [
+		"## Two-phase release state machine",
+		"### Phase A: Version candidate",
+		"### Phase B: Publication",
+		"## Preparation workflow",
+	]) {
+		if (!hasExactLine(contents, heading)) {
+			failures.push(`release-monorepo is missing required marker ${heading}`);
+		}
+	}
+	let stateMachine;
+	try {
+		stateMachine = markdownSection(
+			contents,
+			"## Two-phase release state machine",
+		).join("\n");
+	} catch (error) {
+		failures.push(`release-monorepo ${error.message}`);
+		return;
+	}
+	const normalizedStateMachine = stateMachine.replace(/\s+/g, " ");
+	const markers = [
+		"defaults to preparation-only",
+		"Version Packages PR",
+		"not publication",
+		"exact expected `main` SHA",
+		"exact fixed-group version",
+		"`rc` or `latest` channel",
+		"manual publication Workflow",
+		"npm-production",
+		"Trusted Publishing/OIDC",
+		"verify every expected package version and dist-tag",
+		"partial publication recovery",
+		"nonzero failure",
+		"do not trigger the Workflow",
+	];
+	for (const marker of markers) {
+		if (!normalizedStateMachine.includes(marker)) {
+			failures.push(
+				`release-monorepo two-phase release is missing safety marker ${marker}`,
+			);
+		}
+	}
+	if (
+		normalizedStateMachine.indexOf(
+			"verify every expected package version and dist-tag",
+		) >
+		normalizedStateMachine.indexOf(
+			"create the immutable version tag and GitHub Release",
+		)
+	) {
+		failures.push(
+			"release-monorepo must place registry verification before tag and GitHub Release creation",
+		);
 	}
 }
 
@@ -1309,6 +1941,41 @@ export async function auditAgentAndSkillContracts(
 					`${relativeSkill} description must be non-empty, specific, and state when to use the Skill`,
 				);
 			}
+			if (
+				directoryName === "implement-and-review" &&
+				![
+					"Implement",
+					"fix",
+					"repository change",
+					"review loop",
+					"Changeset decision",
+					"Draft PR",
+					"remote handoff",
+					"CI handoff",
+				].every((marker) => metadata.description.includes(marker))
+			) {
+				failures.push(
+					`${relativeSkill} description must route implementation, review, Changeset, Draft PR, remote, and CI handoff requests`,
+				);
+			}
+			if (
+				directoryName === "release-monorepo" &&
+				![
+					"Version Packages PR",
+					"Changesets",
+					"RC",
+					"stable",
+					"npm publication",
+					"dist-tags",
+					"Git tags",
+					"GitHub Releases",
+					"partial-publication recovery",
+				].every((marker) => metadata.description.includes(marker))
+			) {
+				failures.push(
+					`${relativeSkill} description must route versioning, channel, publication, tag, release, and recovery requests`,
+				);
+			}
 		}
 
 		const relativeOpenAiYaml = `${SKILL_ROOT}/${directoryName}/agents/openai.yaml`;
@@ -1407,6 +2074,10 @@ export async function auditAgentAndSkillContracts(
 	const implementationSkill = skillContentsByName.get("implement-and-review");
 	if (implementationSkill) {
 		validateImplementationSkill(implementationSkill, failures);
+	}
+	const releaseSkill = skillContentsByName.get("release-monorepo");
+	if (releaseSkill) {
+		validateReleaseSkill(releaseSkill, failures);
 	}
 	for (const [skillName, contents] of skillContentsByName) {
 		if (
@@ -1891,6 +2562,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	failures.push(...agentSkillAudit.failures);
 	failures.push(...(await auditCiDiagnosticsContracts(root)));
 	failures.push(...(await auditGitHubWorkflowContexts(root)));
+	failures.push(...(await auditPublicationContracts(root)));
 
 	if (
 		rootManifest.scripts?.["version:canary"] !==

@@ -1,6 +1,6 @@
 ---
 name: release-monorepo
-description: Prepare and verify an openapi-to monorepo release by identifying affected packages, classifying semver impact, checking workspace dependencies, exports, declarations, packed files, Changesets readiness, changelogs, tags, generated artifacts, and the pre-publish test matrix. Use for release planning or package publication readiness; default to preparation only and never publish, push, or create remote tags without explicit user authorization.
+description: Prepare and verify openapi-to Version Packages PRs, Changesets, RC or stable releases, npm publication and dist-tags, Git tags, GitHub Releases, and partial-publication recovery. Use for release planning, prerelease/stable readiness, or an exactly authorized manual publication workflow; default to preparation-only and never publish, push, tag, or create a release without explicit authority.
 ---
 
 # Prepare a monorepo release
@@ -19,7 +19,47 @@ Establish:
 
 If the base/tag is unknown, Changesets configuration is missing, the worktree includes unexplained release artifacts, or publication authority is absent, continue with read-only analysis but stop before versioning/tagging/publishing.
 
-## Workflow
+## Two-phase release state machine
+
+This Skill defaults to preparation-only. Versioning and publication are
+separate phases with separate authorization.
+
+### Phase A: Version candidate
+
+1. Ordinary, meaningful Changesets enter `main` with their implementation.
+2. Changesets Action creates or updates the Version Packages PR.
+3. Run Version Readiness, Quality, E2E, and cross-platform checks as required.
+4. Inspect versions, changelogs, the fixed group, and prerelease state.
+5. The user decides whether to merge the Version Packages PR.
+
+This phase must not publish npm packages, change an npm dist-tag, create a Git
+tag, or create a GitHub Release. The Version Packages PR is version and
+changelog preparation, not publication.
+
+### Phase B: Publication
+
+Enter this phase only when the user explicitly specifies and authorizes the
+exact expected `main` SHA, exact fixed-group version, and exact `rc` or
+`latest` channel, plus triggering the manual publication Workflow.
+
+The controlled Workflow must verify `main`, expected SHA, expected version, and
+channel; run release readiness before registry authority; pass the
+`npm-production` Environment; publish with npm Trusted Publishing/OIDC; verify
+every expected package version and dist-tag in the registry; and only then
+create the immutable version tag and GitHub Release. It must output complete
+publication facts.
+
+If only some packages are visible, enter explicit partial publication recovery:
+record the published and missing package/version/channel facts, preserve a
+nonzero failure, and rerun only the same authorized candidate through the
+idempotent controlled Workflow. Never overwrite an existing package version,
+silently skip the mismatch, or repair it by moving a dist-tag before the facts
+are understood.
+
+Without the exact Phase B authorization, do not trigger the Workflow, publish,
+modify dist-tags, create tags, or create a GitHub Release.
+
+## Preparation workflow
 
 ### 1. Establish a clean evidence boundary
 
@@ -134,7 +174,12 @@ Output an ordered plan containing:
 - Intended tag/dist-tag/channel and rollback notes.
 - Exact operations requiring user authorization.
 
-The automated Version Packages PR is versioning only. Do not run root `release`, package `release`, `changeset publish`, `pnpm publish`, `npm publish`, create/push a tag, or create a GitHub Release unless the user explicitly asks for that external change. Ask again if the exact packages/channel differ from the approved plan.
+The automated Version Packages PR is versioning only. Unless Phase B has the
+exact authorization above, do not trigger `.github/workflows/publish.yml`, run
+root `release`, package `release`, `changeset publish`, `pnpm publish`, or
+`npm publish`, modify an npm dist-tag, create/push a tag, or create a GitHub
+Release. Ask again if the expected SHA, expected version, packages, or channel
+differ from the approved plan.
 
 ## Stop conditions and prohibited actions
 

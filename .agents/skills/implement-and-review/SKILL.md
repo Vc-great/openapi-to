@@ -1,6 +1,6 @@
 ---
 name: implement-and-review
-description: Implement and close the review loop for scoped openapi-to features, bug fixes, refactors, CI/configuration changes, documentation changes, and other cross-file work. Use when the user requests repository changes that require implementation, focused validation, complete diff review, repair of P0/P1 findings, revalidation, and a truthful final Git report; do not use for pure explanation, read-only analysis, summaries, status checks, prompt writing, release preparation, or PR-review-comment handling.
+description: Implement or fix a scoped openapi-to repository change and close its review loop, Changeset decision, Draft PR remote handoff, and CI handoff. Use when the user requests implementation, validation, complete diff review, P0/P1 repair, or an explicitly authorized commit/push/PR handoff; do not use for pure explanation, read-only analysis, release preparation or npm publication, or PR-review-comment handling.
 ---
 
 # Implement and review repository changes
@@ -95,6 +95,16 @@ Classify newly discovered work as `required now`, `related follow-up`, or
 authorization before a material product or external-operation expansion.
 Do not replace the task base with `origin/main`: a task may intentionally start
 from an existing feature branch or unmerged commit.
+
+### Changeset decision
+
+- Add a meaningful Changeset for a user-visible fix, feature, or breaking
+  change to a public package.
+- A pure CI/test change, internal refactor, or documentation change with no
+  user-visible package impact may omit one, but record the concrete reason.
+- Never add an empty Changeset merely to satisfy a gate.
+- A Version Packages PR consumes existing feature Changesets and must not add a
+  new functional Changeset.
 
 ## 4. Execution plan
 
@@ -227,7 +237,38 @@ unrelated P2 work, or enlarge the product goal. Reaching the limit does not
 make the task complete: if any P0 or in-scope P1 remains, report `NOT READY`
 and list each blocker.
 
-## 9. Completion gate
+## 9. Authorized remote handoff
+
+Remote writes remain a separate authority boundary.
+
+### A. Remote operations not authorized
+
+Stop after local completion and report `LOCAL READY` or `NOT READY`, current
+branch, task base, HEAD, working-tree state, complete diff range, Changeset
+decision, validation results, review rounds, and remaining P0/P1/P2 findings.
+Do not commit, push, or create/update a pull request.
+
+### B. Commit, push, and pull request explicitly authorized
+
+1. Stage only the authorized paths and review the complete cached diff before
+   committing.
+2. Record the exact current locally reviewed SHA and push that SHA.
+3. Create or update a Draft PR. Its description must include scope, non-goals,
+   public impact and Changeset decision, validation, and review results.
+4. Verify the PR's current head SHA equals the exact locally reviewed and
+   pushed SHA. Never reuse review or check evidence from an older SHA.
+5. A Draft PR may become Ready for review only after `LOCAL READY`, and only
+   when that remote state change is within the user's explicit authorization.
+6. Query and wait for required checks belonging to the current PR head SHA.
+   Report `REMOTE CI PENDING` while incomplete, `REMOTE CI FAILED` on a real
+   failure, and `REMOTE CI UNVERIFIED` when the required-check policy or
+   current-SHA evidence cannot be confirmed. Report `REMOTE CI PASS` only for
+   verified successful required checks on that exact SHA.
+
+Never enable auto-merge, merge the PR, or bypass required checks. The user is
+always the merge authority.
+
+## 10. Completion gate
 
 Finish only when:
 

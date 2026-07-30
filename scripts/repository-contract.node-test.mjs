@@ -17,6 +17,7 @@ import {
 	auditAgentAndSkillContracts,
 	auditCiDiagnosticsContracts,
 	auditGitHubWorkflowContexts,
+	auditPublicationContracts,
 	auditRepositoryContracts,
 	discoverAgentDocuments,
 	EXPECTED_SKILL_ROLES,
@@ -30,6 +31,7 @@ import {
 } from "./repository-contract.mjs";
 
 const execFileAsync = promisify(execFile);
+const DOLLAR_SIGN = "$";
 
 async function writeFixtureFile(root, relativePath, contents) {
 	const path = join(root, relativePath);
@@ -66,6 +68,36 @@ function implementationSkillContents() {
 		join(repositoryRoot, ".agents/skills/implement-and-review/SKILL.md"),
 		"utf8",
 	);
+}
+
+function releaseSkillContents() {
+	return `---
+name: release-monorepo
+description: Prepare Version Packages PRs and Changesets for RC or stable npm publication and dist-tags, Git tags, GitHub Releases, and partial-publication recovery. Use for release planning and exactly authorized manual publication; default to preparation-only without remote writes.
+---
+
+# Release
+
+## Two-phase release state machine
+
+This Skill defaults to preparation-only.
+
+### Phase A: Version candidate
+
+The Version Packages PR prepares versions and changelogs; it is not publication.
+
+### Phase B: Publication
+
+Require the exact expected \`main\` SHA, exact fixed-group version, \`rc\` or
+\`latest\` channel, and manual publication Workflow. Use npm-production and
+Trusted Publishing/OIDC, then verify every expected package version and
+dist-tag before create the immutable version tag and GitHub Release.
+
+For partial publication recovery, preserve a nonzero failure. Without exact
+authorization, do not trigger the Workflow.
+
+## Preparation workflow
+`;
 }
 
 function roleLabel(role) {
@@ -174,7 +206,9 @@ async function createContractFixture(t) {
 			`.agents/skills/${skillName}/SKILL.md`,
 			skillName === "implement-and-review"
 				? await implementationSkillContents()
-				: skillContents(skillName),
+				: skillName === "release-monorepo"
+					? releaseSkillContents()
+					: skillContents(skillName),
 		);
 		await writeFixtureFile(
 			root,
@@ -189,6 +223,28 @@ async function createContractFixture(t) {
 		architectureContents(),
 	);
 	await writeFixtureFile(root, "scripts/known.mjs", "export {};\n");
+	await git(root, "add", "--", ".");
+	return root;
+}
+
+async function createPublicationContractFixture(t) {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-publication-contract-"));
+	t.after(async () => {
+		await rm(root, { recursive: true, force: true });
+	});
+	await git(root, "init", "--quiet");
+	for (const relativePath of [
+		".github/workflows/publish.yml",
+		".github/workflows/version-packages.yml",
+		".github/pull_request_template.md",
+		"scripts/release/publication.mjs",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
 	await git(root, "add", "--", ".");
 	return root;
 }
@@ -560,6 +616,336 @@ test("CI diagnostics repository contract rejects Version Packages integration", 
 		failures.some((failure) =>
 			/Version Packages must remain outside CI diagnostics/.test(failure),
 		),
+	);
+});
+
+test("publication repository contract accepts the manual least-privilege workflow", async (t) => {
+	const root = await createPublicationContractFixture(t);
+	assert.deepEqual(await auditPublicationContracts(root), []);
+});
+
+test("publication repository contract rejects automatic triggers and missing expected SHA", async (t) => {
+	const triggerRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		triggerRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				"on:\n  workflow_dispatch:",
+				"on:\n  push:\n  workflow_dispatch:",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(triggerRoot) },
+		/only trigger/,
+	);
+
+	const inputRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		inputRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				`      expected_sha:
+        description: Exact commit SHA currently at main
+        required: true
+        type: string
+`,
+				"",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(inputRoot) },
+		/must define only expected_sha, expected_version, and channel/,
+	);
+});
+
+test("publication repository contract rejects broad OIDC and publish contents authority", async (t) => {
+	const workflowPermissionRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		workflowPermissionRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				"\njobs:\n",
+				"\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(workflowPermissionRoot) },
+		/must not grant write permissions at workflow scope/,
+	);
+
+	const publishPermissionRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		publishPermissionRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				`  publish:
+    name: Publish with npm Trusted Publishing
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: npm-production
+    permissions:
+      contents: read
+      id-token: write`,
+				`  publish:
+    name: Publish with npm Trusted Publishing
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: npm-production
+    permissions:
+      contents: write
+      id-token: write`,
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(publishPermissionRoot) },
+		/jobs\.publish\.permissions must equal/,
+	);
+});
+
+test("publication repository contract rejects release-before-registry and long-lived npm tokens", async (t) => {
+	const dependencyRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		dependencyRoot,
+		".github/workflows/publish.yml",
+		(contents) => contents.replace("      - verify-registry\n", ""),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(dependencyRoot) },
+		/must depend on registry verification/,
+	);
+
+	const alwaysRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		alwaysRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				"  github-release:\n    name: Create verified tag and GitHub Release\n",
+				"  github-release:\n    name: Create verified tag and GitHub Release\n    if: always()\n",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(alwaysRoot) },
+		/default successful-needs gate/,
+	);
+
+	const tokenRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		tokenRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				"    environment: npm-production\n",
+				`    environment: npm-production
+    env:
+      NPM_TOKEN: \${{ secrets.NPM_TOKEN }}
+`,
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(tokenRoot) },
+		/forbidden publication behavior NPM_TOKEN/,
+	);
+});
+
+test("publication repository contract rejects bypassed SHA and failure-recovery guards", async (t) => {
+	const shaRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		shaRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				`            --github-sha "${DOLLAR_SIGN}{GITHUB_SHA}" \\\n`,
+				"",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(shaRoot) },
+		/missing blocking guard --github-sha/,
+	);
+
+	const recoveryRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		recoveryRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				`${DOLLAR_SIGN}{{ failure() && steps.publish.outcome == 'failure' }}`,
+				"steps.publish.outcome == 'failure'",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(recoveryRoot) },
+		/must run explicit non-masking partial-publication recovery/,
+	);
+
+	const timeoutRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		timeoutRoot,
+		".github/workflows/publish.yml",
+		(contents) => contents.replace(" --timeout-ms 10000", ""),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(timeoutRoot) },
+		/must use bounded maintained-script retries/,
+	);
+
+	for (const [stepId, failure] of [
+		["release-readiness", /release readiness must be an unconditional/],
+		["registry-verification", /registry verification must be an unconditional/],
+	]) {
+		const conditionalRoot = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			conditionalRoot,
+			".github/workflows/publish.yml",
+			(contents) =>
+				contents.replace(
+					`        id: ${stepId}\n`,
+					`        id: ${stepId}\n        if: false\n`,
+				),
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(conditionalRoot) },
+			failure,
+		);
+	}
+
+	for (const [needle, failure] of [
+		[
+			"--timeout-ms 10000",
+			/registry verification must be an unconditional/,
+		],
+		["--npm-version 12.0.2", /npm publication must be an exact/],
+	]) {
+		const maskingRoot = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			maskingRoot,
+			".github/workflows/publish.yml",
+			(contents) => contents.replace(needle, `${needle} || true`),
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(maskingRoot) },
+			failure,
+		);
+	}
+});
+
+test("publication repository contract rejects a publisher that bypasses pinned npm", async (t) => {
+	const workflowRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		workflowRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				`          node scripts/release/publication.mjs publish \\
+            --expected-version "\${EXPECTED_VERSION}" \\
+            --channel "\${CHANNEL}" \\
+            --npm-version 12.0.2`,
+				`          pnpm exec changeset publish --tag "${DOLLAR_SIGN}{DIST_TAG}" --no-git-tag`,
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(workflowRoot) },
+		/missing required behavior publication\.mjs publish|must not bypass the pinned npm publication adapter/,
+	);
+
+	const adapterRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		adapterRoot,
+		"scripts/release/publication.mjs",
+		(contents) =>
+			contents.replace(
+				`manifest.packageManager = \`npm@${DOLLAR_SIGN}{npmVersion}\``,
+				`manifest.packageManager = \`pnpm@${DOLLAR_SIGN}{npmVersion}\``,
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(adapterRoot) },
+		/missing pinned npm\/Changesets adapter behavior/,
+	);
+
+	const prereleaseTagRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		prereleaseTagRoot,
+		"scripts/release/publication.mjs",
+		(contents) =>
+			contents.replace(
+				"await unlink(preStatePath)",
+				"await Promise.resolve()",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(prereleaseTagRoot) },
+		/missing pinned npm\/Changesets adapter behavior/,
+	);
+});
+
+test("publication repository contract rejects Version Packages publication and cancellable releases", async (t) => {
+	const versionRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		versionRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			`${contents}
+  forbidden-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm exec changeset publish
+`,
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(versionRoot) },
+		/version-packages\.yml contains forbidden publication behavior changeset publish/,
+	);
+
+	const concurrencyRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		concurrencyRoot,
+		".github/workflows/publish.yml",
+		(contents) =>
+			contents.replace(
+				"  cancel-in-progress: false",
+				"  cancel-in-progress: true",
+			),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(concurrencyRoot) },
+		/cancel-in-progress false/,
+	);
+});
+
+test("Skill contracts reject removal of remote handoff and two-phase release safety", async (t) => {
+	const implementationRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		implementationRoot,
+		".agents/skills/implement-and-review/SKILL.md",
+		(contents) =>
+			contents.replaceAll("`REMOTE CI UNVERIFIED`", "`REMOTE CI UNKNOWN`"),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(implementationRoot),
+		/missing required lifecycle marker `REMOTE CI UNVERIFIED`/,
+	);
+
+	const releaseRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		releaseRoot,
+		".agents/skills/release-monorepo/SKILL.md",
+		(contents) =>
+			contents.replace(
+				"partial publication recovery",
+				"publication troubleshooting",
+			),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(releaseRoot),
+		/missing safety marker partial publication recovery/,
 	);
 });
 

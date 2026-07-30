@@ -46,6 +46,32 @@ publish npm packages, create tags, or create GitHub Releases.
 If an automation commit must bypass Husky, scope `HUSKY=0` to the explicit
 automation step. Do not weaken normal developer commit hooks.
 
+## Package publication
+
+`.github/workflows/publish.yml` is the single maintained CI path for npm
+publication. It may use only `workflow_dispatch`; never add `push`,
+`pull_request`, `pull_request_target`, `workflow_run`, `schedule`,
+`issue_comment`, label, release, or other automatic publication triggers.
+
+Every dispatch must fail closed unless it verifies `main`, the exact expected
+commit SHA, the fixed public-package version, the `rc` or `latest` channel, and
+the matching npm dist-tag. Run release readiness before requesting registry
+authority. Use Job-scoped least privilege: only the publish Job receives
+`id-token: write`, only the post-registry GitHub release Job receives
+`contents: write`, and no other Job receives either permission.
+
+The publish Job must use the `npm-production` Environment and npm Trusted
+Publishing/OIDC. After Trusted Publishing is configured, never add
+`NPM_TOKEN`, `NODE_AUTH_TOKEN`, or another long-lived npm automation secret to
+this workflow. GitHub Environment and npm Trusted Publisher configuration are
+external settings and cannot be inferred from repository code.
+
+Do not create a Git tag or GitHub Release until every expected package version
+and dist-tag has been verified in the npm registry. Partial publication must
+remain a visible nonzero failure with package/version/channel recovery facts;
+never hide it with `continue-on-error`, silent skipping, dist-tag rewriting, or
+overwriting an already published version.
+
 ## Untrusted workflow and AI-analysis inputs
 
 Treat all pull-request-controlled material as untrusted data, including PR
