@@ -32,6 +32,7 @@ import { getPlan } from "./plans.mjs";
 import {
 	buildChildEnvironment,
 	resolveInvocation,
+	resolvePnpmEntrypoint,
 	runCommand,
 } from "./run-command.mjs";
 import { markdownCell, sanitizeCommand, sanitizeText } from "./sanitize.mjs";
@@ -71,6 +72,18 @@ async function fixture(t, planId = "quality-build") {
 	};
 	await initialize({ dir: directory, plan: planId }, environment);
 	return { root, directory, environment, plan: getPlan(planId) };
+}
+
+async function pnpmActionSetupFixture(t) {
+	const root = await mkdtemp(
+		path.join(os.tmpdir(), "openapi-to-pnpm-action-setup-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	const pnpmHome = path.join(root, "node_modules", ".bin");
+	const entrypoint = path.join(root, "node_modules", "pnpm", "bin", "pnpm.cjs");
+	await mkdir(path.dirname(entrypoint), { recursive: true });
+	await mkdir(pnpmHome, { recursive: true });
+	return { root, pnpmHome, entrypoint };
 }
 
 function finalizationOptions(directory, plan, overrides = {}) {
@@ -416,25 +429,172 @@ test("stdout and stderr tails, long lines, ANSI, and JSON size stay bounded", as
 	assert.ok(jsonBytes(result.report) <= MAX_COMMAND_REPORT_BYTES);
 });
 
-test("pnpm invocation uses npm_execpath and has a Windows fallback", () => {
+test("pnpm invocation uses an existing npm_execpath on every platform", async (t) => {
+	const { entrypoint } = await pnpmActionSetupFixture(t);
+	await writeFile(entrypoint, "process.exitCode = 0;\n");
+	for (const platform of ["win32", "linux", "darwin"]) {
+		assert.deepEqual(
+			await resolveInvocation("pnpm", ["build"], {
+				platform,
+				environment: { npm_execpath: entrypoint },
+				execPath: process.execPath,
+			}),
+			{
+				command: process.execPath,
+				args: [entrypoint, "build"],
+			},
+			platform,
+		);
+	}
+});
+
+test("pnpm invocation resolves the pnpm/action-setup PNPM_HOME layout", async (t) => {
+	const { pnpmHome, entrypoint } = await pnpmActionSetupFixture(t);
+	await writeFile(entrypoint, "process.exitCode = 0;\n");
+	assert.equal(
+		await resolvePnpmEntrypoint({
+			npm_execpath: "",
+			PNPM_HOME: pnpmHome,
+		}),
+		entrypoint,
+	);
 	assert.deepEqual(
-		resolveInvocation("pnpm", ["build"], {
+		await resolveInvocation("pnpm", ["--version"], {
 			platform: "win32",
-			npmExecPath: "C:\\pnpm\\pnpm.cjs",
-			execPath: "C:\\node\\node.exe",
+			environment: { npm_execpath: "", PNPM_HOME: pnpmHome },
+			execPath: process.execPath,
 		}),
 		{
-			command: "C:\\node\\node.exe",
-			args: ["C:\\pnpm\\pnpm.cjs", "build"],
+			command: process.execPath,
+			args: [entrypoint, "--version"],
 		},
 	);
-	assert.deepEqual(
-		resolveInvocation("pnpm", ["build"], {
+});
+
+test("Windows pnpm invocation rejects missing, directory, and symlink entrypoints", async (t) => {
+	const stableError =
+		/Unable to locate a safely executable pnpm JavaScript entrypoint on Windows\./;
+	await assert.rejects(
+		resolveInvocation("pnpm", ["--version"], {
 			platform: "win32",
-			npmExecPath: "",
+			environment: { npm_execpath: "", PNPM_HOME: "" },
 		}),
-		{ command: "pnpm.cmd", args: ["build"] },
+		stableError,
 	);
+
+	const missing = await pnpmActionSetupFixture(t);
+	await assert.rejects(
+		resolveInvocation("pnpm", ["--version"], {
+			platform: "win32",
+			environment: {
+				npm_execpath: path.join(missing.root, "missing.cjs"),
+				PNPM_HOME: missing.pnpmHome,
+			},
+		}),
+		stableError,
+	);
+
+	const directory = await pnpmActionSetupFixture(t);
+	await mkdir(directory.entrypoint);
+	await assert.rejects(
+		resolveInvocation("pnpm", ["--version"], {
+			platform: "win32",
+			environment: { PNPM_HOME: directory.pnpmHome },
+		}),
+		stableError,
+	);
+
+	const linked = await pnpmActionSetupFixture(t);
+	const target = path.join(linked.root, "target.cjs");
+	await writeFile(target, "process.exitCode = 0;\n");
+	try {
+		await symlink(target, linked.entrypoint);
+	} catch (error) {
+		if (process.platform === "win32" && error.code === "EPERM") {
+			t.diagnostic("file symlink creation is not permitted on this runner");
+			return;
+		}
+		throw error;
+	}
+	await assert.rejects(
+		resolveInvocation("pnpm", ["--version"], {
+			platform: "win32",
+			environment: { PNPM_HOME: linked.pnpmHome },
+		}),
+		stableError,
+	);
+});
+
+test("pnpm JavaScript invocation preserves arguments without shell parsing", async (t) => {
+	const { entrypoint } = await pnpmActionSetupFixture(t);
+	await writeFile(entrypoint, "process.exitCode = 0;\n");
+	for (const args of [
+		["build", "--concurrency=1"],
+		["test:mcp:smoke"],
+		["--version"],
+	]) {
+		assert.deepEqual(
+			await resolveInvocation("pnpm", args, {
+				platform: "win32",
+				environment: { npm_execpath: entrypoint },
+				execPath: process.execPath,
+			}),
+			{ command: process.execPath, args: [entrypoint, ...args] },
+		);
+	}
+});
+
+test("command wrapper starts pnpm --version as a real process", async (t) => {
+	const { directory, environment } = await fixture(t);
+	const executionEnvironment = {
+		...environment,
+		HOME: process.env.HOME ?? environment.HOME,
+		USERPROFILE: process.env.USERPROFILE ?? environment.USERPROFILE,
+	};
+	const result = await withoutProcessOutput(() =>
+		runCommand(
+			{
+				dir: directory,
+				id: "build",
+				command: ["pnpm", "--version"],
+				timeoutMs: null,
+			},
+			executionEnvironment,
+		),
+	);
+	assert.equal(result.exitCode, 0);
+	assert.equal(result.report.status, "success");
+	assert.deepEqual(result.report.command, ["pnpm", "--version"]);
+	assert.match(result.report.evidence.stdout.tail.join("\n"), /\b10\.14\.0\b/);
+});
+
+test("command wrapper starts the pnpm/action-setup entrypoint for simulated Windows", async (t) => {
+	const { directory, environment } = await fixture(t);
+	const { pnpmHome, entrypoint } = await pnpmActionSetupFixture(t);
+	await writeFile(
+		entrypoint,
+		"if (process.argv[2] !== '--version') process.exit(2);\nprocess.stdout.write('10.14.0\\n');\n",
+	);
+	const result = await withoutProcessOutput(() =>
+		runCommand(
+			{
+				dir: directory,
+				id: "build",
+				command: ["pnpm", "--version"],
+				timeoutMs: null,
+			},
+			{
+				...environment,
+				npm_execpath: "",
+				PNPM_HOME: pnpmHome,
+			},
+			{ platform: "win32" },
+		),
+	);
+	assert.equal(result.exitCode, 0);
+	assert.equal(result.report.status, "success");
+	assert.deepEqual(result.report.command, ["pnpm", "--version"]);
+	assert.deepEqual(result.report.evidence.stdout.tail, ["10.14.0"]);
 });
 
 test("child environment removes GitHub control files and credentials while retaining execution and plan domain variables", async (t) => {
@@ -570,6 +730,7 @@ test("a missing pnpm executable becomes infrastructure-error and remains visible
 		...environment,
 		PATH: emptyPath,
 		npm_execpath: "",
+		PNPM_HOME: path.join(root, "missing-pnpm-home"),
 	};
 	const command = await runCommand(
 		{
@@ -579,8 +740,13 @@ test("a missing pnpm executable becomes infrastructure-error and remains visible
 			timeoutMs: null,
 		},
 		isolatedEnvironment,
+		{ platform: "win32" },
 	);
 	assert.equal(command.report.status, "infrastructure-error");
+	assert.match(
+		command.report.evidence.spawnError,
+		/Unable to locate a safely executable pnpm JavaScript entrypoint on Windows\./,
+	);
 	const result = await finalize(
 		finalizationOptions(directory, "quality-build", {
 			jobStatus: "failure",
@@ -1661,6 +1827,14 @@ test("workflow contract keeps finalizers, failure artifacts, gates, and matrices
 	).contents;
 	assert.match(a1, /os: \[ubuntu-latest, windows-latest, macos-latest\]/);
 	assert.match(a1, /fail-fast: false/);
+	assert.match(
+		a1,
+		/- name: Verify pnpm launcher\s+run: .* --id pnpm-launcher -- pnpm --version/,
+	);
+	assert.deepEqual(getPlan("a1-contracts").commands[0], {
+		id: "pnpm-launcher",
+		label: "Verify pnpm launcher",
+	});
 	const e2e = workflows.find(({ name }) => name === "e2e.yaml").contents;
 	assert.equal(
 		[...e2e.matchAll(/os: \[ubuntu-latest, windows-latest, macos-latest\]/g)]

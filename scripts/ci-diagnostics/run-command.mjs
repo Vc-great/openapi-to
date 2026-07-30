@@ -207,20 +207,66 @@ export function parseRunArguments(argv) {
 	};
 }
 
-export function resolveInvocation(
+async function isRegularFile(candidate) {
+	try {
+		const details = await lstat(candidate);
+		return details.isFile() && !details.isSymbolicLink();
+	} catch {
+		return false;
+	}
+}
+
+export async function resolvePnpmEntrypoint(environment = process.env) {
+	const npmExecPath = environmentEntry(environment, "npm_execpath")?.[1];
+	if (
+		typeof npmExecPath === "string" &&
+		npmExecPath.trim() &&
+		/\.(?:c|m)?js$/i.test(npmExecPath)
+	) {
+		const candidate = path.resolve(npmExecPath);
+		if (await isRegularFile(candidate)) return candidate;
+	}
+
+	const pnpmHome = environmentEntry(environment, "PNPM_HOME")?.[1];
+	if (typeof pnpmHome !== "string" || !pnpmHome.trim()) return null;
+	const binDirectory = path.resolve(pnpmHome);
+	if (
+		path.basename(binDirectory).toLowerCase() !== ".bin" ||
+		path.basename(path.dirname(binDirectory)).toLowerCase() !== "node_modules"
+	) {
+		return null;
+	}
+	const actionSetupEntrypoint = path.join(
+		path.dirname(binDirectory),
+		"pnpm",
+		"bin",
+		"pnpm.cjs",
+	);
+	return (await isRegularFile(actionSetupEntrypoint))
+		? actionSetupEntrypoint
+		: null;
+}
+
+export async function resolveInvocation(
 	command,
 	args,
 	{
 		platform = process.platform,
-		npmExecPath = process.env.npm_execpath,
+		environment = process.env,
 		execPath = process.execPath,
 	} = {},
 ) {
 	if (command !== "pnpm") return { command, args };
-	if (npmExecPath && /\.(?:c|m)?js$/i.test(npmExecPath)) {
-		return { command: execPath, args: [npmExecPath, ...args] };
+	const pnpmEntrypoint = await resolvePnpmEntrypoint(environment);
+	if (pnpmEntrypoint) {
+		return { command: execPath, args: [pnpmEntrypoint, ...args] };
 	}
-	return { command: platform === "win32" ? "pnpm.cmd" : "pnpm", args };
+	if (platform === "win32") {
+		throw new Error(
+			"Unable to locate a safely executable pnpm JavaScript entrypoint on Windows.",
+		);
+	}
+	return { command: "pnpm", args };
 }
 
 class BoundedOutput {
@@ -321,7 +367,11 @@ function exitFor(report) {
 export async function runCommand(
 	options,
 	environment = process.env,
-	{ writeReport = atomicWrite } = {},
+	{
+		writeReport = atomicWrite,
+		platform = process.platform,
+		execPath = process.execPath,
+	} = {},
 ) {
 	assertCommandId(options.id);
 	const directory = await ensureSafeDirectory(options.dir, environment);
@@ -348,11 +398,6 @@ export async function runCommand(
 	}
 	const cwd = path.resolve(options.cwd ?? repositoryRoot);
 	const displayCommand = sanitizeCommand(options.command, environment);
-	const invocation = resolveInvocation(
-		options.command[0],
-		options.command.slice(1),
-		{ npmExecPath: environment.npm_execpath },
-	);
 	const childEnvironment = await buildChildEnvironment(environment, plan);
 	const stdout = new BoundedOutput(process.stdout, environment);
 	const stderr = new BoundedOutput(process.stderr, environment);
@@ -361,42 +406,54 @@ export async function runCommand(
 	let spawnError = null;
 	let timer;
 	let forceTimer;
-	const outcome = await new Promise((resolve) => {
-		let settled = false;
-		const child = spawn(invocation.command, invocation.args, {
-			cwd,
-			env: childEnvironment,
-			detached: process.platform !== "win32",
-			shell: false,
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-		child.stdout?.on("data", (chunk) => stdout.push(chunk));
-		child.stderr?.on("data", (chunk) => stderr.push(chunk));
-		child.once("error", (error) => {
-			spawnError = error;
-			if (!settled) {
-				settled = true;
-				resolve({ exitCode: null, signal: null });
-			}
-		});
-		child.once("close", (exitCode, signal) => {
-			if (!settled) {
-				settled = true;
-				resolve({ exitCode, signal });
-			}
-		});
-		if (options.timeoutMs !== null) {
-			timer = setTimeout(() => {
-				timedOut = true;
-				terminate(child).catch(() => {});
-				forceTimer = setTimeout(() => {
-					terminate(child, true).catch(() => {});
-				}, 1_000);
-				forceTimer.unref();
-			}, options.timeoutMs);
-			timer.unref();
-		}
-	});
+	let invocation;
+	try {
+		invocation = await resolveInvocation(
+			options.command[0],
+			options.command.slice(1),
+			{ environment, execPath, platform },
+		);
+	} catch (error) {
+		spawnError = error;
+	}
+	const outcome = invocation
+		? await new Promise((resolve) => {
+				let settled = false;
+				const child = spawn(invocation.command, invocation.args, {
+					cwd,
+					env: childEnvironment,
+					detached: process.platform !== "win32",
+					shell: false,
+					stdio: ["ignore", "pipe", "pipe"],
+				});
+				child.stdout?.on("data", (chunk) => stdout.push(chunk));
+				child.stderr?.on("data", (chunk) => stderr.push(chunk));
+				child.once("error", (error) => {
+					spawnError = error;
+					if (!settled) {
+						settled = true;
+						resolve({ exitCode: null, signal: null });
+					}
+				});
+				child.once("close", (exitCode, signal) => {
+					if (!settled) {
+						settled = true;
+						resolve({ exitCode, signal });
+					}
+				});
+				if (options.timeoutMs !== null) {
+					timer = setTimeout(() => {
+						timedOut = true;
+						terminate(child).catch(() => {});
+						forceTimer = setTimeout(() => {
+							terminate(child, true).catch(() => {});
+						}, 1_000);
+						forceTimer.unref();
+					}, options.timeoutMs);
+					timer.unref();
+				}
+			})
+		: { exitCode: null, signal: null };
 	clearTimeout(timer);
 	clearTimeout(forceTimer);
 	const stdoutEvidence = stdout.finish();

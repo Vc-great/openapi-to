@@ -37,6 +37,8 @@ jobs:
       - name: Setup Node 20 and pnpm
         id: setup
         uses: ./.github/setup
+      - name: Verify pnpm launcher
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id pnpm-launcher -- pnpm --version
       - name: Build packages
         run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id build -- pnpm build --concurrency=1
       - name: Run A1 focused contracts

@@ -84,6 +84,7 @@ export const plans = Object.freeze({
 		jobId: "contracts",
 		jobName: "A1 focused",
 		commands: [
+			command("pnpm-launcher", "Verify pnpm launcher"),
 			command("build", "Build packages"),
 			command("a1-contracts", "Run A1 focused contracts"),
 			command("cli-openapi-help", "Verify openapi CLI alias"),
