@@ -6,26 +6,13 @@ GitHub Actions must run reproducible repository gates and retain useful failure
 evidence. Never obtain a green check by hiding, skipping, or downgrading an
 error.
 
-## Workflow review
+## Workflow boundaries
 
-Before changing a workflow or local/reusable Action, inspect:
-
-- event triggers, branch and path filters;
-- least-privilege permissions and fork/secret safety;
-- concurrency and cancellation behavior;
-- OS/Node/package-manager matrices;
-- job/step timeouts and resource assumptions;
-- build prerequisites and cache inputs;
-- artifacts, retention, and `if` conditions;
-- every caller of a reusable/local Action and cross-platform shell behavior;
-- the exact repository/package script that reproduces each job locally.
-
-Classify a failure before editing: product source regression, test regression,
-workflow/configuration defect, missing build prerequisite, platform-specific
-behavior, dependency/registry/network transient, permissions/secrets failure,
-timeout/resource exhaustion, cache contamination, or pre-existing failure.
-Find the first meaningful error in complete logs rather than repairing the
-final exit-code line.
+Preserve event and path filters, least-privilege permissions, fork and secret
+isolation, concurrency, matrices, timeouts, cache inputs, artifact retention,
+failure propagation, and every caller of shared Actions. Linux, Windows, and
+macOS behavior is part of a shared Action's contract when its callers include
+those platforms.
 
 ## Integrity rules
 
@@ -39,12 +26,6 @@ Do not “fix” CI by:
   backlog;
 - changing unrelated dependencies;
 - treating a rerun success as proof of a code fix.
-
-For a transient registry, network, or runner failure, preserve the evidence,
-explain why a rerun is appropriate, and avoid speculative product changes.
-Every code/workflow fix needs a focused local reproduction when the environment
-permits one, followed by the affected CI-equivalent command and relevant matrix
-coverage.
 
 ## Diagnostic artifacts and secrets
 
@@ -104,22 +85,6 @@ Fork PRs never receive broader trust because a maintainer labels, comments on,
 or reruns them. Keep secrets and write tokens unavailable to code, logs, and
 artifacts influenced by a fork.
 
-### Analysis and write-back separation
-
-Future AI triage should use a low-privilege analysis Job that emits a bounded
-structured result, followed by a separate write-back Job only when that
-external mutation is explicitly authorized.
-
-- The analysis Job defaults to `contents: read`, does not persist checkout
-  credentials, and has no `pull-requests: write`, `issues: write`, or
-  `contents: write`.
-- The write-back Job does not execute PR code and consumes only schema-checked,
-  size-limited, escaped analysis results.
-- Automated fixes, pushes, comments, Issues/PRs, workflow reruns, and similar
-  capabilities are never implicitly bundled with read-only analysis.
-- Every external write remains a separate capability with explicit user
-  authorization and loop, cost, retry, and resource limits.
-
 Do not add AI/Codex automation incidentally to an unrelated task. It is allowed
 only when the user explicitly requests it and the task includes a separate
 review of triggers, permissions, secret visibility, fork behavior, untrusted
@@ -128,6 +93,7 @@ cost/resource limits. Default to read-only analysis; code modification, push,
 comments, Issues/PRs, reruns, and repository-setting changes remain
 unauthorized unless explicitly granted.
 
-Use `.agents/skills/fix-github-actions/SKILL.md` to investigate and repair an
-existing failing check. Keep `.github/setup/action.yml` callers and Linux,
-Windows, and macOS behavior in scope when changing the shared setup Action.
+Use `.agents/skills/fix-github-actions/SKILL.md` as the specialized primary for
+an existing failed check. Use `.agents/skills/implement-and-review/SKILL.md`
+for an authorized workflow/configuration implementation that is not a failed
+check investigation.
