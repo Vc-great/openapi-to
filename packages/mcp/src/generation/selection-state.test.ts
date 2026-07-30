@@ -6,7 +6,7 @@ import { ARTIFACT_MANIFEST_FILENAME, serializeOperationSelectionManifest } from 
 import { describe, expect, it } from 'vitest'
 
 import { TrustedTargetCatalogRegistry } from '../catalog/trusted-target-registry.ts'
-import { resolveMcpServerOptions } from '../options.ts'
+import { DEFAULT_WRITE_OPTIONS, resolveMcpServerOptions } from '../options.ts'
 import { applyGenerationTool } from '../tools/apply-generation.ts'
 import { GenerationPlanStore } from './plan-store.ts'
 import {
@@ -61,12 +61,66 @@ components:
   return { root: resolved.workspaceRoot, resolved, provider, registry }
 }
 
+async function largeFixture(operationCount: number) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-large-selection-'))
+  await mkdir(path.join(root, '.openapi-to'))
+  const operationKeys = Array.from({ length: operationCount }, (_, index) => `operation${String(index).padStart(4, '0')}`)
+  const paths = Object.fromEntries(operationKeys.map((operationKey, index) => [
+    `/operations/${index}`,
+    { get: { operationId: operationKey, responses: { 200: { description: 'ok' } } } },
+  ]))
+  await writeFile(path.join(root, 'openapi.json'), JSON.stringify({
+    openapi: '3.1.0',
+    info: { title: 'Large Selection', version: '1' },
+    paths,
+  }))
+  await writeFile(path.join(root, 'openapi.config.cjs'), `module.exports = {
+  servers: [{ name: 'main', input: { path: './openapi.json' }, output: { dir: 'generated', clean: true } }],
+  plugins: [{ name: 'large-selection-fixture', hooks: { operation(operation, ctx) {
+    const id = operation.accessor.operationId;
+    ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/' + id + '.txt', content: id + '\\n' });
+  } } }]
+};
+`)
+  const resolved = resolveMcpServerOptions({ workspaceRoot: root, configPath: 'openapi.config.cjs', allowWrite: true })
+  const provider = new TrustedConfigProvider(resolved.workspaceRoot, 'openapi.config.cjs')
+  const registry = new TrustedTargetCatalogRegistry(provider, resolved)
+  return { root: resolved.workspaceRoot, resolved, provider, registry, operationKeys }
+}
+
+async function registryWithOperationKeys(
+  context: Awaited<ReturnType<typeof fixture>>,
+  operationKeys: readonly string[],
+): Promise<TrustedTargetCatalogRegistry> {
+  const cached = await context.registry.get('main')
+  const catalog = cached.catalog
+  const template = catalog?.items[0]
+  if (!catalog || !template) throw new Error('Expected a compiled catalog fixture.')
+  return {
+    async get() {
+      return {
+        ...cached,
+        catalog: {
+          ...catalog,
+          items: operationKeys.map((operationKey, index) => ({
+            ...template,
+            operationKey,
+            operationId: operationKey,
+            path: `/synthetic/${index}`,
+            sourcePointer: `#/paths/~1synthetic~1${index}/get`,
+          })),
+        },
+      }
+    },
+  } as unknown as TrustedTargetCatalogRegistry
+}
+
 function store() {
   return new GenerationPlanStore<InternalGenerationWritePlan>({
     ttlMs: 60_000,
     maxPlans: 20,
-    maxPlanBytes: 4 * 1024 * 1024,
-    maxTotalPlanBytes: 32 * 1024 * 1024,
+    maxPlanBytes: DEFAULT_WRITE_OPTIONS.maxPlanBytes,
+    maxTotalPlanBytes: DEFAULT_WRITE_OPTIONS.maxTotalPlanBytes,
   })
 }
 
@@ -242,6 +296,70 @@ describe('trusted persistent operation selection state', () => {
       .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTIVE_PREPARE_DUPLICATE_OPERATION_ID' }] })
   })
 
+  it('accepts the complete legal replace count and rejects request, key-byte, and manifest-byte overflow', async () => {
+    const context = await fixture()
+    const maximumKeys = Array.from({ length: 5_000 }, (_, index) => `operation${String(index).padStart(4, '0')}`)
+    const maximumRegistry = await registryWithOperationKeys(context, maximumKeys)
+    const maximum = await prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      maximumRegistry,
+      ['main'],
+      { type: 'replace', operationKeys: maximumKeys },
+    )
+    expect(maximum.merge.requestedOperationKeys).toHaveLength(5_000)
+    expect(maximum.merge.desiredOperationKeys).toHaveLength(5_000)
+
+    await expect(prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      context.registry,
+      ['main'],
+      { type: 'replace', operationKeys: [...maximumKeys, 'operation5000'] },
+    )).rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_MUTATION_TOO_LARGE' }] })
+    await expect(prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      context.registry,
+      ['main'],
+      { type: 'add', operationKeys: Array.from({ length: 501 }, (_, index) => `operation${index}`) },
+    )).rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_MUTATION_TOO_LARGE' }] })
+    await expect(prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      context.registry,
+      ['main'],
+      { type: 'replace', operationKeys: ['界'.repeat(167)] },
+    )).rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_OPERATION_KEY_TOO_LARGE' }] })
+
+    const wideKeys = Array.from(
+      { length: 5_000 },
+      (_, index) => `operation${String(index).padStart(4, '0')}-${'x'.repeat(205)}`,
+    )
+    const wideRegistry = await registryWithOperationKeys(context, wideKeys)
+    await expect(prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      wideRegistry,
+      ['main'],
+      { type: 'replace', operationKeys: wideKeys },
+    )).rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_MANIFEST_TOO_LARGE' }] })
+
+    await persistSelection(maximum)
+    const overflowKey = 'operation5000'
+    const overflowRegistry = await registryWithOperationKeys(context, [
+      ...maximumKeys,
+      overflowKey,
+    ])
+    await expect(prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      overflowRegistry,
+      ['main'],
+      { type: 'add', operationKeys: [overflowKey] },
+    )).rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_MANIFEST_TOO_LARGE' }] })
+  })
+
   it('requires one target and isolates owners for targets with identical operation keys', async () => {
     const context = await fixture({ secondTarget: true })
     await expect(prepareOperationSelection(context.provider, context.resolved, context.registry, ['main', 'second'], { type: 'add', operationKeys: ['getUser'] }))
@@ -259,6 +377,27 @@ describe('trusted persistent operation selection state', () => {
 })
 
 describe('selective write-plan binding', () => {
+  it('binds every desired key at the persisted selection operation limit', async () => {
+    const context = await largeFixture(5_000)
+    const plans = store()
+    try {
+      const prepared = await prepareSelectiveGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        ['main'],
+        { type: 'replace', operationKeys: context.operationKeys },
+      )
+      expect(prepared.selection.merge.desiredOperationKeys).toHaveLength(5_000)
+      expect(prepared.stored.deterministic.selection?.requestedOperationKeys).toEqual(context.operationKeys)
+      expect(prepared.stored.deterministic.selection?.desiredOperationKeys).toEqual(context.operationKeys)
+      expect(prepared.stored.selectiveState?.desiredSelectionBytes).toContain('operation4999')
+    } finally {
+      plans.clear()
+    }
+  }, 60_000)
+
   it('binds selection, projection, sources, output state, and complete artifacts deterministically', async () => {
     const context = await fixture()
     const plans = store()

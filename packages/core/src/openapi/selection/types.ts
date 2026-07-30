@@ -20,23 +20,42 @@ export interface OperationSelectionManifestV1 {
 
 export type OperationSelectionManifest = OperationSelectionManifestV1
 
-export type OperationSelectionMutation =
-  | { type: 'add'; operationKeys: string[] }
-  | { type: 'replace'; operationKeys: string[] }
+export type OperationSelectionAddMutation = {
+  type: 'add'
+  operationKeys: string[]
+}
+
+/**
+ * Backward-compatible additive selection mutation.
+ *
+ * Use {@link PersistentOperationSelectionMutation} for add-or-replace flows.
+ */
+export type OperationSelectionMutation = OperationSelectionAddMutation
+
+export type OperationSelectionReplaceMutation = {
+  type: 'replace'
+  operationKeys: string[]
+}
+
+export type PersistentOperationSelectionMutation =
+  | OperationSelectionAddMutation
+  | OperationSelectionReplaceMutation
 
 export interface OperationSelectionMergeResult {
   manifest: OperationSelectionManifestV1
-  mutationType: OperationSelectionMutation['type']
   previousOperationKeys: string[]
   requestedOperationKeys: string[]
   newlyAddedOperationKeys: string[]
   alreadySelectedOperationKeys: string[]
-  retainedOperationKeys: string[]
-  removedOperationKeys: string[]
   desiredOperationKeys: string[]
 }
 
-export type OperationSelectionMutationResult = OperationSelectionMergeResult
+export interface OperationSelectionMutationResult
+  extends OperationSelectionMergeResult {
+  mutationType: PersistentOperationSelectionMutation['type']
+  retainedOperationKeys: string[]
+  removedOperationKeys: string[]
+}
 
 export interface OperationSelectionValidationOptions {
   expectedTarget?: string

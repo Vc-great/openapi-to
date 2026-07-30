@@ -13,6 +13,7 @@ import {
   type OperationSelectionMutationResult,
   type OperationSelectionParseResult,
   type OperationSelectionValidationOptions,
+  type PersistentOperationSelectionMutation,
 } from './types.ts'
 
 const encoder = new TextEncoder()
@@ -169,7 +170,7 @@ export function hashOperationSelection(manifest: OperationSelectionManifestV1): 
 
 export function applyOperationSelectionMutation(
   previous: OperationSelectionManifestV1,
-  mutation: OperationSelectionMutation,
+  mutation: PersistentOperationSelectionMutation,
 ): OperationSelectionMutationResult {
   if (mutation.type !== 'add' && mutation.type !== 'replace') {
     throw new TypeError('Only add and replace selection mutations are supported.')
@@ -207,5 +208,14 @@ export function mergeOperationSelection(
   previous: OperationSelectionManifestV1,
   mutation: OperationSelectionMutation,
 ): OperationSelectionMergeResult {
-  return applyOperationSelectionMutation(previous, mutation)
+  if (mutation.type !== 'add') throw new TypeError('Only add selection mutations are supported.')
+  const result = applyOperationSelectionMutation(previous, mutation)
+  return {
+    manifest: result.manifest,
+    previousOperationKeys: result.previousOperationKeys,
+    requestedOperationKeys: result.requestedOperationKeys,
+    newlyAddedOperationKeys: result.newlyAddedOperationKeys,
+    alreadySelectedOperationKeys: result.alreadySelectedOperationKeys,
+    desiredOperationKeys: result.desiredOperationKeys,
+  }
 }

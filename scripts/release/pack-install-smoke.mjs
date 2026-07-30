@@ -546,9 +546,18 @@ for (const forbidden of ["createOpenapiToMcpServer", "runMcpCli", "openapi_prepa
   type Diagnostic,
   type GeneratedArtifact,
   type GenerationManifest,
-	  type GenerationResult,
+  type GenerationResult,
   type OutputBase,
-	} from "openapi-to";
+} from "openapi-to";
+import {
+  applyOperationSelectionMutation,
+  createEmptyOperationSelection,
+  mergeOperationSelection,
+  type OperationSelectionMergeResult,
+  type OperationSelectionMutation,
+  type OperationSelectionMutationResult,
+  type PersistentOperationSelectionMutation,
+} from "@openapi-to/core";
 import { createOpenapiToMcpServer, type OpenapiToMcpServerOptions } from "@openapi-to/mcp";
 import { runMcpCli } from "@openapi-to/mcp/cli";
 const diagnostic: Diagnostic = { code: "SMOKE", severity: "info", message: "smoke" };
@@ -557,7 +566,19 @@ declare const artifact: GeneratedArtifact;
 declare const manifest: GenerationManifest;
 declare const generation: GenerationResult;
 const mcpOptions: OpenapiToMcpServerOptions = { workspaceRoot: ".", configPath: "openapi.config.cjs", allowWrite: true };
-void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, outputBase, artifact, manifest, generation, createOpenapiToMcpServer, runMcpCli, mcpOptions];
+const legacyMutation: OperationSelectionMutation = { type: "add", operationKeys: ["getUser"] };
+const legacyResultMock: OperationSelectionMergeResult = {
+  manifest: createEmptyOperationSelection("sdk", "owner"),
+  previousOperationKeys: [],
+  requestedOperationKeys: ["getUser"],
+  newlyAddedOperationKeys: ["getUser"],
+  alreadySelectedOperationKeys: [],
+  desiredOperationKeys: ["getUser"],
+};
+const legacyMerged: OperationSelectionMergeResult = mergeOperationSelection(legacyResultMock.manifest, legacyMutation);
+const replaceMutation: PersistentOperationSelectionMutation = { type: "replace", operationKeys: ["getUser"] };
+const replacement: OperationSelectionMutationResult = applyOperationSelectionMutation(legacyResultMock.manifest, replaceMutation);
+void [compileOpenAPI, inspectOpenAPIDocument, diffOpenAPIDocuments, pluginSWR, pluginMSW, diagnostic, outputBase, artifact, manifest, generation, createOpenapiToMcpServer, runMcpCli, mcpOptions, legacyResultMock, legacyMerged, replacement];
 `,
 	);
 	await writeFile(
@@ -967,6 +988,7 @@ await writeClient.close();
 					"esm",
 					"cjs",
 					"types",
+					"core-selection-api-compat",
 					"formal-plugin-consumer-codegen",
 					"openapi-bin",
 					"openapi-to-bin",

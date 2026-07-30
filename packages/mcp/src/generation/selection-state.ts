@@ -5,20 +5,21 @@ import path from "node:path";
 
 import {
 	ARTIFACT_MANIFEST_FILENAME,
+	applyOperationSelectionMutation,
 	createEmptyOperationSelection,
 	DEFAULT_MAX_SELECTION_BYTES,
 	DEFAULT_MAX_SELECTION_OPERATIONS,
 	hashOperationSelection,
-	mergeOperationSelection,
+	MAX_OPERATION_SELECTION_KEY_BYTES,
 	parseOperationSelectionManifest,
 	serializeOperationSelectionManifest,
 	stateDirectoryName,
 	type FileIdentity,
 	type OperationCatalog,
 	type OperationSelectionManifestV1,
-	type OperationSelectionMergeResult,
-	type OperationSelectionMutation,
+	type OperationSelectionMutationResult,
 	type OutputFileSnapshot,
+	type PersistentOperationSelectionMutation,
 } from "@openapi-to/core";
 import type {
 	TrustedTargetCatalogRegistry,
@@ -34,6 +35,9 @@ import { prepareTargets, type PreparedTarget } from "./service.ts";
 import type { TrustedConfigProvider } from "./trusted-config.ts";
 
 export const OPERATION_SELECTION_DIRECTORY = `${stateDirectoryName}/selections`;
+export const MAX_ADD_SELECTION_OPERATIONS = 500;
+
+const encoder = new TextEncoder();
 
 export interface SelectionFileSnapshot extends OutputFileSnapshot {
 	path: string;
@@ -53,7 +57,7 @@ export interface PreparedOperationSelection {
 	previousSelectionHash: string;
 	desiredSelectionHash: string;
 	desiredSelectionBytes: string;
-	merge: OperationSelectionMergeResult;
+	merge: OperationSelectionMutationResult;
 }
 
 export interface ExpectedOperationSelectionState {
@@ -386,7 +390,7 @@ export async function prepareOperationSelection(
 	options: ResolvedMcpServerOptions,
 	registry: TrustedTargetCatalogRegistry,
 	requestedTargets: string[] | undefined,
-	mutation: OperationSelectionMutation,
+	mutation: PersistentOperationSelectionMutation,
 	signal?: AbortSignal,
 ): Promise<PreparedOperationSelection> {
 	if (mutation.operationKeys.length === 0)
@@ -395,7 +399,38 @@ export async function prepareOperationSelection(
 			mutation.type === "replace"
 				? "Selective Prepare replace requires at least one exact operationKey; clear is not supported."
 				: "Selective Prepare requires at least one exact operationKey to add.",
+			);
+	const maximumRequested =
+		mutation.type === "replace"
+			? DEFAULT_MAX_SELECTION_OPERATIONS
+			: MAX_ADD_SELECTION_OPERATIONS;
+	if (mutation.operationKeys.length > maximumRequested) {
+		throw new McpToolError(
+			"SELECTION_MUTATION_TOO_LARGE",
+			`Selective Prepare ${mutation.type} exceeds the ${maximumRequested} operation request limit.`,
 		);
+	}
+	for (const operationKey of mutation.operationKeys) {
+		if (
+			operationKey.length === 0 ||
+			encoder.encode(operationKey).byteLength >
+				MAX_OPERATION_SELECTION_KEY_BYTES
+		) {
+			throw new McpToolError(
+				"SELECTION_OPERATION_KEY_TOO_LARGE",
+				`Every selection operationKey must be non-empty and at most ${MAX_OPERATION_SELECTION_KEY_BYTES} UTF-8 bytes.`,
+			);
+		}
+	}
+	const requestedOperationKeys = [...new Set(mutation.operationKeys)].sort(
+		compareText,
+	);
+	if (requestedOperationKeys.length > DEFAULT_MAX_SELECTION_OPERATIONS) {
+		throw new McpToolError(
+			"SELECTION_MUTATION_TOO_LARGE",
+			`Selective Prepare ${mutation.type} exceeds the ${DEFAULT_MAX_SELECTION_OPERATIONS} unique operation limit.`,
+		);
+	}
 	const prepared = await prepareTargets(
 		provider,
 		options,
@@ -506,16 +541,13 @@ export async function prepareOperationSelection(
 		target.name,
 		true,
 	);
-	const requestedOperationKeys = [...new Set(mutation.operationKeys)].sort(
-		compareText,
-	);
 	validateOperationKeys(
 		cached.catalog,
 		requestedOperationKeys,
 		target.name,
 		false,
 	);
-	const merge = mergeOperationSelection(previousSelection, {
+	const merge = applyOperationSelectionMutation(previousSelection, {
 		type: mutation.type,
 		operationKeys: requestedOperationKeys,
 	});
@@ -529,7 +561,7 @@ export async function prepareOperationSelection(
 		merge.manifest,
 	);
 	if (
-		new TextEncoder().encode(desiredSelectionBytes).byteLength >
+		encoder.encode(desiredSelectionBytes).byteLength >
 		DEFAULT_MAX_SELECTION_BYTES
 	) {
 		throw new McpToolError(

@@ -1,6 +1,8 @@
 import { realpathSync } from 'node:fs'
 import path from 'node:path'
 
+import { DEFAULT_MAX_SELECTION_BYTES } from '@openapi-to/core'
+
 export interface OpenapiToMcpServerOptions {
   workspaceRoot: string
   configPath?: string
@@ -95,8 +97,10 @@ export const DEFAULT_TIMEOUTS: ResolvedMcpTimeouts = {
 export const DEFAULT_WRITE_OPTIONS: ResolvedMcpWriteOptions = {
   planTtlMs: 5 * 60_000,
   maxPlans: 20,
-  maxPlanBytes: 4 * 1024 * 1024,
-  maxTotalPlanBytes: 32 * 1024 * 1024,
+  // A selective plan binds several complete derived sets plus the frozen
+  // manifest. Keep the store bounded while allowing any legal 1 MiB selection.
+  maxPlanBytes: 16 * DEFAULT_MAX_SELECTION_BYTES,
+  maxTotalPlanBytes: 64 * DEFAULT_MAX_SELECTION_BYTES,
   maxFiles: 5_000,
   maxBytes: 256 * 1024 * 1024,
   lockWaitMs: 30_000,

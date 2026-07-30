@@ -76,6 +76,30 @@ components:
   return root
 }
 
+async function largeSelectiveFixtureWorkspace(operationCount: number): Promise<{ root: string; operationKeys: string[] }> {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openapi-mcp-large-selective-prepare-'))
+  await mkdir(path.join(root, '.openapi-to'))
+  const operationKeys = Array.from({ length: operationCount }, (_, index) => `operation${String(index).padStart(4, '0')}`)
+  const paths = Object.fromEntries(operationKeys.map((operationKey, index) => [
+    `/operations/${index}`,
+    { get: { operationId: operationKey, responses: { 200: { description: 'ok' } } } },
+  ]))
+  await writeFile(path.join(root, 'openapi.json'), JSON.stringify({
+    openapi: '3.1.0',
+    info: { title: 'Large Selective Prepare', version: '1' },
+    paths,
+  }))
+  await writeFile(path.join(root, 'openapi.config.cjs'), `module.exports = {
+  servers: [{ name: 'main', input: { path: './openapi.json' }, output: { dir: 'generated', clean: true } }],
+  plugins: [{ name: 'large-selective-prepare-fixture', hooks: { operation(operation, ctx) {
+    const id = operation.accessor.operationId;
+    ctx.addArtifact({ kind: 'text', path: ctx.openapiToSingleConfig.output.dir + '/' + id + '.txt', content: id + '\\n' });
+  } } }]
+};
+`)
+  return { root, operationKeys }
+}
+
 async function seedSelection(root: string, operationKeys: string[]): Promise<{ selectionFile: string; bytes: string }> {
   const options = resolveMcpServerOptions({ workspaceRoot: root, configPath: 'openapi.config.cjs', allowWrite: true })
   const provider = new TrustedConfigProvider(options.workspaceRoot, 'openapi.config.cjs')
@@ -232,6 +256,54 @@ describe.sequential('controlled-write stdio tools', () => {
     expect((structured(replay).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_PLAN_ALREADY_USED')
     expect(connected.stderr.join('')).not.toContain(plan.token)
   })
+
+  it('truncates a large replace summary while Apply commits the complete frozen selection', async () => {
+    const { root, operationKeys } = await largeSelectiveFixtureWorkspace(501)
+    const connected = await connect(root, true)
+    clients.push(connected.client)
+    const prepared = await connected.client.callTool({
+      name: 'openapi_prepare_generation',
+      arguments: { targets: ['main'], selection: { type: 'replace', operationKeys } },
+    })
+    expect(prepared.isError).not.toBe(true)
+    const plan = structured(prepared).plan as {
+      planId: string
+      token: string
+      planHash: string
+      selection: {
+        requestedOperationKeys: string[]
+        desiredOperationKeys: string[]
+        counts: { requested: number; desired: number }
+        truncated: boolean
+      }
+      truncated: { selection?: boolean }
+    }
+    expect(plan.selection.requestedOperationKeys).toHaveLength(50)
+    expect(plan.selection.desiredOperationKeys).toHaveLength(50)
+    expect(plan.selection.counts).toMatchObject({ requested: 501, desired: 501 })
+    expect(plan.selection.truncated).toBe(true)
+    expect(plan.truncated.selection).toBe(true)
+    expect((structured(prepared).diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain('MCP_RESULT_TRUNCATED')
+    await expect(access(path.join(root, '.openapi-to/generated'))).rejects.toThrow()
+    await expect(access(path.join(root, '.openapi-to/selections'))).rejects.toThrow()
+
+    const applied = await connected.client.callTool({
+      name: 'openapi_apply_generation',
+      arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash },
+    })
+    expect(applied.isError).not.toBe(true)
+    expect(structured(applied)).toMatchObject({
+      success: true,
+      applied: true,
+      selectionApplied: true,
+      selectedOperationCount: 501,
+    })
+    const selectionFiles = await readdir(path.join(root, '.openapi-to/selections'))
+    const selection = JSON.parse(await readFile(path.join(root, '.openapi-to/selections', selectionFiles[0] as string), 'utf8')) as { operations: string[] }
+    expect(selection.operations).toEqual(operationKeys)
+    expect(await readFile(path.join(root, '.openapi-to/generated/operation0000.txt'), 'utf8')).toBe('operation0000\n')
+    expect(await readFile(path.join(root, '.openapi-to/generated/operation0500.txt'), 'utf8')).toBe('operation0500\n')
+  }, 60_000)
 
   it('keeps workspace output ownership separate from managed selection state', async () => {
     const root = await selectiveFixtureWorkspace()

@@ -24,8 +24,8 @@ import {
   OutputTransactionRollbackError,
   OutputTransactionRolledBackError,
   type SourceSnapshot,
-  type OperationSelectionMutation,
   type OpenAPIProjectionStats,
+  type PersistentOperationSelectionMutation,
   type TransactionRecoveryContext,
   type TransactionStateFile,
 } from '@openapi-to/core'
@@ -75,7 +75,7 @@ interface PlanArtifact {
 
 interface SelectivePlanBinding {
   selectionManifestVersion: typeof OPERATION_SELECTION_MANIFEST_VERSION
-  mutationType: OperationSelectionMutation['type']
+  mutationType: PersistentOperationSelectionMutation['type']
   selectionOwner: string
   selectionFileIdentity: string
   selectionFileSnapshot: OutputFileSnapshot
@@ -380,7 +380,7 @@ export async function prepareSelectiveGenerationWritePlan(
   options: ResolvedMcpServerOptions,
   registry: TrustedTargetCatalogRegistry,
   requested: string[] | undefined,
-  mutation: OperationSelectionMutation,
+  mutation: PersistentOperationSelectionMutation,
   execution: GenerationExecution = {},
 ): Promise<PreparedGenerationPlan & { selection: PreparedOperationSelection }> {
   const selection = await prepareOperationSelection(provider, options, registry, requested, mutation, execution.signal)
