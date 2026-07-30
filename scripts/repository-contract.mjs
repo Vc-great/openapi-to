@@ -895,16 +895,35 @@ function validateImplementationSkill(contents, failures) {
 			"implement-and-review must record the task base with git rev-parse HEAD",
 		);
 	}
+	for (const unsafeCommand of ["git clean", "git reset --hard"]) {
+		if (contents.includes(unsafeCommand)) {
+			failures.push(
+				`implement-and-review must not recommend destructive command ${unsafeCommand}`,
+			);
+		}
+	}
 	for (const command of [
 		'git diff --stat "$TASK_BASE_SHA"',
 		'git diff --check "$TASK_BASE_SHA"',
 		'git diff "$TASK_BASE_SHA"',
 		'git diff --stat "$TASK_BASE_SHA"..HEAD',
 		'git diff "$TASK_BASE_SHA"..HEAD',
+		"git ls-files --others --exclude-standard",
+		"git add -- <authorized-path-1> <authorized-path-2>",
+		"git diff --cached --stat",
+		"git diff --cached --check",
+		"git diff --cached",
 	]) {
 		if (!hasExactLine(contents, command)) {
 			failures.push(
 				`implement-and-review is missing required task-base diff command ${command}`,
+			);
+		}
+	}
+	for (const unsafeCommand of ["git add .", "git add -A"]) {
+		if (hasExactLine(contents, unsafeCommand)) {
+			failures.push(
+				`implement-and-review must not allow unbounded staging command ${unsafeCommand}`,
 			);
 		}
 	}
@@ -944,6 +963,16 @@ function validateImplementationSkill(contents, failures) {
 		"`PASS`",
 		"`FAIL`",
 		"`SKIPPED`",
+		"A clean worktree is the default precondition",
+		"pre-existing changes",
+		"Never automatically remove or overwrite",
+		"isolated worktree",
+		"combined diff",
+		"must not claim agent ownership",
+		"Read every task-created untracked text file in full",
+		"Unexpected untracked files prevent `READY`",
+		"untracked file prevents `READY`",
+		"After a commit, repeat untracked file discovery",
 	]) {
 		if (!contents.includes(marker))
 			failures.push(
@@ -995,6 +1024,19 @@ function validateRootDefinitionOfDone(contents, failures) {
 			"AGENTS.md write tasks must require task-base-to-current and task-base-to-HEAD review",
 		);
 	}
+	for (const marker of [
+		"clean worktree",
+		"pre-existing changes",
+		"isolated worktree",
+		"combined diff",
+		"must not claim agent ownership",
+		"git ls-files --others --exclude-standard",
+		"read each task-created untracked text file in full",
+	]) {
+		if (!write.includes(marker)) {
+			failures.push(`AGENTS.md write tasks are missing safety marker ${marker}`);
+		}
+	}
 }
 
 function validateArchitectureDocument(contents, trackedSkills, failures) {
@@ -1028,6 +1070,54 @@ function validateArchitectureDocument(contents, trackedSkills, failures) {
 				`${ARCHITECTURE_DOCUMENT} must document ${skillName} exactly once, found ${count}`,
 			);
 		}
+	}
+	let pilotSection;
+	try {
+		pilotSection = markdownSection(contents, "## Real-task Pilot PR gate").join(
+			"\n",
+		);
+	} catch (error) {
+		failures.push(`${ARCHITECTURE_DOCUMENT} ${error.message}`);
+		return;
+	}
+	const pilotMarkers = [
+		"Draft PR",
+		"local validation complete",
+		"autonomous review complete",
+		"repair P0/P1",
+		"push the latest commit",
+		"Ready for review",
+		"wait for remote required checks",
+		"human review of the PR diff",
+		"user decides whether to merge",
+	];
+	let priorIndex = -1;
+	for (const marker of pilotMarkers) {
+		const markerIndex = pilotSection.indexOf(marker);
+		if (markerIndex < 0 || markerIndex <= priorIndex) {
+			failures.push(
+				`${ARCHITECTURE_DOCUMENT} must document the ordered Pilot PR gate through ${marker}`,
+			);
+			break;
+		}
+		priorIndex = markerIndex;
+	}
+	for (const marker of [
+		"Local `PASS` is not remote CI `PASS`",
+		"`Draft` status is not",
+		"`REMOTE CI UNVERIFIED`",
+		"Only the user may decide whether to merge",
+	]) {
+		if (!pilotSection.includes(marker)) {
+			failures.push(
+				`${ARCHITECTURE_DOCUMENT} is missing Pilot PR evidence marker ${marker}`,
+			);
+		}
+	}
+	if (/\bmay automatically merge\b/i.test(pilotSection)) {
+		failures.push(
+			`${ARCHITECTURE_DOCUMENT} must not allow automatic merge in the Pilot`,
+		);
 	}
 }
 
