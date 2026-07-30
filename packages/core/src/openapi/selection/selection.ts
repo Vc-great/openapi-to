@@ -10,6 +10,7 @@ import {
   type OperationSelectionMergeResult,
   type OperationSelectionMetadata,
   type OperationSelectionMutation,
+  type OperationSelectionMutationResult,
   type OperationSelectionParseResult,
   type OperationSelectionValidationOptions,
 } from './types.ts'
@@ -166,23 +167,45 @@ export function hashOperationSelection(manifest: OperationSelectionManifestV1): 
   return `sha256:${createHash('sha256').update(JSON.stringify(semantic)).digest('hex')}`
 }
 
-export function mergeOperationSelection(
+export function applyOperationSelectionMutation(
   previous: OperationSelectionManifestV1,
   mutation: OperationSelectionMutation,
-): OperationSelectionMergeResult {
-  if (mutation.type !== 'add') throw new TypeError('Only add selection mutations are supported.')
+): OperationSelectionMutationResult {
+  if (mutation.type !== 'add' && mutation.type !== 'replace') {
+    throw new TypeError('Only add and replace selection mutations are supported.')
+  }
   const previousOperationKeys = normalizeKeys(previous.operations)
   const requestedOperationKeys = normalizeKeys(mutation.operationKeys)
+  if (mutation.type === 'replace' && requestedOperationKeys.length === 0) {
+    throw new TypeError('Replace selection mutations require at least one operationKey; clear is not supported.')
+  }
   const previousSet = new Set(previousOperationKeys)
+  const requestedSet = new Set(requestedOperationKeys)
   const newlyAddedOperationKeys = requestedOperationKeys.filter((operationKey) => !previousSet.has(operationKey))
   const alreadySelectedOperationKeys = requestedOperationKeys.filter((operationKey) => previousSet.has(operationKey))
-  const desiredOperationKeys = normalizeKeys([...previousOperationKeys, ...requestedOperationKeys])
+  const retainedOperationKeys = previousOperationKeys.filter((operationKey) => mutation.type === 'add' || requestedSet.has(operationKey))
+  const removedOperationKeys = mutation.type === 'replace'
+    ? previousOperationKeys.filter((operationKey) => !requestedSet.has(operationKey))
+    : []
+  const desiredOperationKeys = mutation.type === 'replace'
+    ? requestedOperationKeys
+    : normalizeKeys([...previousOperationKeys, ...requestedOperationKeys])
   return {
     manifest: normalizeOperationSelection(previous.target, previous.selectionOwner, desiredOperationKeys, previous.metadata),
+    mutationType: mutation.type,
     previousOperationKeys,
     requestedOperationKeys,
     newlyAddedOperationKeys,
     alreadySelectedOperationKeys,
+    retainedOperationKeys,
+    removedOperationKeys,
     desiredOperationKeys,
   }
+}
+
+export function mergeOperationSelection(
+  previous: OperationSelectionManifestV1,
+  mutation: OperationSelectionMutation,
+): OperationSelectionMergeResult {
+  return applyOperationSelectionMutation(previous, mutation)
 }

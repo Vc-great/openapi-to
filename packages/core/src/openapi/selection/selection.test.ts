@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  applyOperationSelectionMutation,
   createEmptyOperationSelection,
   hashOperationSelection,
   mergeOperationSelection,
@@ -64,12 +65,58 @@ describe('operation selection add mutation', () => {
     const first = mergeOperationSelection(normalizeOperationSelection(target, owner, ['B', 'A']), { type: 'add', operationKeys: ['C', 'B', 'C'] })
     const second = mergeOperationSelection(normalizeOperationSelection(target, owner, ['A', 'B']), { type: 'add', operationKeys: ['B', 'C'] })
     expect(first).toMatchObject({
+      mutationType: 'add',
       previousOperationKeys: ['A', 'B'],
       requestedOperationKeys: ['B', 'C'],
       newlyAddedOperationKeys: ['C'],
       alreadySelectedOperationKeys: ['B'],
+      retainedOperationKeys: ['A', 'B'],
+      removedOperationKeys: [],
       desiredOperationKeys: ['A', 'B', 'C'],
     })
     expect(hashOperationSelection(first.manifest)).toBe(hashOperationSelection(second.manifest))
+  })
+})
+
+describe('operation selection replace mutation', () => {
+  it('normalizes an exact desired set and reports added, retained, and removed keys', () => {
+    const result = applyOperationSelectionMutation(
+      normalizeOperationSelection(target, owner, ['B', 'A']),
+      { type: 'replace', operationKeys: ['C', 'B', 'C'] },
+    )
+    expect(result).toMatchObject({
+      mutationType: 'replace',
+      previousOperationKeys: ['A', 'B'],
+      requestedOperationKeys: ['B', 'C'],
+      newlyAddedOperationKeys: ['C'],
+      alreadySelectedOperationKeys: ['B'],
+      retainedOperationKeys: ['B'],
+      removedOperationKeys: ['A'],
+      desiredOperationKeys: ['B', 'C'],
+      manifest: { operations: ['B', 'C'] },
+    })
+  })
+
+  it('is semantically stable for the same set and remains available through the legacy merge entry point', () => {
+    const previous = normalizeOperationSelection(target, owner, ['B', 'A'])
+    const mutation = { type: 'replace' as const, operationKeys: ['A', 'B', 'A'] }
+    const direct = applyOperationSelectionMutation(previous, mutation)
+    const compatible = mergeOperationSelection(previous, mutation)
+    expect(compatible).toEqual(direct)
+    expect(direct).toMatchObject({
+      newlyAddedOperationKeys: [],
+      alreadySelectedOperationKeys: ['A', 'B'],
+      retainedOperationKeys: ['A', 'B'],
+      removedOperationKeys: [],
+      desiredOperationKeys: ['A', 'B'],
+    })
+    expect(hashOperationSelection(direct.manifest)).toBe(hashOperationSelection(previous))
+  })
+
+  it('rejects an empty replace instead of treating it as clear', () => {
+    expect(() => applyOperationSelectionMutation(
+      normalizeOperationSelection(target, owner, ['A']),
+      { type: 'replace', operationKeys: [] },
+    )).toThrow(/clear is not supported/i)
   })
 })

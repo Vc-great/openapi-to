@@ -118,7 +118,7 @@ export function registerControlledWriteTools(server: McpServer, context: ToolCon
     'openapi_prepare_generation',
     {
       title: 'Prepare Controlled OpenAPI Generation',
-      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Without selection it preserves the existing full plan/token flow. With selection { type: add, operationKeys } it unions exact keys with trusted persisted project selection, generates the complete desired projection, and returns a bounded applyable plan plus one-time token. Prepare never writes selection, generated files, locks, staging, or ownership manifests. Exactly one trusted target/output root is supported; callers cannot choose paths, config, plugins, cleanup, or content.',
+      description: 'Use first when the user wants generated SDK files updated or wants a reviewable write plan. Without selection it preserves the existing full plan/token flow. Selection type add unions exact keys with trusted persisted project selection; type replace sets the complete non-empty desired selection and may plan managed deletions. Both generate the complete desired projection and return a bounded applyable plan plus one-time token. Prepare never writes selection, generated files, locks, staging, or ownership manifests. Exactly one trusted target/output root is supported; callers cannot choose paths, config, plugins, cleanup, or content.',
       inputSchema: prepareGenerationInputSchema,
       outputSchema: prepareGenerationOutputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },

@@ -389,15 +389,12 @@ export async function prepareOperationSelection(
 	mutation: OperationSelectionMutation,
 	signal?: AbortSignal,
 ): Promise<PreparedOperationSelection> {
-	if (mutation.type !== "add")
-		throw new McpToolError(
-			"SELECTION_MANIFEST_INVALID",
-			"Only add selection mutations are supported.",
-		);
 	if (mutation.operationKeys.length === 0)
 		throw new McpToolError(
 			"EMPTY_SELECTION_MUTATION",
-			"Selective Prepare requires at least one exact operationKey to add.",
+			mutation.type === "replace"
+				? "Selective Prepare replace requires at least one exact operationKey; clear is not supported."
+				: "Selective Prepare requires at least one exact operationKey to add.",
 		);
 	const prepared = await prepareTargets(
 		provider,
@@ -519,7 +516,7 @@ export async function prepareOperationSelection(
 		false,
 	);
 	const merge = mergeOperationSelection(previousSelection, {
-		type: "add",
+		type: mutation.type,
 		operationKeys: requestedOperationKeys,
 	});
 	if (merge.desiredOperationKeys.length > DEFAULT_MAX_SELECTION_OPERATIONS) {

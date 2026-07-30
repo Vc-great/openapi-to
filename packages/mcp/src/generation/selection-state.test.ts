@@ -81,10 +81,13 @@ describe('trusted persistent operation selection state', () => {
     const prepared = await prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['getUser', 'createUser', 'getUser'] })
     expect(prepared.previousSelectionExists).toBe(false)
     expect(prepared.merge).toMatchObject({
+      mutationType: 'add',
       previousOperationKeys: [],
       requestedOperationKeys: ['createUser', 'getUser'],
       newlyAddedOperationKeys: ['createUser', 'getUser'],
       alreadySelectedOperationKeys: [],
+      retainedOperationKeys: [],
+      removedOperationKeys: [],
       desiredOperationKeys: ['createUser', 'getUser'],
     })
     expect(prepared.selectionFileIdentity).toMatch(/^\.openapi-to\/selections\/main-[a-f0-9]{16}\.json$/)
@@ -97,11 +100,54 @@ describe('trusted persistent operation selection state', () => {
     await persistSelection(first)
     const merged = await prepareOperationSelection(context.provider, context.resolved, context.registry, ['main'], { type: 'add', operationKeys: ['createUser', 'getUser'] })
     expect(merged.merge).toMatchObject({
+      mutationType: 'add',
       previousOperationKeys: ['getUser'],
       requestedOperationKeys: ['createUser', 'getUser'],
       newlyAddedOperationKeys: ['createUser'],
       alreadySelectedOperationKeys: ['getUser'],
+      retainedOperationKeys: ['getUser'],
+      removedOperationKeys: [],
       desiredOperationKeys: ['createUser', 'getUser'],
+    })
+  })
+
+  it('bootstraps replace and deterministically replaces a persisted selection', async () => {
+    const context = await fixture()
+    const bootstrap = await prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      context.registry,
+      ['main'],
+      { type: 'replace', operationKeys: ['getUser', 'createUser', 'getUser'] },
+    )
+    expect(bootstrap.previousSelectionExists).toBe(false)
+    expect(bootstrap.merge).toMatchObject({
+      mutationType: 'replace',
+      previousOperationKeys: [],
+      requestedOperationKeys: ['createUser', 'getUser'],
+      newlyAddedOperationKeys: ['createUser', 'getUser'],
+      alreadySelectedOperationKeys: [],
+      retainedOperationKeys: [],
+      removedOperationKeys: [],
+      desiredOperationKeys: ['createUser', 'getUser'],
+    })
+    await persistSelection(bootstrap)
+    const replaced = await prepareOperationSelection(
+      context.provider,
+      context.resolved,
+      context.registry,
+      ['main'],
+      { type: 'replace', operationKeys: ['getUser', 'getUser'] },
+    )
+    expect(replaced.merge).toMatchObject({
+      mutationType: 'replace',
+      previousOperationKeys: ['createUser', 'getUser'],
+      requestedOperationKeys: ['getUser'],
+      newlyAddedOperationKeys: [],
+      alreadySelectedOperationKeys: ['getUser'],
+      retainedOperationKeys: ['getUser'],
+      removedOperationKeys: ['createUser'],
+      desiredOperationKeys: ['getUser'],
     })
   })
 
@@ -184,11 +230,15 @@ describe('trusted persistent operation selection state', () => {
     const empty = await fixture()
     await expect(prepareOperationSelection(empty.provider, empty.resolved, empty.registry, ['main'], { type: 'add', operationKeys: [] }))
       .rejects.toMatchObject({ diagnostics: [{ code: 'EMPTY_SELECTION_MUTATION' }] })
+    await expect(prepareOperationSelection(empty.provider, empty.resolved, empty.registry, ['main'], { type: 'replace', operationKeys: [] }))
+      .rejects.toMatchObject({ diagnostics: [{ code: 'EMPTY_SELECTION_MUTATION' }] })
+    await expect(prepareOperationSelection(empty.provider, empty.resolved, empty.registry, ['main'], { type: 'replace', operationKeys: ['unknownOperation'] }))
+      .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTION_OPERATION_NOT_FOUND' }] })
     const missing = await fixture({ missingId: true })
-    await expect(prepareOperationSelection(missing.provider, missing.resolved, missing.registry, ['main'], { type: 'add', operationKeys: ['GET /users/{id}'] }))
+    await expect(prepareOperationSelection(missing.provider, missing.resolved, missing.registry, ['main'], { type: 'replace', operationKeys: ['GET /users/{id}'] }))
       .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTIVE_PREPARE_OPERATION_ID_REQUIRED' }] })
     const duplicate = await fixture({ duplicate: true })
-    await expect(prepareOperationSelection(duplicate.provider, duplicate.resolved, duplicate.registry, ['main'], { type: 'add', operationKeys: ['GET /users/{id}'] }))
+    await expect(prepareOperationSelection(duplicate.provider, duplicate.resolved, duplicate.registry, ['main'], { type: 'replace', operationKeys: ['GET /users/{id}'] }))
       .rejects.toMatchObject({ diagnostics: [{ code: 'SELECTIVE_PREPARE_DUPLICATE_OPERATION_ID' }] })
   })
 
@@ -220,7 +270,11 @@ describe('selective write-plan binding', () => {
         kind: 'selective',
         target: 'main',
         selection: {
+          mutationType: 'add',
+          previousOperationKeys: [],
           requestedOperationKeys: ['createUser', 'getUser'],
+          retainedOperationKeys: [],
+          removedOperationKeys: [],
           desiredOperationKeys: ['createUser', 'getUser'],
           previousSelectionExists: false,
           selectionFileSnapshot: { exists: false },
@@ -254,6 +308,35 @@ describe('selective write-plan binding', () => {
       if (!projectionChanged.selection) throw new Error('Expected a selective projection binding.')
       projectionChanged.selection.projectionHash = 'e'.repeat(64)
       expect(hashDeterministicGenerationPlan(projectionChanged)).not.toBe(one.stored.planHash)
+    } finally {
+      plans.clear()
+    }
+  })
+
+  it('binds add and replace as distinct mutations even when they produce the same desired set', async () => {
+    const context = await fixture()
+    const plans = store()
+    try {
+      const add = await prepareSelectiveGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        ['main'],
+        { type: 'add', operationKeys: ['getUser'] },
+      )
+      const replace = await prepareSelectiveGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        ['main'],
+        { type: 'replace', operationKeys: ['getUser'] },
+      )
+      expect(add.selection.merge.desiredOperationKeys).toEqual(replace.selection.merge.desiredOperationKeys)
+      expect(add.stored.deterministic.selection?.mutationType).toBe('add')
+      expect(replace.stored.deterministic.selection?.mutationType).toBe('replace')
+      expect(add.stored.planHash).not.toBe(replace.stored.planHash)
     } finally {
       plans.clear()
     }
@@ -441,6 +524,64 @@ describe('selective write-plan binding', () => {
         logger,
       )
       expect(applied).toMatchObject({ selectionApplied: true, selectedOperationCount: 1 })
+    } finally {
+      plans.clear()
+    }
+  })
+
+  it('rolls back a replace deletion with ownership and selection after transaction failure', async () => {
+    const context = await fixture()
+    const plans = store()
+    const logger = { debug() {}, info() {}, warn() {}, error() {} }
+    try {
+      const initial = await prepareSelectiveGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        ['main'],
+        { type: 'add', operationKeys: ['getUser', 'createUser'] },
+      )
+      await applyGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        { planId: initial.stored.planId, token: initial.token, approvedPlanHash: initial.stored.planHash },
+        logger,
+      )
+      const outputRoot = path.join(context.root, '.openapi-to/generated')
+      const beforeSelection = await readFile(initial.selection.selectionFile)
+      const beforeOwnership = await readFile(path.join(outputRoot, '.openapi-to-manifest.json'))
+      const beforeCreateUser = await readFile(path.join(outputRoot, 'createUser.txt'))
+      const beforeGetUser = await readFile(path.join(outputRoot, 'getUser.txt'))
+
+      const replacement = await prepareSelectiveGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        ['main'],
+        { type: 'replace', operationKeys: ['getUser'] },
+      )
+      expect(replacement.selection.merge.removedOperationKeys).toEqual(['createUser'])
+      expect(replacement.run.servers[0]?.result.generationResult?.manifest.summary.deleted).toBe(1)
+      await expect(applyGenerationWritePlan(
+        context.provider,
+        plans,
+        context.resolved,
+        context.registry,
+        { planId: replacement.stored.planId, token: replacement.token, approvedPlanHash: replacement.stored.planHash },
+        logger,
+        { transactionFailpoint: 'state-after-rename' },
+      )).rejects.toMatchObject({ name: 'OutputTransactionRolledBackError' })
+
+      expect(await readFile(initial.selection.selectionFile)).toEqual(beforeSelection)
+      expect(await readFile(path.join(outputRoot, '.openapi-to-manifest.json'))).toEqual(beforeOwnership)
+      expect(await readFile(path.join(outputRoot, 'createUser.txt'))).toEqual(beforeCreateUser)
+      expect(await readFile(path.join(outputRoot, 'getUser.txt'))).toEqual(beforeGetUser)
+      await expect(access(path.join(outputRoot, '.openapi-to-transaction.json'))).rejects.toThrow()
+      await expect(access(path.join(context.root, '.openapi-to/selections/.openapi-to-state-transaction'))).rejects.toThrow()
     } finally {
       plans.clear()
     }

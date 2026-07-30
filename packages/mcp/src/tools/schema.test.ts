@@ -133,13 +133,15 @@ describe('MCP Tool schemas', () => {
     expect(output.safeParse({ ...validOutput, tool: 'wrong_tool' }).success).toBe(false)
   })
 
-  it('keeps full Prepare compatible while allowing only bounded add mutations', () => {
+  it('keeps full and add Prepare compatible while allowing only non-empty bounded replace mutations', () => {
     expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'] }).success).toBe(true)
     expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'add', operationKeys: [] } }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'replace', operationKeys: ['getUser'] } }).success).toBe(true)
+    expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection: { type: 'replace', operationKeys: [] } }).success).toBe(false)
     for (const selection of [
       { type: 'remove', operationKeys: ['getUser'] },
-      { type: 'replace', operationKeys: ['getUser'] },
       { type: 'add', operationKeys: ['getUser'], path: 'selection.json' },
+      { type: 'replace', operationKeys: ['getUser'], clean: true },
     ]) expect(prepareGenerationInputSchema.safeParse({ targets: ['sdk'], selection }).success).toBe(false)
   })
 })

@@ -543,7 +543,13 @@ async function runDoctor(checks, state) {
       assert(selectivePlan?.kind === 'selective' && selectivePlan?.applySupported === true, 'Selective Prepare did not return an applyable plan.')
       assert(typeof selectivePlan?.token === 'string' && typeof selectivePlan?.planHash === 'string', 'Selective Prepare omitted its Apply binding.')
       planTokens.push(selectivePlan.token)
-      assert(value.plan?.selection?.desiredOperationKeys?.[0] === 'listPets', 'Selective Prepare omitted the desired selection summary.')
+      assert(
+        value.plan?.selection?.mutationType === 'add'
+          && value.plan?.selection?.desiredOperationKeys?.[0] === 'listPets'
+          && value.plan?.selection?.retainedOperationKeys?.length === 0
+          && value.plan?.selection?.removedOperationKeys?.length === 0,
+        'Selective Prepare omitted the complete additive selection summary.',
+      )
       assert(value.plan?.projection?.operationCount === 1 && typeof value.plan?.projection?.projectionHash === 'string', 'Selective Prepare omitted projection binding.')
       assert(equalValues(await snapshotTree(workspaceRoot), beforePrepare), 'Selective Prepare modified workspace bytes.')
       assert(await missing(path.join(workspaceRoot, '.openapi-to/generated')), 'Selective Prepare created the output root.')
