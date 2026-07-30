@@ -77,7 +77,7 @@ explicitly names a specialized primary.
 | Change the MCP Prepare/Apply writer | Support: `.agents/skills/add-mcp-write-tool/SKILL.md` |
 | Add or substantially extend an official plugin | Support: `.agents/skills/add-openapi-plugin/SKILL.md` |
 | Repair generated output | Support: `.agents/skills/fix-codegen-regression/SKILL.md` |
-| Validate changed generated output | Support: `.agents/skills/run-codegen-tests/SKILL.md` |
+| Validate changed generated output | Validation helper: `.agents/skills/run-codegen-tests/SKILL.md` |
 | Change OpenAPI/JSON Schema semantics | Support: `.agents/skills/upgrade-openapi-support/SKILL.md` |
 | Repair an existing GitHub Actions failure | Specialized primary: `.agents/skills/fix-github-actions/SKILL.md` |
 | Prepare or verify a release | Specialized primary: `.agents/skills/release-monorepo/SKILL.md` |
@@ -161,19 +161,48 @@ publication.
 
 ## Definition of done
 
-Before the final response:
+### All tasks
 
 - Re-read the request and confirm the diff remains in scope.
-- Review the complete working-tree and staged diff, not only remembered files.
-- Resolve every known P0 and every in-scope P1, then rerun affected validation
-  and review the complete diff again.
-- Require `git diff --check` to pass and verify there are no accidental files.
-- Run the focused checks required by the deeper `AGENTS.md` and matching Skill.
-- Re-read final `git status --short`, branch, and HEAD after any commit or other
-  Git mutation.
+- Separate verified facts, inferences, and unknowns.
 - State exact commands run with `PASS`, `FAIL`, or `SKIPPED`; never claim an
   unexecuted check passed.
-- List relevant checks not run and why.
-- Separate pre-existing failures from regressions introduced by the change.
-- Report compatibility, security, release, and unfinished-work risks.
+- Report relevant limitations, remaining risks, and checks not run.
 - State any external operations performed; if none, say so explicitly.
+- Do not perform or imply authorization for writes or external operations that
+  the user did not request.
+
+### Read-only tasks
+
+For explanations, analysis, summaries, status checks, prompt writing, reviews,
+and repository research:
+
+- Do not modify files or trigger the write-oriented `implement-and-review`
+  workflow.
+- Read only the Agent rules, source, configuration, and documentation needed to
+  answer the request.
+- Do not require builds, tests, or diff review unless they are necessary
+  evidence for the answer.
+- Cite inspected evidence, distinguish recommendations from implemented
+  behavior, and report uncertainty.
+- Finding a P0 or P1 does not grant automatic repair authorization. Report the
+  finding and recommendation, then wait for an authorized write request unless
+  the current request already grants that authority.
+
+### Write tasks
+
+For user-authorized implementation or modification:
+
+- Record the pre-edit `git rev-parse HEAD` as the immutable task base SHA.
+- Review unstaged and staged changes plus the complete task-base-to-current
+  working tree and task-base-to-HEAD diff. A commit must not make the task diff
+  disappear from review.
+- Resolve every known P0 and every in-scope P1, rerun affected validation, and
+  review the complete task diff again after the last repair.
+- Require the applicable `git diff --check` checks to pass and verify there are
+  no accidental files.
+- Run the focused checks required by the deeper `AGENTS.md` and matching Skill.
+- Re-read final `git status --short`, branch, HEAD, and task-base-to-HEAD diff
+  after any commit or other Git mutation.
+- Separate pre-existing failures from regressions introduced by the change and
+  report compatibility, security, release, and unfinished-work risks.

@@ -21,6 +21,15 @@ Use one primary workflow for a task. General repository changes use
 release preparation use their specialized primary Skills. Pure analysis does
 not load a write-oriented workflow.
 
+## Rule discovery boundary
+
+Agent discovery starts at the current repository root and uses
+`git ls-files '*AGENTS.md'`, or an equivalent Git-tracked repository-scoped
+query. It does not scan a parent directory, sibling repository, other worktree,
+dependency tree, or untracked file. An untracked `AGENTS.md` is not a formal
+repository rule source. Failure of Git discovery is a blocker, not permission
+to fall back to a filesystem scan.
+
 ## Rule inheritance graph
 
 ```text
@@ -146,6 +155,27 @@ release classification, but only `release-monorepo` owns release readiness.
 None grants commit, push, tagging, publication, reruns, or other external
 writes without user authorization.
 
+## Contract-verified Skill roles
+
+Tracked Skill count: `10`.
+
+This fixed table is the architecture document's machine-validated role
+inventory. The contract compares it with both Git-tracked Skill entrypoints and
+the root routing table; Skill prose does not assign a role.
+
+| Skill | Contract role |
+| --- | --- |
+| `implement-and-review` | general-primary |
+| `fix-github-actions` | specialized-primary |
+| `release-monorepo` | specialized-primary |
+| `add-cli-command` | domain-support |
+| `add-mcp-tool` | domain-support |
+| `add-mcp-write-tool` | domain-support |
+| `add-openapi-plugin` | domain-support |
+| `fix-codegen-regression` | domain-support |
+| `upgrade-openapi-support` | domain-support |
+| `run-codegen-tests` | validation-helper |
+
 ## Routing table
 
 | Request | Primary | Supporting |
@@ -165,16 +195,25 @@ writes without user authorization.
 This prevents a validation helper, release workflow, or publication workflow
 from taking over implementation.
 
+The root `AGENTS.md` `## Skill routing` table is the unique machine-validated
+routing source. Its lightweight parser accepts only the repository's two-column
+Markdown subset; it is not a general Markdown parser. Every Git-tracked Skill
+must occur in that table exactly once, with the role above. Duplicate, missing,
+unknown, untracked, malformed, multi-path, or role-mismatched rows fail the
+repository contract. A Skill mentioned elsewhere in prose does not count as a
+route.
+
 ## `implement-and-review` lifecycle
 
 ```text
-discover rules
+discover Git-tracked repository rules
   -> classify one primary domain
-  -> lock scope and authority
+  -> record task base SHA, initial Git state, scope, and authority
   -> plan
   -> implement
   -> focused validation
-  -> review complete unstaged/staged diff
+  -> review unstaged/staged and task-base-to-current-tree diff
+  -> review task-base-to-HEAD diff, including after commit
   -> grade P0/P1/P2
   -> repair in-scope P0/P1
   -> rerun affected validation and complete review (maximum three rounds)
@@ -191,6 +230,21 @@ It handles only low-risk, tightly scoped P2 findings.
 The three-round cap prevents unproductive churn; it never converts unresolved
 P0/P1 into success. Each round must produce a new finding or validation result.
 Unrelated P2 and broad architectural follow-ups remain outside the diff.
+
+The task base is the immutable `git rev-parse HEAD` recorded before editing; it
+is not automatically `origin/main`. Complete review includes unstaged and
+staged changes, the task base to the current working tree, and the two-dot task
+base to `HEAD` tree change. After a commit, an empty ordinary `git diff` cannot
+hide the task: the task-base-to-HEAD diff is reviewed again together with fresh
+status, branch, HEAD, and log evidence.
+
+Completion gates differ by authority. All tasks re-check the request, separate
+fact from inference, report limitations and external operations, and avoid
+unauthorized writes. Read-only analysis inspects only necessary evidence and
+does not require build, test, or diff ceremony unless needed for the answer.
+Write tasks record the task base, validate the change, close in-scope P0/P1,
+and review the complete task diff. Discovering a P1 during a read-only task
+does not automatically authorize a repair.
 
 ## Real-task routing validation
 
@@ -267,9 +321,10 @@ Before merging a rule change:
 1. Check every AGENTS and Skill path in the routing tables.
 2. Run the repository contract and its negative tests.
 3. Apply the real-task scenarios above without changing product behavior.
-4. Review the complete diff twice: once for rule consistency and once from the
-   executing Codex user's perspective.
-5. Confirm final Git state and external operations from fresh evidence.
+4. Review the task-base-to-current-tree and task-base-to-HEAD diff twice: once
+   for rule consistency and once from the executing Codex user's perspective.
+5. After any commit, confirm the complete task diff, final Git state, and
+   external operations from fresh evidence.
 
 Commit, push, Draft PR creation, workflow reruns, versioning, tagging, and
 publication are separate external capabilities. A local implementation or

@@ -59,18 +59,34 @@ export const REQUIRED_AGENT_DOCUMENTS = [
 const SKILL_ROOT = ".agents/skills";
 export const REQUIRED_SKILLS = ["implement-and-review"];
 const PRIMARY_ORCHESTRATOR_MARKER = "## Primary orchestrator";
-const IMPLEMENT_AND_REVIEW_MARKERS = [
+const IMPLEMENT_AND_REVIEW_HEADINGS = [
 	"## 1. Rule discovery",
 	"## 3. Scope lock",
 	"## 6. Focused validation",
 	"## 7. Full diff review",
-	"`P0`",
-	"`P1`",
-	"`P2`",
-	"maximum of three complete review rounds",
-	"`NOT READY`",
-	"final Git state",
+	"## 8. Severity and repair loop",
+	"## 9. Completion gate",
 ];
+const ARCHITECTURE_DOCUMENT =
+	"docs/agents/agents-and-skills-architecture.md";
+export const EXPECTED_SKILL_ROLES = new Map([
+	["implement-and-review", "general-primary"],
+	["fix-github-actions", "specialized-primary"],
+	["release-monorepo", "specialized-primary"],
+	["add-cli-command", "domain-support"],
+	["add-mcp-tool", "domain-support"],
+	["add-mcp-write-tool", "domain-support"],
+	["add-openapi-plugin", "domain-support"],
+	["fix-codegen-regression", "domain-support"],
+	["upgrade-openapi-support", "domain-support"],
+	["run-codegen-tests", "validation-helper"],
+]);
+const ROUTING_ROLE_LABELS = new Map([
+	["Primary", "general-primary"],
+	["Specialized primary", "specialized-primary"],
+	["Support", "domain-support"],
+	["Validation helper", "validation-helper"],
+]);
 const OPENAI_INTERFACE_REQUIRED_FIELDS = [
 	"default_prompt",
 	"display_name",
@@ -90,6 +106,129 @@ function comparePaths(left, right) {
 
 function sortedUnique(values) {
 	return [...new Set(values)].sort(comparePaths);
+}
+
+function markdownSection(contents, heading) {
+	const lines = contents.replaceAll("\r\n", "\n").split("\n");
+	const start = lines.findIndex((line) => line.trim() === heading);
+	if (start < 0) throw new Error(`missing ${heading} section`);
+	const level = heading.match(/^#+/)?.[0].length;
+	const end = lines.findIndex(
+		(line, index) =>
+			index > start &&
+			new RegExp(`^#{${level}}(?:\\s|$)`).test(line) &&
+			!new RegExp(`^#{${level + 1},}`).test(line),
+	);
+	return lines.slice(start + 1, end < 0 ? undefined : end);
+}
+
+function markdownTableCells(line) {
+	const trimmed = line.trim();
+	if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return undefined;
+	return trimmed
+		.slice(1, -1)
+		.split("|")
+		.map((cell) => cell.trim());
+}
+
+function parseTwoColumnTable(section, expectedHeaders, tableName) {
+	const headerIndex = section.findIndex((line) => {
+		const cells = markdownTableCells(line);
+		return (
+			cells?.length === 2 &&
+			cells[0] === expectedHeaders[0] &&
+			cells[1] === expectedHeaders[1]
+		);
+	});
+	if (headerIndex < 0)
+		throw new Error(
+			`${tableName} must use the header "${expectedHeaders.join(" | ")}"`,
+		);
+	const separator = markdownTableCells(section[headerIndex + 1] ?? "");
+	if (
+		separator?.length !== 2 ||
+		separator.some((cell) => !/^:?-{3,}:?$/.test(cell))
+	) {
+		throw new Error(`${tableName} has an invalid Markdown separator row`);
+	}
+	const rows = [];
+	for (const line of section.slice(headerIndex + 2)) {
+		if (!line.trim()) {
+			if (rows.length > 0) break;
+			continue;
+		}
+		const cells = markdownTableCells(line);
+		if (!cells) {
+			if (rows.length > 0) break;
+			throw new Error(`${tableName} must contain at least one data row`);
+		}
+		if (cells.length !== 2)
+			throw new Error(`${tableName} rows must contain exactly two columns`);
+		rows.push(cells);
+	}
+	if (rows.length === 0)
+		throw new Error(`${tableName} must contain at least one data row`);
+	return rows;
+}
+
+export function parseSkillRoutingTable(contents) {
+	const section = markdownSection(contents, "## Skill routing");
+	const rows = parseTwoColumnTable(
+		section,
+		["Task", "Primary or supporting Skill"],
+		"AGENTS.md Skill routing table",
+	);
+	return rows.map(([task, routeCell], index) => {
+		if (!task)
+			throw new Error(
+				`AGENTS.md Skill routing row ${index + 1} has an empty task`,
+			);
+		const referencedPaths = [
+			...routeCell.matchAll(/`([^`]*SKILL\.md[^`]*)`/g),
+		].map((match) => match[1]);
+		if (referencedPaths.length !== 1) {
+			throw new Error(
+				`AGENTS.md Skill routing row ${index + 1} must reference exactly one Skill path`,
+			);
+		}
+		const match = routeCell.match(
+			/^(Primary|Specialized primary|Support|Validation helper):\s*`(\.agents\/skills\/([a-z0-9]+(?:-[a-z0-9]+)*)\/SKILL\.md)`$/,
+		);
+		if (!match) {
+			throw new Error(
+				`AGENTS.md Skill routing row ${index + 1} has an invalid role or Skill path`,
+			);
+		}
+		const [, roleLabel, skillPath, skillName] = match;
+		return {
+			task,
+			role: ROUTING_ROLE_LABELS.get(roleLabel),
+			roleLabel,
+			skillPath,
+			skillName,
+		};
+	});
+}
+
+function parseDocumentedSkillRoles(contents) {
+	const section = markdownSection(contents, "## Contract-verified Skill roles");
+	const rows = parseTwoColumnTable(
+		section,
+		["Skill", "Contract role"],
+		"architecture Skill role table",
+	);
+	return rows.map(([skillCell, role], index) => {
+		const match = skillCell.match(/^`([^`]+)`$/);
+		if (!match || !EXPECTED_SKILL_ROLES.has(match[1]))
+			throw new Error(
+				`architecture Skill role row ${index + 1} names an unknown Skill`,
+			);
+		if (![...ROUTING_ROLE_LABELS.values()].includes(role))
+			throw new Error(
+				`architecture Skill role row ${index + 1} has an invalid role`,
+			);
+		return { skillName: match[1], role };
+	});
 }
 
 async function exists(path) {
@@ -710,6 +849,188 @@ function toolMatrixSize(contents, testName) {
 	return assertion?.[1].match(/['"]openapi_[a-z_]+['"]/g)?.length ?? 0;
 }
 
+function hasExactLine(contents, expectedLine) {
+	return contents
+		.split(/\r?\n/)
+		.some((line) => line.trim() === expectedLine);
+}
+
+function validateImplementationSkill(contents, failures) {
+	if (!hasExactLine(contents, PRIMARY_ORCHESTRATOR_MARKER)) {
+		failures.push(
+			`implement-and-review is missing required lifecycle marker ${PRIMARY_ORCHESTRATOR_MARKER}`,
+		);
+	}
+	for (const heading of IMPLEMENT_AND_REVIEW_HEADINGS) {
+		if (!hasExactLine(contents, heading))
+			failures.push(
+				`implement-and-review is missing required lifecycle marker ${heading}`,
+			);
+	}
+	if (/find\s+\.\.\s+-name\s+['"]?AGENTS\.md/.test(contents)) {
+		failures.push(
+			"implement-and-review must not discover Agent rules with a parent-directory find",
+		);
+	}
+	if (!contents.includes("git ls-files '*AGENTS.md'")) {
+		failures.push(
+			"implement-and-review must use Git-tracked repository-scoped AGENTS discovery",
+		);
+	}
+	if (
+		!/\bGit discovery fails\b[\s\S]{0,160}\breport a blocker\b/i.test(
+			contents,
+		) ||
+		!/Do not fall back to a filesystem\s+scan\./.test(contents)
+	) {
+		failures.push(
+			"implement-and-review must block on Git discovery failure without a filesystem fallback",
+		);
+	}
+	if (!/\btask base\b/i.test(contents)) {
+		failures.push("implement-and-review must record an immutable task base");
+	}
+	if (!contents.includes("git rev-parse HEAD")) {
+		failures.push(
+			"implement-and-review must record the task base with git rev-parse HEAD",
+		);
+	}
+	for (const command of [
+		'git diff --stat "$TASK_BASE_SHA"',
+		'git diff --check "$TASK_BASE_SHA"',
+		'git diff "$TASK_BASE_SHA"',
+		'git diff --stat "$TASK_BASE_SHA"..HEAD',
+		'git diff "$TASK_BASE_SHA"..HEAD',
+	]) {
+		if (!hasExactLine(contents, command)) {
+			failures.push(
+				`implement-and-review is missing required task-base diff command ${command}`,
+			);
+		}
+	}
+	if (
+		!contents.includes("task-base-to-current-working-tree") ||
+		!contents.includes("task-base-to-HEAD")
+	) {
+		failures.push(
+			"implement-and-review must review task-base-to-current-working-tree and task-base-to-HEAD diffs",
+		);
+	}
+	if (
+		!/\bAfter a commit\b/.test(contents) ||
+		!/\bclean post-commit\s+working tree\b/.test(contents)
+	) {
+		failures.push(
+			"implement-and-review must require complete diff review after a commit",
+		);
+	}
+	for (const command of [
+		"git status --short",
+		"git branch --show-current",
+		"git rev-parse HEAD",
+		"git log -1 --oneline",
+	]) {
+		if (!hasExactLine(contents, command))
+			failures.push(
+				`implement-and-review is missing final Git state command ${command}`,
+			);
+	}
+	for (const marker of [
+		"`P0`",
+		"`P1`",
+		"`P2`",
+		"maximum of three complete review rounds",
+		"`NOT READY`",
+		"`PASS`",
+		"`FAIL`",
+		"`SKIPPED`",
+	]) {
+		if (!contents.includes(marker))
+			failures.push(
+				`implement-and-review is missing required lifecycle marker ${marker}`,
+			);
+	}
+}
+
+function validateRootDefinitionOfDone(contents, failures) {
+	let section;
+	try {
+		section = markdownSection(contents, "## Definition of done").join("\n");
+	} catch (error) {
+		failures.push(`AGENTS.md ${error.message}`);
+		return;
+	}
+	for (const heading of [
+		"### All tasks",
+		"### Read-only tasks",
+		"### Write tasks",
+	]) {
+		if (!section.includes(heading))
+			failures.push(`AGENTS.md Definition of done is missing ${heading}`);
+	}
+	let readOnly = "";
+	let write = "";
+	try {
+		readOnly = markdownSection(contents, "### Read-only tasks").join("\n");
+		write = markdownSection(contents, "### Write tasks").join("\n");
+	} catch (error) {
+		failures.push(`AGENTS.md ${error.message}`);
+		return;
+	}
+	if (!/Do not modify files/.test(readOnly)) {
+		failures.push("AGENTS.md read-only tasks must prohibit file writes");
+	}
+	if (!/does not grant automatic repair authorization/.test(readOnly)) {
+		failures.push(
+			"AGENTS.md read-only findings must not grant automatic repair authorization",
+		);
+	}
+	if (
+		!/\btask base\b/i.test(write) ||
+		!write.includes("git rev-parse HEAD") ||
+		!write.includes("task-base-to-current") ||
+		!write.includes("task-base-to-HEAD")
+	) {
+		failures.push(
+			"AGENTS.md write tasks must require task-base-to-current and task-base-to-HEAD review",
+		);
+	}
+}
+
+function validateArchitectureDocument(contents, trackedSkills, failures) {
+	const countMatch = contents.match(/^Tracked Skill count: `(\d+)`\.$/m);
+	if (!countMatch || Number(countMatch[1]) !== trackedSkills.length) {
+		failures.push(
+			`${ARCHITECTURE_DOCUMENT} tracked Skill count must equal ${trackedSkills.length}`,
+		);
+	}
+	let rows;
+	try {
+		rows = parseDocumentedSkillRoles(contents);
+	} catch (error) {
+		failures.push(`${ARCHITECTURE_DOCUMENT} ${error.message}`);
+		return;
+	}
+	const counts = new Map();
+	for (const row of rows) {
+		counts.set(row.skillName, (counts.get(row.skillName) ?? 0) + 1);
+		const expectedRole = EXPECTED_SKILL_ROLES.get(row.skillName);
+		if (row.role !== expectedRole) {
+			failures.push(
+				`${ARCHITECTURE_DOCUMENT} role for ${row.skillName} must be ${expectedRole}, found ${row.role}`,
+			);
+		}
+	}
+	for (const skillName of trackedSkills) {
+		const count = counts.get(skillName) ?? 0;
+		if (count !== 1) {
+			failures.push(
+				`${ARCHITECTURE_DOCUMENT} must document ${skillName} exactly once, found ${count}`,
+			);
+		}
+	}
+}
+
 export async function auditAgentAndSkillContracts(
 	root,
 	{ rootManifest, workspaceManifests = new Map() } = {},
@@ -785,7 +1106,6 @@ export async function auditAgentAndSkillContracts(
 
 	const skillNames = new Set();
 	const skillContentsByName = new Map();
-	const primaryOrchestrators = [];
 	for (const directoryName of skillDirectories) {
 		const relativeSkill = `${SKILL_ROOT}/${directoryName}/SKILL.md`;
 		const skillPath = join(root, relativeSkill);
@@ -795,8 +1115,6 @@ export async function auditAgentAndSkillContracts(
 		}
 		const contents = await readFile(skillPath, "utf8");
 		skillContentsByName.set(directoryName, contents);
-		if (contents.includes(PRIMARY_ORCHESTRATOR_MARKER))
-			primaryOrchestrators.push(directoryName);
 		let metadata;
 		try {
 			metadata = parseSkillFrontmatter(contents);
@@ -903,32 +1221,91 @@ export async function auditAgentAndSkillContracts(
 		if (!skillDirectories.includes(requiredSkill))
 			failures.push(`missing required repository Skill ${requiredSkill}`);
 	}
-	if (
-		primaryOrchestrators.length !== 1 ||
-		primaryOrchestrators[0] !== "implement-and-review"
-	) {
-		failures.push(
-			`implement-and-review must be the only primary orchestrator (found: ${primaryOrchestrators.join(", ") || "none"})`,
-		);
+	for (const skillName of skillDirectories) {
+		if (!EXPECTED_SKILL_ROLES.has(skillName)) {
+			failures.push(
+				`EXPECTED_SKILL_ROLES is missing tracked Skill ${skillName}`,
+			);
+		}
+	}
+	for (const skillName of EXPECTED_SKILL_ROLES.keys()) {
+		if (!skillDirectories.includes(skillName)) {
+			failures.push(
+				`EXPECTED_SKILL_ROLES contains nonexistent Skill ${skillName}`,
+			);
+		}
 	}
 	const implementationSkill = skillContentsByName.get("implement-and-review");
 	if (implementationSkill) {
-		for (const marker of IMPLEMENT_AND_REVIEW_MARKERS) {
-			if (!implementationSkill.includes(marker))
-				failures.push(
-					`implement-and-review is missing required lifecycle marker ${marker}`,
-				);
+		validateImplementationSkill(implementationSkill, failures);
+	}
+	for (const [skillName, contents] of skillContentsByName) {
+		if (
+			skillName !== "implement-and-review" &&
+			hasExactLine(contents, PRIMARY_ORCHESTRATOR_MARKER)
+		) {
+			failures.push(
+				`${skillName} must not use the formal ${PRIMARY_ORCHESTRATOR_MARKER} heading`,
+			);
 		}
 	}
 
 	const rootAgentPath = join(root, "AGENTS.md");
 	if (await exists(rootAgentPath)) {
 		const rootAgent = await readFile(rootAgentPath, "utf8");
-		for (const skillName of skillDirectories) {
-			const route = `${SKILL_ROOT}/${skillName}/SKILL.md`;
-			if (!rootAgent.includes(route))
-				failures.push(`AGENTS.md Skill routing is missing ${route}`);
+		validateRootDefinitionOfDone(rootAgent, failures);
+		let routes = [];
+		try {
+			routes = parseSkillRoutingTable(rootAgent);
+		} catch (error) {
+			failures.push(error.message);
 		}
+		const routeCounts = new Map();
+		for (const route of routes) {
+			routeCounts.set(
+				route.skillName,
+				(routeCounts.get(route.skillName) ?? 0) + 1,
+			);
+			if (!trackedFiles.has(route.skillPath)) {
+				failures.push(
+					`AGENTS.md Skill routing references unknown or untracked Skill ${route.skillPath}`,
+				);
+				continue;
+			}
+			const expectedRole = EXPECTED_SKILL_ROLES.get(route.skillName);
+			if (!expectedRole) {
+				failures.push(
+					`AGENTS.md Skill routing references unknown Skill ${route.skillName}`,
+				);
+			} else if (route.role !== expectedRole) {
+				failures.push(
+					`AGENTS.md Skill routing role for ${route.skillName} must be ${expectedRole}, found ${route.role}`,
+				);
+			}
+		}
+		for (const skillName of skillDirectories) {
+			const count = routeCounts.get(skillName) ?? 0;
+			if (count !== 1) {
+				failures.push(
+					`AGENTS.md Skill routing must include ${skillName} exactly once, found ${count}`,
+				);
+			}
+		}
+	}
+
+	const architecturePath = join(root, ARCHITECTURE_DOCUMENT);
+	if (!(await exists(architecturePath))) {
+		failures.push(`missing Agent and Skill architecture ${ARCHITECTURE_DOCUMENT}`);
+	} else if (!trackedFiles.has(ARCHITECTURE_DOCUMENT)) {
+		failures.push(
+			`Agent and Skill architecture is not tracked by Git: ${ARCHITECTURE_DOCUMENT}`,
+		);
+	} else {
+		validateArchitectureDocument(
+			await readFile(architecturePath, "utf8"),
+			skillDirectories,
+			failures,
+		);
 	}
 
 	for (const trackedSkill of sortedUnique(
