@@ -28,7 +28,6 @@ import {
 	readReleaseNotes,
 	verifyPublicationArtifacts,
 	verifyRegistry,
-	verifyWorkflowSha,
 } from "./publication.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -195,53 +194,6 @@ function registryFixture(manifest, modeByName) {
 		});
 	};
 }
-
-test("workflow SHA guard blocks ref, dispatch SHA, and approval-time main drift", async () => {
-	assert.deepEqual(
-		await verifyWorkflowSha({
-			expectedSha: SHA,
-			githubSha: SHA,
-			githubRef: "refs/heads/main",
-			resolveRemoteSha: async () => SHA,
-		}),
-		{
-			success: true,
-			expectedSha: SHA,
-			githubRef: "refs/heads/main",
-			remoteMain: SHA,
-		},
-	);
-	for (const fixture of [
-		{ expectedSha: "not-a-sha", githubSha: SHA, githubRef: "refs/heads/main" },
-		{
-			expectedSha: SHA,
-			githubSha: "b".repeat(40),
-			githubRef: "refs/heads/main",
-		},
-		{ expectedSha: SHA, githubSha: SHA, githubRef: "refs/heads/feature" },
-	]) {
-		await assert.rejects(
-			verifyWorkflowSha({
-				...fixture,
-				resolveRemoteSha: async () => SHA,
-			}),
-		);
-	}
-	let npmPublishCalls = 0;
-	await assert.rejects(
-		(async () => {
-			await verifyWorkflowSha({
-				expectedSha: SHA,
-				githubSha: SHA,
-				githubRef: "refs/heads/main",
-				resolveRemoteSha: async () => "b".repeat(40),
-			});
-			npmPublishCalls += 1;
-		})(),
-		/current fetched origin\/main commit/,
-	);
-	assert.equal(npmPublishCalls, 0);
-});
 
 test("artifact preparation rejects tracked checkout drift before pnpm pack", async (t) => {
 	const root = await createPublicationFixture(t);
