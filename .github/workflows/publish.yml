@@ -127,13 +127,26 @@ jobs:
         shell: bash
         env:
           EXPECTED_SHA: ${{ steps.guard.outputs.expected_sha }}
-        run: printf 'name=openapi-to-publication-%s\n' "${EXPECTED_SHA}" >> "${GITHUB_OUTPUT}"
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          case "${RUN_ATTEMPT}" in
+            ''|*[!0-9]*)
+              echo "github.run_attempt must be a positive integer." >&2
+              exit 1
+              ;;
+          esac
+          test "${RUN_ATTEMPT}" -ge 1
+          printf 'name=openapi-to-publication-%s-attempt-%s\n' \
+            "${EXPECTED_SHA}" \
+            "${RUN_ATTEMPT}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload only the verified publication artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.artifact.outputs.name }}
           path: .ci-artifacts/publication
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
