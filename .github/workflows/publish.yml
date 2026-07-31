@@ -55,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
-          guard="$(node scripts/release/publication.mjs verify-sha \
+          guard="$(node scripts/release/publication-sha-guard.mjs \
             --expected-sha "${EXPECTED_SHA}" \
             --github-sha "${GITHUB_SHA}" \
             --github-ref "${GITHUB_REF}")"
@@ -168,6 +168,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Revalidate current main after Environment approval
+        id: approval-sha-guard
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          guard="$(node scripts/release/publication-sha-guard.mjs \
+            --expected-sha "${EXPECTED_SHA}" \
+            --github-sha "${GITHUB_SHA}" \
+            --github-ref "${GITHUB_REF}")"
+          printf '%s\n' "${guard}" | jq -e '.success == true' >/dev/null
+
       - name: Set up pnpm
         uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
         with:
@@ -187,20 +201,6 @@ jobs:
         with:
           name: ${{ needs.preflight-and-package.outputs.artifact_name }}
           path: .ci-artifacts/publication
-
-      - name: Revalidate current main after Environment approval
-        id: approval-sha-guard
-        shell: bash
-        env:
-          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin main
-          guard="$(node scripts/release/publication.mjs verify-sha \
-            --expected-sha "${EXPECTED_SHA}" \
-            --github-sha "${GITHUB_SHA}" \
-            --github-ref "${GITHUB_REF}")"
-          printf '%s\n' "${guard}" | jq -e '.success == true' >/dev/null
 
       - name: Verify downloaded bytes and exact Workflow facts
         id: artifact-verification

@@ -468,56 +468,6 @@ export async function createPublicationFacts({
 	return (await loadCandidate({ root, expectedVersion, channel })).facts;
 }
 
-export async function verifyWorkflowSha({
-	root = repositoryRoot,
-	expectedSha,
-	githubSha,
-	githubRef,
-	resolveRemoteSha = async () => {
-		const { stdout } = await execFileAsync(
-			"git",
-			["rev-parse", "refs/remotes/origin/main"],
-			{ cwd: root, encoding: "utf8" },
-		);
-		return stdout.trim();
-	},
-} = {}) {
-	if (!/^[0-9a-f]{40}$/.test(expectedSha ?? "")) {
-		throw new PublicationError(
-			"INVALID_EXPECTED_SHA",
-			"expected_sha must be a full lowercase commit SHA.",
-		);
-	}
-	if (githubRef !== "refs/heads/main") {
-		throw new PublicationError(
-			"INVALID_PUBLICATION_REF",
-			"Publication must be dispatched from refs/heads/main.",
-		);
-	}
-	if (githubSha !== expectedSha) {
-		throw new PublicationError(
-			"DISPATCH_SHA_MISMATCH",
-			"expected_sha does not match the dispatch commit.",
-		);
-	}
-	let remoteMain;
-	try {
-		remoteMain = await resolveRemoteSha();
-	} catch {
-		throw new PublicationError(
-			"REMOTE_MAIN_UNAVAILABLE",
-			"Unable to resolve the fetched origin/main commit.",
-		);
-	}
-	if (remoteMain !== expectedSha) {
-		throw new PublicationError(
-			"REMOTE_MAIN_SHA_MISMATCH",
-			"expected_sha is not the current fetched origin/main commit.",
-		);
-	}
-	return { success: true, expectedSha, githubRef, remoteMain };
-}
-
 function normalizeJson(value) {
 	if (Array.isArray(value)) return value.map(normalizeJson);
 	if (!value || typeof value !== "object") return value;
@@ -2063,7 +2013,6 @@ function parseInteger(value, name) {
 function parseArguments(argv) {
 	const [command, ...argumentsList] = argv;
 	const commands = [
-		"verify-sha",
 		"preflight",
 		"prepare-artifacts",
 		"verify-artifacts",
@@ -2094,8 +2043,6 @@ function parseArguments(argv) {
 		else if (argument === "--channel" && value) options.channel = value;
 		else if (argument === "--expected-sha" && value)
 			options.expectedSha = value;
-		else if (argument === "--github-sha" && value) options.githubSha = value;
-		else if (argument === "--github-ref" && value) options.githubRef = value;
 		else if (argument === "--npm-version" && value) options.npmVersion = value;
 		else if (argument === "--artifact-dir" && value)
 			options.artifactDirectory = resolve(value);
@@ -2127,17 +2074,6 @@ function writeResult(result) {
 export async function main(argv = process.argv.slice(2)) {
 	try {
 		const options = parseArguments(argv);
-		if (options.command === "verify-sha") {
-			writeResult(
-				await verifyWorkflowSha({
-					root: options.root,
-					expectedSha: options.expectedSha,
-					githubSha: options.githubSha,
-					githubRef: options.githubRef,
-				}),
-			);
-			return;
-		}
 		if (options.command === "preflight") {
 			writeResult(
 				await createPublicationFacts({

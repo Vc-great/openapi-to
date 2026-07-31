@@ -241,6 +241,7 @@ async function createPublicationContractFixture(t) {
 		".github/pull_request_template.md",
 		"package.json",
 		"pnpm-lock.yaml",
+		"scripts/release/publication-sha-guard.mjs",
 		"scripts/release/publication.mjs",
 	]) {
 		await writeFixtureFile(
@@ -1013,6 +1014,112 @@ test("publication contract rejects tarball pipeline and approval-time SHA regres
 			{ failures: await auditPublicationContracts(root) },
 			fixture.failure,
 		);
+	}
+});
+
+test("publication contract preserves the zero-dependency SHA guard", async (t) => {
+	await t.test("guard file deletion", async (t) => {
+		const root = await createPublicationContractFixture(t);
+		await rm(join(root, "scripts/release/publication-sha-guard.mjs"));
+		await git(
+			root,
+			"add",
+			"--update",
+			"--",
+			"scripts/release/publication-sha-guard.mjs",
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/missing zero-dependency guard/,
+		);
+	});
+
+	await t.test("workflow reverts to publication.mjs verify-sha", async (t) => {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/publish.yml",
+			(contents) =>
+				contents.replaceAll(
+					"publication-sha-guard.mjs",
+					"publication.mjs verify-sha",
+				),
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/missing blocking behavior publication-sha-guard|guard must bind|current-main guard is missing/,
+		);
+	});
+
+	await t.test("dependency installation moves before the first guard", async (t) => {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/publish.yml",
+			(contents) =>
+				contents.replace(
+					'          guard="$(node scripts/release/publication-sha-guard.mjs \\\n',
+					'          pnpm install --frozen-lockfile\n          guard="$(node scripts/release/publication-sha-guard.mjs \\\n',
+				),
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/dependency installation must remain after the zero-dependency SHA guard/,
+		);
+	});
+
+	await t.test("approval-time guard is removed", async (t) => {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/publish.yml",
+			(contents) =>
+				contents.replace(
+					"        id: approval-sha-guard\n",
+					"        id: removed-approval-sha-guard\n",
+				),
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/must revalidate current main|approval-time zero-dependency SHA guard/,
+		);
+	});
+
+	await t.test("guard imports a bare package", async (t) => {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			"scripts/release/publication-sha-guard.mjs",
+			(contents) => `${contents}\nimport semver from "semver";\n`,
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/must import only Node built-in modules; found semver|forbidden dependency behavior semver/,
+		);
+	});
+
+	for (const [name, appendedSource] of [
+		[
+			"guard uses createRequire",
+			'import { createRequire } from "node:module";\nconst loadPackage = createRequire(import.meta.url);\nloadPackage("third-party");',
+		],
+		[
+			"guard uses a variable dynamic import",
+			'const packageName = "third-party";\nawait import(packageName);',
+		],
+	]) {
+		await t.test(name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				"scripts/release/publication-sha-guard.mjs",
+				(contents) => `${contents}\n${appendedSource}\n`,
+			);
+			assertFailure(
+				{ failures: await auditPublicationContracts(root) },
+				/must not use runtime module loading/,
+			);
+		});
 	}
 });
 

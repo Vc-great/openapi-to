@@ -71,6 +71,8 @@ const IMPLEMENT_AND_REVIEW_HEADINGS = [
 	"## 10. Completion gate",
 ];
 const PUBLISH_WORKFLOW_PATH = ".github/workflows/publish.yml";
+const PUBLICATION_SHA_GUARD_PATH =
+	"scripts/release/publication-sha-guard.mjs";
 const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
@@ -253,6 +255,71 @@ function validateExactJobPermissions(
 
 export async function auditPublicationContracts(root = repositoryRoot) {
 	const failures = [];
+	const publicationShaGuardPath = join(root, PUBLICATION_SHA_GUARD_PATH);
+	if (!(await exists(publicationShaGuardPath))) {
+		failures.push(`missing zero-dependency guard ${PUBLICATION_SHA_GUARD_PATH}`);
+	} else {
+		if (!(await isGitTracked(root, PUBLICATION_SHA_GUARD_PATH))) {
+			failures.push(`${PUBLICATION_SHA_GUARD_PATH} must be tracked by Git`);
+		}
+		const guardSource = await readFile(publicationShaGuardPath, "utf8");
+		const moduleSpecifiers = [
+			...guardSource.matchAll(
+				/\b(?:import|export)\s+(?:[^"'`;]*?\s+from\s+)?["']([^"']+)["']/g,
+			),
+			...guardSource.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g),
+		].map((match) => match[1]);
+		for (const specifier of moduleSpecifiers) {
+			if (!specifier.startsWith("node:")) {
+				failures.push(
+					`${PUBLICATION_SHA_GUARD_PATH} must import only Node built-in modules; found ${specifier}`,
+				);
+			}
+		}
+		for (const [pattern, behavior] of [
+			[/\bimport\s*\(/, "dynamic import"],
+			[/\bcreateRequire\b/, "createRequire"],
+			[/\brequire\s*\(/, "require"],
+			[/\bprocess\.getBuiltinModule\b/, "process.getBuiltinModule"],
+		]) {
+			if (pattern.test(guardSource)) {
+				failures.push(
+					`${PUBLICATION_SHA_GUARD_PATH} must not use runtime module loading via ${behavior}`,
+				);
+			}
+		}
+		for (const forbidden of [
+			"publication.mjs",
+			"node_modules",
+			"semver",
+			"js-yaml",
+			"pnpm install",
+			"npm install",
+		]) {
+			if (guardSource.includes(forbidden)) {
+				failures.push(
+					`${PUBLICATION_SHA_GUARD_PATH} contains forbidden dependency behavior ${forbidden}`,
+				);
+			}
+		}
+		for (const marker of [
+			"^[0-9a-f]{40}$",
+			"refs/heads/main",
+			"DISPATCH_SHA_MISMATCH",
+			"CHECKOUT_HEAD_SHA_MISMATCH",
+			"refs/remotes/origin/main",
+			"REMOTE_MAIN_SHA_MISMATCH",
+			"JSON.stringify",
+			"process.stderr.write",
+			"process.exitCode = 1",
+		]) {
+			if (!guardSource.includes(marker)) {
+				failures.push(
+					`${PUBLICATION_SHA_GUARD_PATH} is missing zero-dependency SHA behavior ${marker}`,
+				);
+			}
+		}
+	}
 	const document = await readWorkflowDocument(
 		root,
 		PUBLISH_WORKFLOW_PATH,
@@ -432,7 +499,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	const preflightRuns = workflowRunText(preflight);
 	for (const marker of [
 		"git fetch --no-tags origin main",
-		"publication.mjs verify-sha",
+		"publication-sha-guard.mjs",
 		`--expected-sha "${DOLLAR_SIGN}{EXPECTED_SHA}"`,
 		`--github-sha "${DOLLAR_SIGN}{GITHUB_SHA}"`,
 		`--github-ref "${DOLLAR_SIGN}{GITHUB_REF}"`,
@@ -458,7 +525,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		guardStep.env?.EXPECTED_SHA !== `${DOLLAR_SIGN}{{ inputs.expected_sha }}` ||
 		typeof guardStep.run !== "string" ||
 		!guardStep.run.includes(
-			'guard="$(node scripts/release/publication.mjs verify-sha',
+			'guard="$(node scripts/release/publication-sha-guard.mjs',
 		)
 	) {
 		failures.push(
@@ -468,6 +535,22 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	const preflightSteps = Array.isArray(preflight?.steps)
 		? preflight.steps
 		: [];
+	const guardStepIndex = preflightSteps.indexOf(guardStep);
+	const firstInstallIndex = preflightSteps.findIndex(
+		(step) =>
+			isMapping(step) &&
+			typeof step.run === "string" &&
+			/\bpnpm install\b/.test(step.run),
+	);
+	if (
+		guardStepIndex < 0 ||
+		firstInstallIndex < 0 ||
+		firstInstallIndex <= guardStepIndex
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} preflight dependency installation must remain after the zero-dependency SHA guard`,
+		);
+	}
 	const readinessStep = preflightSteps.find(
 		(step) => isMapping(step) && step.id === "release-readiness",
 	);
@@ -727,7 +810,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	const approvalGuard = publishSteps[approvalGuardIndex];
 	for (const marker of [
 		"git fetch --no-tags origin main",
-		"publication.mjs verify-sha",
+		"publication-sha-guard.mjs",
 		`--expected-sha "${DOLLAR_SIGN}{EXPECTED_SHA}"`,
 		`--github-sha "${DOLLAR_SIGN}{GITHUB_SHA}"`,
 		`--github-ref "${DOLLAR_SIGN}{GITHUB_REF}"`,
@@ -740,6 +823,17 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 				`${PUBLISH_WORKFLOW_PATH} approval-time current-main guard is missing ${marker}`,
 			);
 		}
+	}
+	const publishInstallIndex = publishSteps.findIndex(
+		(step) =>
+			isMapping(step) &&
+			typeof step.run === "string" &&
+			/\bpnpm install\b/.test(step.run),
+	);
+	if (publishInstallIndex < 0 || approvalGuardIndex >= publishInstallIndex) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} approval-time zero-dependency SHA guard must run before dependency installation`,
+		);
 	}
 	const remoteReleaseGuard = publishSteps[remoteReleaseGuardIndex];
 	for (const marker of [
@@ -945,6 +1039,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		}
 	}
 	for (const forbidden of [
+		"verify-sha",
 		"publishWithChangesetsNpm",
 		"runChangesetsPublish",
 		"manifest.packageManager",
