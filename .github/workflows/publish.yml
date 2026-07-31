@@ -20,14 +20,14 @@ on:
           - latest
 
 concurrency:
-  group: publish-packages-${{ inputs.channel }}
+  group: publish-openapi-to-fixed-group
   cancel-in-progress: false
 
 jobs:
-  preflight:
-    name: Validate release candidate
+  preflight-and-package:
+    name: Validate and package release candidate
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
     outputs:
@@ -37,10 +37,11 @@ jobs:
       dist_tag: ${{ steps.facts.outputs.dist_tag }}
       tag: ${{ steps.facts.outputs.tag }}
       prerelease: ${{ steps.facts.outputs.prerelease }}
-      packages: ${{ steps.facts.outputs.packages }}
+      package_count: ${{ steps.facts.outputs.package_count }}
+      artifact_name: ${{ steps.artifact.outputs.name }}
     steps:
       - name: Check out dispatch commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
@@ -62,12 +63,12 @@ jobs:
           printf 'expected_sha=%s\n' "$(printf '%s\n' "${guard}" | jq -r '.expectedSha')" >> "${GITHUB_OUTPUT}"
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
         with:
           version: 10.14.0
 
       - name: Set up explicit Node toolchain
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24.15.0
           package-manager-cache: false
@@ -91,103 +92,209 @@ jobs:
             printf 'dist_tag=%s\n' "$(printf '%s\n' "${facts}" | jq -r '.distTag')"
             printf 'tag=%s\n' "$(printf '%s\n' "${facts}" | jq -r '.tag')"
             printf 'prerelease=%s\n' "$(printf '%s\n' "${facts}" | jq -r '.prerelease')"
-            printf 'packages=%s\n' "$(printf '%s\n' "${facts}" | jq -c '[.packages[].name]')"
+            printf 'package_count=%s\n' "$(printf '%s\n' "${facts}" | jq -r '.packageCount')"
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Run release readiness before registry authority
+      - name: Run strict readiness before packing
         id: release-readiness
-        run: pnpm release:check
+        run: pnpm release:check:prepack
+
+      - name: Pack and verify the publication artifact once
+        id: prepare-artifacts
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.guard.outputs.expected_sha }}
+          EXPECTED_VERSION: ${{ steps.facts.outputs.version }}
+          CHANNEL: ${{ steps.facts.outputs.channel }}
+        run: |
+          set -euo pipefail
+          result="$(node scripts/release/publication.mjs prepare-artifacts \
+            --artifact-dir .ci-artifacts/publication \
+            --expected-sha "${EXPECTED_SHA}" \
+            --expected-version "${EXPECTED_VERSION}" \
+            --channel "${CHANNEL}")"
+          printf '%s\n' "${result}" | jq -e \
+            --arg sha "${EXPECTED_SHA}" \
+            --arg version "${EXPECTED_VERSION}" \
+            --arg channel "${CHANNEL}" \
+            '.success == true and .commitSha == $sha and .version == $version and .channel == $channel' >/dev/null
+
+      - name: Install and smoke-test the exact publication tarballs
+        run: pnpm release:smoke -- --publication-manifest .ci-artifacts/publication/publication-manifest.json
+
+      - name: Bind immutable artifact name
+        id: artifact
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.guard.outputs.expected_sha }}
+        run: printf 'name=openapi-to-publication-%s\n' "${EXPECTED_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload only the verified publication artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: .ci-artifacts/publication
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
 
   publish:
-    name: Publish with npm Trusted Publishing
-    needs: preflight
+    name: Publish verified tarballs with npm Trusted Publishing
+    needs: preflight-and-package
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     environment: npm-production
     permissions:
       contents: read
       id-token: write
     steps:
       - name: Check out verified commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ needs.preflight.outputs.expected_sha }}
+          ref: ${{ needs.preflight-and-package.outputs.expected_sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
         with:
           version: 10.14.0
 
       - name: Set up explicit Node toolchain without dependency cache
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24.15.0
           package-manager-cache: false
 
-      - name: Install OIDC-compatible npm CLI
+      - name: Install verification dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Download the immutable publication artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.preflight-and-package.outputs.artifact_name }}
+          path: .ci-artifacts/publication
+
+      - name: Revalidate current main after Environment approval
+        id: approval-sha-guard
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          guard="$(node scripts/release/publication.mjs verify-sha \
+            --expected-sha "${EXPECTED_SHA}" \
+            --github-sha "${GITHUB_SHA}" \
+            --github-ref "${GITHUB_REF}")"
+          printf '%s\n' "${guard}" | jq -e '.success == true' >/dev/null
+
+      - name: Verify downloaded bytes and exact Workflow facts
+        id: artifact-verification
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+          CHANNEL: ${{ needs.preflight-and-package.outputs.channel }}
+        run: |
+          set -euo pipefail
+          node scripts/release/publication.mjs verify-artifacts \
+            --manifest .ci-artifacts/publication/publication-manifest.json \
+            --expected-sha "${EXPECTED_SHA}" \
+            --expected-version "${EXPECTED_VERSION}" \
+            --channel "${CHANNEL}"
+
+      - name: Extract expected release notes for collision checks
+        env:
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+        run: node scripts/release/publication.mjs release-notes --expected-version "${EXPECTED_VERSION}" --output release-notes.md
+
+      - name: Fail closed on incompatible existing tag or Release
+        id: remote-release-guard
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+          TAG: ${{ needs.preflight-and-package.outputs.tag }}
+          PRERELEASE: ${{ needs.preflight-and-package.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          tag_lines="$(git ls-remote --tags origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}")"
+          if [[ -n "${tag_lines}" ]]; then
+            actual_tag_sha="$(printf '%s\n' "${tag_lines}" | awk -F '\t' '/\^\{\}$/ { peeled = $1 } !/\^\{\}$/ { direct = $1 } END { print peeled ? peeled : direct }')"
+            if [[ "${actual_tag_sha}" != "${EXPECTED_SHA}" ]]; then
+              echo "Existing tag does not point to the candidate SHA; refusing npm publication." >&2
+              exit 1
+            fi
+          fi
+
+          release_response="${RUNNER_TEMP}/openapi-to-existing-release.json"
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" >"${release_response}" 2>"${RUNNER_TEMP}/openapi-to-existing-release.error"; then
+            jq -e \
+              --arg tag "${TAG}" \
+              --arg title "openapi-to ${EXPECTED_VERSION}" \
+              --argjson prerelease "${PRERELEASE}" \
+              --rawfile notes release-notes.md \
+              'def normalized: gsub("\r\n"; "\n") | sub("\n+$"; "");
+               .tag_name == $tag and
+               .prerelease == $prerelease and
+               .draft == false and
+               .name == $title and
+               ((.body // "") | normalized) == ($notes | normalized)' \
+              "${release_response}" >/dev/null
+          elif ! jq -e '.status == "404" or .status == 404' "${release_response}" >/dev/null 2>&1; then
+            echo "Unable to prove that the GitHub Release is absent or compatible." >&2
+            exit 1
+          fi
+
+      - name: Install and confirm the pinned OIDC-compatible npm CLI
         run: |
           npm install --global npm@12.0.2
           test "$(npm --version)" = "12.0.2"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Revalidate publication facts
-        env:
-          EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
-          CHANNEL: ${{ needs.preflight.outputs.channel }}
-        run: node scripts/release/publication.mjs preflight --expected-version "${EXPECTED_VERSION}" --channel "${CHANNEL}"
-
-      - name: Build publishable packages
-        run: |
-          pnpm run clean
-          pnpm run build
-
-      - name: Publish fixed group without creating Git tags
+      - name: Publish only verified tarballs
         id: publish
+        shell: bash
         env:
-          EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
-          CHANNEL: ${{ needs.preflight.outputs.channel }}
-          DIST_TAG: ${{ needs.preflight.outputs.dist_tag }}
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+          CHANNEL: ${{ needs.preflight-and-package.outputs.channel }}
         run: |
-          test "${CHANNEL}" = "${DIST_TAG}"
-          node scripts/release/publication.mjs publish \
+          set -euo pipefail
+          node scripts/release/publication.mjs publish-artifacts \
+            --manifest .ci-artifacts/publication/publication-manifest.json \
+            --expected-sha "${EXPECTED_SHA}" \
             --expected-version "${EXPECTED_VERSION}" \
             --channel "${CHANNEL}" \
-            --npm-version 12.0.2
-
-      - name: Report partial-publication recovery facts
-        if: ${{ failure() && steps.publish.outcome == 'failure' }}
-        env:
-          EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
-          CHANNEL: ${{ needs.preflight.outputs.channel }}
-        run: node scripts/release/publication.mjs verify-registry --expected-version "${EXPECTED_VERSION}" --channel "${CHANNEL}" --attempts 1 --delay-ms 0 --timeout-ms 5000
+            --npm-version 12.0.2 \
+            --attempts 1 \
+            --delay-ms 0 \
+            --timeout-ms 10000
 
   verify-registry:
-    name: Verify npm registry publication
+    name: Verify npm registry bytes and dist-tag
     needs:
-      - preflight
+      - preflight-and-package
       - publish
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - name: Check out verified commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ needs.preflight.outputs.expected_sha }}
+          ref: ${{ needs.preflight-and-package.outputs.expected_sha }}
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
         with:
           version: 10.14.0
 
       - name: Set up Node without dependency cache
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24.15.0
           package-manager-cache: false
@@ -195,40 +302,77 @@ jobs:
       - name: Install read-only verification dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Verify every package version and dist-tag
+      - name: Download the immutable publication artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.preflight-and-package.outputs.artifact_name }}
+          path: .ci-artifacts/publication
+
+      - name: Verify artifact and every registry integrity
         id: registry-verification
+        shell: bash
         env:
-          EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
-          CHANNEL: ${{ needs.preflight.outputs.channel }}
-        run: node scripts/release/publication.mjs verify-registry --expected-version "${EXPECTED_VERSION}" --channel "${CHANNEL}" --attempts 6 --delay-ms 10000 --timeout-ms 10000
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+          CHANNEL: ${{ needs.preflight-and-package.outputs.channel }}
+        run: |
+          set -euo pipefail
+          node scripts/release/publication.mjs verify-registry \
+            --manifest .ci-artifacts/publication/publication-manifest.json \
+            --expected-sha "${EXPECTED_SHA}" \
+            --expected-version "${EXPECTED_VERSION}" \
+            --channel "${CHANNEL}" \
+            --attempts 6 \
+            --delay-ms 10000 \
+            --timeout-ms 10000
 
   github-release:
-    name: Create verified tag and GitHub Release
+    name: Create verified immutable tag and GitHub Release
     needs:
-      - preflight
+      - preflight-and-package
       - verify-registry
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
       - name: Check out verified commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ needs.preflight.outputs.expected_sha }}
+          ref: ${{ needs.preflight-and-package.outputs.expected_sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Revalidate expected SHA, version, and channel
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+        with:
+          version: 10.14.0
+
+      - name: Set up Node without dependency cache
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.15.0
+          package-manager-cache: false
+
+      - name: Install release verification dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Download the immutable publication artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.preflight-and-package.outputs.artifact_name }}
+          path: .ci-artifacts/publication
+
+      - name: Revalidate verified publication facts
         shell: bash
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
-          VERIFIED_SHA: ${{ needs.preflight.outputs.expected_sha }}
+          VERIFIED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
           EXPECTED_VERSION: ${{ inputs.expected_version }}
-          VERIFIED_VERSION: ${{ needs.preflight.outputs.version }}
+          VERIFIED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
           CHANNEL: ${{ inputs.channel }}
-          VERIFIED_CHANNEL: ${{ needs.preflight.outputs.channel }}
-          PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
+          VERIFIED_CHANNEL: ${{ needs.preflight-and-package.outputs.channel }}
+          PRERELEASE: ${{ needs.preflight-and-package.outputs.prerelease }}
         run: |
           set -euo pipefail
           test "${EXPECTED_SHA}" = "${VERIFIED_SHA}"
@@ -242,29 +386,25 @@ jobs:
               exit 1
               ;;
           esac
+          node scripts/release/publication.mjs verify-artifacts \
+            --manifest .ci-artifacts/publication/publication-manifest.json \
+            --expected-sha "${EXPECTED_SHA}" \
+            --expected-version "${EXPECTED_VERSION}" \
+            --channel "${CHANNEL}"
 
-      - name: Extract current changelog notes
-        shell: bash
+      - name: Extract tested release notes
         env:
-          EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
-        run: |
-          set -euo pipefail
-          awk -v version="${EXPECTED_VERSION}" '
-            $0 == "## " version { found = 1 }
-            found && /^## / && $0 != "## " version { exit }
-            found { print }
-            END { if (!found) exit 1 }
-          ' packages/openapi/CHANGELOG.md > release-notes.md
-          test -s release-notes.md
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+        run: node scripts/release/publication.mjs release-notes --expected-version "${EXPECTED_VERSION}" --output release-notes.md
 
       - name: Create or verify immutable tag and GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_SHA: ${{ needs.preflight.outputs.expected_sha }}
-          EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
-          TAG: ${{ needs.preflight.outputs.tag }}
-          PRERELEASE: ${{ needs.preflight.outputs.prerelease }}
+          EXPECTED_SHA: ${{ needs.preflight-and-package.outputs.expected_sha }}
+          EXPECTED_VERSION: ${{ needs.preflight-and-package.outputs.version }}
+          TAG: ${{ needs.preflight-and-package.outputs.tag }}
+          PRERELEASE: ${{ needs.preflight-and-package.outputs.prerelease }}
         run: |
           set -euo pipefail
           tag_lines="$(git ls-remote --tags origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}")"
@@ -280,11 +420,42 @@ jobs:
             exit 1
           fi
 
-          if release_json="$(gh release view "${TAG}" --json tagName,isPrerelease)"; then
-            jq -e --arg tag "${TAG}" --argjson prerelease "${PRERELEASE}" \
-              '.tagName == $tag and .isPrerelease == $prerelease' <<<"${release_json}" >/dev/null
-          elif [[ "${PRERELEASE}" == "true" ]]; then
-            gh release create "${TAG}" --verify-tag --prerelease --title "openapi-to ${EXPECTED_VERSION}" --notes-file release-notes.md
-          else
-            gh release create "${TAG}" --verify-tag --latest --title "openapi-to ${EXPECTED_VERSION}" --notes-file release-notes.md
+          release_response="${RUNNER_TEMP}/openapi-to-existing-release.json"
+          release_exists=false
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" >"${release_response}" 2>"${RUNNER_TEMP}/openapi-to-existing-release.error"; then
+            release_exists=true
+          elif ! jq -e '.status == "404" or .status == 404' "${release_response}" >/dev/null 2>&1; then
+            echo "Unable to determine existing GitHub Release state." >&2
+            exit 1
+          fi
+
+          if [[ "${release_exists}" == "false" ]]; then
+            if [[ "${PRERELEASE}" == "true" ]]; then
+              if ! gh release create "${TAG}" --verify-tag --prerelease --title "openapi-to ${EXPECTED_VERSION}" --notes-file release-notes.md; then
+                echo "Release creation returned nonzero; verifying whether a concurrent correct release now exists." >&2
+              fi
+            elif ! gh release create "${TAG}" --verify-tag --latest --title "openapi-to ${EXPECTED_VERSION}" --notes-file release-notes.md; then
+              echo "Release creation returned nonzero; verifying whether a concurrent correct release now exists." >&2
+            fi
+          fi
+
+          release_json="$(gh release view "${TAG}" --json tagName,isPrerelease,isDraft,name,body)"
+          jq -e \
+            --arg tag "${TAG}" \
+            --arg title "openapi-to ${EXPECTED_VERSION}" \
+            --argjson prerelease "${PRERELEASE}" \
+            --rawfile notes release-notes.md \
+            'def normalized: gsub("\r\n"; "\n") | sub("\n+$"; "");
+             .tagName == $tag and
+             .isPrerelease == $prerelease and
+             .isDraft == false and
+             .name == $title and
+             ((.body // "") | normalized) == ($notes | normalized)' \
+            <<<"${release_json}" >/dev/null
+          if [[ "${PRERELEASE}" == "false" ]]; then
+            latest_tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name')"
+            if [[ "${latest_tag}" != "${TAG}" ]]; then
+              echo "Stable release is not the repository latest release." >&2
+              exit 1
+            fi
           fi

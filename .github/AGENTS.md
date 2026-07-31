@@ -60,6 +60,18 @@ authority. Use Job-scoped least privilege: only the publish Job receives
 `id-token: write`, only the post-registry GitHub release Job receives
 `contents: write`, and no other Job receives either permission.
 
+Build before registry authority, run `pnpm pack` exactly once per public
+package, and treat those resulting tarballs as the publication source of
+truth. Inspect their actual `package/package.json` metadata, bind their paths,
+sizes, checksums, integrity values, package order, commit SHA, fixed version,
+and channel into one immutable artifact, and install/smoke-test those exact
+tarballs. Artifact preparation must reject tracked or non-ignored worktree
+drift after readiness. After Environment approval, download and fully
+revalidate that artifact, re-fetch `main`, and fail on an incompatible existing
+tag or Release before invoking npm with the verified `.tgz` paths. Never
+rebuild, repack, publish workspace directories, or mutate tracked release state
+in the privileged Jobs.
+
 The publish Job must use the `npm-production` Environment and npm Trusted
 Publishing/OIDC. After Trusted Publishing is configured, never add
 `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or another long-lived npm automation secret to
@@ -67,10 +79,11 @@ this workflow. GitHub Environment and npm Trusted Publisher configuration are
 external settings and cannot be inferred from repository code.
 
 Do not create a Git tag or GitHub Release until every expected package version
-and dist-tag has been verified in the npm registry. Partial publication must
-remain a visible nonzero failure with package/version/channel recovery facts;
-never hide it with `continue-on-error`, silent skipping, dist-tag rewriting, or
-overwriting an already published version.
+and dist-tag has been verified against the artifact's exact registry integrity.
+Partial publication must remain a visible nonzero failure with
+package/version/channel recovery facts; never hide it with
+`continue-on-error`, silent skipping, dist-tag rewriting, or overwriting an
+already published version.
 
 ## Untrusted workflow and AI-analysis inputs
 

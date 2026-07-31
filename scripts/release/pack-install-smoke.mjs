@@ -1,28 +1,45 @@
+import { spawn, spawnSync } from "node:child_process";
 import {
 	access,
 	chmod,
 	mkdir,
 	mkdtemp,
-	readFile,
 	readdir,
+	readFile,
 	rm,
 	stat,
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { runConsumerCodegenScenario } from "../consumer-codegen-smoke.mjs";
 import {
 	createPackedOverrides,
 	packReleasePackages,
 } from "./pack-smoke-helpers.mjs";
-import { runConsumerCodegenScenario } from "../consumer-codegen-smoke.mjs";
+import { verifyPublicationArtifacts } from "./publication.mjs";
 
 const repositoryRoot = resolve(
 	dirname(fileURLToPath(import.meta.url)),
 	"../..",
 );
+
+function parseArguments(argumentsList) {
+	if (argumentsList[0] === "--") argumentsList = argumentsList.slice(1);
+	if (argumentsList.length === 0) return {};
+	if (
+		argumentsList.length === 2 &&
+		argumentsList[0] === "--publication-manifest"
+	) {
+		return { publicationManifest: resolve(argumentsList[1]) };
+	}
+	throw new Error(
+		"Usage: pack-install-smoke.mjs [--publication-manifest <path>]",
+	);
+}
+
+const options = parseArguments(process.argv.slice(2));
 
 function run(command, args, cwd, options = {}) {
 	const result = spawnSync(command, args, {
@@ -207,11 +224,18 @@ let succeeded = false;
 let remoteFixtureServer;
 let packageBaseline;
 try {
-	const packed = await packReleasePackages({
-		repositoryRoot,
-		tarballDirectory,
-		pnpm,
-	});
+	const packed = options.publicationManifest
+		? (
+				await verifyPublicationArtifacts({
+					root: repositoryRoot,
+					manifestPath: options.publicationManifest,
+				})
+			).packages
+		: await packReleasePackages({
+				repositoryRoot,
+				tarballDirectory,
+				pnpm,
+			});
 	const packedOverrides = createPackedOverrides(packed);
 	const aggregateArchive = packed.find(
 		({ name }) => name === "openapi-to",
@@ -966,6 +990,9 @@ await writeClient.close();
 			{
 				success: true,
 				node: process.version,
+				artifactSource: options.publicationManifest
+					? "publication-manifest"
+					: "fresh-pnpm-pack",
 				workspace:
 					process.env.KEEP_RELEASE_SMOKE === "1" ? temporaryRoot : undefined,
 				packages: packed.map(({ name, version, filename, size, files }) => ({
