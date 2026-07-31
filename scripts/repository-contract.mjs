@@ -71,8 +71,7 @@ const IMPLEMENT_AND_REVIEW_HEADINGS = [
 	"## 10. Completion gate",
 ];
 const PUBLISH_WORKFLOW_PATH = ".github/workflows/publish.yml";
-const ARCHITECTURE_DOCUMENT =
-	"docs/agents/agents-and-skills-architecture.md";
+const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
 	["fix-github-actions", "specialized-primary"],
@@ -312,10 +311,19 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		!isMapping(document.concurrency) ||
 		document.concurrency["cancel-in-progress"] !== false ||
 		typeof document.concurrency.group !== "string" ||
-		!document.concurrency.group.includes("inputs.channel")
+		document.concurrency.group !== "publish-openapi-to-fixed-group"
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} must serialize publication by channel with cancel-in-progress false`,
+			`${PUBLISH_WORKFLOW_PATH} must use one fixed-group publication lock with cancel-in-progress false`,
+		);
+	}
+	if (
+		/\$\{\{|channel|version|sha/i.test(
+			String(document.concurrency?.group ?? ""),
+		)
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} concurrency group must not vary by channel, version, or SHA`,
 		);
 	}
 	if (
@@ -330,7 +338,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 
 	const jobs = isMapping(document.jobs) ? document.jobs : {};
 	for (const jobId of [
-		"preflight",
+		"preflight-and-package",
 		"publish",
 		"verify-registry",
 		"github-release",
@@ -345,8 +353,8 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 
 	validateExactJobPermissions(
 		PUBLISH_WORKFLOW_PATH,
-		"preflight",
-		jobs.preflight,
+		"preflight-and-package",
+		jobs["preflight-and-package"],
 		{ contents: "read" },
 		failures,
 	);
@@ -374,18 +382,12 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 
 	for (const [jobId, job] of Object.entries(jobs)) {
 		if (!isMapping(job?.permissions)) continue;
-		if (
-			job.permissions["id-token"] === "write" &&
-			jobId !== "publish"
-		) {
+		if (job.permissions["id-token"] === "write" && jobId !== "publish") {
 			failures.push(
 				`${PUBLISH_WORKFLOW_PATH} only jobs.publish may receive id-token: write`,
 			);
 		}
-		if (
-			job.permissions.contents === "write" &&
-			jobId !== "github-release"
-		) {
+		if (job.permissions.contents === "write" && jobId !== "github-release") {
 			failures.push(
 				`${PUBLISH_WORKFLOW_PATH} only jobs.github-release may receive contents: write`,
 			);
@@ -394,24 +396,22 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 
 	if (
 		JSON.stringify(normalizedNeeds(jobs.publish?.needs)) !==
-		JSON.stringify(["preflight"])
+		JSON.stringify(["preflight-and-package"])
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} jobs.publish must need only preflight`,
+			`${PUBLISH_WORKFLOW_PATH} jobs.publish must need only preflight-and-package`,
 		);
 	}
 	if (
 		JSON.stringify(normalizedNeeds(jobs["verify-registry"]?.needs).sort()) !==
-		JSON.stringify(["preflight", "publish"])
+		JSON.stringify(["preflight-and-package", "publish"])
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} jobs.verify-registry must need preflight and publish`,
+			`${PUBLISH_WORKFLOW_PATH} jobs.verify-registry must need preflight-and-package and publish`,
 		);
 	}
 	if (
-		!normalizedNeeds(jobs["github-release"]?.needs).includes(
-			"verify-registry",
-		)
+		!normalizedNeeds(jobs["github-release"]?.needs).includes("verify-registry")
 	) {
 		failures.push(
 			`${PUBLISH_WORKFLOW_PATH} jobs.github-release must depend on registry verification`,
@@ -428,7 +428,8 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		);
 	}
 
-	const preflightRuns = workflowRunText(jobs.preflight);
+	const preflight = jobs["preflight-and-package"];
+	const preflightRuns = workflowRunText(preflight);
 	for (const marker of [
 		"git fetch --no-tags origin main",
 		"publication.mjs verify-sha",
@@ -438,143 +439,224 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		".success == true",
 		".expectedSha",
 		"publication.mjs preflight",
-		"pnpm release:check",
+		"pnpm release:check:prepack",
+		"publication.mjs prepare-artifacts",
+		"--artifact-dir .ci-artifacts/publication",
+		"--publication-manifest .ci-artifacts/publication/publication-manifest.json",
 	]) {
 		if (!preflightRuns.includes(marker)) {
 			failures.push(
-				`${PUBLISH_WORKFLOW_PATH} preflight is missing blocking guard ${marker}`,
+				`${PUBLISH_WORKFLOW_PATH} preflight-and-package is missing blocking behavior ${marker}`,
 			);
 		}
 	}
-	const guardStep = jobs.preflight?.steps?.find(
+	const guardStep = preflight?.steps?.find(
 		(step) => isMapping(step) && step.id === "guard",
 	);
 	if (
 		!isMapping(guardStep) ||
-		guardStep.env?.EXPECTED_SHA !==
-			`${DOLLAR_SIGN}{{ inputs.expected_sha }}` ||
+		guardStep.env?.EXPECTED_SHA !== `${DOLLAR_SIGN}{{ inputs.expected_sha }}` ||
 		typeof guardStep.run !== "string" ||
 		!guardStep.run.includes(
 			'guard="$(node scripts/release/publication.mjs verify-sha',
 		)
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} preflight guard must bind the dispatch expected SHA to the maintained SHA verifier`,
+			`${PUBLISH_WORKFLOW_PATH} preflight-and-package guard must bind the dispatch SHA to current main`,
 		);
 	}
-	const readinessStep = jobs.preflight?.steps?.find(
+	const readinessStep = preflight?.steps?.find(
 		(step) => isMapping(step) && step.id === "release-readiness",
 	);
 	if (
 		!isMapping(readinessStep) ||
-		readinessStep.run !== "pnpm release:check" ||
+		readinessStep.run !== "pnpm release:check:prepack" ||
 		Object.hasOwn(readinessStep, "if") ||
 		Object.hasOwn(readinessStep, "continue-on-error")
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} preflight release readiness must be an unconditional blocking step`,
+			`${PUBLISH_WORKFLOW_PATH} preflight readiness must be an unconditional pre-pack blocking step`,
 		);
 	}
+	const prepareStep = preflight?.steps?.find(
+		(step) => isMapping(step) && step.id === "prepare-artifacts",
+	);
+	if (
+		!isMapping(prepareStep) ||
+		typeof prepareStep.run !== "string" ||
+		!prepareStep.run.includes("publication.mjs prepare-artifacts") ||
+		Object.hasOwn(prepareStep, "if") ||
+		Object.hasOwn(prepareStep, "continue-on-error")
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} artifact preparation must be an unconditional blocking step`,
+		);
+	}
+	const smokeStep = preflight?.steps?.find(
+		(step) =>
+			isMapping(step) &&
+			typeof step.run === "string" &&
+			step.run.includes("release:smoke"),
+	);
+	if (
+		!isMapping(smokeStep) ||
+		smokeStep.run !==
+			"pnpm release:smoke -- --publication-manifest .ci-artifacts/publication/publication-manifest.json"
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} consumer smoke must install the exact publication manifest tarballs`,
+		);
+	}
+	const uploadStep = preflight?.steps?.find(
+		(step) =>
+			isMapping(step) &&
+			typeof step.uses === "string" &&
+			step.uses.startsWith("actions/upload-artifact@"),
+	);
+	if (
+		!isMapping(uploadStep?.with) ||
+		uploadStep.with.path !== ".ci-artifacts/publication" ||
+		uploadStep.with["if-no-files-found"] !== "error"
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must upload only the controlled publication artifact`,
+		);
+	}
+
+	const publishSteps = Array.isArray(jobs.publish?.steps)
+		? jobs.publish.steps
+		: [];
 	const publishRuns = workflowRunText(jobs.publish);
+	const stepIndex = (predicate) => publishSteps.findIndex(predicate);
+	const approvalGuardIndex = stepIndex(
+		(step) => isMapping(step) && step.id === "approval-sha-guard",
+	);
+	const artifactVerificationIndex = stepIndex(
+		(step) => isMapping(step) && step.id === "artifact-verification",
+	);
+	const remoteReleaseGuardIndex = stepIndex(
+		(step) => isMapping(step) && step.id === "remote-release-guard",
+	);
+	const npmSetupIndex = stepIndex(
+		(step) =>
+			isMapping(step) &&
+			typeof step.run === "string" &&
+			step.run.includes("npm install --global npm@12.0.2"),
+	);
+	const publicationIndex = stepIndex(
+		(step) => isMapping(step) && step.id === "publish",
+	);
+	if (
+		approvalGuardIndex < 0 ||
+		artifactVerificationIndex <= approvalGuardIndex ||
+		remoteReleaseGuardIndex <= artifactVerificationIndex ||
+		npmSetupIndex <= remoteReleaseGuardIndex ||
+		publicationIndex <= npmSetupIndex
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} publish must revalidate current main, artifact bytes, and remote tag/Release compatibility before npm publication`,
+		);
+	}
+	const artifactVerification = publishSteps[artifactVerificationIndex];
 	for (const marker of [
-		"npm@12.0.2",
-		"publication.mjs preflight",
-		"publication.mjs publish",
+		"publication.mjs verify-artifacts",
+		"--manifest .ci-artifacts/publication/publication-manifest.json",
+		`--expected-sha "${DOLLAR_SIGN}{EXPECTED_SHA}"`,
+		`--expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}"`,
+		`--channel "${DOLLAR_SIGN}{CHANNEL}"`,
+	]) {
+		if (
+			typeof artifactVerification?.run !== "string" ||
+			!artifactVerification.run.includes(marker)
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} approval-time artifact verification is missing ${marker}`,
+			);
+		}
+	}
+	const approvalGuard = publishSteps[approvalGuardIndex];
+	for (const marker of [
+		"git fetch --no-tags origin main",
+		"publication.mjs verify-sha",
+		`--expected-sha "${DOLLAR_SIGN}{EXPECTED_SHA}"`,
+		`--github-sha "${DOLLAR_SIGN}{GITHUB_SHA}"`,
+		`--github-ref "${DOLLAR_SIGN}{GITHUB_REF}"`,
+	]) {
+		if (
+			typeof approvalGuard?.run !== "string" ||
+			!approvalGuard.run.includes(marker)
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} approval-time current-main guard is missing ${marker}`,
+			);
+		}
+	}
+	const remoteReleaseGuard = publishSteps[remoteReleaseGuardIndex];
+	for (const marker of [
+		"git ls-remote --tags origin",
+		"actual_tag_sha",
+		"/releases/tags/",
+		".draft == false",
+		".name == $title",
+		".body //",
+	]) {
+		if (
+			typeof remoteReleaseGuard?.run !== "string" ||
+			!remoteReleaseGuard.run.includes(marker)
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} pre-publication remote collision guard is missing ${marker}`,
+			);
+		}
+	}
+	const publicationStep = publishSteps[publicationIndex];
+	for (const marker of [
+		"publication.mjs publish-artifacts",
+		"--manifest .ci-artifacts/publication/publication-manifest.json",
+		`--expected-sha "${DOLLAR_SIGN}{EXPECTED_SHA}"`,
 		`--expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}"`,
 		`--channel "${DOLLAR_SIGN}{CHANNEL}"`,
 		"--npm-version 12.0.2",
-		`test "${DOLLAR_SIGN}{CHANNEL}" = "${DOLLAR_SIGN}{DIST_TAG}"`,
 	]) {
-		if (!publishRuns.includes(marker)) {
+		if (
+			typeof publicationStep?.run !== "string" ||
+			!publicationStep.run.includes(marker)
+		) {
 			failures.push(
-				`${PUBLISH_WORKFLOW_PATH} publish is missing required behavior ${marker}`,
+				`${PUBLISH_WORKFLOW_PATH} verified tarball publication is missing ${marker}`,
 			);
 		}
 	}
 	if (
-		publishRuns.includes("pnpm exec changeset publish") ||
-		publishRuns.includes("pnpm publish")
+		Object.hasOwn(publicationStep ?? {}, "if") ||
+		Object.hasOwn(publicationStep ?? {}, "continue-on-error")
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} publish must not bypass the pinned npm publication adapter`,
+			`${PUBLISH_WORKFLOW_PATH} npm publication must be an unconditional blocking step`,
 		);
 	}
-	const publicationStep = jobs.publish?.steps?.find(
-		(step) => isMapping(step) && step.id === "publish",
-	);
-	const expectedPublicationRun = [
-		`test "${DOLLAR_SIGN}{CHANNEL}" = "${DOLLAR_SIGN}{DIST_TAG}"`,
-		"node scripts/release/publication.mjs publish \\",
-		`  --expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}" \\`,
-		`  --channel "${DOLLAR_SIGN}{CHANNEL}" \\`,
-		"  --npm-version 12.0.2",
-		"",
-	].join("\n");
-	if (
-		!isMapping(publicationStep) ||
-		publicationStep.run !== expectedPublicationRun ||
-		Object.hasOwn(publicationStep, "if") ||
-		Object.hasOwn(publicationStep, "continue-on-error")
-	) {
-		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} npm publication must be an exact unconditional blocking step`,
-		);
-	}
-	const publicationScriptPath = "scripts/release/publication.mjs";
-	const publicationScript = await readFile(
-		join(root, publicationScriptPath),
-		"utf8",
-	);
-	for (const marker of [
-		"publishWithChangesetsNpm",
-		`manifest.packageManager = \`npm@${DOLLAR_SIGN}{npmVersion}\``,
-		'join(root, "node_modules/.bin/changeset")',
-		'join(root, ".changeset/pre.json")',
-		"await unlink(preStatePath)",
-		'"--tag"',
-		"facts.distTag",
-		"finally {",
-		"writeFile(manifestPath, originalManifest)",
-		"writeFile(preStatePath, originalPreState)",
+	for (const forbidden of [
+		"changeset publish",
+		"pnpm publish",
+		"pnpm pack",
+		"npm pack",
+		"pnpm build",
+		"pnpm run build",
+		"packages/core",
 	]) {
-		if (!publicationScript.includes(marker)) {
+		if (publishRuns.includes(forbidden)) {
 			failures.push(
-				`${publicationScriptPath} is missing pinned npm/Changesets adapter behavior ${marker}`,
+				`${PUBLISH_WORKFLOW_PATH} publish contains forbidden source/rebuild behavior ${forbidden}`,
 			);
 		}
 	}
-	const recoveryStep = jobs.publish?.steps?.find(
-		(step) =>
-			isMapping(step) &&
-			step.name === "Report partial-publication recovery facts",
-	);
-	if (
-		!isMapping(recoveryStep) ||
-		recoveryStep.if !==
-			`${DOLLAR_SIGN}{{ failure() && steps.publish.outcome == 'failure' }}` ||
-		recoveryStep.run !==
-			`node scripts/release/publication.mjs verify-registry --expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}" --channel "${DOLLAR_SIGN}{CHANNEL}" --attempts 1 --delay-ms 0 --timeout-ms 5000`
-	) {
-		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} publish failure must run explicit non-masking partial-publication recovery`,
-		);
-	}
-	const publishSetupNode = jobs.publish?.steps?.find(
-		(step) => isMapping(step) && step.uses === "actions/setup-node@v6",
-	);
-	if (
-		!isMapping(publishSetupNode?.with) ||
-		publishSetupNode.with["node-version"] !== "24.15.0" ||
-		publishSetupNode.with["package-manager-cache"] !== false ||
-		Object.hasOwn(publishSetupNode.with, "cache")
-	) {
-		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} publish must use explicit Node 24.15.0 with setup-node caching disabled`,
-		);
-	}
+
 	const verifyRuns = workflowRunText(jobs["verify-registry"]);
 	if (
 		!verifyRuns.includes("publication.mjs verify-registry") ||
+		!verifyRuns.includes(
+			"--manifest .ci-artifacts/publication/publication-manifest.json",
+		) ||
 		!verifyRuns.includes("--attempts 6") ||
 		!verifyRuns.includes("--delay-ms 10000") ||
 		!verifyRuns.includes("--timeout-ms 10000")
@@ -588,8 +670,8 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	);
 	if (
 		!isMapping(registryVerificationStep) ||
-		registryVerificationStep.run !==
-			`node scripts/release/publication.mjs verify-registry --expected-version "${DOLLAR_SIGN}{EXPECTED_VERSION}" --channel "${DOLLAR_SIGN}{CHANNEL}" --attempts 6 --delay-ms 10000 --timeout-ms 10000` ||
+		typeof registryVerificationStep.run !== "string" ||
+		!registryVerificationStep.run.includes("publication.mjs verify-registry") ||
 		Object.hasOwn(registryVerificationStep, "if") ||
 		Object.hasOwn(registryVerificationStep, "continue-on-error")
 	) {
@@ -602,16 +684,31 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		"EXPECTED_SHA",
 		"EXPECTED_VERSION",
 		"VERIFIED_CHANNEL",
-		"packages/openapi/CHANGELOG.md",
+		"publication.mjs verify-artifacts",
+		"publication.mjs release-notes",
 		"/git/refs",
+		"actual_tag_sha",
 		"gh release create",
 		"--verify-tag",
+		"--prerelease",
+		"--latest",
+		"--json tagName,isPrerelease",
+		"isDraft",
+		".name == $title",
+		".body //",
+		"/releases/tags/",
+		"/releases/latest",
 	]) {
 		if (!releaseRuns.includes(marker)) {
 			failures.push(
 				`${PUBLISH_WORKFLOW_PATH} GitHub release is missing verified behavior ${marker}`,
 			);
 		}
+	}
+	if (/awk\s+-v\s+version=/.test(releaseRuns)) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} release notes must not duplicate the tested Node implementation`,
+		);
 	}
 	for (const [jobId, job] of Object.entries(jobs)) {
 		if (jobId === "github-release") continue;
@@ -636,6 +733,11 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		"NODE_AUTH_TOKEN",
 		"continue-on-error",
 		"pull_request_target:",
+		"if: false",
+		"|| true",
+		"always()",
+		"changeset publish",
+		"pnpm publish",
 	]) {
 		if (source.includes(forbidden)) {
 			failures.push(
@@ -646,6 +748,89 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	if (/secrets\.[A-Z0-9_]*(?:NPM|NODE_AUTH|AUTOMATION)/i.test(source)) {
 		failures.push(
 			`${PUBLISH_WORKFLOW_PATH} must not reference an npm automation secret`,
+		);
+	}
+	for (const match of source.matchAll(/^\s*uses:\s+([^#\s]+)(?:\s+#.*)?$/gm)) {
+		const action = match[1];
+		if (
+			/^(?:actions\/(?:checkout|setup-node|upload-artifact|download-artifact)|pnpm\/action-setup)@/.test(
+				action,
+			) &&
+			!/@[0-9a-f]{40}$/.test(action)
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} high-privilege Action must use a full commit SHA: ${action}`,
+			);
+		}
+	}
+
+	const publicationScriptPath = "scripts/release/publication.mjs";
+	const publicationScript = await readFile(
+		join(root, publicationScriptPath),
+		"utf8",
+	);
+	for (const marker of [
+		"preparePublicationArtifacts",
+		"verifyPublicationArtifacts",
+		"inspectTarball",
+		"WORKSPACE_PROTOCOL_IN_TARBALL",
+		'createHash("sha256")',
+		'createHash("sha512")',
+		"publishVerifiedArtifacts",
+		"packageRecord.archive",
+		"PUBLISHED_BYTES_MISMATCH",
+		"DIST_TAG_MISMATCH",
+		"REGISTRY_UNAVAILABLE",
+		"PARTIAL_PUBLICATION",
+		"PUBLICATION_FAILED",
+		"PUBLICATION_TARBALL_CHANGED",
+		"PUBLICATION_WORKTREE_DIRTY",
+		"--porcelain=v1",
+		"EXPECTED_REPOSITORY_URL",
+	]) {
+		if (!publicationScript.includes(marker)) {
+			failures.push(
+				`${publicationScriptPath} is missing tarball-first safety behavior ${marker}`,
+			);
+		}
+	}
+	for (const forbidden of [
+		"publishWithChangesetsNpm",
+		"runChangesetsPublish",
+		"manifest.packageManager",
+		"changeset publish",
+		"node_modules/.bin/changeset",
+		"unlink(preStatePath)",
+	]) {
+		if (publicationScript.includes(forbidden)) {
+			failures.push(
+				`${publicationScriptPath} contains forbidden Changesets publication behavior ${forbidden}`,
+			);
+		}
+	}
+
+	const rootManifest = await readJson(join(root, "package.json"));
+	if (rootManifest.devDependencies?.["@changesets/cli"] !== "2.28.1") {
+		failures.push("@changesets/cli must remain exactly pinned to 2.28.1");
+	}
+	for (const [name, script] of Object.entries(rootManifest.scripts ?? {})) {
+		if (/\bchangeset\s+publish\b/.test(script)) {
+			failures.push(
+				`root script ${name} must not use Changesets for npm publication`,
+			);
+		}
+	}
+	const lockfile = loadYaml(
+		await readFile(join(root, "pnpm-lock.yaml"), "utf8"),
+	);
+	const lockedChangesets =
+		lockfile?.importers?.["."]?.devDependencies?.["@changesets/cli"];
+	if (
+		lockedChangesets?.specifier !== "2.28.1" ||
+		lockedChangesets?.version !== "2.28.1"
+	) {
+		failures.push(
+			"pnpm-lock.yaml must bind @changesets/cli specifier and version to 2.28.1",
 		);
 	}
 
@@ -1460,9 +1645,7 @@ function toolMatrixSize(contents, testName) {
 }
 
 function hasExactLine(contents, expectedLine) {
-	return contents
-		.split(/\r?\n/)
-		.some((line) => line.trim() === expectedLine);
+	return contents.split(/\r?\n/).some((line) => line.trim() === expectedLine);
 }
 
 function validateImplementationSkill(contents, failures) {
@@ -1745,7 +1928,9 @@ function validateRootDefinitionOfDone(contents, failures) {
 		"read each task-created untracked text file in full",
 	]) {
 		if (!write.includes(marker)) {
-			failures.push(`AGENTS.md write tasks are missing safety marker ${marker}`);
+			failures.push(
+				`AGENTS.md write tasks are missing safety marker ${marker}`,
+			);
 		}
 	}
 }
@@ -2135,7 +2320,9 @@ export async function auditAgentAndSkillContracts(
 
 	const architecturePath = join(root, ARCHITECTURE_DOCUMENT);
 	if (!(await exists(architecturePath))) {
-		failures.push(`missing Agent and Skill architecture ${ARCHITECTURE_DOCUMENT}`);
+		failures.push(
+			`missing Agent and Skill architecture ${ARCHITECTURE_DOCUMENT}`,
+		);
 	} else if (!trackedFiles.has(ARCHITECTURE_DOCUMENT)) {
 		failures.push(
 			`Agent and Skill architecture is not tracked by Git: ${ARCHITECTURE_DOCUMENT}`,
@@ -2576,26 +2763,48 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		failures.push("version must run changeset version without publishing");
 	}
 	const releaseCheck = rootManifest.scripts?.["release:check"] ?? "";
-	if (!/(?:^|&&\s*)pnpm\s+lint:ci(?:\s*&&|$)/.test(releaseCheck)) {
-		failures.push("release:check must run the full lint:ci gate");
-	}
-	if (/\bpnpm\s+lint:changed\b/.test(releaseCheck)) {
+	const releaseQuality = rootManifest.scripts?.["release:check:quality"] ?? "";
+	const releasePrepack = rootManifest.scripts?.["release:check:prepack"] ?? "";
+	if (
+		releaseCheck !==
+		"pnpm release:check:quality && pnpm release:smoke && pnpm verify:changeset-state"
+	) {
 		failures.push(
-			"release:check must not use the diff-only lint:changed command",
+			"release:check must run quality, ordinary pack smoke, then the strict Changesets gate",
 		);
 	}
 	if (
-		!/(?:^|&&\s*)pnpm\s+verify:changeset-state(?:\s*&&|$)/.test(releaseCheck)
+		releasePrepack !==
+		"pnpm release:check:quality && pnpm verify:changeset-state"
 	) {
 		failures.push(
-			"release:check must run the prerelease-aware verify:changeset-state gate",
+			"release:check:prepack must run quality then the strict Changesets gate before publication packing",
 		);
 	}
-	if (/\bpnpm\s+verify:changeset-state:development\b/.test(releaseCheck)) {
-		failures.push("release:check must not use the development Changesets gate");
+	if (!/(?:^|&&\s*)pnpm\s+lint:ci(?:\s*&&|$)/.test(releaseQuality)) {
+		failures.push("release:check:quality must run the full lint:ci gate");
 	}
-	if (/\bchangeset\s+status\b/.test(releaseCheck)) {
-		failures.push("release:check must not invoke changeset status directly");
+	if (/\bpnpm\s+lint:changed\b/.test(releaseQuality)) {
+		failures.push(
+			"release:check:quality must not use the diff-only lint:changed command",
+		);
+	}
+	if (
+		!/(?:^|&&\s*)pnpm\s+verify:changeset-state(?:\s*&&|$)/.test(releasePrepack)
+	) {
+		failures.push(
+			"release:check:prepack must run the prerelease-aware verify:changeset-state gate",
+		);
+	}
+	if (/\bpnpm\s+verify:changeset-state:development\b/.test(releasePrepack)) {
+		failures.push(
+			"release:check:prepack must not use the development Changesets gate",
+		);
+	}
+	if (/\bchangeset\s+status\b/.test(releasePrepack)) {
+		failures.push(
+			"release:check:prepack must not invoke changeset status directly",
+		);
 	}
 	if (
 		rootManifest.scripts?.["verify:changeset-state"] !==

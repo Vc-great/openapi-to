@@ -114,8 +114,8 @@ function routingRow(name, role, task = `${name} task`) {
 }
 
 function rootAgentContents() {
-	const routes = [...EXPECTED_SKILL_ROLES].map(
-		([name, role]) => routingRow(name, role),
+	const routes = [...EXPECTED_SKILL_ROLES].map(([name, role]) =>
+		routingRow(name, role),
 	);
 	return `# AGENTS
 
@@ -228,7 +228,9 @@ async function createContractFixture(t) {
 }
 
 async function createPublicationContractFixture(t) {
-	const root = await mkdtemp(join(tmpdir(), "openapi-to-publication-contract-"));
+	const root = await mkdtemp(
+		join(tmpdir(), "openapi-to-publication-contract-"),
+	);
 	t.after(async () => {
 		await rm(root, { recursive: true, force: true });
 	});
@@ -237,6 +239,8 @@ async function createPublicationContractFixture(t) {
 		".github/workflows/publish.yml",
 		".github/workflows/version-packages.yml",
 		".github/pull_request_template.md",
+		"package.json",
+		"pnpm-lock.yaml",
 		"scripts/release/publication.mjs",
 	]) {
 		await writeFixtureFile(
@@ -624,269 +628,280 @@ test("publication repository contract accepts the manual least-privilege workflo
 	assert.deepEqual(await auditPublicationContracts(root), []);
 });
 
-test("publication repository contract rejects automatic triggers and missing expected SHA", async (t) => {
-	const triggerRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		triggerRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				"on:\n  workflow_dispatch:",
-				"on:\n  push:\n  workflow_dispatch:",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(triggerRoot) },
-		/only trigger/,
-	);
-
-	const inputRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		inputRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				`      expected_sha:
-        description: Exact commit SHA currently at main
-        required: true
-        type: string
-`,
-				"",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(inputRoot) },
-		/must define only expected_sha, expected_version, and channel/,
-	);
-});
-
-test("publication repository contract rejects broad OIDC and publish contents authority", async (t) => {
-	const workflowPermissionRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		workflowPermissionRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				"\njobs:\n",
-				"\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(workflowPermissionRoot) },
-		/must not grant write permissions at workflow scope/,
-	);
-
-	const publishPermissionRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		publishPermissionRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				`  publish:
-    name: Publish with npm Trusted Publishing
-    needs: preflight
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    environment: npm-production
-    permissions:
-      contents: read
-      id-token: write`,
-				`  publish:
-    name: Publish with npm Trusted Publishing
-    needs: preflight
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    environment: npm-production
-    permissions:
-      contents: write
-      id-token: write`,
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(publishPermissionRoot) },
-		/jobs\.publish\.permissions must equal/,
-	);
-});
-
-test("publication repository contract rejects release-before-registry and long-lived npm tokens", async (t) => {
-	const dependencyRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		dependencyRoot,
-		".github/workflows/publish.yml",
-		(contents) => contents.replace("      - verify-registry\n", ""),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(dependencyRoot) },
-		/must depend on registry verification/,
-	);
-
-	const alwaysRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		alwaysRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				"  github-release:\n    name: Create verified tag and GitHub Release\n",
-				"  github-release:\n    name: Create verified tag and GitHub Release\n    if: always()\n",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(alwaysRoot) },
-		/default successful-needs gate/,
-	);
-
-	const tokenRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		tokenRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				"    environment: npm-production\n",
-				`    environment: npm-production
-    env:
-      NPM_TOKEN: \${{ secrets.NPM_TOKEN }}
-`,
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(tokenRoot) },
-		/forbidden publication behavior NPM_TOKEN/,
-	);
-});
-
-test("publication repository contract rejects bypassed SHA and failure-recovery guards", async (t) => {
-	const shaRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		shaRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				`            --github-sha "${DOLLAR_SIGN}{GITHUB_SHA}" \\\n`,
-				"",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(shaRoot) },
-		/missing blocking guard --github-sha/,
-	);
-
-	const recoveryRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		recoveryRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				`${DOLLAR_SIGN}{{ failure() && steps.publish.outcome == 'failure' }}`,
-				"steps.publish.outcome == 'failure'",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(recoveryRoot) },
-		/must run explicit non-masking partial-publication recovery/,
-	);
-
-	const timeoutRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		timeoutRoot,
-		".github/workflows/publish.yml",
-		(contents) => contents.replace(" --timeout-ms 10000", ""),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(timeoutRoot) },
-		/must use bounded maintained-script retries/,
-	);
-
-	for (const [stepId, failure] of [
-		["release-readiness", /release readiness must be an unconditional/],
-		["registry-verification", /registry verification must be an unconditional/],
-	]) {
-		const conditionalRoot = await createPublicationContractFixture(t);
-		await mutateTrackedFixture(
-			conditionalRoot,
-			".github/workflows/publish.yml",
-			(contents) =>
+test("publication contract rejects trigger, concurrency, permission, and dependency drift", async (t) => {
+	const cases = [
+		{
+			path: ".github/workflows/publish.yml",
+			mutate: (contents) =>
 				contents.replace(
-					`        id: ${stepId}\n`,
-					`        id: ${stepId}\n        if: false\n`,
+					"on:\n  workflow_dispatch:",
+					"on:\n  push:\n  workflow_dispatch:",
 				),
-		);
+			failure: /only trigger/,
+		},
+		{
+			path: ".github/workflows/publish.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"group: publish-openapi-to-fixed-group",
+					`group: publish-openapi-to-fixed-group-${DOLLAR_SIGN}{{ inputs.channel }}`,
+				),
+			failure: /fixed-group publication lock|must not vary/,
+		},
+		{
+			path: ".github/workflows/publish.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"concurrency:\n  group: publish-openapi-to-fixed-group\n  cancel-in-progress: false\n\n",
+					"",
+				),
+			failure: /fixed-group publication lock/,
+		},
+		{
+			path: ".github/workflows/publish.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"cancel-in-progress: false",
+					"cancel-in-progress: true",
+				),
+			failure: /cancel-in-progress false/,
+		},
+		{
+			path: ".github/workflows/publish.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"    permissions:\n      contents: read\n      id-token: write",
+					"    permissions:\n      contents: write\n      id-token: write",
+				),
+			failure: /jobs\.publish\.permissions/,
+		},
+		{
+			path: ".github/workflows/publish.yml",
+			mutate: (contents) => contents.replace("      - verify-registry\n", ""),
+			failure: /depend on registry verification/,
+		},
+	];
+	for (const fixture of cases) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(root, fixture.path, fixture.mutate);
 		assertFailure(
-			{ failures: await auditPublicationContracts(conditionalRoot) },
-			failure,
+			{ failures: await auditPublicationContracts(root) },
+			fixture.failure,
 		);
 	}
+});
 
-	for (const [needle, failure] of [
-		[
-			"--timeout-ms 10000",
-			/registry verification must be an unconditional/,
-		],
-		["--npm-version 12.0.2", /npm publication must be an exact/],
-	]) {
-		const maskingRoot = await createPublicationContractFixture(t);
+test("publication contract rejects tarball pipeline and approval-time SHA regressions", async (t) => {
+	const cases = [
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"publication.mjs prepare-artifacts",
+					"publication.mjs preflight",
+				),
+			failure: /artifact preparation|prepare-artifacts/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					" -- --publication-manifest .ci-artifacts/publication/publication-manifest.json",
+					"",
+				),
+			failure: /consumer smoke must install the exact/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"git fetch --no-tags origin main",
+					"git status --short",
+				),
+			failure: /current-main guard|missing blocking behavior/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"publication.mjs verify-artifacts",
+					"publication.mjs preflight",
+				),
+			failure:
+				/artifact verification|GitHub release is missing verified behavior/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"        id: remote-release-guard\n",
+					"        id: removed-remote-release-guard\n",
+				),
+			failure: /remote tag\/Release compatibility|remote collision guard/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"publication.mjs publish-artifacts",
+					"npm publish packages/core",
+				),
+			failure: /verified tarball publication|forbidden source/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"node scripts/release/publication.mjs publish-artifacts",
+					"pnpm pack && node scripts/release/publication.mjs publish-artifacts",
+				),
+			failure: /forbidden source\/rebuild behavior pnpm pack/,
+		},
+	];
+	for (const fixture of cases) {
+		const root = await createPublicationContractFixture(t);
 		await mutateTrackedFixture(
-			maskingRoot,
+			root,
 			".github/workflows/publish.yml",
-			(contents) => contents.replace(needle, `${needle} || true`),
+			fixture.mutate,
 		);
 		assertFailure(
-			{ failures: await auditPublicationContracts(maskingRoot) },
-			failure,
+			{ failures: await auditPublicationContracts(root) },
+			fixture.failure,
 		);
 	}
 });
 
-test("publication repository contract rejects a publisher that bypasses pinned npm", async (t) => {
-	const workflowRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		workflowRoot,
-		".github/workflows/publish.yml",
-		(contents) =>
-			contents.replace(
-				`          node scripts/release/publication.mjs publish \\
-            --expected-version "\${EXPECTED_VERSION}" \\
-            --channel "\${CHANNEL}" \\
-            --npm-version 12.0.2`,
-				`          pnpm exec changeset publish --tag "${DOLLAR_SIGN}{DIST_TAG}" --no-git-tag`,
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(workflowRoot) },
-		/missing required behavior publication\.mjs publish|must not bypass the pinned npm publication adapter/,
-	);
-
-	const adapterRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		adapterRoot,
-		"scripts/release/publication.mjs",
-		(contents) =>
-			contents.replace(
-				`manifest.packageManager = \`npm@${DOLLAR_SIGN}{npmVersion}\``,
-				`manifest.packageManager = \`pnpm@${DOLLAR_SIGN}{npmVersion}\``,
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(adapterRoot) },
-		/missing pinned npm\/Changesets adapter behavior/,
-	);
-
-	const prereleaseTagRoot = await createPublicationContractFixture(t);
-	await mutateTrackedFixture(
-		prereleaseTagRoot,
-		"scripts/release/publication.mjs",
-		(contents) =>
-			contents.replace(
-				"await unlink(preStatePath)",
-				"await Promise.resolve()",
-			),
-	);
-	assertFailure(
-		{ failures: await auditPublicationContracts(prereleaseTagRoot) },
-		/missing pinned npm\/Changesets adapter behavior/,
-	);
+test("publication contract rejects checksum, workspace, metadata, and recovery weakening", async (t) => {
+	const cases = [
+		[
+			"verifyPublicationArtifacts",
+			"verifyUncheckedArtifacts",
+			/tarball-first safety behavior verifyPublicationArtifacts/,
+		],
+		[
+			'createHash("sha256")',
+			'createHash("md5")',
+			/tarball-first safety behavior createHash/,
+		],
+		[
+			"WORKSPACE_PROTOCOL_IN_TARBALL",
+			"WORKSPACE_ALLOWED",
+			/tarball-first safety behavior WORKSPACE_PROTOCOL/,
+		],
+		[
+			"EXPECTED_REPOSITORY_URL",
+			"UNVERIFIED_REPOSITORY_URL",
+			/tarball-first safety behavior EXPECTED_REPOSITORY_URL/,
+		],
+		[
+			"PUBLISHED_BYTES_MISMATCH",
+			"PUBLISHED_BYTES_ALLOWED",
+			/tarball-first safety behavior PUBLISHED_BYTES_MISMATCH/,
+		],
+		[
+			"REGISTRY_UNAVAILABLE",
+			"REGISTRY_ASSUMED_OK",
+			/tarball-first safety behavior REGISTRY_UNAVAILABLE/,
+		],
+		[
+			"PUBLICATION_TARBALL_CHANGED",
+			"PUBLICATION_TARBALL_ASSUMED_STABLE",
+			/tarball-first safety behavior PUBLICATION_TARBALL_CHANGED/,
+		],
+		[
+			"PUBLICATION_WORKTREE_DIRTY",
+			"PUBLICATION_WORKTREE_ASSUMED_CLEAN",
+			/tarball-first safety behavior PUBLICATION_WORKTREE_DIRTY/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			"scripts/release/publication.mjs",
+			(contents) => contents.replaceAll(from, to),
+		);
+		assertFailure({ failures: await auditPublicationContracts(root) }, failure);
+	}
 });
 
-test("publication repository contract rejects Version Packages publication and cancellable releases", async (t) => {
+test("publication contract rejects bypasses, tokens, Changesets publishing, and loose toolchains", async (t) => {
+	const workflowCases = [
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"    environment: npm-production\n",
+					`    environment: npm-production
+    env:
+      NPM_TOKEN: ${DOLLAR_SIGN}{{ secrets.NPM_TOKEN }}
+`,
+				),
+			failure: /forbidden publication behavior NPM_TOKEN/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"        id: publish\n",
+					"        id: publish\n        if: false\n",
+				),
+			failure:
+				/forbidden publication behavior if: false|unconditional blocking/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"--npm-version 12.0.2",
+					"--npm-version 12.0.2 || true",
+				),
+			failure: /forbidden publication behavior \|\| true/,
+		},
+		{
+			mutate: (contents) =>
+				contents.replace(
+					"publication.mjs publish-artifacts",
+					"pnpm exec changeset publish",
+				),
+			failure: /changeset publish/,
+		},
+	];
+	for (const fixture of workflowCases) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/publish.yml",
+			fixture.mutate,
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			fixture.failure,
+		);
+	}
+
+	const packageRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(packageRoot, "package.json", (contents) =>
+		contents.replace(
+			'"@changesets/cli": "2.28.1"',
+			'"@changesets/cli": "^2.28.1"',
+		),
+	);
+	assertFailure(
+		{ failures: await auditPublicationContracts(packageRoot) },
+		/@changesets\/cli must remain exactly pinned/,
+	);
+
+	for (const forbidden of [
+		'manifest.packageManager = "npm@12.0.2"',
+		"await unlink(preStatePath)",
+		"runChangesetsPublish()",
+	]) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			"scripts/release/publication.mjs",
+			(contents) => `${contents}\n// ${forbidden}\n`,
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/forbidden Changesets publication behavior/,
+		);
+	}
+});
+
+test("publication contract rejects Version Packages publication and unpinned Actions", async (t) => {
 	const versionRoot = await createPublicationContractFixture(t);
 	await mutateTrackedFixture(
 		versionRoot,
@@ -904,20 +919,41 @@ test("publication repository contract rejects Version Packages publication and c
 		/version-packages\.yml contains forbidden publication behavior changeset publish/,
 	);
 
-	const concurrencyRoot = await createPublicationContractFixture(t);
+	const actionRoot = await createPublicationContractFixture(t);
 	await mutateTrackedFixture(
-		concurrencyRoot,
+		actionRoot,
 		".github/workflows/publish.yml",
 		(contents) =>
 			contents.replace(
-				"  cancel-in-progress: false",
-				"  cancel-in-progress: true",
+				"actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+				"actions/checkout@v6",
 			),
 	);
 	assertFailure(
-		{ failures: await auditPublicationContracts(concurrencyRoot) },
-		/cancel-in-progress false/,
+		{ failures: await auditPublicationContracts(actionRoot) },
+		/high-privilege Action must use a full commit SHA/,
 	);
+
+	for (const [from, to] of [
+		["--prerelease", "--draft"],
+		["--latest", "--notes-start-tag"],
+		["--json tagName,isPrerelease", "--json tagName"],
+		["isDraft", "draftState"],
+		[".name == $title", ".name != $title"],
+		[".body //", ".wrongBody //"],
+		["/releases/latest", "/releases"],
+	]) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/publish.yml",
+			(contents) => contents.replaceAll(from, to),
+		);
+		assertFailure(
+			{ failures: await auditPublicationContracts(root) },
+			/GitHub release is missing verified behavior/,
+		);
+	}
 });
 
 test("Skill contracts reject removal of remote handoff and two-phase release safety", async (t) => {
@@ -1091,7 +1127,7 @@ test("Skill routing parser accepts only the repository two-column role format", 
 					"Support: `.agents/skills/add-cli-command/SKILL.md`",
 					"Support: `.agents/skills/add-cli-command/SKILL.md` and `.agents/skills/add-mcp-tool/SKILL.md`",
 				),
-		),
+			),
 		/must reference exactly one Skill path/,
 	);
 	assert.throws(
@@ -1257,7 +1293,12 @@ test("Skill entrypoints, names, duplicate names, and interfaces fail with specif
 		".agents/skills/add-cli-command/SKILL.md",
 		skillContents("other"),
 	);
-	await git(mismatchRoot, "add", "--", ".agents/skills/add-cli-command/SKILL.md");
+	await git(
+		mismatchRoot,
+		"add",
+		"--",
+		".agents/skills/add-cli-command/SKILL.md",
+	);
 	result = await auditAgentAndSkillContracts(mismatchRoot);
 	assertFailure(result, /name other must match directory add-cli-command/);
 
@@ -1287,10 +1328,10 @@ test("implementation orchestration lifecycle and routing are mandatory and uniqu
 		"--",
 		".agents/skills/implement-and-review",
 	);
-	await rm(
-		join(missingRequiredRoot, ".agents/skills/implement-and-review"),
-		{ recursive: true, force: true },
-	);
+	await rm(join(missingRequiredRoot, ".agents/skills/implement-and-review"), {
+		recursive: true,
+		force: true,
+	});
 	let result = await auditAgentAndSkillContracts(missingRequiredRoot);
 	assertFailure(
 		result,
@@ -1384,15 +1425,14 @@ test("implementation lifecycle rejects unsafe discovery and incomplete task-base
 		{
 			mutate: (contents) =>
 				contents.replace('git diff "$TASK_BASE_SHA"\n', "git diff\n"),
-			failure: /missing required task-base diff command git diff "\$TASK_BASE_SHA"/,
+			failure:
+				/missing required task-base diff command git diff "\$TASK_BASE_SHA"/,
 		},
 		{
 			mutate: (contents) =>
-				contents.replace(
-					'git diff "$TASK_BASE_SHA"..HEAD',
-					"git diff HEAD",
-				),
-			failure: /missing required task-base diff command git diff "\$TASK_BASE_SHA"\.\.HEAD/,
+				contents.replace('git diff "$TASK_BASE_SHA"..HEAD', "git diff HEAD"),
+			failure:
+				/missing required task-base diff command git diff "\$TASK_BASE_SHA"\.\.HEAD/,
 		},
 		{
 			mutate: (contents) =>
@@ -1426,20 +1466,49 @@ test("implementation lifecycle rejects unsafe discovery and incomplete task-base
 
 test("implementation lifecycle enforces clean-worktree ownership boundaries", async (t) => {
 	const cases = [
-		["A clean worktree is the default precondition", "A dirty worktree is acceptable", /missing required lifecycle marker A clean worktree/],
-		["pre-existing changes", "earlier edits", /missing required lifecycle marker pre-existing changes/],
-		["must not claim agent ownership", "may claim agent ownership", /missing required lifecycle marker must not claim agent ownership/],
-		["isolated worktree", "temporary checkout", /missing required lifecycle marker isolated worktree/],
-		["Never automatically remove or overwrite", "Automatically remove or overwrite", /missing required lifecycle marker Never automatically remove/],
-		["", "\n```sh\ngit clean -fd\n```", /must not recommend destructive command git clean/],
-		["", "\n```sh\ngit reset --hard\n```", /must not recommend destructive command git reset --hard/],
+		[
+			"A clean worktree is the default precondition",
+			"A dirty worktree is acceptable",
+			/missing required lifecycle marker A clean worktree/,
+		],
+		[
+			"pre-existing changes",
+			"earlier edits",
+			/missing required lifecycle marker pre-existing changes/,
+		],
+		[
+			"must not claim agent ownership",
+			"may claim agent ownership",
+			/missing required lifecycle marker must not claim agent ownership/,
+		],
+		[
+			"isolated worktree",
+			"temporary checkout",
+			/missing required lifecycle marker isolated worktree/,
+		],
+		[
+			"Never automatically remove or overwrite",
+			"Automatically remove or overwrite",
+			/missing required lifecycle marker Never automatically remove/,
+		],
+		[
+			"",
+			"\n```sh\ngit clean -fd\n```",
+			/must not recommend destructive command git clean/,
+		],
+		[
+			"",
+			"\n```sh\ngit reset --hard\n```",
+			/must not recommend destructive command git reset --hard/,
+		],
 	];
 	for (const [from, to, failure] of cases) {
 		const root = await createContractFixture(t);
 		await mutateTrackedFixture(
 			root,
 			".agents/skills/implement-and-review/SKILL.md",
-			(contents) => (from ? contents.replaceAll(from, to) : `${contents}${to}\n`),
+			(contents) =>
+				from ? contents.replaceAll(from, to) : `${contents}${to}\n`,
 		);
 		assertFailure(await auditAgentAndSkillContracts(root), failure);
 	}
@@ -1447,20 +1516,49 @@ test("implementation lifecycle enforces clean-worktree ownership boundaries", as
 
 test("implementation lifecycle fully reviews untracked and staged files", async (t) => {
 	const cases = [
-		["git ls-files --others --exclude-standard", "git status --short", /missing required task-base diff command git ls-files/],
-		["Read every task-created untracked text file in full", "Review every untracked filename", /missing required lifecycle marker Read every task-created/],
-		["untracked file prevents `READY`", "untracked file is acceptable", /missing required lifecycle marker untracked file prevents/],
-		["Unexpected untracked files prevent `READY`", "Unexpected files may be silently ignored", /missing required lifecycle marker Unexpected untracked/],
-		["", "\n```sh\ngit add .\n```", /must not allow unbounded staging command git add \./],
-		["git diff --cached --stat", "git diff --cached --name-only", /missing required task-base diff command git diff --cached --stat/],
-		["After a commit, repeat untracked file discovery", "After a commit, skip untracked discovery", /missing required lifecycle marker After a commit/],
+		[
+			"git ls-files --others --exclude-standard",
+			"git status --short",
+			/missing required task-base diff command git ls-files/,
+		],
+		[
+			"Read every task-created untracked text file in full",
+			"Review every untracked filename",
+			/missing required lifecycle marker Read every task-created/,
+		],
+		[
+			"untracked file prevents `READY`",
+			"untracked file is acceptable",
+			/missing required lifecycle marker untracked file prevents/,
+		],
+		[
+			"Unexpected untracked files prevent `READY`",
+			"Unexpected files may be silently ignored",
+			/missing required lifecycle marker Unexpected untracked/,
+		],
+		[
+			"",
+			"\n```sh\ngit add .\n```",
+			/must not allow unbounded staging command git add \./,
+		],
+		[
+			"git diff --cached --stat",
+			"git diff --cached --name-only",
+			/missing required task-base diff command git diff --cached --stat/,
+		],
+		[
+			"After a commit, repeat untracked file discovery",
+			"After a commit, skip untracked discovery",
+			/missing required lifecycle marker After a commit/,
+		],
 	];
 	for (const [from, to, failure] of cases) {
 		const root = await createContractFixture(t);
 		await mutateTrackedFixture(
 			root,
 			".agents/skills/implement-and-review/SKILL.md",
-			(contents) => (from ? contents.replaceAll(from, to) : `${contents}${to}\n`),
+			(contents) =>
+				from ? contents.replaceAll(from, to) : `${contents}${to}\n`,
 		);
 		assertFailure(await auditAgentAndSkillContracts(root), failure);
 	}
@@ -1468,11 +1566,31 @@ test("implementation lifecycle fully reviews untracked and staged files", async 
 
 test("architecture contract enforces the Pilot Draft-to-Ready evidence gate", async (t) => {
 	const cases = [
-		["Ready for review", "Open for discussion", /ordered Pilot PR gate through Ready for review/],
-		["Local `PASS` is not remote CI `PASS`", "Local and remote PASS are equivalent", /missing Pilot PR evidence marker Local/],
-		["`Draft` status is not", "Draft status is", /missing Pilot PR evidence marker `Draft`/],
-		["`REMOTE CI UNVERIFIED`", "`PASS`", /missing Pilot PR evidence marker `REMOTE CI UNVERIFIED`/],
-		["Only the user may decide whether to merge", "The service may automatically merge", /must not allow automatic merge/],
+		[
+			"Ready for review",
+			"Open for discussion",
+			/ordered Pilot PR gate through Ready for review/,
+		],
+		[
+			"Local `PASS` is not remote CI `PASS`",
+			"Local and remote PASS are equivalent",
+			/missing Pilot PR evidence marker Local/,
+		],
+		[
+			"`Draft` status is not",
+			"Draft status is",
+			/missing Pilot PR evidence marker `Draft`/,
+		],
+		[
+			"`REMOTE CI UNVERIFIED`",
+			"`PASS`",
+			/missing Pilot PR evidence marker `REMOTE CI UNVERIFIED`/,
+		],
+		[
+			"Only the user may decide whether to merge",
+			"The service may automatically merge",
+			/must not allow automatic merge/,
+		],
 	];
 	for (const [from, to, failure] of cases) {
 		const root = await createContractFixture(t);
@@ -1517,7 +1635,8 @@ test("root Definition of done distinguishes all, read-only, and write tasks", as
 		{
 			mutate: (contents) =>
 				contents.replace("task-base-to-HEAD", "current HEAD"),
-			failure: /write tasks must require task-base-to-current and task-base-to-HEAD review/,
+			failure:
+				/write tasks must require task-base-to-current and task-base-to-HEAD review/,
 		},
 	];
 	for (const contractCase of cases) {
@@ -1565,8 +1684,11 @@ test("Skill routing audit rejects missing, duplicate, unknown, untracked, and pr
 	);
 
 	const proseOnlyRoot = await createContractFixture(t);
-	await mutateTrackedFixture(proseOnlyRoot, "AGENTS.md", (contents) =>
-		`${contents.replace(`${routingRow("add-cli-command", "domain-support")}\n`, "")}
+	await mutateTrackedFixture(
+		proseOnlyRoot,
+		"AGENTS.md",
+		(contents) =>
+			`${contents.replace(`${routingRow("add-cli-command", "domain-support")}\n`, "")}
 
 The Skill \`.agents/skills/add-cli-command/SKILL.md\` is discussed here.
 `,
@@ -1612,31 +1734,36 @@ test("Skill routing audit enforces every explicit role", async (t) => {
 			name: "implement-and-review",
 			from: "Primary",
 			to: "Support",
-			failure: /role for implement-and-review must be general-primary, found domain-support/,
+			failure:
+				/role for implement-and-review must be general-primary, found domain-support/,
 		},
 		{
 			name: "fix-github-actions",
 			from: "Specialized primary",
 			to: "Support",
-			failure: /role for fix-github-actions must be specialized-primary, found domain-support/,
+			failure:
+				/role for fix-github-actions must be specialized-primary, found domain-support/,
 		},
 		{
 			name: "release-monorepo",
 			from: "Specialized primary",
 			to: "Primary",
-			failure: /role for release-monorepo must be specialized-primary, found general-primary/,
+			failure:
+				/role for release-monorepo must be specialized-primary, found general-primary/,
 		},
 		{
 			name: "run-codegen-tests",
 			from: "Validation helper",
 			to: "Specialized primary",
-			failure: /role for run-codegen-tests must be validation-helper, found specialized-primary/,
+			failure:
+				/role for run-codegen-tests must be validation-helper, found specialized-primary/,
 		},
 		{
 			name: "add-mcp-tool",
 			from: "Support",
 			to: "Primary",
-			failure: /role for add-mcp-tool must be domain-support, found general-primary/,
+			failure:
+				/role for add-mcp-tool must be domain-support, found general-primary/,
 		},
 	];
 	for (const contractCase of cases) {
@@ -1662,10 +1789,7 @@ test("Skill role mapping is independent of prose and covers exactly tracked Skil
 		(contents) =>
 			`${contents}\nThis support Skill may discuss the phrase Primary orchestrator without changing its role.\n`,
 	);
-	assert.deepEqual(
-		(await auditAgentAndSkillContracts(proseRoot)).failures,
-		[],
-	);
+	assert.deepEqual((await auditAgentAndSkillContracts(proseRoot)).failures, []);
 
 	const missingHeadingRoot = await createContractFixture(t);
 	await mutateTrackedFixture(
@@ -1720,7 +1844,11 @@ test("architecture role inventory stays aligned with tracked Skills and routing 
 	await mutateTrackedFixture(
 		countRoot,
 		"docs/agents/agents-and-skills-architecture.md",
-		(contents) => contents.replace("Tracked Skill count: `10`.", "Tracked Skill count: `9`."),
+		(contents) =>
+			contents.replace(
+				"Tracked Skill count: `10`.",
+				"Tracked Skill count: `9`.",
+			),
 	);
 	assertFailure(
 		await auditAgentAndSkillContracts(countRoot),
