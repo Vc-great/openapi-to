@@ -465,7 +465,10 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 			`${PUBLISH_WORKFLOW_PATH} preflight-and-package guard must bind the dispatch SHA to current main`,
 		);
 	}
-	const readinessStep = preflight?.steps?.find(
+	const preflightSteps = Array.isArray(preflight?.steps)
+		? preflight.steps
+		: [];
+	const readinessStep = preflightSteps.find(
 		(step) => isMapping(step) && step.id === "release-readiness",
 	);
 	if (
@@ -478,7 +481,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 			`${PUBLISH_WORKFLOW_PATH} preflight readiness must be an unconditional pre-pack blocking step`,
 		);
 	}
-	const prepareStep = preflight?.steps?.find(
+	const prepareStep = preflightSteps.find(
 		(step) => isMapping(step) && step.id === "prepare-artifacts",
 	);
 	if (
@@ -492,7 +495,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 			`${PUBLISH_WORKFLOW_PATH} artifact preparation must be an unconditional blocking step`,
 		);
 	}
-	const smokeStep = preflight?.steps?.find(
+	const smokeStep = preflightSteps.find(
 		(step) =>
 			isMapping(step) &&
 			typeof step.run === "string" &&
@@ -500,6 +503,8 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	);
 	if (
 		!isMapping(smokeStep) ||
+		JSON.stringify(mappingKeys(smokeStep)) !==
+			JSON.stringify(["name", "run"]) ||
 		smokeStep.run !==
 			"pnpm release:smoke -- --publication-manifest .ci-artifacts/publication/publication-manifest.json"
 	) {
@@ -507,20 +512,165 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 			`${PUBLISH_WORKFLOW_PATH} consumer smoke must install the exact publication manifest tarballs`,
 		);
 	}
-	const uploadStep = preflight?.steps?.find(
-		(step) =>
-			isMapping(step) &&
-			typeof step.uses === "string" &&
-			step.uses.startsWith("actions/upload-artifact@"),
+	const uploadEntries = Object.entries(jobs).flatMap(([jobId, job]) =>
+		Array.isArray(job?.steps)
+			? job.steps
+					.filter(
+						(step) =>
+							isMapping(step) &&
+							typeof step.uses === "string" &&
+							step.uses.startsWith("actions/upload-artifact@"),
+					)
+					.map((step) => ({ jobId, step }))
+			: [],
 	);
+	const uploadStep =
+		uploadEntries.length === 1 &&
+		uploadEntries[0].jobId === "preflight-and-package"
+			? uploadEntries[0].step
+			: undefined;
 	if (
+		uploadEntries.length !== 1 ||
+		uploadEntries[0]?.jobId !== "preflight-and-package" ||
 		!isMapping(uploadStep?.with) ||
+		JSON.stringify(mappingKeys(uploadStep)) !==
+			JSON.stringify(["name", "uses", "with"]) ||
+		JSON.stringify(mappingKeys(uploadStep?.with)) !==
+			JSON.stringify([
+				"compression-level",
+				"if-no-files-found",
+				"include-hidden-files",
+				"name",
+				"path",
+				"retention-days",
+			]) ||
 		uploadStep.with.path !== ".ci-artifacts/publication" ||
-		uploadStep.with["if-no-files-found"] !== "error"
+		uploadStep.with["include-hidden-files"] !== true ||
+		uploadStep.with["if-no-files-found"] !== "error" ||
+		uploadStep.with["retention-days"] !== 7 ||
+		uploadStep.with["compression-level"] !== 0
 	) {
 		failures.push(
-			`${PUBLISH_WORKFLOW_PATH} must upload only the controlled publication artifact`,
+			`${PUBLISH_WORKFLOW_PATH} must upload only the controlled hidden publication artifact with include-hidden-files true and if-no-files-found error`,
 		);
+	}
+	if (Object.hasOwn(uploadStep?.with ?? {}, "overwrite")) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} publication artifact must not configure overwrite`,
+		);
+	}
+
+	const artifactSteps = preflightSteps.filter(
+		(step) => isMapping(step) && step.id === "artifact",
+	);
+	const artifactStep =
+		artifactSteps.length === 1 ? artifactSteps[0] : undefined;
+	const expectedArtifactNameRun = [
+		"set -euo pipefail",
+		`case "${DOLLAR_SIGN}{RUN_ATTEMPT}" in`,
+		"  ''|*[!0-9]*)",
+		'    echo "github.run_attempt must be a positive integer." >&2',
+		"    exit 1",
+		"    ;;",
+		"esac",
+		`test "${DOLLAR_SIGN}{RUN_ATTEMPT}" -ge 1`,
+		"printf 'name=openapi-to-publication-%s-attempt-%s\\n' \\",
+		`  "${DOLLAR_SIGN}{EXPECTED_SHA}" \\`,
+		`  "${DOLLAR_SIGN}{RUN_ATTEMPT}" >> "${DOLLAR_SIGN}{GITHUB_OUTPUT}"`,
+		"",
+	].join("\n");
+	const expectedArtifactEnvKeys = ["EXPECTED_SHA", "RUN_ATTEMPT"];
+	const artifactStepMatches =
+		artifactSteps.length === 1 &&
+		isMapping(artifactStep) &&
+		JSON.stringify(mappingKeys(artifactStep)) ===
+			JSON.stringify(["env", "id", "name", "run", "shell"]) &&
+		artifactStep.shell === "bash" &&
+		JSON.stringify(mappingKeys(artifactStep.env)) ===
+			JSON.stringify(expectedArtifactEnvKeys) &&
+		artifactStep.env.EXPECTED_SHA ===
+			`${DOLLAR_SIGN}{{ steps.guard.outputs.expected_sha }}` &&
+		artifactStep.env.RUN_ATTEMPT ===
+			`${DOLLAR_SIGN}{{ github.run_attempt }}` &&
+		artifactStep.run === expectedArtifactNameRun;
+	if (!artifactStepMatches) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} artifact name must bind the verified expected SHA and validated github.run_attempt with the canonical output script`,
+		);
+	}
+	const artifactNameOutput = `${DOLLAR_SIGN}{{ steps.artifact.outputs.name }}`;
+	const upstreamArtifactName =
+		`${DOLLAR_SIGN}{{ needs.preflight-and-package.outputs.artifact_name }}`;
+	if (preflight?.outputs?.artifact_name !== artifactNameOutput) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} jobs.preflight-and-package.outputs.artifact_name must come from steps.artifact.outputs.name`,
+		);
+	}
+	if (uploadStep?.with?.name !== artifactNameOutput) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} upload-artifact name must come from steps.artifact.outputs.name`,
+		);
+	}
+	const readinessIndex = preflightSteps.indexOf(readinessStep);
+	const prepareIndex = preflightSteps.indexOf(prepareStep);
+	const smokeIndex = preflightSteps.indexOf(smokeStep);
+	const artifactIndex = preflightSteps.indexOf(artifactStep);
+	const uploadIndex = preflightSteps.indexOf(uploadStep);
+	if (
+		readinessIndex < 0 ||
+		prepareIndex <= readinessIndex ||
+		smokeIndex !== prepareIndex + 1 ||
+		artifactIndex !== smokeIndex + 1 ||
+		uploadIndex !== artifactIndex + 1 ||
+		uploadIndex !== preflightSteps.length - 1
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must finish preflight with consecutive prepare, smoke, artifact-name, and sole upload steps after readiness`,
+		);
+	}
+	const downloadEntries = Object.entries(jobs).flatMap(([jobId, job]) =>
+		Array.isArray(job?.steps)
+			? job.steps
+					.filter(
+						(step) =>
+							isMapping(step) &&
+							typeof step.uses === "string" &&
+							step.uses.startsWith("actions/download-artifact@"),
+					)
+					.map((step) => ({ jobId, step }))
+			: [],
+	);
+	const expectedDownloadJobs = [
+		"github-release",
+		"publish",
+		"verify-registry",
+	];
+	if (
+		JSON.stringify(
+			downloadEntries.map(({ jobId }) => jobId).sort(comparePaths),
+		) !== JSON.stringify(expectedDownloadJobs)
+	) {
+		failures.push(
+			`${PUBLISH_WORKFLOW_PATH} must contain exactly one controlled publication download in each downstream job`,
+		);
+	}
+	for (const jobId of expectedDownloadJobs) {
+		const downloadSteps = downloadEntries
+			.filter((entry) => entry.jobId === jobId)
+			.map(({ step }) => step);
+		if (
+			downloadSteps.length !== 1 ||
+			JSON.stringify(mappingKeys(downloadSteps[0])) !==
+				JSON.stringify(["name", "uses", "with"]) ||
+			JSON.stringify(mappingKeys(downloadSteps[0]?.with)) !==
+				JSON.stringify(["name", "path"]) ||
+			downloadSteps[0].with?.name !== upstreamArtifactName ||
+			downloadSteps[0].with?.path !== ".ci-artifacts/publication"
+		) {
+			failures.push(
+				`${PUBLISH_WORKFLOW_PATH} jobs.${jobId} must download the upstream artifact_name into the controlled publication directory`,
+			);
+		}
 	}
 
 	const publishSteps = Array.isArray(jobs.publish?.steps)

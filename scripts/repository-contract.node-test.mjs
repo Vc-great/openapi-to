@@ -294,7 +294,14 @@ function assertFailure(result, pattern) {
 
 async function mutateTrackedFixture(root, relativePath, mutate) {
 	const path = join(root, relativePath);
-	await writeFile(path, mutate(await readFile(path, "utf8")));
+	const contents = await readFile(path, "utf8");
+	const mutated = mutate(contents);
+	assert.notEqual(
+		mutated,
+		contents,
+		`fixture mutation must change ${relativePath}`,
+	);
+	await writeFile(path, mutated);
 	await git(root, "add", "--", relativePath);
 }
 
@@ -626,6 +633,250 @@ test("CI diagnostics repository contract rejects Version Packages integration", 
 test("publication repository contract accepts the manual least-privilege workflow", async (t) => {
 	const root = await createPublicationContractFixture(t);
 	assert.deepEqual(await auditPublicationContracts(root), []);
+});
+
+test("publication contract rejects artifact transfer regressions", async (t) => {
+	const cases = [
+		{
+			name: "missing include-hidden-files",
+			mutate: (contents) =>
+				contents.replace("          include-hidden-files: true\n", ""),
+			failure: /include-hidden-files true/,
+		},
+		{
+			name: "include-hidden-files false",
+			mutate: (contents) =>
+				contents.replace(
+					"          include-hidden-files: true",
+					"          include-hidden-files: false",
+				),
+			failure: /include-hidden-files true/,
+		},
+		{
+			name: "include-hidden-files string",
+			mutate: (contents) =>
+				contents.replace(
+					"          include-hidden-files: true",
+					'          include-hidden-files: "true"',
+				),
+			failure: /include-hidden-files true/,
+		},
+		{
+			name: "if-no-files-found warning",
+			mutate: (contents) =>
+				contents.replace(
+					"          if-no-files-found: error",
+					"          if-no-files-found: warn",
+				),
+			failure: /if-no-files-found error/,
+		},
+		{
+			name: "artifact overwrite",
+			mutate: (contents) =>
+				contents.replace(
+					"          if-no-files-found: error",
+					"          overwrite: true\n          if-no-files-found: error",
+				),
+			failure: /must not configure overwrite/,
+		},
+		{
+			name: "artifact overwrite string",
+			mutate: (contents) =>
+				contents.replace(
+					"          if-no-files-found: error",
+					'          overwrite: "true"\n          if-no-files-found: error',
+				),
+			failure: /must not configure overwrite/,
+		},
+		{
+			name: "duplicate upload step",
+			mutate: (contents) =>
+				contents.replace(
+					"          compression-level: 0\n",
+					`          compression-level: 0
+
+      - name: Upload an unsafe duplicate artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unsafe-duplicate
+          path: .
+          include-hidden-files: true
+          if-no-files-found: error
+`,
+				),
+			failure: /must upload only the controlled hidden publication artifact/,
+		},
+		{
+			name: "artifact name omits run attempt",
+			mutate: (contents) =>
+				contents
+					.replace(
+						`          RUN_ATTEMPT: ${DOLLAR_SIGN}{{ github.run_attempt }}\n`,
+						"",
+					)
+					.replace(
+						`          printf 'name=openapi-to-publication-%s-attempt-%s\\n' \\
+            "${DOLLAR_SIGN}{EXPECTED_SHA}" \\
+            "${DOLLAR_SIGN}{RUN_ATTEMPT}" >> "${DOLLAR_SIGN}{GITHUB_OUTPUT}"`,
+						`          printf 'name=openapi-to-publication-%s\\n' "${DOLLAR_SIGN}{EXPECTED_SHA}" >> "${DOLLAR_SIGN}{GITHUB_OUTPUT}"`,
+					),
+			failure: /verified expected SHA and validated github\.run_attempt/,
+		},
+		{
+			name: "artifact name uses only expected SHA",
+			mutate: (contents) =>
+				contents.replace(
+					"name=openapi-to-publication-%s-attempt-%s",
+					"name=openapi-to-publication-%s",
+				),
+			failure: /verified expected SHA and validated github\.run_attempt/,
+		},
+		{
+			name: "artifact name adds untrusted env",
+			mutate: (contents) =>
+				contents.replace(
+					`          RUN_ATTEMPT: ${DOLLAR_SIGN}{{ github.run_attempt }}`,
+					`          RUN_ATTEMPT: ${DOLLAR_SIGN}{{ github.run_attempt }}
+          UNSAFE_VERSION: ${DOLLAR_SIGN}{{ inputs.expected_version }}`,
+				),
+			failure: /canonical output script/,
+		},
+		{
+			name: "artifact name redirects canonical output",
+			mutate: (contents) =>
+				contents.replace(
+					`  "${DOLLAR_SIGN}{RUN_ATTEMPT}" >> "${DOLLAR_SIGN}{GITHUB_OUTPUT}"`,
+					`  "${DOLLAR_SIGN}{RUN_ATTEMPT}" >/dev/null
+          printf 'name=unsafe-alternate\\n' >> "${DOLLAR_SIGN}{GITHUB_OUTPUT}"`,
+				),
+			failure: /canonical output script/,
+		},
+		{
+			name: "duplicate artifact binding step",
+			mutate: (contents) =>
+				contents.replace(
+					"      - name: Upload only the verified publication artifact\n",
+					`      - name: Duplicate artifact binding
+        id: artifact
+        shell: bash
+        run: printf 'name=unsafe-duplicate\\n' >> "${DOLLAR_SIGN}{GITHUB_OUTPUT}"
+
+      - name: Upload only the verified publication artifact
+`,
+				),
+			failure: /canonical output script/,
+		},
+		{
+			name: "intervening artifact contamination step",
+			mutate: (contents) =>
+				contents.replace(
+					"      - name: Upload only the verified publication artifact\n",
+					`      - name: Contaminate the verified artifact
+        run: touch .ci-artifacts/publication/unexpected
+
+      - name: Upload only the verified publication artifact
+`,
+				),
+			failure: /finish preflight with consecutive prepare, smoke, artifact-name/,
+		},
+		{
+			name: "publish download uses hardcoded name",
+			mutate: (contents) =>
+				contents.replace(
+					`          name: ${DOLLAR_SIGN}{{ needs.preflight-and-package.outputs.artifact_name }}`,
+					"          name: openapi-to-publication-hardcoded",
+				),
+			failure: /jobs\.publish must download the upstream artifact_name/,
+		},
+		{
+			name: "publish download recomputes name",
+			mutate: (contents) =>
+				contents.replace(
+					`          name: ${DOLLAR_SIGN}{{ needs.preflight-and-package.outputs.artifact_name }}`,
+					`          name: openapi-to-publication-${DOLLAR_SIGN}{{ needs.preflight-and-package.outputs.expected_sha }}-attempt-${DOLLAR_SIGN}{{ github.run_attempt }}`,
+				),
+			failure: /jobs\.publish must download the upstream artifact_name/,
+		},
+		{
+			name: "publish download selects a different run",
+			mutate: (contents) =>
+				contents.replace(
+					`          name: ${DOLLAR_SIGN}{{ needs.preflight-and-package.outputs.artifact_name }}
+          path: .ci-artifacts/publication`,
+					`          name: ${DOLLAR_SIGN}{{ needs.preflight-and-package.outputs.artifact_name }}
+          path: .ci-artifacts/publication
+          repository: other/repository
+          run-id: 12345`,
+				),
+			failure: /jobs\.publish must download the upstream artifact_name/,
+		},
+		{
+			name: "extra uncontrolled download",
+			mutate: (contents) =>
+				contents.replace(
+					"      - name: Bind immutable artifact name\n",
+					`      - name: Download an uncontrolled artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: uncontrolled
+          path: .ci-artifacts/publication
+
+      - name: Bind immutable artifact name
+`,
+				),
+			failure: /exactly one controlled publication download/,
+		},
+		{
+			name: "upload path expands to artifact root",
+			mutate: (contents) =>
+				contents.replace(
+					"          path: .ci-artifacts/publication\n          include-hidden-files: true",
+					"          path: .ci-artifacts\n          include-hidden-files: true",
+				),
+			failure: /controlled hidden publication artifact/,
+		},
+		{
+			name: "upload path expands to repository root",
+			mutate: (contents) =>
+				contents.replace(
+					"          path: .ci-artifacts/publication\n          include-hidden-files: true",
+					"          path: .\n          include-hidden-files: true",
+				),
+			failure: /controlled hidden publication artifact/,
+		},
+		{
+			name: "artifact job output removed",
+			mutate: (contents) =>
+				contents.replace(
+					`      artifact_name: ${DOLLAR_SIGN}{{ steps.artifact.outputs.name }}\n`,
+					"",
+				),
+			failure: /outputs\.artifact_name must come from steps\.artifact\.outputs\.name/,
+		},
+		{
+			name: "run attempt replaced by user input",
+			mutate: (contents) =>
+				contents.replace(
+					`          RUN_ATTEMPT: ${DOLLAR_SIGN}{{ github.run_attempt }}`,
+					`          RUN_ATTEMPT: ${DOLLAR_SIGN}{{ inputs.expected_version }}`,
+				),
+			failure: /verified expected SHA and validated github\.run_attempt/,
+		},
+	];
+	for (const fixture of cases) {
+		await t.test(fixture.name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/publish.yml",
+				fixture.mutate,
+			);
+			assertFailure(
+				{ failures: await auditPublicationContracts(root) },
+				fixture.failure,
+			);
+		});
+	}
 });
 
 test("publication contract rejects trigger, concurrency, permission, and dependency drift", async (t) => {
