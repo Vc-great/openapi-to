@@ -1,5 +1,14 @@
 # @openapi-to/plugin-ts-request
 
+## 4.0.0-rc.2
+
+### Patch Changes
+
+- Updated dependencies [f5a38fd]
+- Updated dependencies [7c87d42]
+- Updated dependencies [f405e1a]
+  - @openapi-to/core@4.0.0-rc.2
+
 ## 4.0.0-rc.1
 
 ### Major Changes

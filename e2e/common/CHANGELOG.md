@@ -1,5 +1,11 @@
 # e2e-common
 
+## 0.0.2-rc.2
+
+### Patch Changes
+
+- openapi-to@4.0.0-rc.2
+
 ## 0.0.2-rc.1
 
 ### Patch Changes

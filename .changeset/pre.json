@@ -23,15 +23,18 @@
     "consistent-release-contracts",
     "controlled-selective-apply",
     "fix-windows-mcp-canonical-path",
+    "generated-typescript-headers",
     "large-openapi-catalog",
     "microservice-target-outputs",
     "persistent-selection-prepare",
     "secure-plans-apply",
     "secure-portable-remote-policy",
     "selective-projection-dry-run",
+    "selective-replace-pilot",
     "tidy-mice-mcp",
     "transactional-selection-foundation",
     "unified-install-entry",
-    "v4-root-config-state-directory"
+    "v4-root-config-state-directory",
+    "zod-four-only"
   ]
 }
