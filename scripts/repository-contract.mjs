@@ -118,6 +118,14 @@ const REQUIRED_SETUP_EVALUATION_CASES = [
 	"approval-continue",
 	"approval-state-drift",
 ];
+const REQUIRED_SETUP_DEGRADED_CASES = new Map([
+	["degraded-package-json-missing", "block_without_install_plan"],
+	["degraded-package-json-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-lockfile-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-gitignore-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-multiple-same-manager-lockfiles", "block_package_manager_conflict"],
+	["degraded-lockfile-too-large", "fail_closed_without_reading_contents"],
+]);
 const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/mcp-workflow.md`,
@@ -3093,6 +3101,12 @@ function validateOpenapiToSetupSkill(contents, failures) {
 		"approval_mode = \"prompt\"",
 		"manual review and do not overwrite or delete it",
 		"openapi-to-generate",
+		"`PACKAGE_JSON_MISSING`",
+		"`PACKAGE_MISSING` applies only when a valid `package.json` exists",
+		"raw-byte SHA-256",
+		"every lockfile's name, size, and bytes",
+		"Multiple actual lockfiles",
+		"Git status remains a separate pre-apply check",
 	]) {
 		if (!normalized.includes(marker)) failures.push(`${SETUP_SKILL_NAME} is missing required workflow marker ${marker}`);
 	}
@@ -3128,6 +3142,7 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 	else if (!trackedFiles.has(SETUP_SKILL_DOCUMENT)) failures.push(`setup Skill documentation is not tracked by Git: ${SETUP_SKILL_DOCUMENT}`);
 	else {
 		const document = await readFile(documentPath, "utf8");
+		const normalizedDocument = document.replace(/\s+/g, " ");
 		for (const marker of [
 			"openapi-to-setup",
 			"openapi-to-generate",
@@ -3140,8 +3155,49 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 			"Codex-first",
 			"pnpm",
 			"npm, Yarn, and Bun",
+			"`PACKAGE_JSON_MISSING`",
+			"`PACKAGE_MISSING` means a valid `package.json`",
+			"raw-byte SHA-256",
+			"Multiple actual lockfiles",
+			"new Setup Plan and `setupPlanId`",
+			"Git worktree status is re-read separately",
 		]) {
-			if (!document.includes(marker)) failures.push(`${SETUP_SKILL_DOCUMENT} is missing setup workflow marker ${marker}`);
+			if (!normalizedDocument.includes(marker)) failures.push(`${SETUP_SKILL_DOCUMENT} is missing setup workflow marker ${marker}`);
+		}
+	}
+
+	for (const [relativePath, markers] of [
+		[
+			"references/diagnosis.md",
+			[
+				"`PACKAGE_JSON_MISSING` and `BLOCKED`",
+				"`PACKAGE_MISSING` requires a valid manifest",
+				"manifest raw-byte hash",
+				"every detected lockfile name, size",
+				"`gitignoreSha256`",
+				"Codex config raw-byte hashes",
+				"Multiple actual lockfiles",
+				"`LOCKFILE_TOO_LARGE`",
+			],
+		],
+		[
+			"references/safe-writes.md",
+			[
+				"`PACKAGE_JSON_MISSING`",
+				"`PACKAGE_MISSING` is reserved for a trusted project with a valid manifest",
+				"raw-byte SHA-256 values for the manifest, every lockfile",
+				"new `setupPlanId`",
+				"Multiple actual lockfiles conflict",
+				"hash does not cover the whole worktree",
+			],
+		],
+	]) {
+		const contents = await readFile(join(root, SKILL_ROOT, SETUP_SKILL_NAME, relativePath), "utf8");
+		const normalizedContents = contents.replace(/\s+/g, " ");
+		for (const marker of markers) {
+			if (!normalizedContents.includes(marker)) {
+				failures.push(`${SKILL_ROOT}/${SETUP_SKILL_NAME}/${relativePath} is missing setup state-binding marker ${marker}`);
+			}
 		}
 	}
 
@@ -3175,6 +3231,19 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 	}
 	for (const id of REQUIRED_SETUP_EVALUATION_CASES) {
 		if (!ids.has(id)) failures.push(`${SETUP_SKILL_EVALUATION} is missing required case ${id}`);
+	}
+	const casesById = new Map(evaluation.cases.map((evaluationCase) => [evaluationCase?.id, evaluationCase]));
+	for (const [id, expected] of REQUIRED_SETUP_DEGRADED_CASES) {
+		const evaluationCase = casesById.get(id);
+		if (!evaluationCase) {
+			failures.push(`${SETUP_SKILL_EVALUATION} is missing required case ${id}`);
+			continue;
+		}
+		if (evaluationCase.category !== "degraded" || evaluationCase.expected !== expected) {
+			failures.push(
+				`${SETUP_SKILL_EVALUATION} case ${id} must be degraded with expected ${expected}`,
+			);
+		}
 	}
 }
 

@@ -51,10 +51,13 @@ Run the standard-library inspector from this Skill directory:
 node scripts/inspect-project.mjs --root <consuming-project-root>
 ```
 
-The script reads bounded metadata only. It does not execute
-`openapi.config.*`, run a shell command, inspect global installations, read
-`.openapi-to/` contents, access the network, read environment variables, or
-return project configuration bodies or credentials.
+The script reads bounded metadata only. Its `observedStateHash` binds raw-byte
+SHA-256 values for `package.json`, every detected lockfile, generation config,
+`.gitignore`, and `.codex/config.toml`; lockfiles are streamed with a 32 MiB
+limit. It does not return those file bodies, execute `openapi.config.*`, run a
+shell command, inspect global installations, read `.openapi-to/` contents,
+access the network, read environment variables, or return project
+configuration bodies or credentials.
 
 During diagnosis, do not install packages, run `openapi init`, change
 `.gitignore`, edit `.codex/config.toml`, or enable writes. If the user asked
@@ -80,6 +83,11 @@ Package declaration, a config filename, local command resolution, Host file
 configuration, Host restart, Server connection, and verified Tool capability
 are different evidence. Writing `.codex/config.toml` always yields
 `RESTART_REQUIRED`; it never proves the running Host reloaded the Server.
+`PACKAGE_JSON_MISSING` is a blocking reason because the current directory is
+not a confirmed Node consuming project; never create a new Node project or plan
+an install there. `PACKAGE_MISSING` applies only when a valid `package.json`
+exists, the project boundary is trusted, and the aggregate `openapi-to`
+declaration alone is missing.
 
 ## 4. Plan the minimum setup
 
@@ -140,6 +148,15 @@ approval. Never run diagnosis, install, init, and Host edits as an automatic
 chain. If `package.json`, a lockfile, generation config, `.gitignore`, Codex
 config, or overlapping Git state changes, re-inspect, create a new plan and ID,
 show it, and obtain new exact approval.
+
+The state binding covers manifest bytes, every lockfile's name, size, and
+bytes, generation config bytes, ignore bytes, Codex config bytes, their
+existence states, package/dependency diagnostics, conservative Codex
+diagnostics, and blocking reasons. It does not cover the whole worktree,
+`node_modules`, `.git`, `.openapi-to/` contents, environment variables, global
+installs, or network state. Multiple actual lockfiles—including two names for
+one manager—are a conflict. Oversized, unreadable, or out-of-root lockfiles fail
+closed. Git status remains a separate pre-apply check.
 
 ## 6. Apply only the approved actions
 

@@ -9,8 +9,8 @@ Schema is compatible.
 | State | Evidence | Next decision |
 | --- | --- | --- |
 | `UNINSPECTED` | No current inspector result | Read rules, Git state, and run the inspector. |
-| `BLOCKED` | Conflicting package-manager evidence, multiple configs, unsafe symlink, oversized/invalid metadata, version conflict, or duplicate Codex section | Stop writes and report the exact bounded reason. |
-| `PACKAGE_MISSING` | No aggregate `openapi-to` declaration | Plan an exact-version aggregate install or request a version decision. |
+| `BLOCKED` | Missing manifest, conflicting package-manager evidence, multiple configs, unsafe symlink, oversized/invalid metadata, version conflict, or duplicate Codex section | Stop writes and report the exact bounded reason. |
+| `PACKAGE_MISSING` | A valid manifest and trusted project boundary have no aggregate `openapi-to` declaration or other blocker | Plan an exact-version aggregate install or request a version decision. |
 | `PACKAGE_READY` | Aggregate package is declared locally | Continue to generation config; do not infer that binaries resolve. |
 | `CONFIG_MISSING` | No supported root config | Plan the existing `pnpm exec openapi init`. |
 | `CONFIG_READY` | Exactly one supported config exists | Treat it as trusted executable project code only when validation is approved. |
@@ -25,20 +25,29 @@ Schema is compatible.
 
 - `schemaVersion` identifies the JSON contract.
 - `observedStateHash` is SHA-256 over the canonical observation without the
-  hash. Bind a Setup Plan to this exact value.
+  hash. It binds the manifest raw-byte hash; every detected lockfile name, size,
+  and raw-byte hash; generation config, `.gitignore`, and Codex config raw-byte
+  hashes; relevant existence states; package-manager and dependency
+  diagnostics; conservative Codex diagnostics; and blocking reasons. Bind a
+  Setup Plan to this exact value. It does not bind the whole worktree.
 - `blockingReasons` is sorted and closed: do not guess through a reason.
 - `workspace` reports only bounded booleans, a relative root marker, and the
-  running Node major/support decision. It never prints the absolute Workspace.
+  running Node major/support decision. `workspace.packageJson.sha256` hashes
+  original bytes even when JSON is invalid, is `null` when missing, and never
+  exposes the manifest. It never prints the absolute Workspace.
 - `packageManager` prefers `package.json#packageManager`, then a unique lockfile
-  manager. A mismatch or multiple managers is `conflict`; only pnpm is an
-  automatic write path in this phase.
+  only when exactly one actual lockfile exists. Any multiple actual lockfiles,
+  including multiple names for one manager, are `conflict`; only pnpm is an
+  automatic write path in this phase. Each lockfile record contains its
+  relative name, manager, size, and streamed raw-byte SHA-256.
 - `dependencies` lists only manifest declarations for `openapi-to` and
   `@openapi-to/*`, their dependency section and range. It does not inspect a
   global installation or claim that a declared package resolves.
 - `generationConfig` checks only `openapi.config.ts`, `.js`, `.cjs`, and `.mjs`
   at the root. It hashes bytes without importing or executing the file.
 - `runtimeState` checks `.openapi-to/` presence and a conservative explicit
-  root ignore rule. It never reads state contents.
+  root ignore rule. `gitignoreSha256` binds all original `.gitignore` bytes
+  while no body is returned. It never reads state contents.
 - `codex` hashes `.codex/config.toml` and uses conservative section/text
   inspection. It never returns TOML content, credentials, command bodies, or
   environment data. `parser: conservative-text-inspection` is deliberately not
@@ -62,6 +71,14 @@ not supply safe version evidence.
 ## Failure-closed rules
 
 - More than one supported generation config is `BLOCKED`; do not select one.
+- Missing `package.json` is `PACKAGE_JSON_MISSING` and `BLOCKED`; do not create
+  a Node project or plan an install. `PACKAGE_MISSING` requires a valid
+  manifest, a trusted boundary, and no other blocker.
+- Multiple actual lockfiles are `PACKAGE_MANAGER_CONFLICT`, even when their
+  filenames map to the same manager.
+- Lockfiles are hashed through the verified open file handle and limited to
+  32 MiB. Oversized files produce `LOCKFILE_TOO_LARGE`; unreadable, replaced,
+  symlinked, or out-of-root files fail closed without returning contents.
 - An invalid/oversized package, config, ignore, or Codex metadata file is
   `BLOCKED`; do not truncate and proceed.
 - A symlink that resolves outside the real project root is `BLOCKED` and is not
