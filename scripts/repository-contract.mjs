@@ -42,6 +42,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/cli.md",
 	"docs/codex-mcp.md",
 	"docs/skills.md",
+	"docs/setup-skill.md",
 	"docs/mcp-security.md",
 	"docs/troubleshooting.md",
 	"docs/ai-hosts/claude-code.md",
@@ -63,6 +64,7 @@ const SKILL_ROOT = ".agents/skills";
 export const REQUIRED_SKILLS = [
 	"implement-and-review",
 	"openapi-to-generate",
+	"openapi-to-setup",
 ];
 const PRIMARY_ORCHESTRATOR_MARKER = "## Primary orchestrator";
 const IMPLEMENT_AND_REVIEW_HEADINGS = [
@@ -81,6 +83,39 @@ const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
 const CONSUMER_SKILL_NAME = "openapi-to-generate";
 const CONSUMER_SKILL_DOCUMENT = "docs/skills.md";
 const CONSUMER_SKILL_EVALUATION = `${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/evaluation-matrix.yaml`;
+const SETUP_SKILL_NAME = "openapi-to-setup";
+const SETUP_SKILL_DOCUMENT = "docs/setup-skill.md";
+const SETUP_SKILL_EVALUATION = `${SKILL_ROOT}/${SETUP_SKILL_NAME}/references/evaluation-matrix.yaml`;
+const SETUP_SKILL_REQUIRED_FILES = [
+	"agents/openai.yaml",
+	"references/diagnosis.md",
+	"references/codex-setup.md",
+	"references/safe-writes.md",
+	"references/evaluation-matrix.yaml",
+	"scripts/inspect-project.mjs",
+	"scripts/hash-setup-plan.mjs",
+];
+const SETUP_EVALUATION_MINIMUMS = new Map([
+	["trigger", 8],
+	["reject", 8],
+	["degraded", 10],
+	["write-approval", 6],
+]);
+const REQUIRED_SETUP_EVALUATION_CASES = [
+	"degraded-package-missing",
+	"degraded-global-only",
+	"degraded-mcp-only",
+	"degraded-package-manager-conflict",
+	"degraded-multiple-configs",
+	"degraded-existing-codex-section",
+	"degraded-write-without-prompt",
+	"degraded-not-restarted",
+	"degraded-count-schema-mismatch",
+	"degraded-windows",
+	"approval-exact",
+	"approval-continue",
+	"approval-state-drift",
+];
 const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/mcp-workflow.md`,
@@ -112,6 +147,7 @@ const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
 	[CONSUMER_SKILL_NAME, "specialized-primary"],
+	[SETUP_SKILL_NAME, "specialized-primary"],
 	["fix-github-actions", "specialized-primary"],
 	["release-monorepo", "specialized-primary"],
 	["add-cli-command", "domain-support"],
@@ -2583,6 +2619,136 @@ async function validateOpenapiToGenerateFiles(
 	}
 }
 
+function validateOpenapiToSetupSkill(contents, failures) {
+	let metadata;
+	try {
+		metadata = parseSkillFrontmatter(contents);
+	} catch {
+		return;
+	}
+	for (const marker of [
+		"Use when",
+		"consuming project",
+		"installed",
+		"initialized",
+		"Codex MCP",
+		"3/8/10 Tools",
+		"Do not use for API operation discovery or client generation",
+		"openapi-to-generate",
+		"does not upgrade existing versions",
+		"publish packages",
+		"openapi-to Monorepo",
+		"bypass Setup Plan or Apply approval",
+	]) {
+		if (!metadata.description.includes(marker)) {
+			failures.push(`${SETUP_SKILL_NAME} description is missing trigger boundary ${marker}`);
+		}
+	}
+	const normalized = contents.replace(/\s+/g, " ");
+	for (const marker of [
+		"Use `read-only` when the request is ambiguous",
+		"pnpm add -D --save-exact openapi-to@<exact-version>",
+		"Never choose `latest`",
+		"Do not use a global installation",
+		"Automatic package mutation is supported for pnpm only",
+		"pnpm exec openapi init",
+		"Do not invent `--yes`, `--force`",
+		"Never overwrite one config or choose among multiple configs",
+		"observedStateHash",
+		"setupPlanId",
+		"批准执行 Setup Plan <exact-setupPlanId>",
+		"re-inspect, create a new plan and ID",
+		"RESTART_REQUIRED",
+		"actual Tool list",
+		"current Tool inputSchema",
+		"approval_mode = \"prompt\"",
+		"manual review and do not overwrite or delete it",
+		"openapi-to-generate",
+	]) {
+		if (!normalized.includes(marker)) failures.push(`${SETUP_SKILL_NAME} is missing required workflow marker ${marker}`);
+	}
+	if (contents.includes(".OpenAPI/openapi.config.ts")) {
+		failures.push(`${SETUP_SKILL_NAME} must not use legacy config path .OpenAPI/openapi.config.ts`);
+	}
+	if (contents.split(/\r?\n/).length > 250) failures.push(`${SETUP_SKILL_NAME} SKILL.md must not exceed 250 lines`);
+}
+
+function validateOpenapiToSetupInterface(metadata, relativePath, failures) {
+	const expected = {
+		display_name: "Set up openapi-to",
+		short_description: "Diagnose and configure local openapi-to and Codex MCP",
+		default_prompt: "Use $openapi-to-setup to inspect this consuming project, prepare a bounded setup plan, and apply only the explicitly approved installation or configuration changes.",
+	};
+	for (const [field, expectedValue] of Object.entries(expected)) {
+		if (metadata[field] !== expectedValue) failures.push(`${relativePath} ${field} must equal ${JSON.stringify(expectedValue)}`);
+	}
+	if (metadata.dependencies !== undefined) failures.push(`${relativePath} must not require MCP availability as a Skill dependency`);
+}
+
+async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByName, failures) {
+	const skillContents = skillContentsByName.get(SETUP_SKILL_NAME);
+	if (skillContents) validateOpenapiToSetupSkill(skillContents, failures);
+	for (const relativeFile of SETUP_SKILL_REQUIRED_FILES) {
+		const relativePath = `${SKILL_ROOT}/${SETUP_SKILL_NAME}/${relativeFile}`;
+		if (!(await exists(join(root, relativePath)))) failures.push(`missing setup Skill file ${relativePath}`);
+		else if (!trackedFiles.has(relativePath)) failures.push(`setup Skill file is not tracked by Git: ${relativePath}`);
+	}
+
+	const documentPath = join(root, SETUP_SKILL_DOCUMENT);
+	if (!(await exists(documentPath))) failures.push(`missing setup Skill documentation ${SETUP_SKILL_DOCUMENT}`);
+	else if (!trackedFiles.has(SETUP_SKILL_DOCUMENT)) failures.push(`setup Skill documentation is not tracked by Git: ${SETUP_SKILL_DOCUMENT}`);
+	else {
+		const document = await readFile(documentPath, "utf8");
+		for (const marker of [
+			"openapi-to-setup",
+			"openapi-to-generate",
+			"read-only",
+			"Setup Plan",
+			"openapi init",
+			"does not upgrade",
+			"RESTART_REQUIRED",
+			"inputSchema",
+			"Codex-first",
+			"pnpm",
+			"npm, Yarn, and Bun",
+		]) {
+			if (!document.includes(marker)) failures.push(`${SETUP_SKILL_DOCUMENT} is missing setup workflow marker ${marker}`);
+		}
+	}
+
+	const evaluationPath = join(root, SETUP_SKILL_EVALUATION);
+	if (!(await exists(evaluationPath)) || !trackedFiles.has(SETUP_SKILL_EVALUATION)) return;
+	let evaluation;
+	try {
+		evaluation = loadYaml(await readFile(evaluationPath, "utf8"), { filename: SETUP_SKILL_EVALUATION });
+	} catch (error) {
+		failures.push(`${SETUP_SKILL_EVALUATION} contains invalid YAML: ${error?.reason ?? "parse failed"}`);
+		return;
+	}
+	if (!isMapping(evaluation) || evaluation.schema_version !== 1 || evaluation.kind !== "static_skill_evaluation_inputs" || !Array.isArray(evaluation.cases)) {
+		failures.push(`${SETUP_SKILL_EVALUATION} must contain schema_version 1, static kind, and a cases array`);
+		return;
+	}
+	const counts = new Map([...SETUP_EVALUATION_MINIMUMS.keys()].map((category) => [category, 0]));
+	const ids = new Set();
+	for (const [index, evaluationCase] of evaluation.cases.entries()) {
+		if (!isMapping(evaluationCase) || !["id", "category", "prompt", "expected"].every((field) => typeof evaluationCase[field] === "string" && evaluationCase[field].trim())) {
+			failures.push(`${SETUP_SKILL_EVALUATION} case ${index + 1} must define non-empty id, category, prompt, and expected strings`);
+			continue;
+		}
+		if (ids.has(evaluationCase.id)) failures.push(`${SETUP_SKILL_EVALUATION} contains duplicate id ${evaluationCase.id}`);
+		ids.add(evaluationCase.id);
+		if (!counts.has(evaluationCase.category)) failures.push(`${SETUP_SKILL_EVALUATION} has unsupported category ${evaluationCase.category}`);
+		else counts.set(evaluationCase.category, counts.get(evaluationCase.category) + 1);
+	}
+	for (const [category, minimum] of SETUP_EVALUATION_MINIMUMS) {
+		if (counts.get(category) < minimum) failures.push(`${SETUP_SKILL_EVALUATION} requires at least ${minimum} ${category} cases, found ${counts.get(category)}`);
+	}
+	for (const id of REQUIRED_SETUP_EVALUATION_CASES) {
+		if (!ids.has(id)) failures.push(`${SETUP_SKILL_EVALUATION} is missing required case ${id}`);
+	}
+}
+
 export async function auditAgentAndSkillContracts(
 	root,
 	{ rootManifest, workspaceManifests = new Map() } = {},
@@ -2749,6 +2915,9 @@ export async function auditAgentAndSkillContracts(
 						failures,
 					);
 				}
+				if (directoryName === SETUP_SKILL_NAME) {
+					validateOpenapiToSetupInterface(interfaceMetadata, relativeOpenAiYaml, failures);
+				}
 				if (!interfaceMetadata.display_name.trim())
 					failures.push(`${relativeOpenAiYaml} display_name must not be empty`);
 				if (
@@ -2853,6 +3022,7 @@ export async function auditAgentAndSkillContracts(
 		skillContentsByName,
 		failures,
 	);
+	await validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByName, failures);
 
 	const rootAgentPath = join(root, "AGENTS.md");
 	if (await exists(rootAgentPath)) {

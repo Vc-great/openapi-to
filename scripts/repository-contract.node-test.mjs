@@ -77,6 +77,13 @@ function consumerSkillFile(relativePath) {
 	);
 }
 
+function setupSkillFile(relativePath) {
+	return readFile(
+		join(repositoryRoot, ".agents/skills/openapi-to-setup", relativePath),
+		"utf8",
+	);
+}
+
 function releaseSkillContents() {
 	return `---
 name: release-monorepo
@@ -215,6 +222,8 @@ async function createContractFixture(t) {
 				? await implementationSkillContents()
 				: skillName === "openapi-to-generate"
 					? await consumerSkillFile("SKILL.md")
+					: skillName === "openapi-to-setup"
+						? await setupSkillFile("SKILL.md")
 				: skillName === "release-monorepo"
 					? releaseSkillContents()
 					: skillContents(skillName),
@@ -224,6 +233,8 @@ async function createContractFixture(t) {
 			`.agents/skills/${skillName}/agents/openai.yaml`,
 			skillName === "openapi-to-generate"
 				? await consumerSkillFile("agents/openai.yaml")
+				: skillName === "openapi-to-setup"
+					? await setupSkillFile("agents/openai.yaml")
 				: skillInterface(skillName),
 		);
 	}
@@ -238,6 +249,20 @@ async function createContractFixture(t) {
 			await consumerSkillFile(relativePath),
 		);
 	}
+	for (const relativePath of [
+		"references/diagnosis.md",
+		"references/codex-setup.md",
+		"references/safe-writes.md",
+		"references/evaluation-matrix.yaml",
+		"scripts/inspect-project.mjs",
+		"scripts/hash-setup-plan.mjs",
+	]) {
+		await writeFixtureFile(
+			root,
+			`.agents/skills/openapi-to-setup/${relativePath}`,
+			await setupSkillFile(relativePath),
+		);
+	}
 	await writeFixtureFile(root, "AGENTS.md", rootAgentContents());
 	await writeFixtureFile(
 		root,
@@ -248,6 +273,11 @@ async function createContractFixture(t) {
 		root,
 		"docs/skills.md",
 		await readFile(join(repositoryRoot, "docs/skills.md"), "utf8"),
+	);
+	await writeFixtureFile(
+		root,
+		"docs/setup-skill.md",
+		await readFile(join(repositoryRoot, "docs/setup-skill.md"), "utf8"),
 	);
 	await writeFixtureFile(root, "scripts/known.mjs", "export {};\n");
 	await git(root, "add", "--", ".");
@@ -353,9 +383,11 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 	assert.ok(result.skills.includes("fix-codegen-regression"));
 	assert.ok(result.skills.includes("implement-and-review"));
 	assert.ok(result.skills.includes("openapi-to-generate"));
+	assert.ok(result.skills.includes("openapi-to-setup"));
 	assert.deepEqual(REQUIRED_SKILLS, [
 		"implement-and-review",
 		"openapi-to-generate",
+		"openapi-to-setup",
 	]);
 });
 
@@ -1490,6 +1522,48 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 	);
 });
 
+test("consumer setup Skill preserves routing, safety, files, and evaluation contracts", async (t) => {
+	const cases = [
+		{
+			path: ".agents/skills/openapi-to-setup/SKILL.md",
+			mutate: (contents) => contents.replace("Use `read-only` when the request is ambiguous", "Use `write-enabled` when the request is ambiguous"),
+			failure: /missing required workflow marker Use `read-only` when the request is ambiguous/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/SKILL.md",
+			mutate: (contents) => contents.replace("Never choose `latest`", "Choose `latest`"),
+			failure: /missing required workflow marker Never choose `latest`/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/SKILL.md",
+			mutate: (contents) => contents.replace("re-inspect, create a new plan and ID", "reuse the old plan"),
+			failure: /missing required workflow marker re-inspect, create a new plan and ID/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/agents/openai.yaml",
+			mutate: (contents) => contents.replace("Diagnose and configure local openapi-to and Codex MCP", "Configure openapi-to"),
+			failure: /short_description must equal/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
+			mutate: (contents) => contents.replace("degraded-count-schema-mismatch", "degraded-count-only"),
+			failure: /missing required case degraded-count-schema-mismatch/,
+		},
+	];
+	for (const contractCase of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(root, contractCase.path, contractCase.mutate);
+		assertFailure(await auditAgentAndSkillContracts(root), contractCase.failure);
+	}
+
+	const missingScriptRoot = await createContractFixture(t);
+	await git(missingScriptRoot, "rm", "--cached", "--", ".agents/skills/openapi-to-setup/scripts/inspect-project.mjs");
+	assertFailure(
+		await auditAgentAndSkillContracts(missingScriptRoot),
+		/setup Skill file is not tracked by Git: .*inspect-project\.mjs/,
+	);
+});
+
 test("workspace parser accepts only quoted package entries", () => {
 	assert.deepEqual(
 		parseWorkspacePatterns(`packages:
@@ -2250,6 +2324,13 @@ test("Skill routing audit enforces every explicit role", async (t) => {
 				/role for openapi-to-generate must be specialized-primary, found domain-support/,
 		},
 		{
+			name: "openapi-to-setup",
+			from: "Specialized primary",
+			to: "Support",
+			failure:
+				/role for openapi-to-setup must be specialized-primary, found domain-support/,
+		},
+		{
 			name: "fix-github-actions",
 			from: "Specialized primary",
 			to: "Support",
@@ -2358,13 +2439,13 @@ test("architecture role inventory stays aligned with tracked Skills and routing 
 		"docs/agents/agents-and-skills-architecture.md",
 		(contents) =>
 			contents.replace(
+				"Tracked Skill count: `12`.",
 				"Tracked Skill count: `11`.",
-				"Tracked Skill count: `10`.",
 			),
 	);
 	assertFailure(
 		await auditAgentAndSkillContracts(countRoot),
-		/tracked Skill count must equal 11/,
+		/tracked Skill count must equal 12/,
 	);
 
 	const roleRoot = await createContractFixture(t);

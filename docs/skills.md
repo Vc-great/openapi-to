@@ -6,9 +6,14 @@ Prepare/Apply capabilities. A Skill supplies the calling order, scope choices,
 approval boundary, business-code integration steps, and failure handling used
 by an AI Host.
 
-## First-stage Skill
+## Two consumer phases
 
-The first stage ships one consumer workflow:
+The repository ships two specialized consuming-project workflows:
+
+- [`openapi-to-setup`](../.agents/skills/openapi-to-setup/SKILL.md) diagnoses
+  package, config, ignore, local command, Codex project configuration, restart,
+  and actual Tool capability. It defaults ambiguous setup requests to
+  read-only and requires exact Setup Plan approval for every write.
 
 - [`openapi-to-generate`](../.agents/skills/openapi-to-generate/SKILL.md) finds
   the API Operations needed by a business feature, reads bounded contracts,
@@ -16,19 +21,22 @@ The first stage ships one consumer workflow:
   approval of its current `planHash`, applies that plan, and integrates the
   generated code into the consuming project.
 
-Use it for requests such as “add user deletion from the API documentation”,
+Use setup for “configure openapi-to in this project”, “why are only three Tools
+visible?”, or “enable controlled writes”. Use generate for requests such as
+“add user deletion from the API documentation”,
 “find the order export endpoint and generate its request code”, or “implement
 this page's API call with openapi-to”. Do not use it for pure frontend work or
 for changing this Monorepo's MCP, CLI, Core, plugins, or release process.
 
-The repository keeps one authoritative Skill source under
-`.agents/skills/openapi-to-generate/`. Point a compatible Agent Skills installer
-at this repository and select `openapi-to-generate`; do not copy or maintain a
-second source tree inside this repository. The Skill interface metadata lives
-beside it in `agents/openai.yaml`. The canonical GitHub directory is:
+The repository keeps one authoritative source per Skill under `.agents/skills/`.
+Point a compatible Agent Skills installer at this repository and select
+`openapi-to-setup` or `openapi-to-generate`; do not copy or maintain a second
+source tree inside this repository. Interface metadata lives beside each Skill
+in `agents/openai.yaml`. The canonical GitHub directories are:
 
 ```text
 https://github.com/Vc-great/openapi-to/tree/main/.agents/skills/openapi-to-generate
+https://github.com/Vc-great/openapi-to/tree/main/.agents/skills/openapi-to-setup
 ```
 
 Installer commands and discovery behavior vary by Agent Host. Use a compatible
@@ -100,9 +108,16 @@ configuration, then configure the trusted local Server with the
 
 ## Phase boundary
 
-This first stage provides workflow guidance and repository contract validation
-only; it does not change MCP runtime behavior. The Skill never automatically
-installs dependencies or modifies `package.json`,
-`openapi.config.ts`, or `.codex/config.toml`. A future `openapi-to-setup` Skill
-may address installation and Host configuration. This stage does not add MCP
-Tools, transports, authentication, runtime behavior, or automatic Apply.
+The setup Skill is phase two. It runs read-only diagnosis first, uses the
+existing `openapi init`, does not upgrade an existing version, and supports
+automatic package mutation only for pnpm. Every installation or configuration
+change requires the exact current Setup Plan ID. Codex project configuration
+is Codex-first; npm, Yarn, and Bun plus Claude Code, Cursor, and generic Host
+writes remain diagnostic/manual boundaries. Host changes return
+`RESTART_REQUIRED`, and the actual Tool list plus current Tool inputSchema are
+verified only after restart. See [the setup guide](./setup-skill.md).
+
+The generate Skill remains phase one and never installs dependencies or
+modifies `package.json`, `openapi.config.ts`, or `.codex/config.toml`. Setup does
+not add MCP Tools or replace MCP, and it hands daily API discovery, selective
+generation, and integration to generate after the requested mode is verified.

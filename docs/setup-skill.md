@@ -1,0 +1,71 @@
+# openapi-to setup Skill
+
+`openapi-to-setup` is the second consumer Agent Skills phase. It diagnoses and
+configures openapi-to in a consuming project; it does not replace the local MCP
+Server. The first-phase `openapi-to-generate` Skill starts only after setup and
+handles API Operation discovery, selective generation, and business-code
+integration.
+
+Use setup for package installation, the existing `openapi init` flow,
+`/.openapi-to/` ignore repair, Codex project MCP configuration, startup
+diagnosis, and 3/8/10 Tool-mode validation. A vague setup request defaults to
+`read-only`. `write-enabled` is explicit and retains prompt approval for
+`openapi_apply_generation`.
+
+## Diagnose before changing anything
+
+The Skill's standard-library inspector reads bounded project metadata without
+executing `openapi.config.*`, walking generated/state directories, inspecting
+global packages, accessing the network, or returning configuration bodies and
+credentials. The workflow keeps local package declaration, one supported
+config, local command resolution, Host configuration, Host restart, Server
+connection, and verified Tool capability as distinct evidence.
+
+Supported root configs are `openapi.config.ts`, `.js`, `.cjs`, and `.mjs`.
+Multiple candidates block setup. `.openapi-to/` is runtime state; the retired
+`.OpenAPI` config location is not used.
+
+## Approval-bound writes
+
+Every package install, initializer run, ignore change, and Codex config change
+requires a complete JSON Setup Plan bound to the current inspector state hash.
+The plan shows exact argv, network use, expected writes, direct file diffs,
+verification, and restart impact. Its canonical SHA-256 `setupPlanId` must be
+named in explicit user approval. If the manifest, lockfile, config, ignore file,
+Codex file, or overlapping Git state changes, the Skill discards the approval
+and creates a new plan.
+
+The Skill never uses a global install and does not upgrade an existing
+openapi-to version. Installation requires an exact version: explicit user
+choice first, then a consistent exact local `@openapi-to/*` version, otherwise a
+new version decision. It uses the aggregate package, not `@openapi-to/mcp` as a
+business-environment substitute.
+
+Automatic package writes are currently pnpm-only:
+
+```sh
+pnpm add -D --save-exact openapi-to@<exact-version>
+```
+
+npm, Yarn, and Bun are diagnosed but their install/config mutation remains
+manual in this phase. Host automation is Codex-first; Claude Code, Cursor, and
+generic stdio Hosts continue to use their existing manual guides.
+
+## Codex restart and verification
+
+The Skill may create a missing trusted project `.codex/config.toml` or append
+one absent `openapi_to` section after exact approval. It preserves existing
+bytes and unknown sections. An existing `openapi_to` section, duplicate section,
+absolute path, or unrecognized TOML shape requires manual review; the Skill
+does not implement a general TOML rewriter.
+
+After a Codex config change, setup returns `RESTART_REQUIRED`. Only after the
+user restarts Codex does the Skill inspect the actual Tool list, relevant Tool
+inputSchema, and returned capability fields. Counts of 3, 8, and 10 are useful
+orientation for analysis-only, read-only, and controlled-write modes, but a
+matching count alone is not capability evidence.
+
+Once the requested state is verified, use `openapi-to-generate`: read-only setup
+supports discovery and preview; write-enabled setup supports its separately
+approved Prepare/Apply workflow. Setup never performs that business generation
+workflow or bypasses Apply approval.
