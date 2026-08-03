@@ -72,6 +72,7 @@ explicitly names a specialized primary.
 | Task | Primary or supporting Skill |
 | --- | --- |
 | Feature, bug fix, refactor, CI/config/documentation change | Primary: `.agents/skills/implement-and-review/SKILL.md` |
+| Independent P0/P1 review for a non-trivial behavior-changing write task | Review gate: `.agents/skills/independent-p0-p1-review/SKILL.md` |
 | Implement a backend-API-dependent feature in an openapi-to consuming project | Specialized primary: `.agents/skills/openapi-to-generate/SKILL.md` |
 | Install, configure, diagnose, or validate openapi-to in a consuming project | Specialized primary: `.agents/skills/openapi-to-setup/SKILL.md` |
 | Add or substantially change a CLI command | Support: `.agents/skills/add-cli-command/SKILL.md` |
@@ -125,6 +126,25 @@ report. Delegated agents are read-only unless the user explicitly grants a
 non-overlapping write scope. Never let agents edit the same file concurrently.
 Limit delegation to one level, require each delegate to return evidence and
 recommendations, and re-read shared files before integrating any result.
+
+## Independent review gate
+
+Every non-trivial behavior-changing write task must run an independent P0/P1
+review after implementation, focused validation, and the primary agent's
+complete task-diff review, and before reporting `READY`. Run
+`.agents/skills/independent-p0-p1-review/SKILL.md` in a fresh read-only
+sub-agent context. The reviewer must not modify, create, delete, format, stage,
+or commit files; the primary agent remains the sole writer and independently
+validates every finding.
+
+Pure documentation, comments, formatting, or a change proved not to affect
+behavior may skip the gate, but the final report must state the reason. After a
+confirmed fix that materially changes external behavior, public API, CLI,
+configuration, generated results, persisted state, security boundaries, or
+filesystem effects, the primary agent must use a new reviewer context.
+Unresolved P0/P1 findings or a materially incomplete independent review scope
+block `READY`. The detailed review and repair loop lives in
+`implement-and-review`.
 
 ## Global security
 
@@ -230,8 +250,12 @@ For user-authorized implementation or modification:
 - Run `git ls-files --others --exclude-standard`; classify every result and
   read each task-created untracked text file in full. An unexplained or
   unreviewed untracked file prevents readiness.
-- Resolve every known P0 and every in-scope P1, rerun affected validation, and
-  review the complete task diff again after the last repair.
+- Resolve every confirmed, in-scope P0/P1, rerun affected validation, and
+  review the complete task diff again after the last repair. Keep confirmed
+  out-of-scope P0/P1 as blockers until separately authorized.
+- Complete the independent review gate for every non-trivial
+  behavior-changing write task, or record why a permitted behavior-neutral
+  task skipped it.
 - Require the applicable `git diff --check` checks to pass and verify there are
   no accidental files.
 - Run the focused checks required by the deeper `AGENTS.md` and matching Skill.
