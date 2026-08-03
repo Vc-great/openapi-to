@@ -95,6 +95,7 @@ const SETUP_SKILL_REQUIRED_FILES = [
 	"references/safe-writes.md",
 	"references/evaluation-matrix.yaml",
 	"scripts/inspect-project.mjs",
+	"scripts/secure-file-read.mjs",
 	"scripts/hash-setup-plan.mjs",
 ];
 const SETUP_EVALUATION_MINIMUMS = new Map([
@@ -3161,6 +3162,9 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 			"Multiple actual lockfiles",
 			"new Setup Plan and `setupPlanId`",
 			"Git worktree status is re-read separately",
+			"verified `O_RDONLY` fallback",
+			"same `FileHandle`",
+			"operating-system-level atomic snapshot",
 		]) {
 			if (!normalizedDocument.includes(marker)) failures.push(`${SETUP_SKILL_DOCUMENT} is missing setup workflow marker ${marker}`);
 		}
@@ -3178,6 +3182,9 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 				"Codex config raw-byte hashes",
 				"Multiple actual lockfiles",
 				"`LOCKFILE_TOO_LARGE`",
+				"`O_NOFOLLOW`",
+				"verified `O_RDONLY` fallback",
+				"same `FileHandle`",
 			],
 		],
 		[
@@ -3189,6 +3196,8 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 				"new `setupPlanId`",
 				"Multiple actual lockfiles conflict",
 				"hash does not cover the whole worktree",
+				"verified `O_RDONLY` fallback",
+				"same `FileHandle`",
 			],
 		],
 	]) {
@@ -3197,6 +3206,52 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 		for (const marker of markers) {
 			if (!normalizedContents.includes(marker)) {
 				failures.push(`${SKILL_ROOT}/${SETUP_SKILL_NAME}/${relativePath} is missing setup state-binding marker ${marker}`);
+			}
+		}
+	}
+
+	const inspectorPath = join(
+		root,
+		SKILL_ROOT,
+		SETUP_SKILL_NAME,
+		"scripts/inspect-project.mjs",
+	);
+	const secureReaderPath = join(
+		root,
+		SKILL_ROOT,
+		SETUP_SKILL_NAME,
+		"scripts/secure-file-read.mjs",
+	);
+	if ((await exists(inspectorPath)) && (await exists(secureReaderPath))) {
+		const inspector = await readFile(inspectorPath, "utf8");
+		const secureReader = await readFile(secureReaderPath, "utf8");
+		for (const marker of [
+			"selectReadFlags",
+			"Number.isInteger(noFollowFlag)",
+			": readOnlyFlag;",
+			"sameOpenedFile",
+			"unchangedDuringRead",
+			"lstat(info.path, { bigint: true })",
+			"realpath(info.path)",
+			"handle.stat({ bigint: true })",
+		]) {
+			if (!secureReader.includes(marker)) {
+				failures.push(`setup secure reader is missing portable safety marker ${marker}`);
+			}
+		}
+		if (!inspector.includes('from "./secure-file-read.mjs"')) {
+			failures.push("setup inspector must use the portable secure reader");
+		}
+		if (inspector.includes("if (flags === undefined)")) {
+			failures.push("setup inspector must not fail every read when O_NOFOLLOW is unavailable");
+		}
+		for (const forbidden of [
+			"OPENAPI_TO_DISABLE_NOFOLLOW",
+			"--unsafe-no-follow",
+			"--skip-file-identity-check",
+		]) {
+			if (inspector.includes(forbidden) || secureReader.includes(forbidden)) {
+				failures.push(`setup secure reader exposes forbidden safety override ${forbidden}`);
 			}
 		}
 	}
@@ -3864,6 +3919,7 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 			"pnpm exec openapi-to-mcp --help",
 			"packages/openapi/bin/openapi-to-mcp.js --help",
 			"packages/mcp/bin/openapi-to-mcp.js --help",
+			"node --test scripts/openapi-to-setup.node-test.mjs",
 		]) {
 			if (!a1.includes(required)) {
 				failures.push(
@@ -4264,6 +4320,8 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"packages/mcp/bin/openapi-to-mcp.js",
 			"actions/upload-artifact@v4",
 			"A1_TEST_ARTIFACT_DIR",
+			"name: Run openapi-to setup inspector tests",
+			"run: node --test scripts/openapi-to-setup.node-test.mjs",
 		]) {
 			if (!a1Workflow.includes(required))
 				failures.push(`A1 workflow is missing ${required}`);

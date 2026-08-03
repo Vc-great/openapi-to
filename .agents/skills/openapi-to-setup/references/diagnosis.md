@@ -79,6 +79,13 @@ not supply safe version evidence.
 - Lockfiles are hashed through the verified open file handle and limited to
   32 MiB. Oversized files produce `LOCKFILE_TOO_LARGE`; unreadable, replaced,
   symlinked, or out-of-root files fail closed without returning contents.
+- File reads use `O_RDONLY | O_NOFOLLOW` when Node exposes `O_NOFOLLOW`. On
+  Windows and other platforms without it, the inspector uses a verified
+  `O_RDONLY` fallback: it rejects an initial symlink or non-file, resolves the
+  real path inside the real project root, matches the opened file identity to
+  the entry, and validates identity and metadata again after reading. Bytes are
+  read only through the same `FileHandle`; a failed check remains `BLOCKED` and
+  never returns file contents.
 - An invalid/oversized package, config, ignore, or Codex metadata file is
   `BLOCKED`; do not truncate and proceed.
 - A symlink that resolves outside the real project root is `BLOCKED` and is not
@@ -89,3 +96,7 @@ not supply safe version evidence.
   restart. A Tool count is not Schema compatibility.
 - If the user requested diagnosis only, stop after reporting the state and do
   not prepare or apply writes.
+
+These checks narrow symlink and replacement races but are not an
+operating-system-level atomic snapshot. Re-check Git state and the exact
+`observedStateHash` before executing any Setup Plan.

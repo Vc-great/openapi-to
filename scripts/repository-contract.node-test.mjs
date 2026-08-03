@@ -303,6 +303,7 @@ async function createContractFixture(t) {
 		"references/safe-writes.md",
 		"references/evaluation-matrix.yaml",
 		"scripts/inspect-project.mjs",
+		"scripts/secure-file-read.mjs",
 		"scripts/hash-setup-plan.mjs",
 	]) {
 		await writeFixtureFile(
@@ -451,6 +452,8 @@ test("blocking Actions workflows use controlled fixtures and retain diagnostic a
 	assert.match(a1, /fail-fast:\s*false/);
 	assert.match(a1, /working-directory:\s*e2e\/common/);
 	assert.match(a1, /actions\/upload-artifact@v4/);
+	assert.match(a1, /name:\s*Run openapi-to setup inspector tests/);
+	assert.match(a1, /run:\s*node --test scripts\/openapi-to-setup\.node-test\.mjs/);
 	assert.doesNotMatch(e2e, /petstore\.swagger\.io/);
 	assert.doesNotMatch(e2e, /fail-fast:\s*true/);
 	assert.match(e2e, /pnpm test:e2e:remote/);
@@ -1604,6 +1607,16 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 			failure: /missing setup state-binding marker new `setupPlanId`/,
 		},
 		{
+			path: ".agents/skills/openapi-to-setup/scripts/secure-file-read.mjs",
+			mutate: (contents) => contents.replace(": readOnlyFlag;", ": undefined;"),
+			failure: /missing portable safety marker : readOnlyFlag;/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/scripts/secure-file-read.mjs",
+			mutate: (contents) => `${contents}\n// --unsafe-no-follow\n`,
+			failure: /exposes forbidden safety override --unsafe-no-follow/,
+		},
+		{
 			path: ".agents/skills/openapi-to-setup/agents/openai.yaml",
 			mutate: (contents) => contents.replace("Diagnose and configure local openapi-to and Codex MCP", "Configure openapi-to"),
 			failure: /short_description must equal/,
@@ -1650,6 +1663,13 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 	assertFailure(
 		await auditAgentAndSkillContracts(missingScriptRoot),
 		/setup Skill file is not tracked by Git: .*inspect-project\.mjs/,
+	);
+
+	const missingHelperRoot = await createContractFixture(t);
+	await git(missingHelperRoot, "rm", "--cached", "--", ".agents/skills/openapi-to-setup/scripts/secure-file-read.mjs");
+	assertFailure(
+		await auditAgentAndSkillContracts(missingHelperRoot),
+		/setup Skill file is not tracked by Git: .*secure-file-read\.mjs/,
 	);
 });
 

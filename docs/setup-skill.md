@@ -37,6 +37,16 @@ the same manager—are a package-manager conflict. Oversized, unreadable,
 symlinked, replaced, or out-of-root lockfiles fail closed without returning
 their contents.
 
+On platforms that expose `O_NOFOLLOW`, verified reads use
+`O_RDONLY | O_NOFOLLOW`. Windows and other platforms without that constant use
+a verified `O_RDONLY` fallback; they do not drop the initial `lstat`, symlink,
+regular-file, real-root, or opened-file identity checks. All bytes are read
+through the same `FileHandle`, followed by another identity and metadata check.
+Any uncertainty remains `BLOCKED`. This is not an operating-system-level atomic
+snapshot, so Git status and `observedStateHash` are checked again before a Setup
+Plan executes. The focused Inspector suite runs in the repository's real
+Ubuntu, macOS, and Windows A1 CI matrix.
+
 ## Approval-bound writes
 
 Every package install, initializer run, ignore change, and Codex config change

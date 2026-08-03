@@ -76,6 +76,14 @@ actual lockfiles conflict even when they map to one manager. Lockfiles are
 streamed with a 32 MiB limit, and oversized, unreadable, symlinked, replaced, or
 out-of-root files fail closed without returning their contents.
 
+Inspector reads use `O_RDONLY | O_NOFOLLOW` where available. A platform without
+`O_NOFOLLOW` uses a verified `O_RDONLY` fallback that retains `lstat`, real-root,
+regular-file, opened-identity, and pre/post-read metadata checks. Contents are
+read only through the same `FileHandle`; the fallback does not authorize
+following symlinks or proceeding after identity uncertainty. These checks are
+not an operating-system-level atomic snapshot, so every approved Setup Plan
+still requires the fresh inspector hash and separate Git-state check above.
+
 ## Package install
 
 Only pnpm is automatically supported in this phase. Use the exact package and

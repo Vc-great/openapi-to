@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, truncate, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { lstat, mkdir, mkdtemp, readFile, realpath, rm, symlink, truncate, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import process from "node:process";
 import test from "node:test";
 import { promisify } from "node:util";
+import {
+	openVerifiedFile,
+	sameOpenedFile,
+	selectReadFlags,
+	unchangedDuringRead,
+} from "../.agents/skills/openapi-to-setup/scripts/secure-file-read.mjs";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
@@ -28,6 +36,37 @@ async function inspect(root) {
 	const { stdout, stderr } = await execFileAsync(process.execPath, [inspector, "--root", root]);
 	assert.equal(stderr, "");
 	return { output: stdout, value: JSON.parse(stdout) };
+}
+
+async function createFileSymlink(t, target, linkPath) {
+	try {
+		await symlink(target, linkPath, "file");
+		return true;
+	} catch (error) {
+		if (
+			process.platform === "win32" &&
+			["EACCES", "EPERM"].includes(error?.code)
+		) {
+			t.skip(`Windows denied symlink creation (${error.code})`);
+			return false;
+		}
+		throw error;
+	}
+}
+
+function fakeStats(overrides = {}) {
+	return {
+		dev: 1n,
+		ino: 2n,
+		size: 12n,
+		birthtimeNs: 10n,
+		ctimeNs: 20n,
+		mtimeNs: 30n,
+		mode: 0o100644n,
+		nlink: 1n,
+		isFile: () => true,
+		...overrides,
+	};
 }
 
 function setupPlan(overrides = {}) {
@@ -71,6 +110,86 @@ function runWithInput(script, input) {
 		child.stdin.end(input);
 	});
 }
+
+test("secure reader selects O_NOFOLLOW when available and O_RDONLY otherwise", async (t) => {
+	assert.equal(
+		selectReadFlags({ readOnlyFlag: constants.O_RDONLY, noFollowFlag: 0x20000 }),
+		constants.O_RDONLY | 0x20000,
+	);
+	assert.equal(
+		selectReadFlags({ readOnlyFlag: constants.O_RDONLY, noFollowFlag: undefined }),
+		constants.O_RDONLY,
+	);
+
+	const root = await fixture(t);
+	const realRoot = await realpath(root);
+	const candidate = join(realRoot, "package.json");
+	const before = await lstat(candidate, { bigint: true });
+	const openedFile = await openVerifiedFile(
+		realRoot,
+		{
+			path: candidate,
+			realPath: await realpath(candidate),
+			stats: before,
+		},
+		{
+			readOnlyFlag: constants.O_RDONLY,
+			noFollowFlag: undefined,
+			platform: process.platform,
+		},
+	);
+	assert.ok(openedFile.handle);
+	try {
+		const bytes = await openedFile.handle.readFile();
+		const after = await openedFile.handle.stat({ bigint: true });
+		assert.match(bytes.toString("utf8"), /"private": true/);
+		assert.equal(unchangedDuringRead(openedFile.opened, after), true);
+	} finally {
+		await openedFile.handle.close();
+	}
+});
+
+test("secure reader rejects identity and read-stability mismatches deterministically", () => {
+	const before = fakeStats();
+	assert.equal(sameOpenedFile(before, fakeStats({ ino: 3n })), false);
+	assert.equal(unchangedDuringRead(before, fakeStats({ size: 13n })), false);
+	assert.equal(unchangedDuringRead(before, fakeStats({ mtimeNs: 31n })), false);
+
+	const windowsBefore = fakeStats({ dev: 0n });
+	assert.equal(sameOpenedFile(windowsBefore, fakeStats({ dev: 0n }), "win32"), true);
+	assert.equal(
+		sameOpenedFile(windowsBefore, fakeStats({ dev: 0n, ino: 0n }), "win32"),
+		false,
+	);
+});
+
+test("inspector hashes every bounded setup file without portable read failures", async (t) => {
+	const root = await fixture(t, {
+		private: true,
+		packageManager: "pnpm@10.14.0",
+		devDependencies: { "openapi-to": "4.2.0" },
+	});
+	await write(root, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
+	await write(root, ".gitignore", "/.openapi-to/\n");
+	await write(root, "openapi.config.ts", "export default {};\n");
+	await write(
+		root,
+		".codex/config.toml",
+		'[mcp_servers.openapi_to]\ncommand = "pnpm"\nargs = ["exec", "openapi-to-mcp", "--workspace-root", ".", "--config", "openapi.config.ts"]\n',
+	);
+	const { value } = await inspect(root);
+	assert.equal(value.state, "HOST_CONFIG_READY");
+	assert.equal(value.blockingReasons.some((reason) => reason.endsWith("_READ_FAILED")), false);
+	for (const digest of [
+		value.workspace.packageJson.sha256,
+		value.packageManager.lockFiles[0].sha256,
+		value.runtimeState.gitignoreSha256,
+		value.generationConfig.files[0].sha256,
+		value.codex.sha256,
+	]) {
+		assert.match(digest, /^[a-f0-9]{64}$/);
+	}
+});
 
 test("inspector reports a clean pnpm project with all setup capabilities missing", async (t) => {
 	const root = await fixture(t);
@@ -233,12 +352,21 @@ test("inspector blocks oversized lockfiles without loading their contents", asyn
 	assert.equal(value.packageManager.lockFiles[0].sha256, null);
 });
 
+test("inspector blocks a non-regular lockfile", async (t) => {
+	const root = await fixture(t);
+	await mkdir(join(root, "pnpm-lock.yaml"));
+	const { value } = await inspect(root);
+	assert.equal(value.state, "BLOCKED");
+	assert.ok(value.blockingReasons.includes("LOCKFILE_READ_FAILED"));
+	assert.equal(value.packageManager.lockFiles[0].sha256, null);
+});
+
 test("inspector does not follow a lockfile symlink outside the project", async (t) => {
 	const root = await fixture(t);
 	const outside = await mkdtemp(join(tmpdir(), "openapi-to-setup-lock-outside-"));
 	t.after(() => rm(outside, { recursive: true, force: true }));
 	await write(outside, "pnpm-lock.yaml", "external-lock-secret\n");
-	await symlink(join(outside, "pnpm-lock.yaml"), join(root, "pnpm-lock.yaml"));
+	if (!(await createFileSymlink(t, join(outside, "pnpm-lock.yaml"), join(root, "pnpm-lock.yaml")))) return;
 	const { value, output } = await inspect(root);
 	assert.equal(value.state, "BLOCKED");
 	assert.ok(value.blockingReasons.includes("LOCKFILE_OUTSIDE_ROOT"));
@@ -248,7 +376,7 @@ test("inspector does not follow a lockfile symlink outside the project", async (
 
 test("inspector fails closed on a dangling lockfile symlink", async (t) => {
 	const root = await fixture(t);
-	await symlink("missing-lock-target", join(root, "pnpm-lock.yaml"));
+	if (!(await createFileSymlink(t, "missing-lock-target", join(root, "pnpm-lock.yaml")))) return;
 	const { value } = await inspect(root);
 	assert.equal(value.state, "BLOCKED");
 	assert.ok(value.blockingReasons.includes("LOCKFILE_OUTSIDE_ROOT"));
@@ -373,6 +501,12 @@ test("inspector flags duplicate, absolute, and unsafe write-enabled Codex sectio
 	assert.equal(absoluteWindows.state, "BLOCKED");
 	assert.equal(absoluteWindows.codex.absolutePathDetected, true);
 
+	const uncWindowsRoot = await fixture(t);
+	await write(uncWindowsRoot, ".codex/config.toml", `[mcp_servers.openapi_to]\ncommand = "cmd.exe"\nargs = ["/d", "/s", "/c", "node \\\\server\\share\\openapi-to-mcp --workspace-root ."]\n`);
+	const uncWindows = (await inspect(uncWindowsRoot)).value;
+	assert.equal(uncWindows.state, "BLOCKED");
+	assert.equal(uncWindows.codex.absolutePathDetected, true);
+
 	const noncanonicalRoot = await fixture(t);
 	await write(noncanonicalRoot, ".codex/config.toml", `["mcp_servers"."openapi_to"]\ncommand = "pnpm"\n`);
 	const noncanonical = (await inspect(noncanonicalRoot)).value.codex;
@@ -385,7 +519,7 @@ test("inspector does not follow a supported config symlink outside the project",
 	const outside = await mkdtemp(join(tmpdir(), "openapi-to-setup-outside-"));
 	t.after(() => rm(outside, { recursive: true, force: true }));
 	await write(outside, "secret-config.ts", "export default 'do-not-read';\n");
-	await symlink(join(outside, "secret-config.ts"), join(root, "openapi.config.ts"));
+	if (!(await createFileSymlink(t, join(outside, "secret-config.ts"), join(root, "openapi.config.ts")))) return;
 	const { value, output } = await inspect(root);
 	assert.equal(value.state, "BLOCKED");
 	assert.ok(value.blockingReasons.includes("GENERATION_CONFIG_OUTSIDE_ROOT"));
