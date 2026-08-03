@@ -1,0 +1,66 @@
+schema_version: 1
+cases:
+  - id: trigger-user-delete
+    category: trigger
+    prompt: "根据接口文档实现用户删除功能"
+    expected: activate
+  - id: trigger-order-export
+    category: trigger
+    prompt: "查找订单导出接口并生成请求代码"
+    expected: activate
+  - id: trigger-page-api-call
+    category: trigger
+    prompt: "用 openapi-to 为当前页面增加 API 调用"
+    expected: activate
+  - id: trigger-openapi-feature
+    category: trigger
+    prompt: "从 OpenAPI 中找到对应接口后完成业务功能"
+    expected: activate
+  - id: trigger-operation-client
+    category: trigger
+    prompt: "生成当前 operation 所需的类型和 request client"
+    expected: activate
+  - id: trigger-order-detail
+    category: trigger
+    prompt: "根据 OpenAPI 实现订单详情查询"
+    expected: activate
+  - id: reject-button-color
+    category: reject
+    prompt: "修改删除按钮的颜色"
+    expected: do_not_activate
+  - id: reject-table-layout
+    category: reject
+    prompt: "调整用户表格布局"
+    expected: do_not_activate
+  - id: reject-local-sort
+    category: reject
+    prompt: "优化本地数组排序"
+    expected: do_not_activate
+  - id: reject-static-copy
+    category: reject
+    prompt: "修改订单页静态文案"
+    expected: do_not_activate
+  - id: reject-mcp-tool-change
+    category: reject
+    prompt: "给 openapi-to MCP 新增一个 Tool"
+    expected: do_not_activate
+  - id: reject-package-release
+    category: reject
+    prompt: "发布 openapi-to 的 npm 稳定版"
+    expected: do_not_activate
+  - id: degraded-server-absent
+    category: degraded
+    prompt: "实现用户删除，但 openapi_to MCP Server 未启动"
+    expected: fail_closed_explain_server_setup
+  - id: degraded-analysis-only
+    category: degraded
+    prompt: "查找导出接口，但实际只暴露 3 个分析 Tool"
+    expected: fail_closed_explain_config_requirement
+  - id: degraded-ambiguous-search
+    category: degraded
+    prompt: "增加订单导出，搜索返回多个无法从代码区分的候选"
+    expected: ask_material_candidate_choice
+  - id: degraded-stale-plan
+    category: degraded
+    prompt: "已批准的 planHash 在 Apply 前因 OpenAPI 变化而 stale"
+    expected: reprepare_and_require_new_exact_approval

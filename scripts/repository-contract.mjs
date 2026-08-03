@@ -41,6 +41,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/getting-started.md",
 	"docs/cli.md",
 	"docs/codex-mcp.md",
+	"docs/skills.md",
 	"docs/mcp-security.md",
 	"docs/troubleshooting.md",
 	"docs/ai-hosts/claude-code.md",
@@ -59,7 +60,10 @@ export const REQUIRED_AGENT_DOCUMENTS = [
 ];
 
 const SKILL_ROOT = ".agents/skills";
-export const REQUIRED_SKILLS = ["implement-and-review"];
+export const REQUIRED_SKILLS = [
+	"implement-and-review",
+	"openapi-to-generate",
+];
 const PRIMARY_ORCHESTRATOR_MARKER = "## Primary orchestrator";
 const IMPLEMENT_AND_REVIEW_HEADINGS = [
 	"## 1. Rule discovery",
@@ -74,8 +78,12 @@ const PUBLISH_WORKFLOW_PATH = ".github/workflows/publish.yml";
 const PUBLICATION_SHA_GUARD_PATH =
 	"scripts/release/publication-sha-guard.mjs";
 const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
+const CONSUMER_SKILL_NAME = "openapi-to-generate";
+const CONSUMER_SKILL_DOCUMENT = "docs/skills.md";
+const CONSUMER_SKILL_EVALUATION = `${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/evaluation-matrix.yaml`;
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
+	[CONSUMER_SKILL_NAME, "specialized-primary"],
 	["fix-github-actions", "specialized-primary"],
 	["release-monorepo", "specialized-primary"],
 	["add-cli-command", "domain-support"],
@@ -2262,6 +2270,221 @@ function validateArchitectureDocument(contents, trackedSkills, failures) {
 	}
 }
 
+function validateOpenapiToGenerateSkill(contents, failures) {
+	let metadata;
+	try {
+		metadata = parseSkillFrontmatter(contents);
+	} catch {
+		return;
+	}
+	const normalizedContents = contents.replace(/\s+/g, " ");
+	for (const marker of [
+		"Use when",
+		"consuming project",
+		"OpenAPI operations",
+		"client code",
+		"openapi-to MCP",
+		"Trigger for",
+		"do not use",
+		"openapi-to Monorepo",
+		"pure frontend",
+		"bypass Apply approval",
+	]) {
+		if (!metadata.description.includes(marker)) {
+			failures.push(
+				`${CONSUMER_SKILL_NAME} description is missing trigger boundary ${marker}`,
+			);
+		}
+	}
+
+	for (const marker of [
+		"actual MCP Tool list",
+		"Never silently substitute a global installation",
+		"pnpm add -D openapi-to",
+		"pnpm exec openapi-to-mcp",
+		"openapi.config.ts",
+		".openapi-to/",
+		"openapi_list_targets",
+		"openapi_search_operations",
+		"openapi_get_operation",
+		"openapi_generate_dry_run",
+		'"type": "operations"',
+		"operationKeys",
+		"Do not default to full-target generation",
+		"desired = previous ∪ requested",
+		"desired = requested",
+		"openapi_prepare_generation",
+		"openapi_apply_generation",
+		"Exact `planHash`",
+		"Dry Run is read-only and is not approval to write",
+		"Never automate Prepare followed by Apply",
+		"require the exact hash",
+		"run Prepare again",
+		"managed deletions",
+	]) {
+		if (!normalizedContents.includes(marker)) {
+			failures.push(
+				`${CONSUMER_SKILL_NAME} is missing required workflow marker ${marker}`,
+			);
+		}
+	}
+
+	if (!/must not run\s+installation/.test(contents)) {
+		failures.push(
+			`${CONSUMER_SKILL_NAME} must prohibit automatic installation and setup mutation`,
+		);
+	}
+}
+
+function validateOpenapiToGenerateInterface(metadata, relativePath, failures) {
+	const expected = {
+		display_name: "Generate with openapi-to",
+		short_description:
+			"Discover API operations and safely generate client code",
+		default_prompt:
+			"Use $openapi-to-generate to discover the required OpenAPI operations, prepare a bounded generation plan, and integrate the approved result.",
+	};
+	for (const [field, expectedValue] of Object.entries(expected)) {
+		if (metadata[field] !== expectedValue) {
+			failures.push(
+				`${relativePath} ${field} must equal ${JSON.stringify(expectedValue)}`,
+			);
+		}
+	}
+}
+
+async function validateOpenapiToGenerateFiles(
+	root,
+	trackedFiles,
+	skillContentsByName,
+	failures,
+) {
+	const skillContents = skillContentsByName.get(CONSUMER_SKILL_NAME);
+	if (skillContents) validateOpenapiToGenerateSkill(skillContents, failures);
+
+	const legacyConfigPath = ".OpenAPI/openapi.config.ts";
+	const consumerDocumentPath = join(root, CONSUMER_SKILL_DOCUMENT);
+	if (!(await exists(consumerDocumentPath))) {
+		failures.push(`missing consumer Skill documentation ${CONSUMER_SKILL_DOCUMENT}`);
+	} else if (!trackedFiles.has(CONSUMER_SKILL_DOCUMENT)) {
+		failures.push(
+			`consumer Skill documentation is not tracked by Git: ${CONSUMER_SKILL_DOCUMENT}`,
+		);
+	} else {
+		const documentContents = await readFile(consumerDocumentPath, "utf8");
+		for (const marker of [
+			"Agent Skills do not replace openapi-to MCP",
+			"openapi-to-generate",
+			"consuming project's local version",
+			"pnpm add -D openapi-to",
+			"pnpm exec openapi-to-mcp",
+			"openapi.config.ts",
+			".openapi-to/",
+			"three analysis Tools",
+			"eight read-only Tools",
+			"ten Tools",
+			"openapi-to-setup",
+		]) {
+			if (!documentContents.includes(marker)) {
+				failures.push(
+					`${CONSUMER_SKILL_DOCUMENT} is missing consumer workflow marker ${marker}`,
+				);
+			}
+		}
+		if (documentContents.includes(legacyConfigPath)) {
+			failures.push(
+				`${CONSUMER_SKILL_DOCUMENT} must not use legacy config path ${legacyConfigPath}`,
+			);
+		}
+	}
+	if (skillContents?.includes(legacyConfigPath)) {
+		failures.push(
+			`${CONSUMER_SKILL_NAME} must not use legacy config path ${legacyConfigPath}`,
+		);
+	}
+
+	const evaluationPath = join(root, CONSUMER_SKILL_EVALUATION);
+	if (!(await exists(evaluationPath))) {
+		failures.push(`missing consumer Skill evaluation ${CONSUMER_SKILL_EVALUATION}`);
+		return;
+	}
+	if (!trackedFiles.has(CONSUMER_SKILL_EVALUATION)) {
+		failures.push(
+			`consumer Skill evaluation is not tracked by Git: ${CONSUMER_SKILL_EVALUATION}`,
+		);
+		return;
+	}
+	let evaluation;
+	try {
+		evaluation = loadYaml(await readFile(evaluationPath, "utf8"), {
+			filename: CONSUMER_SKILL_EVALUATION,
+		});
+	} catch (error) {
+		failures.push(
+			`${CONSUMER_SKILL_EVALUATION} contains invalid YAML: ${error?.reason ?? "parse failed"}`,
+		);
+		return;
+	}
+	if (
+		!isMapping(evaluation) ||
+		evaluation.schema_version !== 1 ||
+		!Array.isArray(evaluation.cases)
+	) {
+		failures.push(
+			`${CONSUMER_SKILL_EVALUATION} must contain schema_version 1 and a cases array`,
+		);
+		return;
+	}
+	const ids = new Set();
+	const counts = new Map([
+		["trigger", 0],
+		["reject", 0],
+		["degraded", 0],
+	]);
+	for (const [index, evaluationCase] of evaluation.cases.entries()) {
+		if (
+			!isMapping(evaluationCase) ||
+			!["id", "category", "prompt", "expected"].every(
+				(field) =>
+					typeof evaluationCase[field] === "string" &&
+					evaluationCase[field].trim().length > 0,
+			)
+		) {
+			failures.push(
+				`${CONSUMER_SKILL_EVALUATION} case ${index + 1} must define non-empty id, category, prompt, and expected strings`,
+			);
+			continue;
+		}
+		if (ids.has(evaluationCase.id)) {
+			failures.push(
+				`${CONSUMER_SKILL_EVALUATION} contains duplicate id ${evaluationCase.id}`,
+			);
+		}
+		ids.add(evaluationCase.id);
+		if (!counts.has(evaluationCase.category)) {
+			failures.push(
+				`${CONSUMER_SKILL_EVALUATION} has unsupported category ${evaluationCase.category}`,
+			);
+		} else {
+			counts.set(
+				evaluationCase.category,
+				counts.get(evaluationCase.category) + 1,
+			);
+		}
+	}
+	for (const [category, minimum] of [
+		["trigger", 6],
+		["reject", 6],
+		["degraded", 4],
+	]) {
+		if (counts.get(category) < minimum) {
+			failures.push(
+				`${CONSUMER_SKILL_EVALUATION} requires at least ${minimum} ${category} cases, found ${counts.get(category)}`,
+			);
+		}
+	}
+}
+
 export async function auditAgentAndSkillContracts(
 	root,
 	{ rootManifest, workspaceManifests = new Map() } = {},
@@ -2421,6 +2644,13 @@ export async function auditAgentAndSkillContracts(
 				const interfaceMetadata = parseOpenAiSkillYaml(
 					await readFile(openAiYamlPath, "utf8"),
 				);
+				if (directoryName === CONSUMER_SKILL_NAME) {
+					validateOpenapiToGenerateInterface(
+						interfaceMetadata,
+						relativeOpenAiYaml,
+						failures,
+					);
+				}
 				if (!interfaceMetadata.display_name.trim())
 					failures.push(`${relativeOpenAiYaml} display_name must not be empty`);
 				if (
@@ -2519,6 +2749,12 @@ export async function auditAgentAndSkillContracts(
 			);
 		}
 	}
+	await validateOpenapiToGenerateFiles(
+		root,
+		trackedFiles,
+		skillContentsByName,
+		failures,
+	);
 
 	const rootAgentPath = join(root, "AGENTS.md");
 	if (await exists(rootAgentPath)) {

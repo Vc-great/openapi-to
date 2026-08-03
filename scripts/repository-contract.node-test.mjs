@@ -70,6 +70,13 @@ function implementationSkillContents() {
 	);
 }
 
+function consumerSkillFile(relativePath) {
+	return readFile(
+		join(repositoryRoot, ".agents/skills/openapi-to-generate", relativePath),
+		"utf8",
+	);
+}
+
 function releaseSkillContents() {
 	return `---
 name: release-monorepo
@@ -206,6 +213,8 @@ async function createContractFixture(t) {
 			`.agents/skills/${skillName}/SKILL.md`,
 			skillName === "implement-and-review"
 				? await implementationSkillContents()
+				: skillName === "openapi-to-generate"
+					? await consumerSkillFile("SKILL.md")
 				: skillName === "release-monorepo"
 					? releaseSkillContents()
 					: skillContents(skillName),
@@ -213,7 +222,20 @@ async function createContractFixture(t) {
 		await writeFixtureFile(
 			root,
 			`.agents/skills/${skillName}/agents/openai.yaml`,
-			skillInterface(skillName),
+			skillName === "openapi-to-generate"
+				? await consumerSkillFile("agents/openai.yaml")
+				: skillInterface(skillName),
+		);
+	}
+	for (const relativePath of [
+		"references/mcp-workflow.md",
+		"references/controlled-write.md",
+		"references/evaluation-matrix.yaml",
+	]) {
+		await writeFixtureFile(
+			root,
+			`.agents/skills/openapi-to-generate/${relativePath}`,
+			await consumerSkillFile(relativePath),
 		);
 	}
 	await writeFixtureFile(root, "AGENTS.md", rootAgentContents());
@@ -221,6 +243,11 @@ async function createContractFixture(t) {
 		root,
 		"docs/agents/agents-and-skills-architecture.md",
 		architectureContents(),
+	);
+	await writeFixtureFile(
+		root,
+		"docs/skills.md",
+		await readFile(join(repositoryRoot, "docs/skills.md"), "utf8"),
 	);
 	await writeFixtureFile(root, "scripts/known.mjs", "export {};\n");
 	await git(root, "add", "--", ".");
@@ -325,7 +352,11 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 	assert.ok(result.skills.includes("fix-github-actions"));
 	assert.ok(result.skills.includes("fix-codegen-regression"));
 	assert.ok(result.skills.includes("implement-and-review"));
-	assert.deepEqual(REQUIRED_SKILLS, ["implement-and-review"]);
+	assert.ok(result.skills.includes("openapi-to-generate"));
+	assert.deepEqual(REQUIRED_SKILLS, [
+		"implement-and-review",
+		"openapi-to-generate",
+	]);
 });
 
 test("blocking Actions workflows use controlled fixtures and retain diagnostic artifacts", async () => {
@@ -1343,6 +1374,92 @@ test("Skill contracts reject removal of remote handoff and two-phase release saf
 	);
 });
 
+test("consumer generation Skill preserves trigger, workflow, approval, and evaluation contracts", async (t) => {
+	const cases = [
+		{
+			path: ".agents/skills/openapi-to-generate/SKILL.md",
+			mutate: (contents) => contents.replace("pure frontend", "visual-only"),
+			failure: /description is missing trigger boundary pure frontend/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/SKILL.md",
+			mutate: (contents) =>
+				contents.replace('"type": "operations"', '"type": "full"'),
+			failure: /missing required workflow marker "type": "operations"/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/SKILL.md",
+			mutate: (contents) =>
+				contents.replace(
+					/Never silently substitute a\s+global installation/,
+					"Use any available installation",
+				),
+			failure: /missing required workflow marker Never silently substitute/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/SKILL.md",
+			mutate: (contents) =>
+				contents.replace(
+					"Never automate Prepare followed by Apply",
+					"Automate Prepare followed by Apply",
+				),
+			failure: /missing required workflow marker Never automate Prepare/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/agents/openai.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"Discover API operations and safely generate client code",
+					"Generate API clients for consumer projects",
+				),
+			failure: /short_description must equal/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace("category: degraded", "category: reject"),
+			failure: /requires at least 4 degraded cases, found 3/,
+		},
+	];
+	for (const contractCase of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(root, contractCase.path, contractCase.mutate);
+		assertFailure(
+			await auditAgentAndSkillContracts(root),
+			contractCase.failure,
+		);
+	}
+
+	for (const relativePath of [
+		".agents/skills/openapi-to-generate/SKILL.md",
+		"docs/skills.md",
+	]) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(root, relativePath, (contents) =>
+			`${contents}\nLegacy: \`.OpenAPI/openapi.config.ts\`.\n`,
+		);
+		assertFailure(
+			await auditAgentAndSkillContracts(root),
+			/must not use legacy config path \.OpenAPI\/openapi\.config\.ts/,
+		);
+	}
+
+	const missingReferenceRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		missingReferenceRoot,
+		".agents/skills/openapi-to-generate/SKILL.md",
+		(contents) =>
+			contents.replace(
+				"references/mcp-workflow.md",
+				"references/missing-workflow.md",
+			),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(missingReferenceRoot),
+		/references missing path references\/missing-workflow\.md/,
+	);
+});
+
 test("workspace parser accepts only quoted package entries", () => {
 	assert.deepEqual(
 		parseWorkspacePatterns(`packages:
@@ -2096,6 +2213,13 @@ test("Skill routing audit enforces every explicit role", async (t) => {
 				/role for implement-and-review must be general-primary, found domain-support/,
 		},
 		{
+			name: "openapi-to-generate",
+			from: "Specialized primary",
+			to: "Support",
+			failure:
+				/role for openapi-to-generate must be specialized-primary, found domain-support/,
+		},
+		{
 			name: "fix-github-actions",
 			from: "Specialized primary",
 			to: "Support",
@@ -2204,13 +2328,13 @@ test("architecture role inventory stays aligned with tracked Skills and routing 
 		"docs/agents/agents-and-skills-architecture.md",
 		(contents) =>
 			contents.replace(
+				"Tracked Skill count: `11`.",
 				"Tracked Skill count: `10`.",
-				"Tracked Skill count: `9`.",
 			),
 	);
 	assertFailure(
 		await auditAgentAndSkillContracts(countRoot),
-		/tracked Skill count must equal 10/,
+		/tracked Skill count must equal 11/,
 	);
 
 	const roleRoot = await createContractFixture(t);

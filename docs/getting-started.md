@@ -76,6 +76,13 @@ Choose the Host-specific configuration:
 
 All Hosts share the same [security boundary](./mcp-security.md) and [troubleshooting guide](./troubleshooting.md).
 
+After installing and configuring MCP, a compatible AI Host can use the
+first-stage [`openapi-to-generate` consumer Skill](./skills.md) to discover
+Operations, preview operation-scoped output, preserve the Prepare/Apply
+approval boundary, and integrate generated code. The Skill orchestrates MCP;
+it does not replace the Server or perform initial package, generation-config,
+or Host setup.
+
 Target `input.remote` is trusted access configuration; MCP startup remote options are operator-owned upper bounds. The effective policy uses only permissions allowed by both layers. Configured headers remain available for the initial request and same-Origin redirects, are removed on cross-Origin redirects, and are never accepted as Tool arguments. HTTPS-to-HTTP redirects are blocked.
 
 ## Repository development

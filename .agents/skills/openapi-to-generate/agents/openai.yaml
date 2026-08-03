@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate with openapi-to"
+  short_description: "Discover API operations and safely generate client code"
+  default_prompt: "Use $openapi-to-generate to discover the required OpenAPI operations, prepare a bounded generation plan, and integrate the approved result."

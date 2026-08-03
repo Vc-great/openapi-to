@@ -97,3 +97,10 @@ This is a repository development workflow, not the recommended user installation
 Restart Codex after configuration or OpenAPI target changes. Use `/mcp` in the Codex terminal UI or the MCP servers settings page in the desktop app/IDE extension to confirm the server and Tools. A server without config shows three Tools; a server with config shows eight; config plus `--allow-write` shows ten.
 
 See [getting started](./getting-started.md), [troubleshooting](./troubleshooting.md), and the shared [MCP security boundary](./mcp-security.md). The server is local stdio only. stdout is MCP JSON-RPC; operational logs use stderr. It does not provide HTTP, OAuth, multi-tenancy, LLM calls, or a chat UI.
+
+Once this trusted Server is available, the first-stage
+[`openapi-to-generate` consumer Skill](./skills.md) gives Codex the bounded
+Operation discovery, operation-scoped Dry Run, exact-plan approval, Apply, and
+business integration sequence. It uses the consuming project's local
+openapi-to version and actual Tool list; setup automation remains outside this
+stage.
