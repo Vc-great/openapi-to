@@ -2072,7 +2072,7 @@ function validateImplementationSkill(contents, failures) {
 		"`P0`",
 		"`P1`",
 		"`P2`",
-		"maximum of three complete review rounds",
+		"no more than three automatic repair rounds",
 		"`NOT READY`",
 		"`PASS`",
 		"`FAIL`",
@@ -2106,6 +2106,7 @@ function validateImplementationSkill(contents, failures) {
 		"### Delegation packet",
 		"### Finding verification and repair",
 		"### Severity and round bound",
+		"### Terminal verification round",
 	]) {
 		if (!hasExactLine(contents, heading)) {
 			failures.push(
@@ -2145,6 +2146,7 @@ function validateImplementationSkill(contents, failures) {
 		"### Delegation packet",
 		"### Finding verification and repair",
 		"### Severity and round bound",
+		"### Terminal verification round",
 		"## 9. Authorized remote handoff",
 	];
 	let priorIndependentReviewIndex = -1;
@@ -2161,6 +2163,7 @@ function validateImplementationSkill(contents, failures) {
 	let independentGate;
 	let findingVerification;
 	let severityRoundBound;
+	let terminalVerification;
 	let completionGate;
 	try {
 		independentGate = markdownSection(
@@ -2178,6 +2181,12 @@ function validateImplementationSkill(contents, failures) {
 		severityRoundBound = markdownSection(
 			contents,
 			"### Severity and round bound",
+		)
+			.join("\n")
+			.replace(/\s+/g, " ");
+		terminalVerification = markdownSection(
+			contents,
+			"### Terminal verification round",
 		)
 			.join("\n")
 			.replace(/\s+/g, " ");
@@ -2201,7 +2210,8 @@ function validateImplementationSkill(contents, failures) {
 	}
 	for (const marker of [
 		"The primary agent must:",
-		"start a new fresh reviewer when a confirmed repair materially changes",
+		"after a confirmed repair materially changes",
+		"start a new fresh reviewer while automatic repair budget remains, or use the terminal verification round after the third automatic repair round",
 		"The reviewer remains read-only and never repairs its own findings.",
 	]) {
 		if (!findingVerification.includes(marker)) {
@@ -2221,9 +2231,26 @@ function validateImplementationSkill(contents, failures) {
 			);
 		}
 	}
+	for (const marker of [
+		"The primary agent must run no more than three automatic repair rounds.",
+		"An automatic repair round is consumed only when all of these events occur:",
+		"a fresh read-only reviewer inspects the complete task-base diff;",
+		"the reviewer reports at least one P0/P1 finding;",
+		"the primary agent independently confirms an in-scope P0/P1 finding;",
+		"the primary agent modifies code, tests, configuration, workflows, or documentation to repair that finding;",
+		"the primary agent reruns affected validation and completes a fresh full task-diff review.",
+		"does not result in a file modification, does not consume an automatic repair round.",
+		"After the first or second automatic repair round, a material repair must receive another fresh independent review",
+	]) {
+		if (!severityRoundBound.includes(marker)) {
+			failures.push(
+				`implement-and-review automatic repair budget must preserve mandatory semantics ${marker}`,
+			);
+		}
+	}
 	if (
-		!severityRoundBound.includes(
-			"if any P0 or in-scope P1 remains, or the independent review scope is materially incomplete, report `NOT READY`",
+		!terminalVerification.includes(
+			"If any P0 or in-scope P1 remains, or the independent review scope is materially incomplete, report `NOT READY`",
 		)
 	) {
 		failures.push(
@@ -2231,7 +2258,30 @@ function validateImplementationSkill(contents, failures) {
 		);
 	}
 	for (const marker of [
+		"After the third automatic repair round, the primary agent must run exactly one additional terminal verification reviewer",
+		"must use a fresh context;",
+		"must inspect the complete task-base-to-current-state diff;",
+		"must remain strictly read-only and must not modify, create, delete, rename, format, stage, commit, or push files;",
+		"does not count as an automatic repair round;",
+		"must not trigger a new automatic repair loop.",
+		"The primary agent must not start more than one terminal verification reviewer.",
+		"Do not rename rounds, reset either counter, or repeat the terminal reviewer to bypass the limit.",
+		"The terminal gate passes only with both `VERDICT: READY` and `No P0/P1 findings.`.",
+		"reports any P0/P1 finding, or has materially incomplete review scope",
+		"the primary agent must stop and report `NOT READY`.",
+		"The primary agent must not repair a terminal finding in the current automatic loop;",
+		"wait for user authorization for a new task or new repair budget.",
+	]) {
+		if (!terminalVerification.includes(marker)) {
+			failures.push(
+				`implement-and-review terminal verification must preserve mandatory semantics ${marker}`,
+			);
+		}
+	}
+	for (const marker of [
 		"every required independent review completed in a fresh read-only context",
+		"when the third automatic repair round requires terminal verification, exactly one terminal reviewer completed",
+		"`VERDICT: READY` with `No P0/P1 findings.`",
 		"the independent review scope is not materially incomplete",
 	]) {
 		if (!completionGate.includes(marker)) {
@@ -2246,7 +2296,9 @@ function validateImplementationSkill(contents, failures) {
 		remoteHandoff = markdownSection(
 			contents,
 			"## 9. Authorized remote handoff",
-		).join("\n");
+		)
+			.join("\n")
+			.replace(/\s+/g, " ");
 	} catch (error) {
 		failures.push(`implement-and-review ${error.message}`);
 		return;
@@ -2628,6 +2680,35 @@ function validateArchitectureDocument(contents, trackedSkills, failures) {
 		if (!independentReviewSection.includes(marker)) {
 			failures.push(
 				`${ARCHITECTURE_DOCUMENT} independent review gate is missing marker ${marker}`,
+			);
+		}
+	}
+	let lifecycleSection;
+	try {
+		lifecycleSection = markdownSection(
+			contents,
+			"## `implement-and-review` lifecycle",
+		)
+			.join("\n")
+			.replace(/\s+/g, " ");
+	} catch (error) {
+		failures.push(`${ARCHITECTURE_DOCUMENT} ${error.message}`);
+		return;
+	}
+	for (const marker of [
+		"at most three automatic finding-confirm-repair rounds",
+		"after the first or second automatic repair round, use a new reviewer",
+		"after a material third repair, run exactly one terminal read-only reviewer",
+		"Reviews without a confirmed file-changing repair do not consume the three-round budget.",
+		"exactly one additional terminal reviewer uses a fresh context to inspect the complete task-base-to-current-state diff.",
+		"strictly read-only, is outside the automatic repair budget, and cannot trigger another automatic repair.",
+		"Only `VERDICT: READY` together with `No P0/P1 findings.` passes.",
+		"stops the task as `NOT READY`",
+		"cannot rename rounds, reset counters, or start a second terminal reviewer.",
+	]) {
+		if (!lifecycleSection.includes(marker)) {
+			failures.push(
+				`${ARCHITECTURE_DOCUMENT} review lifecycle is missing marker ${marker}`,
 			);
 		}
 	}

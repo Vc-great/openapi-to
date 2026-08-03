@@ -262,9 +262,11 @@ The primary agent must:
 3. explicitly reject false positives with an evidence-backed reason;
 4. rerun affected validation after a repair;
 5. repeat the primary agent's full task-diff review after the last repair;
-6. start a new fresh reviewer when a confirmed repair materially changes
-   external behavior, public API, CLI, configuration, generated results,
-   persisted state, security boundaries, or filesystem effects.
+6. after a confirmed repair materially changes external behavior, public API,
+   CLI, configuration, generated results, persisted state, security boundaries,
+   or filesystem effects, start a new fresh reviewer while automatic repair
+   budget remains, or use the terminal verification round after the third
+   automatic repair round.
 
 The reviewer remains read-only and never repairs its own findings. A
 behavior-neutral documentation or test-only repair does not by itself require
@@ -284,15 +286,54 @@ Automatically repair every confirmed, in-scope P0/P1. A confirmed
 out-of-scope P0/P1 remains a blocker and requires separate authorization;
 never expand the task automatically. Repair P2 only when low risk and tightly
 scoped. After repairs, rerun affected validation and repeat the full diff
-review and, when the material-change rule above applies, the independent
 review.
 
-Run a maximum of three complete review rounds. Each round must add a finding or
-new validation evidence. Do not churn the same implementation, absorb
-unrelated P2 work, or enlarge the product goal. Reaching the limit does not
-make the task complete: if any P0 or in-scope P1 remains, or the independent
-review scope is materially incomplete, report `NOT READY` and list each
-blocker.
+The primary agent must run no more than three automatic repair rounds. An
+automatic repair round is consumed only when all of these events occur:
+
+1. a fresh read-only reviewer inspects the complete task-base diff;
+2. the reviewer reports at least one P0/P1 finding;
+3. the primary agent independently confirms an in-scope P0/P1 finding;
+4. the primary agent modifies code, tests, configuration, workflows, or
+   documentation to repair that finding;
+5. the primary agent reruns affected validation and completes a fresh full
+   task-diff review.
+
+A review with no confirmed in-scope P0/P1 repair, or a confirmed finding that
+does not result in a file modification, does not consume an automatic repair
+round. After the first or second automatic repair round, a material repair must
+receive another fresh independent review and may enter the next automatic
+repair round. Do not churn the same implementation, absorb unrelated P2 work,
+or enlarge the product goal.
+
+### Terminal verification round
+
+After the third automatic repair round, the primary agent must run exactly one
+additional terminal verification reviewer when that repair materially changes
+external behavior, public API, CLI, configuration, generated results, persisted
+state, security boundaries, or filesystem effects. This terminal reviewer:
+
+- must use a fresh context;
+- must inspect the complete task-base-to-current-state diff;
+- must remain strictly read-only and must not modify, create, delete, rename,
+  format, stage, commit, or push files;
+- does not count as an automatic repair round;
+- must not trigger a new automatic repair loop.
+
+The primary agent must not start more than one terminal verification reviewer.
+Do not rename rounds, reset either counter, or repeat the terminal reviewer to
+bypass the limit.
+
+The terminal gate passes only with both `VERDICT: READY` and
+`No P0/P1 findings.`. If the terminal reviewer returns `VERDICT: NOT READY`,
+reports any P0/P1 finding, or has materially incomplete review scope, the
+primary agent must stop and report `NOT READY`. The primary agent must not
+repair a terminal finding in the current automatic loop; report the finding
+and wait for user authorization for a new task or new repair budget.
+
+Reaching either limit does not make the task complete. If any P0 or in-scope P1
+remains, or the independent review scope is materially incomplete, report
+`NOT READY` and list each blocker.
 
 ## 9. Authorized remote handoff
 
@@ -302,8 +343,9 @@ Remote writes remain a separate authority boundary.
 
 Stop after local completion and report `LOCAL READY` or `NOT READY`, current
 branch, task base, HEAD, working-tree state, complete diff range, Changeset
-decision, validation results, review rounds, and remaining P0/P1/P2 findings.
-Do not commit, push, or create/update a pull request.
+decision, validation results, automatic repair rounds, terminal verification
+round disposition, and remaining P0/P1/P2 findings. Do not commit, push, or
+create/update a pull request.
 
 ### B. Commit, push, and pull request explicitly authorized
 
@@ -336,6 +378,9 @@ Finish only when:
   was read in full;
 - every required independent review completed in a fresh read-only context, or
   a permitted behavior-neutral skip has a recorded reason;
+- when the third automatic repair round requires terminal verification, exactly
+  one terminal reviewer completed and returned `VERDICT: READY` with
+  `No P0/P1 findings.`;
 - no known P0 or in-scope P1 remains;
 - the independent review scope is not materially incomplete;
 - required validation and `git diff --check` pass;
@@ -348,5 +393,6 @@ Finish only when:
 
 Report files changed, exact checks as `PASS`, `FAIL`, or `SKIPPED`,
 pre-existing failures, remaining P2/follow-ups, compatibility/security/release
-risk, external operations, independent review rounds and dispositions, final
-branch/HEAD/status, and `READY` or `NOT READY`.
+risk, external operations, automatic repair round count, terminal verification
+round count and disposition, final branch/HEAD/status, and `READY` or
+`NOT READY`.
