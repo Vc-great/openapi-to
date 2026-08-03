@@ -64,3 +64,27 @@ cases:
     category: degraded
     prompt: "已批准的 planHash 在 Apply 前因 OpenAPI 变化而 stale"
     expected: reprepare_and_require_new_exact_approval
+  - id: degraded-multiple-targets-require-exact-target
+    category: degraded
+    prompt: "项目配置了多个 Target，需要生成用户删除接口"
+    expected: list_targets_and_pass_one_exact_target
+  - id: degraded-dry-run-tool-without-operation-scope
+    category: degraded
+    prompt: "openapi_generate_dry_run 存在，但 inputSchema 不支持 operations scope"
+    expected: fail_closed_without_full_generation_fallback
+  - id: degraded-prepare-add-only
+    category: degraded
+    prompt: "Prepare Tool 存在，但 inputSchema 只支持 selection add"
+    expected: allow_add_and_reject_replace
+  - id: degraded-prepare-without-selection
+    category: degraded
+    prompt: "Prepare Tool 存在，但 inputSchema 没有 selection 参数"
+    expected: do_not_invent_selective_prepare
+  - id: degraded-schema-not-visible
+    category: degraded
+    prompt: "Host 只能显示 MCP Tool 名称，无法查看 inputSchema"
+    expected: use_only_verified_capabilities_and_fail_closed_for_replace
+  - id: degraded-prepare-not-applyable
+    category: degraded
+    prompt: "Prepare 成功但 plan.applySupported 为 false"
+    expected: stop_before_approval_and_apply

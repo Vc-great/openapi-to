@@ -1406,6 +1406,21 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 			failure: /missing required workflow marker Never automate Prepare/,
 		},
 		{
+			path: ".agents/skills/openapi-to-generate/SKILL.md",
+			mutate: (contents) =>
+				contents.replace(
+					"Tool existence and Tool count do not prove",
+					"Tool names and counts prove",
+				),
+			failure: /missing required workflow marker Tool existence and Tool count do not prove/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/references/mcp-workflow.md",
+			mutate: (contents) =>
+				contents.replace('  "targets": ["<exact-target>"],\n', ""),
+			failure: /operation-scoped Dry Run JSON example 1 must pass exactly one/,
+		},
+		{
 			path: ".agents/skills/openapi-to-generate/agents/openai.yaml",
 			mutate: (contents) =>
 				contents.replace(
@@ -1416,9 +1431,24 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 		},
 		{
 			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
-			mutate: (contents) =>
-				contents.replace("category: degraded", "category: reject"),
+			mutate: (contents) => {
+				let replacements = 7;
+				return contents.replaceAll("category: degraded", (category) => {
+					if (replacements === 0) return category;
+					replacements -= 1;
+					return "category: reject";
+				});
+			},
 			failure: /requires at least 4 degraded cases, found 3/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"degraded-schema-not-visible",
+					"degraded-schema-hidden",
+				),
+			failure: /missing required case degraded-schema-not-visible/,
 		},
 	];
 	for (const contractCase of cases) {

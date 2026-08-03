@@ -1,8 +1,10 @@
 # Controlled Prepare and Apply
 
 Use this reference only when the actual MCP Tool list contains both
-`openapi_prepare_generation` and `openapi_apply_generation`. `--allow-write`
-grants an operator capability; it is not user approval.
+`openapi_prepare_generation` and `openapi_apply_generation`, and inspect their
+current inputSchema before choosing arguments. A matching Tool name does not
+prove that a newer inputSchema capability exists. `--allow-write` grants an
+operator capability; it is not user approval.
 
 ## Prepare
 
@@ -10,6 +12,26 @@ Call Prepare for exactly one trusted Target. For selective generation, provide
 one explicit `selection` mutation with exact operationKeys. Do not supply or
 infer source paths, config paths, plugins, output paths, file content, cleanup
 policy, or remote permissions.
+
+Use `replace` only when its whole-set meaning matches explicit user intent and
+the current Prepare inputSchema explicitly supports
+`selection.type = replace`. If the Schema supports only `add`, additive intent
+may proceed, but a replace request must stop. If `selection` is absent, do not
+invent selective Prepare. When inputSchema is not observable, fail closed for
+`replace` unless that capability is verified by the resolved local version's
+documentation or a current Tool call.
+
+Tool input: `openapi_prepare_generation` — whole-set selective Prepare
+
+```json
+{
+  "targets": ["<exact-target>"],
+  "selection": {
+    "type": "replace",
+    "operationKeys": ["<exact-operation-key>"]
+  }
+}
+```
 
 Prepare must remain read-only. Present this review record before asking for
 approval:
@@ -32,10 +54,10 @@ When arrays are truncated, show the exact total and returned count. Do not
 claim unseen paths or keys were inspected. Highlight every managed deletion,
 especially after `replace`.
 
-If Prepare returns no Apply support, no usable exact hash, errors, or a
-truncated result that prevents an informed approval, stop before Apply. A
-Prepare plan and one-time token are not filesystem changes and are not user
-approval.
+If Prepare does not return `success`, `plan.applySupported = true`, an exact
+plan ID, a one-time token, an exact plan hash, an unexpired plan, or a complete
+enough result for informed approval, stop before approval and Apply. A Prepare
+plan and one-time token are not filesystem changes and are not user approval.
 
 ## Exact approval
 
@@ -58,6 +80,16 @@ After exact approval, call Apply with only the plan ID, one-time token, and
 approved plan hash returned by that Prepare. The Server re-generates and
 revalidates the frozen plan. It must reject expired, replayed, tampered, or
 stale state rather than adopting new content.
+
+Tool input: `openapi_apply_generation` — approved current plan
+
+```json
+{
+  "planId": "123e4567-e89b-42d3-a456-426614174000",
+  "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "approvedPlanHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}
+```
 
 Apply cannot accept operation keys or dynamically override a Target, config,
 source, plugin, output path, content, or cleanup policy. Do not invent a force
