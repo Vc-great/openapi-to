@@ -49,6 +49,11 @@ pnpm exec openapi-to-mcp --help
 
 Advanced users who intentionally want only the MCP package boundary may instead install `pnpm add -D @openapi-to/mcp`; it provides the same standalone `openapi-to-mcp` command plus the `@openapi-to/mcp` and `@openapi-to/mcp/cli` programming interfaces.
 
+The first-stage consumer Skill is designed primarily for business projects
+that install the aggregate `openapi-to` package. It does not automatically
+treat an MCP-only installation as a complete business code-generation
+environment; broader MCP-only consumer support is a separate design boundary.
+
 The safe default is local stdio and no writes:
 
 ```sh
@@ -81,7 +86,12 @@ first-stage [`openapi-to-generate` consumer Skill](./skills.md) to discover
 Operations, preview operation-scoped output, preserve the Prepare/Apply
 approval boundary, and integrate generated code. The Skill orchestrates MCP;
 it does not replace the Server or perform initial package, generation-config,
-or Host setup.
+or Host setup. It checks both the consuming project's actual Tool list and each
+relevant Tool inputSchema because identical Tool names can expose different
+argument capabilities across local versions. Selective Dry Run requires one
+exact Target; unsupported selection never falls back to full-target
+generation, and `replace` is used only when the current Schema explicitly
+supports it.
 
 Target `input.remote` is trusted access configuration; MCP startup remote options are operator-owned upper bounds. The effective policy uses only permissions allowed by both layers. Configured headers remain available for the initial request and same-Origin redirects, are removed on cross-Origin redirects, and are never accepted as Tool arguments. HTTPS-to-HTTP redirects are blocked.
 

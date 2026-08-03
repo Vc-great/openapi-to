@@ -81,6 +81,34 @@ const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
 const CONSUMER_SKILL_NAME = "openapi-to-generate";
 const CONSUMER_SKILL_DOCUMENT = "docs/skills.md";
 const CONSUMER_SKILL_EVALUATION = `${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/evaluation-matrix.yaml`;
+const CONSUMER_OPERATION_EXAMPLE_FILES = [
+	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
+	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/mcp-workflow.md`,
+	CONSUMER_SKILL_DOCUMENT,
+];
+const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
+	[
+		"degraded-multiple-targets-require-exact-target",
+		"list_targets_and_pass_one_exact_target",
+	],
+	[
+		"degraded-dry-run-tool-without-operation-scope",
+		"fail_closed_without_full_generation_fallback",
+	],
+	["degraded-prepare-add-only", "allow_add_and_reject_replace"],
+	[
+		"degraded-prepare-without-selection",
+		"do_not_invent_selective_prepare",
+	],
+	[
+		"degraded-schema-not-visible",
+		"use_only_verified_capabilities_and_fail_closed_for_replace",
+	],
+	[
+		"degraded-prepare-not-applyable",
+		"stop_before_approval_and_apply",
+	],
+]);
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
 	[CONSUMER_SKILL_NAME, "specialized-primary"],
@@ -2299,6 +2327,8 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 
 	for (const marker of [
 		"actual MCP Tool list",
+		"current Tool inputSchema",
+		"Tool existence and Tool count do not prove",
 		"Never silently substitute a global installation",
 		"pnpm add -D openapi-to",
 		"pnpm exec openapi-to-mcp",
@@ -2311,10 +2341,15 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 		'"type": "operations"',
 		"operationKeys",
 		"Do not default to full-target generation",
+		"Never fall back to full-target generation",
 		"desired = previous ∪ requested",
 		"desired = requested",
+		"explicitly supports `selection.type = replace`",
+		"cannot expose Tool inputSchema",
+		"fail closed for version-sensitive behavior",
 		"openapi_prepare_generation",
 		"openapi_apply_generation",
+		"plan.applySupported = true",
 		"Exact `planHash`",
 		"Dry Run is read-only and is not approval to write",
 		"Never automate Prepare followed by Apply",
@@ -2332,6 +2367,41 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 	if (!/must not run\s+installation/.test(contents)) {
 		failures.push(
 			`${CONSUMER_SKILL_NAME} must prohibit automatic installation and setup mutation`,
+		);
+	}
+}
+
+function validateOperationScopedDryRunExamples(
+	relativePath,
+	contents,
+	failures,
+) {
+	let exampleCount = 0;
+	for (const match of contents.matchAll(/```json\s*\n([\s\S]*?)\n```/g)) {
+		if (!match[1].includes('"type": "operations"')) continue;
+		exampleCount += 1;
+		let input;
+		try {
+			input = JSON.parse(match[1]);
+		} catch (error) {
+			failures.push(
+				`${relativePath} operation-scoped Dry Run JSON example ${exampleCount} is invalid: ${error.message}`,
+			);
+			continue;
+		}
+		if (
+			!Array.isArray(input?.targets) ||
+			input.targets.length !== 1 ||
+			input.targets[0] !== "<exact-target>"
+		) {
+			failures.push(
+				`${relativePath} operation-scoped Dry Run JSON example ${exampleCount} must pass exactly one "<exact-target>"`,
+			);
+		}
+	}
+	if (exampleCount === 0) {
+		failures.push(
+			`${relativePath} must contain an operation-scoped Dry Run JSON example`,
 		);
 	}
 }
@@ -2383,6 +2453,8 @@ async function validateOpenapiToGenerateFiles(
 			"three analysis Tools",
 			"eight read-only Tools",
 			"ten Tools",
+			"current Tool inputSchema",
+			"https://github.com/Vc-great/openapi-to/tree/main/.agents/skills/openapi-to-generate",
 			"openapi-to-setup",
 		]) {
 			if (!documentContents.includes(marker)) {
@@ -2400,6 +2472,15 @@ async function validateOpenapiToGenerateFiles(
 	if (skillContents?.includes(legacyConfigPath)) {
 		failures.push(
 			`${CONSUMER_SKILL_NAME} must not use legacy config path ${legacyConfigPath}`,
+		);
+	}
+	for (const relativePath of CONSUMER_OPERATION_EXAMPLE_FILES) {
+		const path = join(root, relativePath);
+		if (!(await exists(path)) || !trackedFiles.has(relativePath)) continue;
+		validateOperationScopedDryRunExamples(
+			relativePath,
+			await readFile(path, "utf8"),
+			failures,
 		);
 	}
 
@@ -2436,6 +2517,7 @@ async function validateOpenapiToGenerateFiles(
 		return;
 	}
 	const ids = new Set();
+	const casesById = new Map();
 	const counts = new Map([
 		["trigger", 0],
 		["reject", 0],
@@ -2461,6 +2543,7 @@ async function validateOpenapiToGenerateFiles(
 			);
 		}
 		ids.add(evaluationCase.id);
+		casesById.set(evaluationCase.id, evaluationCase);
 		if (!counts.has(evaluationCase.category)) {
 			failures.push(
 				`${CONSUMER_SKILL_EVALUATION} has unsupported category ${evaluationCase.category}`,
@@ -2480,6 +2563,21 @@ async function validateOpenapiToGenerateFiles(
 		if (counts.get(category) < minimum) {
 			failures.push(
 				`${CONSUMER_SKILL_EVALUATION} requires at least ${minimum} ${category} cases, found ${counts.get(category)}`,
+			);
+		}
+	}
+	for (const [id, expected] of REQUIRED_CONSUMER_DEGRADED_CASES) {
+		const evaluationCase = casesById.get(id);
+		if (!evaluationCase) {
+			failures.push(`${CONSUMER_SKILL_EVALUATION} is missing required case ${id}`);
+			continue;
+		}
+		if (
+			evaluationCase.category !== "degraded" ||
+			evaluationCase.expected !== expected
+		) {
+			failures.push(
+				`${CONSUMER_SKILL_EVALUATION} case ${id} must be degraded with expected ${expected}`,
 			);
 		}
 	}

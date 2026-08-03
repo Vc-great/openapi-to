@@ -10,6 +10,14 @@ The current version is not compatible with V2.[V2 document](https://github.com/V
 
 See the single [capability matrix](docs/capability-matrix.md) for exact package, dialect, CLI, and MCP status. Start with the [getting-started guide](docs/getting-started.md); local AI Host setup is documented for [Codex](docs/codex-mcp.md), [Claude Code](docs/ai-hosts/claude-code.md), [Cursor](docs/ai-hosts/cursor.md), and [generic stdio Hosts](docs/ai-hosts/generic-stdio.md). The first-stage [consumer Agent Skill](docs/skills.md) adds a safe Operation-discovery, selective-generation, and integration workflow on top of MCP.
 
+That Skill uses the consuming project's local `openapi-to` installation and
+checks both the actual MCP Tool list and current Tool inputSchema. Matching Tool
+names can expose different capabilities across versions: operation-scoped Dry
+Run requires one explicit Target, and selection `replace` is used only when the
+current Schema explicitly supports it. The Skill does not install dependencies,
+edit project or Host configuration, replace MCP, or fall back to full-target
+generation when selective generation is unavailable.
+
 # Features
 
 - Works with Node.js 20+.
