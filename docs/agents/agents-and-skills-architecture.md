@@ -21,8 +21,10 @@ Use one primary workflow for a task. General repository changes use
 release preparation use their specialized primary Skills. Consumer projects
 use `openapi-to-setup` for installation/configuration diagnosis and
 approval-bound setup, then `openapi-to-generate` for API-dependent feature
-delivery through the local openapi-to MCP. Pure analysis does not load a
-write-oriented workflow.
+delivery through the local openapi-to MCP. After implementation, focused
+validation, and the primary agent's complete diff review, non-trivial
+behavior-changing writes also use `independent-p0-p1-review` as a fresh,
+read-only review gate. Pure analysis does not load a write-oriented workflow.
 
 ## Rule discovery boundary
 
@@ -152,8 +154,14 @@ workflow lifecycle.
 | --- | --- | --- |
 | `run-codegen-tests` | Validate a change that may alter generated output or decide whether a fixture/snapshot change is correct | Retained as a helper. It validates output and idempotency but does not diagnose or implement the owning fix. |
 
-All twelve Skills have a unique directory-matching name, specific positive and
-negative triggers, a required `agents/openai.yaml`, explicit inputs or
+### Independent review gate
+
+| Skill | Trigger and responsibility | Overlap decision |
+| --- | --- | --- |
+| `independent-p0-p1-review` | Review the complete task-base diff for concrete blocking P0/P1 defects after implementation and initial validation | Added as a read-only gate, not a primary or implementation workflow. It runs in a fresh sub-agent context, returns findings to the primary agent, and never repairs, stages, commits, or performs remote writes. |
+
+All thirteen Skills have a unique directory-matching name, specific positive
+and negative triggers, a required `agents/openai.yaml`, explicit inputs or
 preconditions, bounded modification authority, validation guidance, failure or
 stop handling, and a completion/report boundary. Domain Skills may mention
 release classification, but only `release-monorepo` owns release readiness.
@@ -162,7 +170,7 @@ writes without user authorization.
 
 ## Contract-verified Skill roles
 
-Tracked Skill count: `12`.
+Tracked Skill count: `13`.
 
 This fixed table is the architecture document's machine-validated role
 inventory. The contract compares it with both Git-tracked Skill entrypoints and
@@ -171,6 +179,7 @@ the root routing table; Skill prose does not assign a role.
 | Skill | Contract role |
 | --- | --- |
 | `implement-and-review` | general-primary |
+| `independent-p0-p1-review` | review-gate |
 | `openapi-to-generate` | specialized-primary |
 | `openapi-to-setup` | specialized-primary |
 | `fix-github-actions` | specialized-primary |
@@ -188,6 +197,7 @@ the root routing table; Skill prose does not assign a role.
 | Request | Primary | Supporting |
 | --- | --- | --- |
 | General implementation or bug fix | `implement-and-review` | Only the matching domain/validation Skill |
+| Independent P0/P1 gate for a non-trivial behavior-changing write | Current implementation primary remains unchanged | `independent-p0-p1-review` after focused validation and the primary complete diff review |
 | Install, configure, diagnose, or validate openapi-to in a consuming project | `openapi-to-setup` | Consuming-project rules and exact Setup Plan approval; hand API work to `openapi-to-generate` after restart verification |
 | API-dependent feature in a consuming project | `openapi-to-generate` | The consuming project's own rules and validation; no Monorepo implementation Skill |
 | CLI command/option | `implement-and-review` | `add-cli-command`; add `run-codegen-tests` only if output changes |
@@ -225,22 +235,30 @@ discover Git-tracked repository rules
   -> discover and fully review task-created untracked text files
   -> review unstaged/staged and task-base-to-current-tree diff
   -> review task-base-to-HEAD and untracked files again after commit
-  -> grade P0/P1/P2
-  -> repair in-scope P0/P1
-  -> rerun affected validation and complete review (maximum three rounds)
+  -> run a fresh-context independent read-only P0/P1 review
+  -> independently verify and grade reviewer findings
+  -> repair confirmed in-scope P0/P1
+  -> rerun affected validation and complete primary diff review
+  -> use a new reviewer after a materially behavior-changing repair
+     (maximum three complete review rounds)
   -> re-read final Git state
   -> READY, or NOT READY with blockers
 ```
 
 P0 covers security, data corruption/loss, release blockers, and severe
 regressions. P1 covers definite bugs, important compatibility defects,
-critical test gaps, and incorrect safety/error boundaries. P2 is a
-non-blocking quality improvement. The workflow repairs all P0 and in-scope P1.
-It handles only low-risk, tightly scoped P2 findings.
+critical test gaps, and incorrect safety/error boundaries. The independent
+reviewer reports only P0/P1; P2 remains a primary-agent, non-blocking quality
+classification. The primary agent verifies every finding before repairing all
+confirmed in-scope P0/P1. It handles only low-risk, tightly scoped P2 findings.
 
 The three-round cap prevents unproductive churn; it never converts unresolved
-P0/P1 into success. Each round must produce a new finding or validation result.
-Unrelated P2 and broad architectural follow-ups remain outside the diff.
+P0/P1 or a materially incomplete independent review into success. Each round
+must produce a new finding or validation result. A confirmed repair that
+materially changes external behavior, public contracts, generated output,
+persisted state, security boundaries, or filesystem effects requires a new
+reviewer context. Unrelated P2 and broad architectural follow-ups remain
+outside the diff.
 
 The task base is the immutable `git rev-parse HEAD` recorded before editing; it
 is not automatically `origin/main`. Complete review includes unstaged and
@@ -274,7 +292,8 @@ does not automatically authorize a repair.
 ```text
 Draft PR
   -> local validation complete
-  -> autonomous review complete
+  -> autonomous primary diff review complete
+  -> independent read-only P0/P1 review complete
   -> repair P0/P1
   -> push the latest commit
   -> Ready for review
@@ -301,7 +320,7 @@ Only the user may decide whether to merge; this Pilot never performs the merge.
 - Authority: CLI source/test writes only; no public API or external write
   unless separately requested.
 - Gate: focused failing regression, CLI test/typecheck/build as applicable,
-  complete diff review, no P0/P1.
+  complete primary diff review, independent read-only review, no P0/P1.
 
 ### Optional filter on an existing read-only MCP Tool
 
@@ -312,7 +331,8 @@ Only the user may decide whether to merge; this Pilot never performs the merge.
 - Skipped: `add-mcp-write-tool`, because the request is read-only.
 - Authority: schema/handler/tests/docs within the stable startup boundary.
 - Gate: unit/integration/stdio and Doctor when registration/schema visibility
-  changes, complete diff review, no P0/P1.
+  changes, complete primary diff review, independent read-only review, no
+  P0/P1.
 
 ### Cross-platform GitHub Actions failure
 

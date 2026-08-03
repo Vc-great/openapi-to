@@ -1,14 +1,16 @@
 ---
-
 name: independent-p0-p1-review
 description: Independently review an openapi-to task diff for concrete P0 and P1 defects. Use after implementation and initial validation, before declaring the task ready. This Skill is strictly read-only: it reports findings but never edits files, stages changes, commits, pushes, or repairs code.
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---
 
 # Independent P0/P1 review
 
 ## Role
 
 Act as an independent senior maintainer reviewing code written by another agent.
+
+Run this Skill only in a fresh sub-agent context that did not plan or implement
+the change.
 
 You are not the implementation author. Do not defend, complete, refactor, or rewrite the implementation.
 
@@ -40,6 +42,7 @@ If a command may generate files, update caches, rewrite snapshots, install depen
 
 Obtain or identify:
 
+* original user request;
 * task objective;
 * explicit non-goals;
 * immutable task base SHA;
@@ -50,6 +53,9 @@ Obtain or identify:
 * authorized diff scope.
 
 If the task base SHA is unavailable, explicitly mark the review scope as incomplete. Do not claim that the complete task diff was reviewed.
+
+Treat validation claims as evidence only when their exact command and `PASS`,
+`FAIL`, or `SKIPPED` status are available.
 
 ## Rule discovery
 
@@ -71,6 +77,12 @@ Inspect the actual repository state, including:
 git status --short
 git branch --show-current
 git rev-parse HEAD
+git diff --stat
+git diff --check
+git diff
+git diff --cached --stat
+git diff --cached --check
+git diff --cached
 git diff --stat "$TASK_BASE_SHA"
 git diff --check "$TASK_BASE_SHA"
 git diff "$TASK_BASE_SHA"

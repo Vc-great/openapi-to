@@ -70,6 +70,16 @@ function implementationSkillContents() {
 	);
 }
 
+function independentReviewSkillContents() {
+	return readFile(
+		join(
+			repositoryRoot,
+			".agents/skills/independent-p0-p1-review/SKILL.md",
+		),
+		"utf8",
+	);
+}
+
 function consumerSkillFile(relativePath) {
 	return readFile(
 		join(repositoryRoot, ".agents/skills/openapi-to-generate", relativePath),
@@ -117,6 +127,7 @@ authorization, do not trigger the Workflow.
 function roleLabel(role) {
 	return {
 		"general-primary": "Primary",
+		"review-gate": "Review gate",
 		"specialized-primary": "Specialized primary",
 		"domain-support": "Support",
 		"validation-helper": "Validation helper",
@@ -138,6 +149,21 @@ function rootAgentContents() {
 | Task | Primary or supporting Skill |
 | --- | --- |
 ${routes.join("\n")}
+
+## Independent review gate
+
+Every non-trivial behavior-changing write task must run an independent P0/P1
+review after implementation, focused validation, and the primary agent's
+complete task-diff review. Use
+\`.agents/skills/independent-p0-p1-review/SKILL.md\` in a fresh read-only
+sub-agent context before reporting \`READY\`. The reviewer must not modify,
+create, delete, format, stage, or commit files; the primary agent remains the
+sole writer and independently validates every finding.
+
+Pure documentation, comments, formatting, or behavior-neutral work may skip
+with a recorded reason. After a material fix, the primary agent must use a new
+reviewer context. Unresolved P0/P1 or a materially incomplete independent
+review scope block \`READY\`.
 
 ## Definition of done
 
@@ -174,11 +200,17 @@ Tracked Skill count: \`${EXPECTED_SKILL_ROLES.size}\`.
 | --- | --- |
 ${roles.join("\n")}
 
+### Independent review gate
+
+\`independent-p0-p1-review\` is a read-only gate in a fresh sub-agent context.
+It never repairs, stages, commits, or performs remote writes.
+
 ## Real-task Pilot PR gate
 
 Draft PR
 local validation complete
-autonomous review complete
+autonomous primary diff review complete
+independent read-only P0/P1 review complete
 repair P0/P1
 push the latest commit
 Ready for review
@@ -220,6 +252,8 @@ async function createContractFixture(t) {
 			`.agents/skills/${skillName}/SKILL.md`,
 			skillName === "implement-and-review"
 				? await implementationSkillContents()
+				: skillName === "independent-p0-p1-review"
+					? await independentReviewSkillContents()
 				: skillName === "openapi-to-generate"
 					? await consumerSkillFile("SKILL.md")
 					: skillName === "openapi-to-setup"
@@ -386,6 +420,7 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 	assert.ok(result.skills.includes("openapi-to-setup"));
 	assert.deepEqual(REQUIRED_SKILLS, [
 		"implement-and-review",
+		"independent-p0-p1-review",
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
@@ -1971,6 +2006,214 @@ test("implementation orchestration lifecycle and routing are mandatory and uniqu
 	);
 });
 
+test("independent P0/P1 review is a required read-only review gate", async (t) => {
+	const missingRequiredRoot = await createContractFixture(t);
+	await git(
+		missingRequiredRoot,
+		"rm",
+		"--cached",
+		"-r",
+		"--",
+		".agents/skills/independent-p0-p1-review",
+	);
+	await rm(
+		join(
+			missingRequiredRoot,
+			".agents/skills/independent-p0-p1-review",
+		),
+		{ recursive: true, force: true },
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(missingRequiredRoot),
+		/missing required repository Skill independent-p0-p1-review/,
+	);
+
+	const cases = [
+		[
+			"fresh sub-agent context",
+			"existing author context",
+			/missing required marker fresh sub-agent context/,
+		],
+		[
+			"edit, create, delete, rename, or format files",
+			"edit files when convenient",
+			/missing required marker edit, create, delete, rename, or format files/,
+		],
+		[
+			'git diff "$TASK_BASE_SHA"',
+			"git diff HEAD",
+			/missing required read-only diff command git diff "\$TASK_BASE_SHA"/,
+		],
+		[
+			"Report only P0 and P1",
+			"Report all severities",
+			/missing required marker Report only P0 and P1/,
+		],
+		[
+			"scope is materially incomplete",
+			"scope has limitations",
+			/missing required marker scope is materially incomplete/,
+		],
+		[
+			"You must not:",
+			"You may:",
+			/must prohibit repository mutations/,
+		],
+		[
+			"* edit, create, delete, rename, or format files;",
+			"* may edit, create, delete, rename, or format files;",
+			/missing read-only prohibition \* edit, create, delete, rename, or format files;/,
+		],
+		[
+			"Use `NOT READY` when at least one P0 or P1 finding exists, or when the review scope is materially incomplete.",
+			"Use `READY` when at least one P0 or P1 finding exists, or when the review scope is materially incomplete.",
+			/must make P0\/P1 findings or incomplete scope block readiness/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/independent-p0-p1-review/SKILL.md",
+			(contents) => contents.replace(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+
+	const crlfRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		crlfRoot,
+		".agents/skills/independent-p0-p1-review/SKILL.md",
+		(contents) =>
+			contents.replaceAll("\r\n", "\n").replaceAll("\n", "\r\n"),
+	);
+	assert.deepEqual(
+		(await auditAgentAndSkillContracts(crlfRoot)).failures,
+		[],
+	);
+});
+
+test("implementation lifecycle preserves independent review delegation and ratchet", async (t) => {
+	const cases = [
+		[
+			"### Independent review gate",
+			"### Optional review",
+			/missing independent review marker ### Independent review gate/,
+		],
+		[
+			"original user request",
+			"implementation summary",
+			/missing independent review marker original user request/,
+		],
+		[
+			"Do not provide a long defense",
+			"Provide a defense",
+			/missing independent review marker Do not provide a long defense/,
+		],
+		[
+			"independently verify every reviewer finding",
+			"accept every reviewer finding",
+			/missing independent review marker independently verify every reviewer finding/,
+		],
+		[
+			"start a new fresh reviewer",
+			"reuse the previous reviewer",
+			/missing independent review marker start a new fresh reviewer/,
+		],
+		[
+			"materially incomplete",
+			"partially incomplete",
+			/missing independent review marker materially incomplete/,
+		],
+		[
+			"every non-trivial behavior-changing write task must run",
+			"every non-trivial behavior-changing write task may run",
+			/must preserve mandatory semantics every non-trivial behavior-changing write task must run/,
+		],
+		[
+			"The primary agent must:",
+			"The primary agent may:",
+			/finding repair loop must preserve mandatory semantics The primary agent must:/,
+		],
+		[
+			"report `NOT READY`",
+			"report `READY`",
+			/must make unresolved P0\/P1 or incomplete independent review block readiness/,
+		],
+		[
+			"every required independent review completed in a fresh read-only context",
+			"independent review may be omitted",
+			/completion gate must preserve independent review requirement every required independent review completed/,
+		],
+		[
+			"Automatically repair every confirmed, in-scope P0/P1.",
+			"Automatically repair every P0/P1.",
+			/repair scope must preserve authorization boundary Automatically repair every confirmed, in-scope P0\/P1\./,
+		],
+		[
+			"A confirmed\nout-of-scope P0/P1 remains a blocker and requires separate authorization",
+			"Automatically repair confirmed out-of-scope P0/P1",
+			/repair scope must preserve authorization boundary A confirmed out-of-scope P0\/P1 remains a blocker/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => contents.replaceAll(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
+test("root rules preserve the independent review readiness gate", async (t) => {
+	const cases = [
+		[
+			"## Independent review gate",
+			"## Optional review",
+			/missing ## Independent review gate section/,
+		],
+		[
+			"fresh read-only",
+			"existing writable",
+			/independent review gate is missing marker fresh read-only/,
+		],
+		[
+			"primary agent remains the\nsole writer",
+			"reviewer may write",
+			/independent review gate is missing marker primary agent remains the sole writer/,
+		],
+		[
+			"materially incomplete independent\nreview scope block `READY`",
+			"incomplete review may be READY",
+			/independent review gate is missing marker materially incomplete/,
+		],
+		[
+			"must run an independent P0/P1\nreview",
+			"may run an independent P0/P1 review",
+			/must preserve mandatory semantics Every non-trivial behavior-changing write task must run/,
+		],
+		[
+			"The reviewer must not modify",
+			"The reviewer may modify",
+			/must preserve mandatory semantics The reviewer must not modify/,
+		],
+		[
+			"the primary agent must use a new",
+			"the primary agent may reuse the old",
+			/must preserve mandatory semantics the primary agent must use a new reviewer context/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(root, "AGENTS.md", (contents) =>
+			contents.replace(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
 test("implementation lifecycle rejects unsafe discovery and incomplete task-base review", async (t) => {
 	const cases = [
 		{
@@ -2253,8 +2496,8 @@ test("Skill routing audit rejects missing, duplicate, unknown, untracked, and pr
 	const duplicateRoot = await createContractFixture(t);
 	await mutateTrackedFixture(duplicateRoot, "AGENTS.md", (contents) =>
 		contents.replace(
-			"\n\n## Definition of done",
-			`\n${routingRow("add-cli-command", "domain-support", "duplicate CLI task")}\n\n## Definition of done`,
+			"\n\n## Independent review gate",
+			`\n${routingRow("add-cli-command", "domain-support", "duplicate CLI task")}\n\n## Independent review gate`,
 		),
 	);
 	assertFailure(
@@ -2280,8 +2523,8 @@ The Skill \`.agents/skills/add-cli-command/SKILL.md\` is discussed here.
 	const unknownRoot = await createContractFixture(t);
 	await mutateTrackedFixture(unknownRoot, "AGENTS.md", (contents) =>
 		contents.replace(
-			"\n\n## Definition of done",
-			`\n${routingRow("unknown", "domain-support")}\n\n## Definition of done`,
+			"\n\n## Independent review gate",
+			`\n${routingRow("unknown", "domain-support")}\n\n## Independent review gate`,
 		),
 	);
 	assertFailure(
@@ -2297,8 +2540,8 @@ The Skill \`.agents/skills/add-cli-command/SKILL.md\` is discussed here.
 	);
 	await mutateTrackedFixture(untrackedRoot, "AGENTS.md", (contents) =>
 		contents.replace(
-			"\n\n## Definition of done",
-			`\n${routingRow("local-only", "domain-support")}\n\n## Definition of done`,
+			"\n\n## Independent review gate",
+			`\n${routingRow("local-only", "domain-support")}\n\n## Independent review gate`,
 		),
 	);
 	assertFailure(
@@ -2315,6 +2558,13 @@ test("Skill routing audit enforces every explicit role", async (t) => {
 			to: "Support",
 			failure:
 				/role for implement-and-review must be general-primary, found domain-support/,
+		},
+		{
+			name: "independent-p0-p1-review",
+			from: "Review gate",
+			to: "Support",
+			failure:
+				/role for independent-p0-p1-review must be review-gate, found domain-support/,
 		},
 		{
 			name: "openapi-to-generate",
@@ -2439,13 +2689,13 @@ test("architecture role inventory stays aligned with tracked Skills and routing 
 		"docs/agents/agents-and-skills-architecture.md",
 		(contents) =>
 			contents.replace(
+				"Tracked Skill count: `13`.",
 				"Tracked Skill count: `12`.",
-				"Tracked Skill count: `11`.",
 			),
 	);
 	assertFailure(
 		await auditAgentAndSkillContracts(countRoot),
-		/tracked Skill count must equal 12/,
+		/tracked Skill count must equal 13/,
 	);
 
 	const roleRoot = await createContractFixture(t);
