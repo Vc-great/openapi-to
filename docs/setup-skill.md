@@ -17,13 +17,25 @@ diagnosis, and 3/8/10 Tool-mode validation. A vague setup request defaults to
 The Skill's standard-library inspector reads bounded project metadata without
 executing `openapi.config.*`, walking generated/state directories, inspecting
 global packages, accessing the network, or returning configuration bodies and
-credentials. The workflow keeps local package declaration, one supported
-config, local command resolution, Host configuration, Host restart, Server
-connection, and verified Tool capability as distinct evidence.
+credentials. Its state hash binds raw-byte SHA-256 values for `package.json`,
+every detected lockfile, generation config, `.gitignore`, and Codex config,
+along with relevant existence states and diagnostics; it does not bind the
+whole worktree. Lockfiles are streamed and limited to 32 MiB. The workflow
+keeps local package declaration, one supported config, local command
+resolution, Host configuration, Host restart, Server connection, and verified
+Tool capability as distinct evidence.
 
 Supported root configs are `openapi.config.ts`, `.js`, `.cjs`, and `.mjs`.
 Multiple candidates block setup. `.openapi-to/` is runtime state; the retired
 `.OpenAPI` config location is not used.
+
+A missing manifest produces `PACKAGE_JSON_MISSING` and `BLOCKED`; setup never
+creates a Node project or plans an install in an unconfirmed directory.
+`PACKAGE_MISSING` means a valid `package.json` in a trusted project lacks only
+the aggregate package. Multiple actual lockfiles—including two filenames for
+the same manager—are a package-manager conflict. Oversized, unreadable,
+symlinked, replaced, or out-of-root lockfiles fail closed without returning
+their contents.
 
 ## Approval-bound writes
 
@@ -31,9 +43,10 @@ Every package install, initializer run, ignore change, and Codex config change
 requires a complete JSON Setup Plan bound to the current inspector state hash.
 The plan shows exact argv, network use, expected writes, direct file diffs,
 verification, and restart impact. Its canonical SHA-256 `setupPlanId` must be
-named in explicit user approval. If the manifest, lockfile, config, ignore file,
-Codex file, or overlapping Git state changes, the Skill discards the approval
-and creates a new plan.
+named in explicit user approval. If the manifest, any lockfile, config, ignore
+file, or Codex file changes, the Skill discards the approval, creates a new
+Setup Plan and `setupPlanId`, and requires new exact approval. Git worktree
+status is re-read separately immediately before execution.
 
 The Skill never uses a global install and does not upgrade an existing
 openapi-to version. Installation requires an exact version: explicit user

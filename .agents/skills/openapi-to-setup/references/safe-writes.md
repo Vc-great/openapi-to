@@ -62,9 +62,19 @@ and `setupPlanId`. Accept only explicit approval naming that exact ID, such as:
 
 “Continue”, “install”, “configure it”, “looks good”, and “use defaults” are not
 approval. Before applying, re-run the inspector and require the same
-`observedStateHash`. Re-read Git status. Drift in the manifest, lockfile,
-generation config, ignore file, Codex file, or overlapping worktree invalidates
-the plan. Re-plan, re-hash, re-display, and obtain new exact approval.
+`observedStateHash`. It binds raw-byte SHA-256 values for the manifest, every
+lockfile, generation config, ignore file, and Codex file, plus the relevant
+diagnostics and existence states. Re-read Git status separately because the
+hash does not cover the whole worktree. Drift in any bound file or overlapping
+worktree invalidates the plan. Re-plan, re-hash to a new `setupPlanId`,
+re-display, and obtain new exact approval.
+
+Missing `package.json` is `PACKAGE_JSON_MISSING` and blocks planning; never
+create a Node project implicitly. `PACKAGE_MISSING` is reserved for a trusted
+project with a valid manifest and no aggregate package declaration. Multiple
+actual lockfiles conflict even when they map to one manager. Lockfiles are
+streamed with a 32 MiB limit, and oversized, unreadable, symlinked, replaced, or
+out-of-root files fail closed without returning their contents.
 
 ## Package install
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, truncate, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -80,6 +80,9 @@ test("inspector reports a clean pnpm project with all setup capabilities missing
 	assert.equal(value.state, "PACKAGE_MISSING");
 	assert.equal(value.packageManager.value, "pnpm");
 	assert.equal(value.packageManager.evidence, "packageManager");
+	assert.match(value.workspace.packageJson.sha256, /^[a-f0-9]{64}$/);
+	assert.match(value.packageManager.lockFiles[0].sha256, /^[a-f0-9]{64}$/);
+	assert.equal(value.packageManager.lockFiles[0].size, 23);
 	assert.equal(value.dependencies.aggregate, null);
 	assert.equal(value.generationConfig.status, "missing");
 	assert.equal(value.runtimeState.ignored, false);
@@ -87,6 +90,45 @@ test("inspector reports a clean pnpm project with all setup capabilities missing
 	assert.match(value.observedStateHash, /^[a-f0-9]{64}$/);
 	assert.ok(Buffer.byteLength(output) < 64 * 1024);
 	assert.doesNotMatch(output, new RegExp(root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("inspector blocks a directory without package.json", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-setup-empty-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	const { value } = await inspect(root);
+	assert.equal(value.state, "BLOCKED");
+	assert.ok(value.blockingReasons.includes("PACKAGE_JSON_MISSING"));
+	assert.deepEqual(value.workspace.packageJson, {
+		exists: false,
+		valid: false,
+		sha256: null,
+	});
+});
+
+test("inspector binds manifest raw bytes even when setup diagnostics do not change", async (t) => {
+	const root = await fixture(t);
+	const before = (await inspect(root)).value;
+	await write(root, "package.json", `${JSON.stringify({
+		private: true,
+		packageManager: "pnpm@10.14.0",
+		scripts: { preinstall: "node changed.js" },
+	}, null, 2)}\n`);
+	const after = (await inspect(root)).value;
+	assert.deepEqual(after.packageManager, before.packageManager);
+	assert.deepEqual(after.dependencies, before.dependencies);
+	assert.notEqual(after.workspace.packageJson.sha256, before.workspace.packageJson.sha256);
+	assert.notEqual(after.observedStateHash, before.observedStateHash);
+});
+
+test("inspector hashes invalid package.json raw bytes while blocking it", async (t) => {
+	const root = await fixture(t);
+	await write(root, "package.json", '{"private":true\n');
+	const { value, output } = await inspect(root);
+	assert.equal(value.state, "BLOCKED");
+	assert.equal(value.workspace.packageJson.valid, false);
+	assert.match(value.workspace.packageJson.sha256, /^[a-f0-9]{64}$/);
+	assert.ok(value.blockingReasons.includes("PACKAGE_JSON_INVALID"));
+	assert.doesNotMatch(output, /\{"private":true/);
 });
 
 test("inspector distinguishes aggregate and MCP-only dependency boundaries", async (t) => {
@@ -139,6 +181,80 @@ test("inspector blocks package-manager and openapi-to version conflicts", async 
 	assert.ok(unknown.blockingReasons.includes("PACKAGE_MANAGER_UNKNOWN"));
 });
 
+test("inspector blocks multiple same-manager lockfiles instead of deduplicating them", async (t) => {
+	for (const [manager, first, second] of [
+		["npm", "package-lock.json", "npm-shrinkwrap.json"],
+		["bun", "bun.lock", "bun.lockb"],
+	]) {
+		for (const manifest of [
+			{ private: true },
+			{ private: true, packageManager: `${manager}@1.0.0` },
+		]) {
+			const root = await fixture(t, manifest);
+			await write(root, first, "first lock\n");
+			await write(root, second, "second lock\n");
+			const { value } = await inspect(root);
+			assert.equal(value.state, "BLOCKED");
+			assert.equal(value.packageManager.value, "conflict");
+			assert.equal(value.packageManager.lockFiles.length, 2);
+			assert.ok(
+				value.packageManager.lockFiles.every(({ sha256 }) =>
+					/^[a-f0-9]{64}$/.test(sha256),
+				),
+			);
+			assert.ok(value.blockingReasons.includes("PACKAGE_MANAGER_CONFLICT"));
+		}
+	}
+});
+
+test("inspector binds lockfile raw bytes without changing manager evidence", async (t) => {
+	const root = await fixture(t);
+	await write(root, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
+	const before = (await inspect(root)).value;
+	await write(root, "pnpm-lock.yaml", "lockfileVersion: '9.1'\n");
+	const after = (await inspect(root)).value;
+	assert.equal(after.packageManager.value, before.packageManager.value);
+	assert.equal(after.packageManager.evidence, before.packageManager.evidence);
+	assert.equal(after.packageManager.lockFiles[0].file, before.packageManager.lockFiles[0].file);
+	assert.equal(after.packageManager.lockFiles[0].manager, before.packageManager.lockFiles[0].manager);
+	assert.notEqual(after.packageManager.lockFiles[0].sha256, before.packageManager.lockFiles[0].sha256);
+	assert.notEqual(after.observedStateHash, before.observedStateHash);
+});
+
+test("inspector blocks oversized lockfiles without loading their contents", async (t) => {
+	const root = await fixture(t);
+	const lockfile = join(root, "pnpm-lock.yaml");
+	await write(root, "pnpm-lock.yaml", "");
+	await truncate(lockfile, 32 * 1024 * 1024 + 1);
+	const { value } = await inspect(root);
+	assert.equal(value.state, "BLOCKED");
+	assert.ok(value.blockingReasons.includes("LOCKFILE_TOO_LARGE"));
+	assert.equal(value.packageManager.lockFiles[0].size, 32 * 1024 * 1024 + 1);
+	assert.equal(value.packageManager.lockFiles[0].sha256, null);
+});
+
+test("inspector does not follow a lockfile symlink outside the project", async (t) => {
+	const root = await fixture(t);
+	const outside = await mkdtemp(join(tmpdir(), "openapi-to-setup-lock-outside-"));
+	t.after(() => rm(outside, { recursive: true, force: true }));
+	await write(outside, "pnpm-lock.yaml", "external-lock-secret\n");
+	await symlink(join(outside, "pnpm-lock.yaml"), join(root, "pnpm-lock.yaml"));
+	const { value, output } = await inspect(root);
+	assert.equal(value.state, "BLOCKED");
+	assert.ok(value.blockingReasons.includes("LOCKFILE_OUTSIDE_ROOT"));
+	assert.equal(value.packageManager.lockFiles[0].sha256, null);
+	assert.doesNotMatch(output, /external-lock-secret/);
+});
+
+test("inspector fails closed on a dangling lockfile symlink", async (t) => {
+	const root = await fixture(t);
+	await symlink("missing-lock-target", join(root, "pnpm-lock.yaml"));
+	const { value } = await inspect(root);
+	assert.equal(value.state, "BLOCKED");
+	assert.ok(value.blockingReasons.includes("LOCKFILE_OUTSIDE_ROOT"));
+	assert.equal(value.packageManager.lockFiles[0].sha256, null);
+});
+
 test("inspector hashes one supported config without executing it and blocks multiples", async (t) => {
 	const root = await fixture(t, {
 		private: true,
@@ -161,6 +277,16 @@ test("inspector hashes one supported config without executing it and blocks mult
 	assert.ok(multiple.blockingReasons.includes("MULTIPLE_GENERATION_CONFIGS"));
 });
 
+test("inspector invalidates state when generation config bytes drift", async (t) => {
+	const root = await fixture(t);
+	await write(root, "openapi.config.ts", "export default {};\n");
+	const before = (await inspect(root)).value;
+	await write(root, "openapi.config.ts", "export default { changed: true };\n");
+	const after = (await inspect(root)).value;
+	assert.notEqual(after.generationConfig.files[0].sha256, before.generationConfig.files[0].sha256);
+	assert.notEqual(after.observedStateHash, before.observedStateHash);
+});
+
 test("inspector reports ignore state and conservative Codex modes without returning config bodies", async (t) => {
 	const root = await fixture(t, {
 		private: true,
@@ -175,6 +301,7 @@ test("inspector reports ignore state and conservative Codex modes without return
 	const { value, output } = await inspect(root);
 	assert.equal(value.runtimeState.directoryPresent, true);
 	assert.equal(value.runtimeState.ignored, true);
+	assert.match(value.runtimeState.gitignoreSha256, /^[a-f0-9]{64}$/);
 	assert.equal(value.codex.serverSectionCount, 1);
 	assert.equal(value.codex.inferredMode, "read-only");
 	assert.equal(value.codex.manualReviewRequired, true);
@@ -189,6 +316,24 @@ test("inspector reports ignore state and conservative Codex modes without return
 	assert.equal(unrelated.configPresent, true);
 	assert.equal(unrelated.serverSectionCount, 0);
 	assert.equal(unrelated.inferredMode, "missing");
+});
+
+test("inspector binds gitignore and Codex raw bytes even when diagnostics stay unchanged", async (t) => {
+	const root = await fixture(t);
+	await write(root, ".gitignore", "/.openapi-to/\n");
+	await write(root, ".codex/config.toml", "[mcp_servers.other]\ncommand = \"other\"\n");
+	const before = (await inspect(root)).value;
+
+	await write(root, ".gitignore", "/.openapi-to/\ndist/\n");
+	await write(root, ".codex/config.toml", "# unrelated comment\n[mcp_servers.other]\ncommand = \"other\"\n");
+	const after = (await inspect(root)).value;
+
+	assert.equal(after.runtimeState.ignored, true);
+	assert.equal(after.runtimeState.ignoreEvidence, before.runtimeState.ignoreEvidence);
+	assert.notEqual(after.runtimeState.gitignoreSha256, before.runtimeState.gitignoreSha256);
+	assert.equal(after.codex.inferredMode, before.codex.inferredMode);
+	assert.notEqual(after.codex.sha256, before.codex.sha256);
+	assert.notEqual(after.observedStateHash, before.observedStateHash);
 });
 
 test("inspector flags duplicate, absolute, and unsafe write-enabled Codex sections", async (t) => {

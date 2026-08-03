@@ -8,6 +8,7 @@ import process from "node:process";
 
 const SCHEMA_VERSION = 1;
 const MAX_FILE_BYTES = 128 * 1024;
+const MAX_LOCKFILE_BYTES = 32 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 64 * 1024;
 const MAX_DEPENDENCY_RESULTS = 100;
 const SUPPORTED_CONFIG_FILES = [
@@ -56,11 +57,40 @@ function isInside(root, candidate) {
 	return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
+function openedEntryMatches(info, opened) {
+	return info.dev === opened.dev && info.ino === opened.ino;
+}
+
+function unchangedDuringRead(before, after) {
+	return (
+		before.dev === after.dev &&
+		before.ino === after.ino &&
+		before.size === after.size &&
+		before.mtimeMs === after.mtimeMs &&
+		before.ctimeMs === after.ctimeMs
+	);
+}
+
+function noFollowReadFlags() {
+	return Number.isInteger(constants.O_NOFOLLOW)
+		? constants.O_RDONLY | constants.O_NOFOLLOW
+		: undefined;
+}
+
 async function entryInfo(root, relativePath) {
 	const candidate = path.resolve(root, relativePath);
 	if (!isInside(root, candidate)) return { exists: false, unsafe: true };
+	let entry;
 	try {
-		const entry = await lstat(candidate);
+		entry = await lstat(candidate);
+	} catch (error) {
+		if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
+			return { exists: false, unsafe: false };
+		}
+		if (error?.code === "ELOOP") return { exists: true, unsafe: true, symlink: true };
+		throw error;
+	}
+	try {
 		const resolved = await realpath(candidate);
 		if (!isInside(root, resolved)) {
 			return { exists: true, unsafe: true, symlink: entry.isSymbolicLink() };
@@ -72,32 +102,88 @@ async function entryInfo(root, relativePath) {
 			isFile: entry.isFile(),
 			isDirectory: entry.isDirectory(),
 			size: entry.size,
+			dev: entry.dev,
+			ino: entry.ino,
 			path: candidate,
 		};
 	} catch (error) {
-		if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
-			return { exists: false, unsafe: false };
+		if (
+			error?.code === "ENOENT" ||
+			error?.code === "ENOTDIR" ||
+			error?.code === "ELOOP"
+		) {
+			return { exists: true, unsafe: true, symlink: entry.isSymbolicLink() };
 		}
-		if (error?.code === "ELOOP") return { exists: true, unsafe: true, symlink: true };
 		throw error;
+	}
+}
+
+async function openVerifiedFile(info) {
+	const flags = noFollowReadFlags();
+	if (flags === undefined) return { readError: true };
+	let handle;
+	try {
+		handle = await open(info.path, flags);
+		const opened = await handle.stat();
+		if (!opened.isFile() || !openedEntryMatches(info, opened)) {
+			await handle.close();
+			return { unsafe: true };
+		}
+		return { handle, opened };
+	} catch (error) {
+		await handle?.close();
+		if (error?.code === "ELOOP") return { unsafe: true };
+		return { readError: true };
 	}
 }
 
 async function readBoundedText(root, relativePath) {
 	const info = await entryInfo(root, relativePath);
-	if (!info.exists || info.unsafe || !info.isFile) return { info };
-	let handle;
+	if (!info.exists || info.unsafe) return { info };
+	if (!info.isFile) return { info, readError: true };
+	const openedFile = await openVerifiedFile(info);
+	if (!openedFile.handle) return { info: { ...info, unsafe: openedFile.unsafe === true }, readError: openedFile.readError === true };
+	const { handle, opened } = openedFile;
 	try {
-		handle = await open(info.path, constants.O_RDONLY | constants.O_NOFOLLOW);
-		const opened = await handle.stat();
-		if (!opened.isFile()) return { info: { ...info, unsafe: true } };
 		if (opened.size > MAX_FILE_BYTES) return { info, tooLarge: true };
-		return { info, text: await handle.readFile("utf8") };
-	} catch (error) {
-		if (error?.code === "ELOOP") return { info: { ...info, unsafe: true } };
-		throw error;
+		const bytes = await handle.readFile();
+		const after = await handle.stat();
+		if (bytes.byteLength !== opened.size || !unchangedDuringRead(opened, after)) {
+			return { info, readError: true };
+		}
+		return { info, text: bytes.toString("utf8"), sha256: sha256(bytes) };
+	} catch {
+		return { info, readError: true };
 	} finally {
-		await handle?.close();
+		await handle.close();
+	}
+}
+
+async function hashLockFile(root, relativePath) {
+	const info = await entryInfo(root, relativePath);
+	if (!info.exists || info.unsafe) return { info };
+	if (!info.isFile) return { info, readError: true };
+	const openedFile = await openVerifiedFile(info);
+	if (!openedFile.handle) return { info: { ...info, unsafe: openedFile.unsafe === true }, readError: openedFile.readError === true };
+	const { handle, opened } = openedFile;
+	try {
+		if (opened.size > MAX_LOCKFILE_BYTES) return { info, size: opened.size, tooLarge: true };
+		const hash = createHash("sha256");
+		let size = 0;
+		for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) {
+			size += chunk.byteLength;
+			if (size > MAX_LOCKFILE_BYTES) return { info, size, tooLarge: true };
+			hash.update(chunk);
+		}
+		const after = await handle.stat();
+		if (size !== opened.size || !unchangedDuringRead(opened, after)) {
+			return { info, size, readError: true };
+		}
+		return { info, size, sha256: hash.digest("hex") };
+	} catch {
+		return { info, readError: true };
+	} finally {
+		await handle.close();
 	}
 }
 
@@ -214,8 +300,10 @@ async function inspect(rootArgument) {
 	const packageRead = await readBoundedText(root, "package.json");
 	let manifest;
 	let packageJsonValid = false;
-	if (packageRead.info.unsafe) blockingReasons.push("PACKAGE_JSON_OUTSIDE_ROOT");
+	if (!packageRead.info.exists) blockingReasons.push("PACKAGE_JSON_MISSING");
+	else if (packageRead.info.unsafe) blockingReasons.push("PACKAGE_JSON_OUTSIDE_ROOT");
 	else if (packageRead.tooLarge) blockingReasons.push("PACKAGE_JSON_TOO_LARGE");
+	else if (packageRead.readError) blockingReasons.push("PACKAGE_JSON_READ_FAILED");
 	else if (packageRead.text !== undefined) {
 		try {
 			manifest = JSON.parse(packageRead.text);
@@ -230,11 +318,18 @@ async function inspect(rootArgument) {
 	const declaredManager = packageManagerName(manifest?.packageManager);
 	const lockFiles = [];
 	for (const [file, manager] of LOCK_FILES) {
-		const info = await entryInfo(root, file);
-		if (info.unsafe) blockingReasons.push("LOCKFILE_OUTSIDE_ROOT");
-		if (info.exists && !info.unsafe) lockFiles.push({ file, manager });
+		const result = await hashLockFile(root, file);
+		if (!result.info.exists) continue;
+		lockFiles.push({
+			file,
+			manager,
+			sha256: result.sha256 ?? null,
+			size: result.size ?? null,
+		});
+		if (result.info.unsafe) blockingReasons.push("LOCKFILE_OUTSIDE_ROOT");
+		else if (result.tooLarge) blockingReasons.push("LOCKFILE_TOO_LARGE");
+		else if (result.readError) blockingReasons.push("LOCKFILE_READ_FAILED");
 	}
-	const lockManagers = [...new Set(lockFiles.map(({ manager }) => manager))].sort();
 	let detectedManager = "unknown";
 	let managerEvidence = "none";
 	if (hasDeclaredManager && !declaredManager) {
@@ -244,11 +339,16 @@ async function inspect(rootArgument) {
 	} else if (declaredManager) {
 		detectedManager = declaredManager;
 		managerEvidence = "packageManager";
-	} else if (!hasDeclaredManager && lockManagers.length === 1) {
-		detectedManager = lockManagers[0];
+	} else if (!hasDeclaredManager && lockFiles.length === 1) {
+		detectedManager = lockFiles[0].manager;
 		managerEvidence = "unique-lockfile-manager";
 	}
-	if (lockManagers.length > 1 || (declaredManager && lockManagers.some((value) => value !== declaredManager))) {
+	const lockfileConflict =
+		(!declaredManager && lockFiles.length > 1) ||
+		(declaredManager &&
+			(lockFiles.some(({ manager }) => manager !== declaredManager) ||
+				lockFiles.filter(({ manager }) => manager === declaredManager).length > 1));
+	if (lockfileConflict) {
 		detectedManager = "conflict";
 		managerEvidence = "conflicting-evidence";
 		blockingReasons.push("PACKAGE_MANAGER_CONFLICT");
@@ -267,7 +367,10 @@ async function inspect(rootArgument) {
 		if (read.tooLarge) {
 			blockingReasons.push("GENERATION_CONFIG_TOO_LARGE");
 			configFiles.push({ path: file, sha256: null });
-		} else if (read.text !== undefined) configFiles.push({ path: file, sha256: sha256(read.text) });
+		} else if (read.readError) {
+			blockingReasons.push("GENERATION_CONFIG_READ_FAILED");
+			configFiles.push({ path: file, sha256: null });
+		} else if (read.text !== undefined) configFiles.push({ path: file, sha256: read.sha256 });
 	}
 	if (configFiles.length > 1) blockingReasons.push("MULTIPLE_GENERATION_CONFIGS");
 
@@ -276,10 +379,12 @@ async function inspect(rootArgument) {
 	const gitignoreRead = await readBoundedText(root, ".gitignore");
 	if (gitignoreRead.info.unsafe) blockingReasons.push("GITIGNORE_OUTSIDE_ROOT");
 	if (gitignoreRead.tooLarge) blockingReasons.push("GITIGNORE_TOO_LARGE");
+	if (gitignoreRead.readError) blockingReasons.push("GITIGNORE_READ_FAILED");
 	const ignore = gitignoreStatus(gitignoreRead.text);
 	const codexRead = await readBoundedText(root, ".codex/config.toml");
 	if (codexRead.info.unsafe) blockingReasons.push("CODEX_CONFIG_OUTSIDE_ROOT");
 	if (codexRead.tooLarge) blockingReasons.push("CODEX_CONFIG_TOO_LARGE");
+	if (codexRead.readError) blockingReasons.push("CODEX_CONFIG_READ_FAILED");
 	const codexInspection = codexRead.text === undefined ? null : inspectCodexToml(codexRead.text);
 	if (codexInspection?.serverSectionCount > 1) blockingReasons.push("DUPLICATE_CODEX_SERVER_SECTION");
 	if (codexInspection?.configurationBlocked) blockingReasons.push("CODEX_CONFIG_MANUAL_REVIEW_REQUIRED");
@@ -299,7 +404,11 @@ async function inspect(rootArgument) {
 		blockingReasons: [...new Set(blockingReasons)].sort(),
 		workspace: {
 			root: ".",
-			packageJson: { exists: packageRead.info.exists === true, valid: packageJsonValid },
+			packageJson: {
+				exists: packageRead.info.exists === true,
+				valid: packageJsonValid,
+				sha256: packageRead.sha256 ?? null,
+			},
 			node: { major: nodeMajor, supported: nodeMajor >= 20 },
 			gitRepository: gitEntry.exists === true && !gitEntry.unsafe,
 		},
@@ -308,7 +417,10 @@ async function inspect(rootArgument) {
 			evidence: managerEvidence,
 			declared: declaredManager ?? null,
 			lockFiles,
-			automaticInstallSupported: detectedManager === "pnpm",
+			automaticInstallSupported:
+				detectedManager === "pnpm" &&
+				packageJsonValid &&
+				!blockingReasons.some((reason) => reason.startsWith("LOCKFILE_")),
 		},
 		dependencies,
 		generationConfig: {
@@ -319,12 +431,13 @@ async function inspect(rootArgument) {
 		runtimeState: {
 			directoryPresent: stateDirectory.exists === true && !stateDirectory.unsafe,
 			gitignorePresent: gitignoreRead.info.exists === true && !gitignoreRead.info.unsafe,
+			gitignoreSha256: gitignoreRead.sha256 ?? null,
 			ignored: ignore.ignored,
 			ignoreEvidence: ignore.evidence,
 		},
 		codex: {
 			configPresent: codexRead.info.exists === true && !codexRead.info.unsafe,
-			sha256: codexRead.text === undefined ? null : sha256(codexRead.text),
+			sha256: codexRead.sha256 ?? null,
 			...(codexInspection ?? {
 				serverSectionCount: 0,
 				applyPromptSectionCount: 0,

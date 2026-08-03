@@ -71,6 +71,30 @@ cases:
     category: degraded
     prompt: "项目没有 openapi-to，版本也没有指定"
     expected: request_exact_version_before_install
+  - id: degraded-package-json-missing
+    category: degraded
+    prompt: "当前目录没有 package.json"
+    expected: block_without_install_plan
+  - id: degraded-package-json-drift-after-approval
+    category: degraded
+    prompt: "批准后 package.json 的其他字段发生变化"
+    expected: invalidate_setup_plan
+  - id: degraded-lockfile-drift-after-approval
+    category: degraded
+    prompt: "批准后锁文件内容发生变化"
+    expected: invalidate_setup_plan
+  - id: degraded-gitignore-drift-after-approval
+    category: degraded
+    prompt: "批准后 .gitignore 的无关内容发生变化"
+    expected: invalidate_setup_plan
+  - id: degraded-multiple-same-manager-lockfiles
+    category: degraded
+    prompt: "项目同时存在 package-lock.json 和 npm-shrinkwrap.json"
+    expected: block_package_manager_conflict
+  - id: degraded-lockfile-too-large
+    category: degraded
+    prompt: "锁文件超过 inspector 的 32 MiB 上限"
+    expected: fail_closed_without_reading_contents
   - id: degraded-global-only
     category: degraded
     prompt: "全局 openapi 命令存在，但项目 manifest 没有依赖"

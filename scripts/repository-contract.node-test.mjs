@@ -1575,6 +1575,21 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 			failure: /missing required workflow marker re-inspect, create a new plan and ID/,
 		},
 		{
+			path: ".agents/skills/openapi-to-setup/SKILL.md",
+			mutate: (contents) => contents.replace("`PACKAGE_JSON_MISSING`", "`PACKAGE_MISSING`"),
+			failure: /missing required workflow marker `PACKAGE_JSON_MISSING`/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/diagnosis.md",
+			mutate: (contents) => contents.replace("Multiple actual lockfiles", "Multiple manager types"),
+			failure: /missing setup state-binding marker Multiple actual lockfiles/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/safe-writes.md",
+			mutate: (contents) => contents.replace("new `setupPlanId`", "existing `setupPlanId`"),
+			failure: /missing setup state-binding marker new `setupPlanId`/,
+		},
+		{
 			path: ".agents/skills/openapi-to-setup/agents/openai.yaml",
 			mutate: (contents) => contents.replace("Diagnose and configure local openapi-to and Codex MCP", "Configure openapi-to"),
 			failure: /short_description must equal/,
@@ -1583,6 +1598,31 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
 			mutate: (contents) => contents.replace("degraded-count-schema-mismatch", "degraded-count-only"),
 			failure: /missing required case degraded-count-schema-mismatch/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
+			mutate: (contents) => contents.replace("degraded-package-json-missing", "degraded-manifest-absent"),
+			failure: /missing required case degraded-package-json-missing/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"expected: block_package_manager_conflict",
+					"expected: infer_package_manager",
+				),
+			failure:
+				/case degraded-multiple-same-manager-lockfiles must be degraded with expected block_package_manager_conflict/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"id: degraded-lockfile-too-large\n    category: degraded",
+					"id: degraded-lockfile-too-large\n    category: trigger",
+				),
+			failure:
+				/case degraded-lockfile-too-large must be degraded with expected fail_closed_without_reading_contents/,
 		},
 	];
 	for (const contractCase of cases) {
