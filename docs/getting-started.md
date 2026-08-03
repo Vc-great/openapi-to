@@ -49,7 +49,7 @@ pnpm exec openapi-to-mcp --help
 
 Advanced users who intentionally want only the MCP package boundary may instead install `pnpm add -D @openapi-to/mcp`; it provides the same standalone `openapi-to-mcp` command plus the `@openapi-to/mcp` and `@openapi-to/mcp/cli` programming interfaces.
 
-The first-stage consumer Skill is designed primarily for business projects
+The Phase 1 `openapi-to-generate` consumer Skill is designed primarily for business projects
 that install the aggregate `openapi-to` package. It does not automatically
 treat an MCP-only installation as a complete business code-generation
 environment; broader MCP-only consumer support is a separate design boundary.
@@ -81,15 +81,18 @@ Choose the Host-specific configuration:
 
 All Hosts share the same [security boundary](./mcp-security.md) and [troubleshooting guide](./troubleshooting.md).
 
-The second-stage [`openapi-to-setup` consumer Skill](./setup-skill.md) can
+The Phase 2 [`openapi-to-setup` consumer Skill](./setup-skill.md) can
 diagnose and configure an aggregate-package project and Codex MCP. It defaults
 to read-only, uses the existing `openapi init`, does not upgrade an existing
 version, and requires exact Setup Plan approval before package, init, ignore,
 or Host writes. Automatic package mutation is pnpm-only; npm, Yarn, and Bun are
 diagnostic/manual in this phase. A Codex config write returns
 `RESTART_REQUIRED` until restart and actual Tool/inputSchema verification.
+Phase 2.1 adds state-hash binding and Phase 2.2 adds Windows portable verified
+reads; these are Setup hardening, not separate Skills. Despite the historical
+phase numbering, consumers run Setup before Generate.
 
-After setup, a compatible AI Host can use the first-stage
+After setup, a compatible AI Host can use the Phase 1
 [`openapi-to-generate` consumer Skill](./skills.md) to discover
 Operations, preview operation-scoped output, preserve the Prepare/Apply
 approval boundary, and integrate generated code. The Skill orchestrates MCP;

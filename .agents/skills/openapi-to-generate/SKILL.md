@@ -71,8 +71,14 @@ If setup is missing, explain the exact gap and stop the affected workflow.
 `pnpm add -D openapi-to` is the recommended installation and
 `pnpm exec openapi-to-mcp` is the local MCP command, but this Skill must not run
 installation or modify `package.json`, `openapi.config.ts`, or
-`.codex/config.toml`. Setup automation belongs to a future `openapi-to-setup`
-Skill.
+`.codex/config.toml`. Hand those package, initialization, ignore, Host, restart,
+and capability-verification gaps to the existing `openapi-to-setup` Skill.
+Do not begin this workflow from `PACKAGE_MISSING`, `CONFIG_MISSING`,
+`HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED`. `MCP_READ_ONLY`
+permits discovery, bounded contract reading, and operation-scoped Dry Run;
+Prepare/Apply additionally requires `MCP_WRITE_ENABLED` plus compatible current
+Schemas. `--allow-write` is not Setup Plan approval and is not generation Apply
+approval.
 
 ## 2. Discover the required Operation
 

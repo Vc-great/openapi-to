@@ -6,6 +6,12 @@ Server. The first-phase `openapi-to-generate` Skill starts only after setup and
 handles API Operation discovery, selective generation, and business-code
 integration.
 
+These phase labels record delivery history. Phase 2.1 hardened Setup Plan
+state hashing, and Phase 2.2 added Windows portable verified reads; both are
+Setup hardening, not additional consumer Skills. The user journey still begins
+with Setup and proceeds to Generate only after restart and capability
+verification.
+
 Use setup for package installation, the existing `openapi init` flow,
 `/.openapi-to/` ignore repair, Codex project MCP configuration, startup
 diagnosis, and 3/8/10 Tool-mode validation. A vague setup request defaults to

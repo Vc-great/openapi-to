@@ -12,7 +12,12 @@ function isNonZero(value) {
 }
 
 function sameStatValues(left, right, fields) {
-	return fields.every((field) => left[field] === right[field]);
+	return fields.every(
+		(field) =>
+			isStatInteger(left?.[field]) &&
+			isStatInteger(right?.[field]) &&
+			left[field] === right[field],
+	);
 }
 
 function hasUsableIdentity(stats, platform) {

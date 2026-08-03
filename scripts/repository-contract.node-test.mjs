@@ -1515,8 +1515,15 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 		},
 		{
 			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace("kind: static_skill_evaluation_inputs\n", ""),
+			failure: /must contain schema_version 1, static kind, and a cases array/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
 			mutate: (contents) => {
-				let replacements = 7;
+				let replacements =
+					(contents.match(/category: degraded/g) ?? []).length - 3;
 				return contents.replaceAll("category: degraded", (category) => {
 					if (replacements === 0) return category;
 					replacements -= 1;
@@ -1533,6 +1540,15 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 					"degraded-schema-hidden",
 				),
 			failure: /missing required case degraded-schema-not-visible/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"degraded-apply-token-expired",
+					"degraded-apply-token-old",
+				),
+			failure: /missing required case degraded-apply-token-expired/,
 		},
 	];
 	for (const contractCase of cases) {
@@ -1571,6 +1587,19 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 	assertFailure(
 		await auditAgentAndSkillContracts(missingReferenceRoot),
 		/references missing path references\/missing-workflow\.md/,
+	);
+
+	const missingDistributionFileRoot = await createContractFixture(t);
+	await git(
+		missingDistributionFileRoot,
+		"rm",
+		"--cached",
+		"--",
+		".agents/skills/openapi-to-generate/references/controlled-write.md",
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(missingDistributionFileRoot),
+		/consumer Skill file is not tracked by Git: .*controlled-write\.md/,
 	);
 });
 
@@ -1630,6 +1659,11 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
 			mutate: (contents) => contents.replace("degraded-package-json-missing", "degraded-manifest-absent"),
 			failure: /missing required case degraded-package-json-missing/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
+			mutate: (contents) => contents.replace("degraded-windows-no-nofollow", "degraded-windows-portable-read"),
+			failure: /missing required case degraded-windows-no-nofollow/,
 		},
 		{
 			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",

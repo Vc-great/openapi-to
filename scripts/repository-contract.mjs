@@ -85,6 +85,13 @@ const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
 const CONSUMER_SKILL_NAME = "openapi-to-generate";
 const CONSUMER_SKILL_DOCUMENT = "docs/skills.md";
 const CONSUMER_SKILL_EVALUATION = `${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/evaluation-matrix.yaml`;
+const CONSUMER_SKILL_REQUIRED_FILES = [
+	"SKILL.md",
+	"agents/openai.yaml",
+	"references/mcp-workflow.md",
+	"references/controlled-write.md",
+	"references/evaluation-matrix.yaml",
+];
 const SETUP_SKILL_NAME = "openapi-to-setup";
 const SETUP_SKILL_DOCUMENT = "docs/setup-skill.md";
 const SETUP_SKILL_EVALUATION = `${SKILL_ROOT}/${SETUP_SKILL_NAME}/references/evaluation-matrix.yaml`;
@@ -124,8 +131,35 @@ const REQUIRED_SETUP_DEGRADED_CASES = new Map([
 	["degraded-package-json-drift-after-approval", "invalidate_setup_plan"],
 	["degraded-lockfile-drift-after-approval", "invalidate_setup_plan"],
 	["degraded-gitignore-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-config-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-codex-drift-after-approval", "invalidate_setup_plan"],
 	["degraded-multiple-same-manager-lockfiles", "block_package_manager_conflict"],
 	["degraded-lockfile-too-large", "fail_closed_without_reading_contents"],
+	["degraded-windows-no-nofollow", "use_verified_o_rdonly_fallback"],
+	[
+		"degraded-mcp-unavailable",
+		"diagnose_connection_without_generate_handoff",
+	],
+	["degraded-tool-list-missing", "block_capability_claim"],
+	[
+		"degraded-input-schema-not-visible",
+		"block_unverified_setup_handoff",
+	],
+	["degraded-old-tool-schema", "use_only_observed_schema_without_upgrade"],
+	["degraded-handoff-config-missing", "finish_setup_before_generate"],
+	[
+		"degraded-handoff-host-config-missing",
+		"finish_setup_before_generate",
+	],
+	["degraded-handoff-blocked", "do_not_handoff_generate"],
+	[
+		"degraded-handoff-read-only",
+		"handoff_discovery_contract_and_dry_run_only",
+	],
+	[
+		"degraded-handoff-write-enabled",
+		"handoff_controlled_prepare_apply_with_separate_approval",
+	],
 ]);
 const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
@@ -133,6 +167,9 @@ const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	CONSUMER_SKILL_DOCUMENT,
 ];
 const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
+	["degraded-server-absent", "fail_closed_explain_server_setup"],
+	["degraded-tool-list-missing", "fail_closed_without_operation_workflow"],
+	["degraded-old-tool-schema", "use_only_observed_schema_without_upgrade"],
 	[
 		"degraded-multiple-targets-require-exact-target",
 		"list_targets_and_pass_one_exact_target",
@@ -154,6 +191,18 @@ const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
 		"degraded-prepare-not-applyable",
 		"stop_before_approval_and_apply",
 	],
+	["degraded-replace-unsupported", "reject_replace_without_emulation"],
+	["degraded-prepare-missing", "remain_read_only_without_prepare"],
+	["degraded-apply-missing", "stop_before_prepare_apply_workflow"],
+	[
+		"degraded-apply-token-expired",
+		"reprepare_and_require_new_exact_approval",
+	],
+	[
+		"degraded-plan-hash-drift",
+		"reject_apply_and_require_exact_current_hash",
+	],
+	["degraded-setup-not-ready", "do_not_start_generate_workflow"],
 ]);
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
@@ -2804,6 +2853,11 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 		"current Tool inputSchema",
 		"Tool existence and Tool count do not prove",
 		"Never silently substitute a global installation",
+		"existing `openapi-to-setup` Skill",
+		"`PACKAGE_MISSING`, `CONFIG_MISSING`, `HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED`",
+		"`MCP_READ_ONLY` permits discovery",
+		"Prepare/Apply additionally requires `MCP_WRITE_ENABLED`",
+		"`--allow-write` is not Setup Plan approval",
 		"pnpm add -D openapi-to",
 		"pnpm exec openapi-to-mcp",
 		"openapi.config.ts",
@@ -2897,12 +2951,52 @@ function validateOpenapiToGenerateInterface(metadata, relativePath, failures) {
 	}
 }
 
+async function validateConsumerSkillDistribution(
+	root,
+	trackedFiles,
+	skillName,
+	requiredFiles,
+	failures,
+) {
+	const prefix = `${SKILL_ROOT}/${skillName}/`;
+	for (const relativeFile of requiredFiles) {
+		const relativePath = `${prefix}${relativeFile}`;
+		if (!(await exists(join(root, relativePath)))) {
+			failures.push(`missing consumer Skill file ${relativePath}`);
+		} else if (!trackedFiles.has(relativePath)) {
+			failures.push(`consumer Skill file is not tracked by Git: ${relativePath}`);
+		}
+	}
+	for (const relativePath of [...trackedFiles].filter((file) =>
+		file.startsWith(prefix),
+	)) {
+		if (/(?:^|\/)(?:tmp|temp)(?:\/|$)|\.(?:bak|orig|rej|tmp)$/i.test(relativePath)) {
+			failures.push(`consumer Skill distribution contains temporary file ${relativePath}`);
+			continue;
+		}
+		const contents = await readFile(join(root, relativePath), "utf8");
+		if (/\/Users\/[^/]+\/|\/home\/[^/]+\/|[A-Za-z]:\\(?:Users|Documents)\\/.test(contents)) {
+			failures.push(`consumer Skill distribution contains an absolute machine path in ${relativePath}`);
+		}
+		if (/-----BEGIN [A-Z ]*PRIVATE KEY-----|\bgh[opsu]_[A-Za-z0-9]{20,}|\bnpm_[A-Za-z0-9]{20,}/.test(contents)) {
+			failures.push(`consumer Skill distribution contains credential-like test data in ${relativePath}`);
+		}
+	}
+}
+
 async function validateOpenapiToGenerateFiles(
 	root,
 	trackedFiles,
 	skillContentsByName,
 	failures,
 ) {
+	await validateConsumerSkillDistribution(
+		root,
+		trackedFiles,
+		CONSUMER_SKILL_NAME,
+		CONSUMER_SKILL_REQUIRED_FILES,
+		failures,
+	);
 	const skillContents = skillContentsByName.get(CONSUMER_SKILL_NAME);
 	if (skillContents) validateOpenapiToGenerateSkill(skillContents, failures);
 
@@ -2983,10 +3077,11 @@ async function validateOpenapiToGenerateFiles(
 	if (
 		!isMapping(evaluation) ||
 		evaluation.schema_version !== 1 ||
+		evaluation.kind !== "static_skill_evaluation_inputs" ||
 		!Array.isArray(evaluation.cases)
 	) {
 		failures.push(
-			`${CONSUMER_SKILL_EVALUATION} must contain schema_version 1 and a cases array`,
+			`${CONSUMER_SKILL_EVALUATION} must contain schema_version 1, static kind, and a cases array`,
 		);
 		return;
 	}
@@ -3108,6 +3203,11 @@ function validateOpenapiToSetupSkill(contents, failures) {
 		"every lockfile's name, size, and bytes",
 		"Multiple actual lockfiles",
 		"Git status remains a separate pre-apply check",
+		"`PACKAGE_MISSING`, `CONFIG_MISSING`, `HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED`",
+		"`MCP_READ_ONLY` with compatible current Tool Schemas",
+		"`MCP_WRITE_ENABLED` with compatible current Dry Run, Prepare, and Apply Schemas",
+		"Setup owns package/config/Host writes only",
+		"Generate owns Operation selection, generation Apply, and business-code integration only",
 	]) {
 		if (!normalized.includes(marker)) failures.push(`${SETUP_SKILL_NAME} is missing required workflow marker ${marker}`);
 	}
@@ -3130,6 +3230,13 @@ function validateOpenapiToSetupInterface(metadata, relativePath, failures) {
 }
 
 async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByName, failures) {
+	await validateConsumerSkillDistribution(
+		root,
+		trackedFiles,
+		SETUP_SKILL_NAME,
+		["SKILL.md", ...SETUP_SKILL_REQUIRED_FILES],
+		failures,
+	);
 	const skillContents = skillContentsByName.get(SETUP_SKILL_NAME);
 	if (skillContents) validateOpenapiToSetupSkill(skillContents, failures);
 	for (const relativeFile of SETUP_SKILL_REQUIRED_FILES) {

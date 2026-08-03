@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
 	openVerifiedFile,
@@ -15,7 +16,7 @@ import {
 } from "../.agents/skills/openapi-to-setup/scripts/secure-file-read.mjs";
 
 const execFileAsync = promisify(execFile);
-const repositoryRoot = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const inspector = join(repositoryRoot, ".agents/skills/openapi-to-setup/scripts/inspect-project.mjs");
 const hasher = join(repositoryRoot, ".agents/skills/openapi-to-setup/scripts/hash-setup-plan.mjs");
 
@@ -152,8 +153,11 @@ test("secure reader selects O_NOFOLLOW when available and O_RDONLY otherwise", a
 test("secure reader rejects identity and read-stability mismatches deterministically", () => {
 	const before = fakeStats();
 	assert.equal(sameOpenedFile(before, fakeStats({ ino: 3n })), false);
+	assert.equal(sameOpenedFile(before, fakeStats({ dev: undefined })), false);
+	assert.equal(sameOpenedFile(before, fakeStats({ ino: undefined })), false);
 	assert.equal(unchangedDuringRead(before, fakeStats({ size: 13n })), false);
 	assert.equal(unchangedDuringRead(before, fakeStats({ mtimeNs: 31n })), false);
+	assert.equal(unchangedDuringRead(before, fakeStats({ nlink: undefined })), false);
 
 	const windowsBefore = fakeStats({ dev: 0n });
 	assert.equal(sameOpenedFile(windowsBefore, fakeStats({ dev: 0n }), "win32"), true);
@@ -161,6 +165,12 @@ test("secure reader rejects identity and read-stability mismatches deterministic
 		sameOpenedFile(windowsBefore, fakeStats({ dev: 0n, ino: 0n }), "win32"),
 		false,
 	);
+	for (const field of ["size", "birthtimeNs", "ctimeNs", "mtimeNs", "mode"]) {
+		assert.equal(
+			sameOpenedFile(windowsBefore, fakeStats({ dev: 0n, [field]: undefined }), "win32"),
+			false,
+		);
+	}
 });
 
 test("inspector hashes every bounded setup file without portable read failures", async (t) => {
@@ -189,6 +199,50 @@ test("inspector hashes every bounded setup file without portable read failures",
 	]) {
 		assert.match(digest, /^[a-f0-9]{64}$/);
 	}
+});
+
+test("consumer fixture advances only through the setup states and binds every transition", async (t) => {
+	const root = await fixture(t, {
+		private: true,
+		packageManager: "pnpm@10.14.0",
+	});
+	const packageMissing = (await inspect(root)).value;
+	assert.equal(packageMissing.state, "PACKAGE_MISSING");
+
+	await write(root, "package.json", `${JSON.stringify({
+		private: true,
+		packageManager: "pnpm@10.14.0",
+		devDependencies: { "openapi-to": "4.2.0" },
+	}, null, 2)}\n`);
+	const configMissing = (await inspect(root)).value;
+	assert.equal(configMissing.state, "CONFIG_MISSING");
+	assert.notEqual(configMissing.observedStateHash, packageMissing.observedStateHash);
+
+	await write(root, "openapi.config.ts", "export default {};\n");
+	const hostMissing = (await inspect(root)).value;
+	assert.equal(hostMissing.state, "HOST_CONFIG_MISSING");
+	assert.notEqual(hostMissing.observedStateHash, configMissing.observedStateHash);
+
+	await write(
+		root,
+		".codex/config.toml",
+		'[mcp_servers.openapi_to]\ncommand = "pnpm"\nargs = ["exec", "openapi-to-mcp", "--workspace-root", ".", "--config", "openapi.config.ts"]\n',
+	);
+	const hostReady = (await inspect(root)).value;
+	assert.equal(hostReady.state, "HOST_CONFIG_READY");
+	assert.equal(hostReady.codex.inferredMode, "read-only");
+	assert.notEqual(hostReady.observedStateHash, hostMissing.observedStateHash);
+
+	await write(root, "openapi.config.ts", "export default { changed: true };\n");
+	const drifted = (await inspect(root)).value;
+	assert.equal(drifted.state, "HOST_CONFIG_READY");
+	assert.notEqual(drifted.observedStateHash, hostReady.observedStateHash);
+
+	const missingManifestRoot = await mkdtemp(join(tmpdir(), "openapi-to-setup-no-manifest-"));
+	t.after(() => rm(missingManifestRoot, { recursive: true, force: true }));
+	const blocked = (await inspect(missingManifestRoot)).value;
+	assert.equal(blocked.state, "BLOCKED");
+	assert.ok(blocked.blockingReasons.includes("PACKAGE_JSON_MISSING"));
 });
 
 test("inspector reports a clean pnpm project with all setup capabilities missing", async (t) => {

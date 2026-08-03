@@ -8,6 +8,13 @@ by an AI Host.
 
 ## Two consumer phases
 
+The numbering records delivery history: Phase 1 is `openapi-to-generate`,
+Phase 2 is `openapi-to-setup`, Phase 2.1 is Setup state-hash hardening, and
+Phase 2.2 is Setup's Windows portable verified-read hardening. Phase 2.1 and
+Phase 2.2 do not add another consumer Skill. The runtime user path is the other
+way around: setup and verify the Host first, then hand the business request to
+generate.
+
 The repository ships two specialized consuming-project workflows:
 
 - [`openapi-to-setup`](../.agents/skills/openapi-to-setup/SKILL.md) diagnoses
@@ -121,3 +128,17 @@ The generate Skill remains phase one and never installs dependencies or
 modifies `package.json`, `openapi.config.ts`, or `.codex/config.toml`. Setup does
 not add MCP Tools or replace MCP, and it hands daily API discovery, selective
 generation, and integration to generate after the requested mode is verified.
+
+The handoff fails closed. `PACKAGE_MISSING`, `CONFIG_MISSING`,
+`HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, and `BLOCKED` do not start Generate.
+`MCP_READ_ONLY` with compatible current Schemas permits Operation discovery,
+bounded contract reading, and operation-scoped Dry Run. Prepare/Apply requires
+`MCP_WRITE_ENABLED` plus compatible current Dry Run, Prepare, and Apply Schemas;
+`--allow-write` is neither Setup Plan approval nor generation Apply approval.
+
+Automatic setup support is limited to pnpm and trusted project-level Codex
+`.codex/config.toml`. npm, Yarn, Bun, Claude Code, Cursor, and generic stdio
+Hosts can be diagnosed, but their writes remain manual. Neither Skill uses a
+global package fallback, silently upgrades openapi-to, executes an untrusted
+generation config during setup diagnosis, or treats Tool count as capability
+proof.

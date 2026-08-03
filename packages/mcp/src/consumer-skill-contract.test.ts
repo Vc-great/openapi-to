@@ -144,6 +144,20 @@ function validateToolInputExample(example: ToolInputExample): void {
 			);
 		}
 	}
+
+	if (example.tool === "openapi_apply_generation") {
+		const fields = Object.keys(example.input).sort();
+		if (
+			!isDeepStrictEqual(fields, ["approvedPlanHash", "planId", "token"]) ||
+			typeof example.input.planId !== "string" ||
+			typeof example.input.token !== "string" ||
+			typeof example.input.approvedPlanHash !== "string"
+		) {
+			throw new Error(
+				`${location} must pass only the exact planId, token, and approvedPlanHash`,
+			);
+		}
+	}
 }
 
 describe("openapi-to-generate Tool input examples", () => {
@@ -184,6 +198,33 @@ describe("openapi-to-generate Tool input examples", () => {
 		expect(() =>
 			validateToolInputExample({ ...(original as ToolInputExample), input }),
 		).toThrow(/contains unknown fields/);
+	});
+
+	it("rejects Apply examples with missing plan binding or extra authority", () => {
+		const original = examples.find(
+			({ tool }) => tool === "openapi_apply_generation",
+		);
+		expect(original).toBeDefined();
+
+		const missingHash = structuredClone(original?.input ?? {});
+		delete missingHash.approvedPlanHash;
+		expect(() =>
+			validateToolInputExample({
+				...(original as ToolInputExample),
+				input: missingHash,
+			}),
+		).toThrow(/does not match the current MCP inputSchema/);
+
+		const extraAuthority = {
+			...structuredClone(original?.input ?? {}),
+			force: true,
+		};
+		expect(() =>
+			validateToolInputExample({
+				...(original as ToolInputExample),
+				input: extraAuthority,
+			}),
+		).toThrow(/does not match the current MCP inputSchema|unknown fields/);
 	});
 
 	it("rejects an invalid replace example through the actual Prepare inputSchema", () => {
