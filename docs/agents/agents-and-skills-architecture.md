@@ -18,8 +18,9 @@ their complete architecture.
 
 Use one primary workflow for a task. General repository changes use
 `implement-and-review`; domain Skills assist it. Existing Actions failures and
-release preparation use their specialized primary Skills. Pure analysis does
-not load a write-oriented workflow.
+release preparation use their specialized primary Skills. Consumer projects
+use `openapi-to-generate` for API-dependent feature delivery through the local
+openapi-to MCP. Pure analysis does not load a write-oriented workflow.
 
 ## Rule discovery boundary
 
@@ -127,6 +128,7 @@ workflow lifecycle.
 | Skill | Trigger and responsibility | Audit action |
 | --- | --- | --- |
 | `implement-and-review` | An authorized feature, bug fix, refactor, CI/configuration change, documentation change, or cross-file implementation needing validation and review closure | Added as the only general primary. Defines discovery, classification, scope lock, implementation, focused validation, full diff review, P0/P1/P2 grading, a three-round repair limit, completion gate, and fresh Git reporting. Excludes pure/read-only and specialized release/review-comment work. |
+| `openapi-to-generate` | A backend-API-dependent feature in an openapi-to consuming project that requires Operation discovery, bounded contract reading, selective generation, controlled Prepare/Apply, and business-code integration | Added as a specialized consumer primary. It uses the consuming project's local dependency and actual MCP Tool list, prefers operation-scoped generation, requires exact-plan approval, and excludes this Monorepo's implementation, pure frontend work, setup automation, publication, and approval bypass. |
 | `fix-github-actions` | An existing failed Actions check or suspected workflow regression | Retained as a specialized primary. It owns run/log evidence and failure classification, not general product refactors, workflow redesign, release, or unauthorized reruns. |
 | `release-monorepo` | Release planning or publication-readiness verification | Retained as a specialized primary. It prepares evidence and a plan; publication, push, and tags still require exact authorization. |
 
@@ -147,7 +149,7 @@ workflow lifecycle.
 | --- | --- | --- |
 | `run-codegen-tests` | Validate a change that may alter generated output or decide whether a fixture/snapshot change is correct | Retained as a helper. It validates output and idempotency but does not diagnose or implement the owning fix. |
 
-All ten Skills have a unique directory-matching name, specific positive and
+All eleven Skills have a unique directory-matching name, specific positive and
 negative triggers, a required `agents/openai.yaml`, explicit inputs or
 preconditions, bounded modification authority, validation guidance, failure or
 stop handling, and a completion/report boundary. Domain Skills may mention
@@ -157,7 +159,7 @@ writes without user authorization.
 
 ## Contract-verified Skill roles
 
-Tracked Skill count: `10`.
+Tracked Skill count: `11`.
 
 This fixed table is the architecture document's machine-validated role
 inventory. The contract compares it with both Git-tracked Skill entrypoints and
@@ -166,6 +168,7 @@ the root routing table; Skill prose does not assign a role.
 | Skill | Contract role |
 | --- | --- |
 | `implement-and-review` | general-primary |
+| `openapi-to-generate` | specialized-primary |
 | `fix-github-actions` | specialized-primary |
 | `release-monorepo` | specialized-primary |
 | `add-cli-command` | domain-support |
@@ -181,6 +184,7 @@ the root routing table; Skill prose does not assign a role.
 | Request | Primary | Supporting |
 | --- | --- | --- |
 | General implementation or bug fix | `implement-and-review` | Only the matching domain/validation Skill |
+| API-dependent feature in a consuming project | `openapi-to-generate` | The consuming project's own rules and validation; no Monorepo implementation Skill |
 | CLI command/option | `implement-and-review` | `add-cli-command`; add `run-codegen-tests` only if output changes |
 | Read-only MCP Tool | `implement-and-review` | `add-mcp-tool` |
 | MCP Prepare/Apply | `implement-and-review` | `add-mcp-write-tool` and its declared MCP/Core references |
