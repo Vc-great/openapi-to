@@ -73,6 +73,7 @@ explicitly names a specialized primary.
 | --- | --- |
 | Feature, bug fix, refactor, CI/config/documentation change | Primary: `.agents/skills/implement-and-review/SKILL.md` |
 | Implement a backend-API-dependent feature in an openapi-to consuming project | Specialized primary: `.agents/skills/openapi-to-generate/SKILL.md` |
+| Install, configure, diagnose, or validate openapi-to in a consuming project | Specialized primary: `.agents/skills/openapi-to-setup/SKILL.md` |
 | Add or substantially change a CLI command | Support: `.agents/skills/add-cli-command/SKILL.md` |
 | Add or substantially change a read-only MCP Tool | Support: `.agents/skills/add-mcp-tool/SKILL.md` |
 | Change the MCP Prepare/Apply writer | Support: `.agents/skills/add-mcp-write-tool/SKILL.md` |

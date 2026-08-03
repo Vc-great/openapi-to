@@ -113,4 +113,10 @@ Once this trusted Server is available, the first-stage
 Operation discovery, operation-scoped Dry Run, exact-plan approval, Apply, and
 business integration sequence. It uses the consuming project's local
 openapi-to version, actual Tool list, and current Tool inputSchema; setup
-automation remains outside this stage.
+automation remains outside this stage. The second-stage
+[`openapi-to-setup` Skill](./setup-skill.md) owns that diagnosis and
+configuration boundary. It defaults to read-only, uses the existing
+`openapi init`, does not upgrade an existing version, requires an exact Setup
+Plan ID for writes, and returns `RESTART_REQUIRED` after changing this file.
+After restart it treats 3/8/10 only as orientation and verifies the actual Tool
+list, current Tool inputSchema, and returned capability fields.

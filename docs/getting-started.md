@@ -81,8 +81,16 @@ Choose the Host-specific configuration:
 
 All Hosts share the same [security boundary](./mcp-security.md) and [troubleshooting guide](./troubleshooting.md).
 
-After installing and configuring MCP, a compatible AI Host can use the
-first-stage [`openapi-to-generate` consumer Skill](./skills.md) to discover
+The second-stage [`openapi-to-setup` consumer Skill](./setup-skill.md) can
+diagnose and configure an aggregate-package project and Codex MCP. It defaults
+to read-only, uses the existing `openapi init`, does not upgrade an existing
+version, and requires exact Setup Plan approval before package, init, ignore,
+or Host writes. Automatic package mutation is pnpm-only; npm, Yarn, and Bun are
+diagnostic/manual in this phase. A Codex config write returns
+`RESTART_REQUIRED` until restart and actual Tool/inputSchema verification.
+
+After setup, a compatible AI Host can use the first-stage
+[`openapi-to-generate` consumer Skill](./skills.md) to discover
 Operations, preview operation-scoped output, preserve the Prepare/Apply
 approval boundary, and integrate generated code. The Skill orchestrates MCP;
 it does not replace the Server or perform initial package, generation-config,

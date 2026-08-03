@@ -1,0 +1,361 @@
+#!/usr/bin/env node
+
+import { createHash } from "node:crypto";
+import { constants } from "node:fs";
+import { lstat, open, realpath } from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+
+const SCHEMA_VERSION = 1;
+const MAX_FILE_BYTES = 128 * 1024;
+const MAX_OUTPUT_BYTES = 64 * 1024;
+const MAX_DEPENDENCY_RESULTS = 100;
+const SUPPORTED_CONFIG_FILES = [
+	"openapi.config.ts",
+	"openapi.config.js",
+	"openapi.config.cjs",
+	"openapi.config.mjs",
+];
+const LOCK_FILES = new Map([
+	["pnpm-lock.yaml", "pnpm"],
+	["package-lock.json", "npm"],
+	["npm-shrinkwrap.json", "npm"],
+	["yarn.lock", "yarn"],
+	["bun.lock", "bun"],
+	["bun.lockb", "bun"],
+]);
+const DEPENDENCY_SECTIONS = [
+	"dependencies",
+	"devDependencies",
+	"peerDependencies",
+	"optionalDependencies",
+];
+
+function sha256(value) {
+	return createHash("sha256").update(value).digest("hex");
+}
+
+function stable(value) {
+	if (Array.isArray(value)) return value.map(stable);
+	if (value && typeof value === "object") {
+		return Object.fromEntries(
+			Object.keys(value)
+				.sort()
+				.map((key) => [key, stable(value[key])]),
+		);
+	}
+	return value;
+}
+
+function canonicalJson(value) {
+	return JSON.stringify(stable(value));
+}
+
+function isInside(root, candidate) {
+	const relative = path.relative(root, candidate);
+	return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+async function entryInfo(root, relativePath) {
+	const candidate = path.resolve(root, relativePath);
+	if (!isInside(root, candidate)) return { exists: false, unsafe: true };
+	try {
+		const entry = await lstat(candidate);
+		const resolved = await realpath(candidate);
+		if (!isInside(root, resolved)) {
+			return { exists: true, unsafe: true, symlink: entry.isSymbolicLink() };
+		}
+		return {
+			exists: true,
+			unsafe: entry.isSymbolicLink(),
+			symlink: entry.isSymbolicLink(),
+			isFile: entry.isFile(),
+			isDirectory: entry.isDirectory(),
+			size: entry.size,
+			path: candidate,
+		};
+	} catch (error) {
+		if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
+			return { exists: false, unsafe: false };
+		}
+		if (error?.code === "ELOOP") return { exists: true, unsafe: true, symlink: true };
+		throw error;
+	}
+}
+
+async function readBoundedText(root, relativePath) {
+	const info = await entryInfo(root, relativePath);
+	if (!info.exists || info.unsafe || !info.isFile) return { info };
+	let handle;
+	try {
+		handle = await open(info.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+		const opened = await handle.stat();
+		if (!opened.isFile()) return { info: { ...info, unsafe: true } };
+		if (opened.size > MAX_FILE_BYTES) return { info, tooLarge: true };
+		return { info, text: await handle.readFile("utf8") };
+	} catch (error) {
+		if (error?.code === "ELOOP") return { info: { ...info, unsafe: true } };
+		throw error;
+	} finally {
+		await handle?.close();
+	}
+}
+
+function packageManagerName(value) {
+	if (typeof value !== "string") return undefined;
+	const match = value.match(/^(pnpm|npm|yarn|bun)(?:@|$)/);
+	return match?.[1];
+}
+
+function exactVersion(value) {
+	if (typeof value !== "string") return undefined;
+	const normalized = value.replace(/^workspace:/, "").replace(/^npm:/, "");
+	return /^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(normalized)
+		? normalized.replace(/^v/, "")
+		: undefined;
+}
+
+function collectDependencies(manifest) {
+	const packages = [];
+	for (const section of DEPENDENCY_SECTIONS) {
+		const values = manifest?.[section];
+		if (!values || typeof values !== "object" || Array.isArray(values)) continue;
+		for (const name of Object.keys(values).sort()) {
+			if (name !== "openapi-to" && !name.startsWith("@openapi-to/")) continue;
+			const range = typeof values[name] === "string" ? values[name] : "invalid";
+			packages.push({
+				name,
+				section,
+				range,
+				aggregate: name === "openapi-to",
+				mcpOnly: name === "@openapi-to/mcp",
+			});
+		}
+	}
+	const exactVersions = new Set(packages.map(({ range }) => exactVersion(range)).filter(Boolean));
+	return {
+		aggregate: packages.find(({ aggregate }) => aggregate) ?? null,
+		mcpOnly: packages.find(({ mcpOnly }) => mcpOnly) ?? null,
+		packages: packages.slice(0, MAX_DEPENDENCY_RESULTS),
+		total: packages.length,
+		omitted: Math.max(0, packages.length - MAX_DEPENDENCY_RESULTS),
+		versionConflict: exactVersions.size > 1,
+	};
+}
+
+function gitignoreStatus(text) {
+	if (typeof text !== "string") return { ignored: false, evidence: "missing" };
+	let ignored = false;
+	for (const rawLine of text.split(/\r?\n/)) {
+		const line = rawLine.trim();
+		if (!line || line.startsWith("#")) continue;
+		if ([".openapi-to", ".openapi-to/", "/.openapi-to", "/.openapi-to/"].includes(line)) ignored = true;
+		if (line.startsWith("!.openapi-to") || line.startsWith("!/.openapi-to")) ignored = false;
+	}
+	return { ignored, evidence: ignored ? "explicit-root-rule" : "not-detected" };
+}
+
+function tomlSections(text) {
+	const sections = [];
+	for (const match of text.matchAll(/^\s*\[([^\]\r\n]+)]\s*(?:#.*)?$/gm)) {
+		sections.push({ name: match[1].trim(), start: match.index, end: text.length });
+	}
+	for (let index = 0; index < sections.length - 1; index += 1) sections[index].end = sections[index + 1].start;
+	return sections;
+}
+
+function inspectCodexToml(text) {
+	const sections = tomlSections(text);
+	const serverSections = sections.filter(({ name }) => name === "mcp_servers.openapi_to");
+	const applySections = sections.filter(({ name }) => name === "mcp_servers.openapi_to.tools.openapi_apply_generation");
+	const serverText = serverSections.map(({ start, end }) => text.slice(start, end)).join("\n");
+	const applyText = applySections.map(({ start, end }) => text.slice(start, end)).join("\n");
+	const quotedValues = [...serverText.matchAll(/["']([^"'\r\n]*)["']/g)].map((match) => match[1]);
+	const absolutePathDetected = quotedValues.some((value) => {
+		const nativeCmdFlag = ["/d", "/s", "/c"].includes(value.toLowerCase());
+		if ((!nativeCmdFlag && value.startsWith("/")) || /^[A-Za-z]:[\\/]/.test(value) || value.startsWith("\\\\") || value.startsWith("//")) return true;
+		return /(?:^|\s)[A-Za-z]:[\\/]/.test(value) || /(?:^|\s)\\\\[^\s]/.test(value) || /(?:^|\s)\/[^\s/]+\//.test(value);
+	});
+	const hasFlag = (flag) => quotedValues.some((value) => new RegExp(`(?:^|\\s)${flag.replaceAll("-", "\\-")}(?:\\s|$)`).test(value));
+	const allowWrite = hasFlag("--allow-write");
+	const hasConfig = hasFlag("--config");
+	const applyPrompt = /\bapproval_mode\s*=\s*["']prompt["']/.test(applyText);
+	let inferredMode = "unknown";
+	if (serverSections.length === 0 && /\bopenapi_to\b/.test(text)) inferredMode = "unknown";
+	else if (serverSections.length === 0) inferredMode = "missing";
+	else if (serverSections.length > 1) inferredMode = "unknown";
+	else if (allowWrite && applyPrompt) inferredMode = "write-enabled";
+	else if (allowWrite) inferredMode = "unknown";
+	else if (hasConfig) inferredMode = "read-only";
+	else inferredMode = "analysis-only";
+	const configurationBlocked =
+		(serverSections.length === 0 && /\bopenapi_to\b/.test(text)) ||
+		serverSections.length > 1 ||
+		(allowWrite && !applyPrompt) ||
+		absolutePathDetected ||
+		applySections.length > 1;
+	return {
+		serverSectionCount: serverSections.length,
+		applyPromptSectionCount: applySections.length,
+		applyPromptDetected: applyPrompt,
+		absolutePathDetected,
+		inferredMode,
+		manualReviewRequired: serverSections.length > 0 || configurationBlocked,
+		configurationBlocked,
+		parser: "conservative-text-inspection",
+	};
+}
+
+async function inspect(rootArgument) {
+	const root = await realpath(path.resolve(rootArgument));
+	const blockingReasons = [];
+	const nodeMajor = Number(process.versions.node.split(".")[0]);
+	if (nodeMajor < 20) blockingReasons.push("NODE_VERSION_UNSUPPORTED");
+	const packageRead = await readBoundedText(root, "package.json");
+	let manifest;
+	let packageJsonValid = false;
+	if (packageRead.info.unsafe) blockingReasons.push("PACKAGE_JSON_OUTSIDE_ROOT");
+	else if (packageRead.tooLarge) blockingReasons.push("PACKAGE_JSON_TOO_LARGE");
+	else if (packageRead.text !== undefined) {
+		try {
+			manifest = JSON.parse(packageRead.text);
+			packageJsonValid = Boolean(manifest && typeof manifest === "object" && !Array.isArray(manifest));
+			if (!packageJsonValid) blockingReasons.push("PACKAGE_JSON_INVALID");
+		} catch {
+			blockingReasons.push("PACKAGE_JSON_INVALID");
+		}
+	}
+
+	const hasDeclaredManager = Boolean(manifest && Object.hasOwn(manifest, "packageManager"));
+	const declaredManager = packageManagerName(manifest?.packageManager);
+	const lockFiles = [];
+	for (const [file, manager] of LOCK_FILES) {
+		const info = await entryInfo(root, file);
+		if (info.unsafe) blockingReasons.push("LOCKFILE_OUTSIDE_ROOT");
+		if (info.exists && !info.unsafe) lockFiles.push({ file, manager });
+	}
+	const lockManagers = [...new Set(lockFiles.map(({ manager }) => manager))].sort();
+	let detectedManager = "unknown";
+	let managerEvidence = "none";
+	if (hasDeclaredManager && !declaredManager) {
+		detectedManager = "unknown";
+		managerEvidence = "unrecognized-packageManager";
+		blockingReasons.push("PACKAGE_MANAGER_UNKNOWN");
+	} else if (declaredManager) {
+		detectedManager = declaredManager;
+		managerEvidence = "packageManager";
+	} else if (!hasDeclaredManager && lockManagers.length === 1) {
+		detectedManager = lockManagers[0];
+		managerEvidence = "unique-lockfile-manager";
+	}
+	if (lockManagers.length > 1 || (declaredManager && lockManagers.some((value) => value !== declaredManager))) {
+		detectedManager = "conflict";
+		managerEvidence = "conflicting-evidence";
+		blockingReasons.push("PACKAGE_MANAGER_CONFLICT");
+	}
+
+	const dependencies = collectDependencies(manifest);
+	if (dependencies.versionConflict) blockingReasons.push("OPENAPI_TO_VERSION_CONFLICT");
+	const configFiles = [];
+	for (const file of SUPPORTED_CONFIG_FILES) {
+		const read = await readBoundedText(root, file);
+		if (read.info.unsafe) {
+			blockingReasons.push("GENERATION_CONFIG_OUTSIDE_ROOT");
+			continue;
+		}
+		if (!read.info.exists) continue;
+		if (read.tooLarge) {
+			blockingReasons.push("GENERATION_CONFIG_TOO_LARGE");
+			configFiles.push({ path: file, sha256: null });
+		} else if (read.text !== undefined) configFiles.push({ path: file, sha256: sha256(read.text) });
+	}
+	if (configFiles.length > 1) blockingReasons.push("MULTIPLE_GENERATION_CONFIGS");
+
+	const stateDirectory = await entryInfo(root, ".openapi-to");
+	if (stateDirectory.unsafe) blockingReasons.push("STATE_DIRECTORY_OUTSIDE_ROOT");
+	const gitignoreRead = await readBoundedText(root, ".gitignore");
+	if (gitignoreRead.info.unsafe) blockingReasons.push("GITIGNORE_OUTSIDE_ROOT");
+	if (gitignoreRead.tooLarge) blockingReasons.push("GITIGNORE_TOO_LARGE");
+	const ignore = gitignoreStatus(gitignoreRead.text);
+	const codexRead = await readBoundedText(root, ".codex/config.toml");
+	if (codexRead.info.unsafe) blockingReasons.push("CODEX_CONFIG_OUTSIDE_ROOT");
+	if (codexRead.tooLarge) blockingReasons.push("CODEX_CONFIG_TOO_LARGE");
+	const codexInspection = codexRead.text === undefined ? null : inspectCodexToml(codexRead.text);
+	if (codexInspection?.serverSectionCount > 1) blockingReasons.push("DUPLICATE_CODEX_SERVER_SECTION");
+	if (codexInspection?.configurationBlocked) blockingReasons.push("CODEX_CONFIG_MANUAL_REVIEW_REQUIRED");
+	const gitEntry = await entryInfo(root, ".git");
+	if (gitEntry.unsafe) blockingReasons.push("GIT_METADATA_OUTSIDE_ROOT");
+
+	let state = "PACKAGE_READY";
+	if (blockingReasons.length > 0) state = "BLOCKED";
+	else if (!dependencies.aggregate) state = "PACKAGE_MISSING";
+	else if (configFiles.length === 0) state = "CONFIG_MISSING";
+	else if (!codexInspection || codexInspection.serverSectionCount === 0) state = "HOST_CONFIG_MISSING";
+	else state = "HOST_CONFIG_READY";
+
+	const observation = {
+		schemaVersion: SCHEMA_VERSION,
+		state,
+		blockingReasons: [...new Set(blockingReasons)].sort(),
+		workspace: {
+			root: ".",
+			packageJson: { exists: packageRead.info.exists === true, valid: packageJsonValid },
+			node: { major: nodeMajor, supported: nodeMajor >= 20 },
+			gitRepository: gitEntry.exists === true && !gitEntry.unsafe,
+		},
+		packageManager: {
+			value: detectedManager,
+			evidence: managerEvidence,
+			declared: declaredManager ?? null,
+			lockFiles,
+			automaticInstallSupported: detectedManager === "pnpm",
+		},
+		dependencies,
+		generationConfig: {
+			status: configFiles.length === 0 ? "missing" : configFiles.length === 1 ? "ready" : "multiple",
+			supportedFileNames: SUPPORTED_CONFIG_FILES,
+			files: configFiles,
+		},
+		runtimeState: {
+			directoryPresent: stateDirectory.exists === true && !stateDirectory.unsafe,
+			gitignorePresent: gitignoreRead.info.exists === true && !gitignoreRead.info.unsafe,
+			ignored: ignore.ignored,
+			ignoreEvidence: ignore.evidence,
+		},
+		codex: {
+			configPresent: codexRead.info.exists === true && !codexRead.info.unsafe,
+			sha256: codexRead.text === undefined ? null : sha256(codexRead.text),
+			...(codexInspection ?? {
+				serverSectionCount: 0,
+				applyPromptSectionCount: 0,
+				applyPromptDetected: false,
+				absolutePathDetected: false,
+				inferredMode: "missing",
+				manualReviewRequired: false,
+				configurationBlocked: false,
+				parser: "conservative-text-inspection",
+			}),
+		},
+	};
+	return { ...observation, observedStateHash: sha256(canonicalJson(observation)) };
+}
+
+function parseArguments(argv) {
+	let root = process.cwd();
+	for (let index = 0; index < argv.length; index += 1) {
+		if (argv[index] !== "--root" || index + 1 >= argv.length) throw new Error("Usage: inspect-project.mjs [--root <path>]");
+		root = argv[index + 1];
+		index += 1;
+	}
+	return root;
+}
+
+try {
+	const result = await inspect(parseArguments(process.argv.slice(2)));
+	const output = `${JSON.stringify(result)}\n`;
+	if (Buffer.byteLength(output) > MAX_OUTPUT_BYTES) throw new Error("Inspection output exceeded its size limit.");
+	process.stdout.write(output);
+} catch (error) {
+	process.stderr.write(`openapi-to setup inspection failed: ${error?.message ?? "unknown error"}\n`);
+	process.exitCode = 1;
+}

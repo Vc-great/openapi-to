@@ -8,13 +8,20 @@ The current version is not compatible with V2.[V2 document](https://github.com/V
 
 `openapi-to` is a TypeScript compiler, CLI, generator toolkit, and local stdio MCP server for Swagger/OpenAPI documents. The published aggregate includes TypeScript type and request generation, Zod schemas, SWR hooks, Vue Query hooks, MSW handlers, and the MCP runtime. Faker, NestJS, and React Query generators are not shipped.
 
-See the single [capability matrix](docs/capability-matrix.md) for exact package, dialect, CLI, and MCP status. Start with the [getting-started guide](docs/getting-started.md); local AI Host setup is documented for [Codex](docs/codex-mcp.md), [Claude Code](docs/ai-hosts/claude-code.md), [Cursor](docs/ai-hosts/cursor.md), and [generic stdio Hosts](docs/ai-hosts/generic-stdio.md). The first-stage [consumer Agent Skill](docs/skills.md) adds a safe Operation-discovery, selective-generation, and integration workflow on top of MCP.
+See the single [capability matrix](docs/capability-matrix.md) for exact package, dialect, CLI, and MCP status. Start with the [getting-started guide](docs/getting-started.md); local AI Host setup is documented for [Codex](docs/codex-mcp.md), [Claude Code](docs/ai-hosts/claude-code.md), [Cursor](docs/ai-hosts/cursor.md), and [generic stdio Hosts](docs/ai-hosts/generic-stdio.md). The [consumer Agent Skills](docs/skills.md) provide setup/diagnosis plus safe Operation-discovery, selective-generation, and integration workflows on top of MCP.
 
-That Skill uses the consuming project's local `openapi-to` installation and
+`openapi-to-setup` is the second phase: it diagnoses package, config, ignore,
+and Codex MCP state, defaults ambiguous requests to read-only, and binds every
+write to an exact Setup Plan. It uses the existing `openapi init`, does not
+upgrade an existing version, returns `RESTART_REQUIRED` after Host changes,
+and verifies actual Tools and inputSchema after restart. See the
+[setup Skill guide](docs/setup-skill.md).
+
+The first-phase `openapi-to-generate` Skill uses the consuming project's local `openapi-to` installation and
 checks both the actual MCP Tool list and current Tool inputSchema. Matching Tool
 names can expose different capabilities across versions: operation-scoped Dry
 Run requires one explicit Target, and selection `replace` is used only when the
-current Schema explicitly supports it. The Skill does not install dependencies,
+current Schema explicitly supports it. The generation Skill does not install dependencies,
 edit project or Host configuration, replace MCP, or fall back to full-target
 generation when selective generation is unavailable.
 

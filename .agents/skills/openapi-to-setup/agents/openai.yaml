@@ -1,0 +1,4 @@
+interface:
+  display_name: "Set up openapi-to"
+  short_description: "Diagnose and configure local openapi-to and Codex MCP"
+  default_prompt: "Use $openapi-to-setup to inspect this consuming project, prepare a bounded setup plan, and apply only the explicitly approved installation or configuration changes."
