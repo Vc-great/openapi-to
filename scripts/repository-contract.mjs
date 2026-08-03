@@ -2395,7 +2395,7 @@ function validateOperationScopedDryRunExamples(
 			input.targets[0] !== "<exact-target>"
 		) {
 			failures.push(
-				`${relativePath} operation-scoped Dry Run JSON example ${exampleCount} must pass exactly one \"<exact-target>\"`,
+				`${relativePath} operation-scoped Dry Run JSON example ${exampleCount} must pass exactly one "<exact-target>"`,
 			);
 		}
 	}
