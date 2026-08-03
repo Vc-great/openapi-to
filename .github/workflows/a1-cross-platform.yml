@@ -37,6 +37,8 @@ jobs:
       - name: Setup Node 20 and pnpm
         id: setup
         uses: ./.github/setup
+      - name: Run openapi-to setup inspector tests
+        run: node --test scripts/openapi-to-setup.node-test.mjs
       - name: Verify pnpm launcher
         run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id pnpm-launcher -- pnpm --version
       - name: Build packages

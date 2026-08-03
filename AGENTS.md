@@ -31,6 +31,14 @@ The high-level package map is:
 - `.agents/skills/` — the single authoritative source for repository Codex
   Skills.
 
+The two consumer Skills have exclusive write ownership. `openapi-to-setup`
+owns local aggregate-package, initialization, ignore, and project-level Codex
+configuration writes through exact Setup Plan approval.
+`openapi-to-generate` owns operation-scoped generation Apply and handwritten
+business integration through exact `planHash` approval. Historical Phase 2.1
+state binding and Phase 2.2 Windows portable reads harden Setup; they are not
+additional consumer Skills. A consuming project runs Setup before Generate.
+
 Package builds emit `dist/`; integration tests may create `test-output/`.
 Neither is source unless a tracked fixture explicitly says otherwise.
 

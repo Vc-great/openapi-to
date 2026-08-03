@@ -108,15 +108,19 @@ Restart Codex after configuration or OpenAPI target changes. Use `/mcp` in the C
 
 See [getting started](./getting-started.md), [troubleshooting](./troubleshooting.md), and the shared [MCP security boundary](./mcp-security.md). The server is local stdio only. stdout is MCP JSON-RPC; operational logs use stderr. It does not provide HTTP, OAuth, multi-tenancy, LLM calls, or a chat UI.
 
-Once this trusted Server is available, the first-stage
+Once this trusted Server is available, the Phase 1
 [`openapi-to-generate` consumer Skill](./skills.md) gives Codex the bounded
 Operation discovery, operation-scoped Dry Run, exact-plan approval, Apply, and
 business integration sequence. It uses the consuming project's local
 openapi-to version, actual Tool list, and current Tool inputSchema; setup
-automation remains outside this stage. The second-stage
+automation remains outside this stage. The Phase 2
 [`openapi-to-setup` Skill](./setup-skill.md) owns that diagnosis and
 configuration boundary. It defaults to read-only, uses the existing
 `openapi init`, does not upgrade an existing version, requires an exact Setup
 Plan ID for writes, and returns `RESTART_REQUIRED` after changing this file.
 After restart it treats 3/8/10 only as orientation and verifies the actual Tool
 list, current Tool inputSchema, and returned capability fields.
+
+The phase labels are historical: Phase 2.1 hardened Setup state binding and
+Phase 2.2 added Windows portable verified reads. They are not new Skills, and
+the operational order remains Setup first, then Generate.

@@ -26,6 +26,12 @@ validation, and the primary agent's complete diff review, non-trivial
 behavior-changing writes also use `independent-p0-p1-review` as a fresh,
 read-only review gate. Pure analysis does not load a write-oriented workflow.
 
+Consumer phase names describe delivery history: Phase 1 is Generate, Phase 2
+is Setup, Phase 2.1 is Setup state-hash hardening, and Phase 2.2 is Setup's
+Windows portable verified-read hardening. Phase 2.1 and Phase 2.2 are not
+additional Skills. The consuming-project execution order is Setup first,
+restart and verify current Tool Schemas, then Generate.
+
 ## Rule discovery boundary
 
 Agent discovery starts at the current repository root and uses

@@ -144,6 +144,20 @@ function validateToolInputExample(example: ToolInputExample): void {
 			);
 		}
 	}
+
+	if (example.tool === "openapi_apply_generation") {
+		const fields = Object.keys(example.input).sort();
+		if (
+			!isDeepStrictEqual(fields, ["approvedPlanHash", "planId", "token"]) ||
+			typeof example.input.planId !== "string" ||
+			typeof example.input.token !== "string" ||
+			typeof example.input.approvedPlanHash !== "string"
+		) {
+			throw new Error(
+				`${location} must pass only the exact planId, token, and approvedPlanHash`,
+			);
+		}
+	}
 }
 
 describe("openapi-to-generate Tool input examples", () => {
@@ -160,16 +174,39 @@ describe("openapi-to-generate Tool input examples", () => {
 		for (const example of examples) validateToolInputExample(example);
 	});
 
-	it("rejects an operation-scoped Dry Run example when its exact Target is removed", () => {
+	it("rejects Dry Run examples without exactly one Target and non-empty operations scope", () => {
 		const original = examples.find(
 			({ tool }) => tool === "openapi_generate_dry_run",
 		);
 		expect(original).toBeDefined();
-		const input = structuredClone(original?.input ?? {});
-		delete input.targets;
-		expect(() =>
-			validateToolInputExample({ ...(original as ToolInputExample), input }),
-		).toThrow(/must pass exactly one Target/);
+		for (const targets of [undefined, [], ["first", "second"]]) {
+			const input = structuredClone(original?.input ?? {});
+			if (targets === undefined) delete input.targets;
+			else input.targets = targets;
+			expect(() =>
+				validateToolInputExample({
+					...(original as ToolInputExample),
+					input,
+				}),
+			).toThrow(/must pass exactly one Target|does not match the current MCP inputSchema/);
+		}
+		for (const scope of [
+			{ type: "full" },
+			{ type: "operations", operationKeys: [] },
+		]) {
+			const input = {
+				...structuredClone(original?.input ?? {}),
+				scope,
+			};
+			expect(() =>
+				validateToolInputExample({
+					...(original as ToolInputExample),
+					input,
+				}),
+			).toThrow(
+				/must use operations scope with non-empty operationKeys|does not match the current MCP inputSchema/,
+			);
+		}
 	});
 
 	it("rejects fields that a non-strict production inputSchema would otherwise discard", () => {
@@ -186,7 +223,47 @@ describe("openapi-to-generate Tool input examples", () => {
 		).toThrow(/contains unknown fields/);
 	});
 
-	it("rejects an invalid replace example through the actual Prepare inputSchema", () => {
+	it("rejects Apply examples with missing plan binding or extra authority", () => {
+		const original = examples.find(
+			({ tool }) => tool === "openapi_apply_generation",
+		);
+		expect(original).toBeDefined();
+
+		const missingHash = structuredClone(original?.input ?? {});
+		delete missingHash.approvedPlanHash;
+		expect(() =>
+			validateToolInputExample({
+				...(original as ToolInputExample),
+				input: missingHash,
+			}),
+		).toThrow(/does not match the current MCP inputSchema/);
+
+		const extraAuthority = {
+			...structuredClone(original?.input ?? {}),
+			force: true,
+		};
+		expect(() =>
+			validateToolInputExample({
+				...(original as ToolInputExample),
+				input: extraAuthority,
+			}),
+		).toThrow(/does not match the current MCP inputSchema|unknown fields/);
+
+		for (const field of ["planId", "token"] as const) {
+			const wrongType = {
+				...structuredClone(original?.input ?? {}),
+				[field]: 123,
+			};
+			expect(() =>
+				validateToolInputExample({
+					...(original as ToolInputExample),
+					input: wrongType,
+				}),
+			).toThrow(/does not match the current MCP inputSchema/);
+		}
+	});
+
+	it("rejects Prepare examples without one Target or a supported non-empty selection", () => {
 		const original = examples.find(
 			({ tool, input }) =>
 				tool === "openapi_prepare_generation" &&
@@ -198,6 +275,28 @@ describe("openapi-to-generate Tool input examples", () => {
 		(input.selection as Record<string, unknown>).operationKeys = [];
 		expect(() =>
 			validateToolInputExample({ ...(original as ToolInputExample), input }),
+		).toThrow(/does not match the current MCP inputSchema/);
+
+		for (const targets of [[], ["first", "second"]]) {
+			const wrongTargetCount = {
+				...structuredClone(original?.input ?? {}),
+				targets,
+			};
+			expect(() =>
+				validateToolInputExample({
+					...(original as ToolInputExample),
+					input: wrongTargetCount,
+				}),
+			).toThrow(/must pass exactly one Target|does not match the current MCP inputSchema/);
+		}
+
+		const unsupportedSelection = structuredClone(original?.input ?? {});
+		(unsupportedSelection.selection as Record<string, unknown>).type = "remove";
+		expect(() =>
+			validateToolInputExample({
+				...(original as ToolInputExample),
+				input: unsupportedSelection,
+			}),
 		).toThrow(/does not match the current MCP inputSchema/);
 	});
 });

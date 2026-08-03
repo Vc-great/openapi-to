@@ -17,6 +17,16 @@ upgrade an existing version, returns `RESTART_REQUIRED` after Host changes,
 and verifies actual Tools and inputSchema after restart. See the
 [setup Skill guide](docs/setup-skill.md).
 
+The phase numbers describe product delivery history, not invocation order:
+Phase 1 delivered `openapi-to-generate`; Phase 2 delivered
+`openapi-to-setup`; Phase 2.1 hardened Setup Plan state hashing; and Phase 2.2
+added portable verified reads for Windows without weakening POSIX
+`O_NOFOLLOW`. In a consuming project, always run setup first and hand off to
+generate only after the requested MCP state and current Tool Schemas are
+verified. Automatic setup writes currently cover pnpm and trusted project-level
+Codex `.codex/config.toml`; npm, Yarn, Bun, Claude Code, Cursor, and generic
+stdio Hosts remain diagnosis/manual-configuration boundaries.
+
 The first-phase `openapi-to-generate` Skill uses the consuming project's local `openapi-to` installation and
 checks both the actual MCP Tool list and current Tool inputSchema. Matching Tool
 names can expose different capabilities across versions: operation-scoped Dry

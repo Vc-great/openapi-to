@@ -85,6 +85,13 @@ const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
 const CONSUMER_SKILL_NAME = "openapi-to-generate";
 const CONSUMER_SKILL_DOCUMENT = "docs/skills.md";
 const CONSUMER_SKILL_EVALUATION = `${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/references/evaluation-matrix.yaml`;
+const CONSUMER_SKILL_REQUIRED_FILES = [
+	"SKILL.md",
+	"agents/openai.yaml",
+	"references/mcp-workflow.md",
+	"references/controlled-write.md",
+	"references/evaluation-matrix.yaml",
+];
 const SETUP_SKILL_NAME = "openapi-to-setup";
 const SETUP_SKILL_DOCUMENT = "docs/setup-skill.md";
 const SETUP_SKILL_EVALUATION = `${SKILL_ROOT}/${SETUP_SKILL_NAME}/references/evaluation-matrix.yaml`;
@@ -95,6 +102,7 @@ const SETUP_SKILL_REQUIRED_FILES = [
 	"references/safe-writes.md",
 	"references/evaluation-matrix.yaml",
 	"scripts/inspect-project.mjs",
+	"scripts/secure-file-read.mjs",
 	"scripts/hash-setup-plan.mjs",
 ];
 const SETUP_EVALUATION_MINIMUMS = new Map([
@@ -123,8 +131,39 @@ const REQUIRED_SETUP_DEGRADED_CASES = new Map([
 	["degraded-package-json-drift-after-approval", "invalidate_setup_plan"],
 	["degraded-lockfile-drift-after-approval", "invalidate_setup_plan"],
 	["degraded-gitignore-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-config-drift-after-approval", "invalidate_setup_plan"],
+	["degraded-codex-drift-after-approval", "invalidate_setup_plan"],
 	["degraded-multiple-same-manager-lockfiles", "block_package_manager_conflict"],
 	["degraded-lockfile-too-large", "fail_closed_without_reading_contents"],
+	["degraded-windows-no-nofollow", "use_verified_o_rdonly_fallback"],
+	[
+		"degraded-mcp-unavailable",
+		"diagnose_connection_without_generate_handoff",
+	],
+	["degraded-tool-list-missing", "block_capability_claim"],
+	[
+		"degraded-input-schema-not-visible",
+		"block_unverified_setup_handoff",
+	],
+	["degraded-old-tool-schema", "use_only_observed_schema_without_upgrade"],
+	["degraded-handoff-config-missing", "finish_setup_before_generate"],
+	[
+		"degraded-handoff-host-config-missing",
+		"finish_setup_before_generate",
+	],
+	["degraded-handoff-blocked", "do_not_handoff_generate"],
+	[
+		"degraded-handoff-read-only",
+		"handoff_discovery_contract_and_dry_run_only",
+	],
+	[
+		"degraded-handoff-write-enabled",
+		"handoff_controlled_prepare_apply_with_separate_approval",
+	],
+	[
+		"degraded-handoff-any-other-state",
+		"deny_generate_handoff_for_any_other_state",
+	],
 ]);
 const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
@@ -132,6 +171,9 @@ const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	CONSUMER_SKILL_DOCUMENT,
 ];
 const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
+	["degraded-server-absent", "fail_closed_explain_server_setup"],
+	["degraded-tool-list-missing", "fail_closed_without_operation_workflow"],
+	["degraded-old-tool-schema", "use_only_observed_schema_without_upgrade"],
 	[
 		"degraded-multiple-targets-require-exact-target",
 		"list_targets_and_pass_one_exact_target",
@@ -152,6 +194,22 @@ const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
 	[
 		"degraded-prepare-not-applyable",
 		"stop_before_approval_and_apply",
+	],
+	["degraded-replace-unsupported", "reject_replace_without_emulation"],
+	["degraded-prepare-missing", "remain_read_only_without_prepare"],
+	["degraded-apply-missing", "stop_before_prepare_apply_workflow"],
+	[
+		"degraded-apply-token-expired",
+		"reprepare_and_require_new_exact_approval",
+	],
+	[
+		"degraded-plan-hash-drift",
+		"reject_apply_and_require_exact_current_hash",
+	],
+	["degraded-setup-not-ready", "do_not_start_generate_workflow"],
+	[
+		"degraded-setup-any-other-state",
+		"do_not_start_generate_for_unlisted_setup_state",
 	],
 ]);
 export const EXPECTED_SKILL_ROLES = new Map([
@@ -2771,6 +2829,63 @@ function validateArchitectureDocument(contents, trackedSkills, failures) {
 	}
 }
 
+const FAIL_CLOSED_HANDOFF_ROWS = [
+	[
+		"`MCP_READ_ONLY` with compatible current Tool Schemas",
+		"Operation discovery, bounded contract reading, and operation-scoped Dry Run only.",
+	],
+	[
+		"`MCP_WRITE_ENABLED` with compatible current Dry Run, Prepare, and Apply Schemas",
+		"The separately approval-bound Prepare/Apply workflow may also begin.",
+	],
+	[
+		"Any other state",
+		"No Generate handoff; finish or repair setup first.",
+	],
+];
+
+function validateFailClosedHandoffMatrix(relativePath, contents, failures) {
+	const lines = contents.split(/\r?\n/);
+	const header = "| Observed setup state | Generate handoff |";
+	const headerIndexes = lines.flatMap((line, index) =>
+		line.trim() === header ? [index] : [],
+	);
+	if (headerIndexes.length !== 1) {
+		failures.push(
+			`${relativePath} must contain exactly one closed Generate handoff matrix`,
+		);
+		return;
+	}
+	const headerIndex = headerIndexes[0];
+	if (!/^\|\s*-+\s*\|\s*-+\s*\|$/.test(lines[headerIndex + 1]?.trim() ?? "")) {
+		failures.push(`${relativePath} Generate handoff matrix has an invalid header separator`);
+		return;
+	}
+	const rows = [];
+	for (const line of lines.slice(headerIndex + 2)) {
+		const trimmed = line.trim();
+		if (!trimmed.startsWith("|")) break;
+		const cells = trimmed
+			.slice(1, trimmed.endsWith("|") ? -1 : undefined)
+			.split("|")
+			.map((cell) => cell.trim());
+		rows.push(cells);
+	}
+	if (
+		rows.length !== FAIL_CLOSED_HANDOFF_ROWS.length ||
+		rows.some(
+			(row, index) =>
+				row.length !== 2 ||
+				row[0] !== FAIL_CLOSED_HANDOFF_ROWS[index][0] ||
+				row[1] !== FAIL_CLOSED_HANDOFF_ROWS[index][1],
+		)
+	) {
+		failures.push(
+			`${relativePath} Generate handoff matrix must allow only verified read-only and write-enabled states, then deny any other state`,
+		);
+	}
+}
+
 function validateOpenapiToGenerateSkill(contents, failures) {
 	let metadata;
 	try {
@@ -2803,6 +2918,9 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 		"current Tool inputSchema",
 		"Tool existence and Tool count do not prove",
 		"Never silently substitute a global installation",
+		"existing `openapi-to-setup` Skill",
+		"Use this fail-closed handoff matrix:",
+		"`--allow-write` is not Setup Plan approval",
 		"pnpm add -D openapi-to",
 		"pnpm exec openapi-to-mcp",
 		"openapi.config.ts",
@@ -2842,6 +2960,11 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 			`${CONSUMER_SKILL_NAME} must prohibit automatic installation and setup mutation`,
 		);
 	}
+	validateFailClosedHandoffMatrix(
+		`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
+		contents,
+		failures,
+	);
 }
 
 function validateOperationScopedDryRunExamples(
@@ -2896,12 +3019,52 @@ function validateOpenapiToGenerateInterface(metadata, relativePath, failures) {
 	}
 }
 
+async function validateConsumerSkillDistribution(
+	root,
+	trackedFiles,
+	skillName,
+	requiredFiles,
+	failures,
+) {
+	const prefix = `${SKILL_ROOT}/${skillName}/`;
+	for (const relativeFile of requiredFiles) {
+		const relativePath = `${prefix}${relativeFile}`;
+		if (!(await exists(join(root, relativePath)))) {
+			failures.push(`missing consumer Skill file ${relativePath}`);
+		} else if (!trackedFiles.has(relativePath)) {
+			failures.push(`consumer Skill file is not tracked by Git: ${relativePath}`);
+		}
+	}
+	for (const relativePath of [...trackedFiles].filter((file) =>
+		file.startsWith(prefix),
+	)) {
+		if (/(?:^|\/)(?:tmp|temp)(?:\/|$)|\.(?:bak|orig|rej|tmp)$/i.test(relativePath)) {
+			failures.push(`consumer Skill distribution contains temporary file ${relativePath}`);
+			continue;
+		}
+		const contents = await readFile(join(root, relativePath), "utf8");
+		if (/\/Users\/[^/]+\/|\/home\/[^/]+\/|[A-Za-z]:\\(?:Users|Documents)\\/.test(contents)) {
+			failures.push(`consumer Skill distribution contains an absolute machine path in ${relativePath}`);
+		}
+		if (/-----BEGIN [A-Z ]*PRIVATE KEY-----|\bgh[opsu]_[A-Za-z0-9]{20,}|\bnpm_[A-Za-z0-9]{20,}/.test(contents)) {
+			failures.push(`consumer Skill distribution contains credential-like test data in ${relativePath}`);
+		}
+	}
+}
+
 async function validateOpenapiToGenerateFiles(
 	root,
 	trackedFiles,
 	skillContentsByName,
 	failures,
 ) {
+	await validateConsumerSkillDistribution(
+		root,
+		trackedFiles,
+		CONSUMER_SKILL_NAME,
+		CONSUMER_SKILL_REQUIRED_FILES,
+		failures,
+	);
 	const skillContents = skillContentsByName.get(CONSUMER_SKILL_NAME);
 	if (skillContents) validateOpenapiToGenerateSkill(skillContents, failures);
 
@@ -2941,6 +3104,11 @@ async function validateOpenapiToGenerateFiles(
 				`${CONSUMER_SKILL_DOCUMENT} must not use legacy config path ${legacyConfigPath}`,
 			);
 		}
+		validateFailClosedHandoffMatrix(
+			CONSUMER_SKILL_DOCUMENT,
+			documentContents,
+			failures,
+		);
 	}
 	if (skillContents?.includes(legacyConfigPath)) {
 		failures.push(
@@ -2982,10 +3150,11 @@ async function validateOpenapiToGenerateFiles(
 	if (
 		!isMapping(evaluation) ||
 		evaluation.schema_version !== 1 ||
+		evaluation.kind !== "static_skill_evaluation_inputs" ||
 		!Array.isArray(evaluation.cases)
 	) {
 		failures.push(
-			`${CONSUMER_SKILL_EVALUATION} must contain schema_version 1 and a cases array`,
+			`${CONSUMER_SKILL_EVALUATION} must contain schema_version 1, static kind, and a cases array`,
 		);
 		return;
 	}
@@ -3107,9 +3276,17 @@ function validateOpenapiToSetupSkill(contents, failures) {
 		"every lockfile's name, size, and bytes",
 		"Multiple actual lockfiles",
 		"Git status remains a separate pre-apply check",
+		"Use this fail-closed handoff matrix:",
+		"Setup owns package/config/Host writes only",
+		"Generate owns Operation selection, generation Apply, and business-code integration only",
 	]) {
 		if (!normalized.includes(marker)) failures.push(`${SETUP_SKILL_NAME} is missing required workflow marker ${marker}`);
 	}
+	validateFailClosedHandoffMatrix(
+		`${SKILL_ROOT}/${SETUP_SKILL_NAME}/SKILL.md`,
+		contents,
+		failures,
+	);
 	if (contents.includes(".OpenAPI/openapi.config.ts")) {
 		failures.push(`${SETUP_SKILL_NAME} must not use legacy config path .OpenAPI/openapi.config.ts`);
 	}
@@ -3129,6 +3306,13 @@ function validateOpenapiToSetupInterface(metadata, relativePath, failures) {
 }
 
 async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByName, failures) {
+	await validateConsumerSkillDistribution(
+		root,
+		trackedFiles,
+		SETUP_SKILL_NAME,
+		["SKILL.md", ...SETUP_SKILL_REQUIRED_FILES],
+		failures,
+	);
 	const skillContents = skillContentsByName.get(SETUP_SKILL_NAME);
 	if (skillContents) validateOpenapiToSetupSkill(skillContents, failures);
 	for (const relativeFile of SETUP_SKILL_REQUIRED_FILES) {
@@ -3161,6 +3345,9 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 			"Multiple actual lockfiles",
 			"new Setup Plan and `setupPlanId`",
 			"Git worktree status is re-read separately",
+			"verified `O_RDONLY` fallback",
+			"same `FileHandle`",
+			"operating-system-level atomic snapshot",
 		]) {
 			if (!normalizedDocument.includes(marker)) failures.push(`${SETUP_SKILL_DOCUMENT} is missing setup workflow marker ${marker}`);
 		}
@@ -3178,6 +3365,9 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 				"Codex config raw-byte hashes",
 				"Multiple actual lockfiles",
 				"`LOCKFILE_TOO_LARGE`",
+				"`O_NOFOLLOW`",
+				"verified `O_RDONLY` fallback",
+				"same `FileHandle`",
 			],
 		],
 		[
@@ -3189,6 +3379,8 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 				"new `setupPlanId`",
 				"Multiple actual lockfiles conflict",
 				"hash does not cover the whole worktree",
+				"verified `O_RDONLY` fallback",
+				"same `FileHandle`",
 			],
 		],
 	]) {
@@ -3197,6 +3389,52 @@ async function validateOpenapiToSetupFiles(root, trackedFiles, skillContentsByNa
 		for (const marker of markers) {
 			if (!normalizedContents.includes(marker)) {
 				failures.push(`${SKILL_ROOT}/${SETUP_SKILL_NAME}/${relativePath} is missing setup state-binding marker ${marker}`);
+			}
+		}
+	}
+
+	const inspectorPath = join(
+		root,
+		SKILL_ROOT,
+		SETUP_SKILL_NAME,
+		"scripts/inspect-project.mjs",
+	);
+	const secureReaderPath = join(
+		root,
+		SKILL_ROOT,
+		SETUP_SKILL_NAME,
+		"scripts/secure-file-read.mjs",
+	);
+	if ((await exists(inspectorPath)) && (await exists(secureReaderPath))) {
+		const inspector = await readFile(inspectorPath, "utf8");
+		const secureReader = await readFile(secureReaderPath, "utf8");
+		for (const marker of [
+			"selectReadFlags",
+			"Number.isInteger(noFollowFlag)",
+			": readOnlyFlag;",
+			"sameOpenedFile",
+			"unchangedDuringRead",
+			"lstat(info.path, { bigint: true })",
+			"realpath(info.path)",
+			"handle.stat({ bigint: true })",
+		]) {
+			if (!secureReader.includes(marker)) {
+				failures.push(`setup secure reader is missing portable safety marker ${marker}`);
+			}
+		}
+		if (!inspector.includes('from "./secure-file-read.mjs"')) {
+			failures.push("setup inspector must use the portable secure reader");
+		}
+		if (inspector.includes("if (flags === undefined)")) {
+			failures.push("setup inspector must not fail every read when O_NOFOLLOW is unavailable");
+		}
+		for (const forbidden of [
+			"OPENAPI_TO_DISABLE_NOFOLLOW",
+			"--unsafe-no-follow",
+			"--skip-file-identity-check",
+		]) {
+			if (inspector.includes(forbidden) || secureReader.includes(forbidden)) {
+				failures.push(`setup secure reader exposes forbidden safety override ${forbidden}`);
 			}
 		}
 	}
@@ -3864,6 +4102,7 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 			"pnpm exec openapi-to-mcp --help",
 			"packages/openapi/bin/openapi-to-mcp.js --help",
 			"packages/mcp/bin/openapi-to-mcp.js --help",
+			"node --test scripts/openapi-to-setup.node-test.mjs",
 		]) {
 			if (!a1.includes(required)) {
 				failures.push(
@@ -4264,6 +4503,8 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"packages/mcp/bin/openapi-to-mcp.js",
 			"actions/upload-artifact@v4",
 			"A1_TEST_ARTIFACT_DIR",
+			"name: Run openapi-to setup inspector tests",
+			"run: node --test scripts/openapi-to-setup.node-test.mjs",
 		]) {
 			if (!a1Workflow.includes(required))
 				failures.push(`A1 workflow is missing ${required}`);

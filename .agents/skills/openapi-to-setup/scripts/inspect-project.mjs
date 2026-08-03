@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import { lstat, open, realpath } from "node:fs/promises";
+import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import {
+	isInside,
+	openVerifiedFile,
+	unchangedDuringRead,
+} from "./secure-file-read.mjs";
 
 const SCHEMA_VERSION = 1;
 const MAX_FILE_BYTES = 128 * 1024;
@@ -52,37 +56,12 @@ function canonicalJson(value) {
 	return JSON.stringify(stable(value));
 }
 
-function isInside(root, candidate) {
-	const relative = path.relative(root, candidate);
-	return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-}
-
-function openedEntryMatches(info, opened) {
-	return info.dev === opened.dev && info.ino === opened.ino;
-}
-
-function unchangedDuringRead(before, after) {
-	return (
-		before.dev === after.dev &&
-		before.ino === after.ino &&
-		before.size === after.size &&
-		before.mtimeMs === after.mtimeMs &&
-		before.ctimeMs === after.ctimeMs
-	);
-}
-
-function noFollowReadFlags() {
-	return Number.isInteger(constants.O_NOFOLLOW)
-		? constants.O_RDONLY | constants.O_NOFOLLOW
-		: undefined;
-}
-
 async function entryInfo(root, relativePath) {
 	const candidate = path.resolve(root, relativePath);
 	if (!isInside(root, candidate)) return { exists: false, unsafe: true };
 	let entry;
 	try {
-		entry = await lstat(candidate);
+		entry = await lstat(candidate, { bigint: true });
 	} catch (error) {
 		if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
 			return { exists: false, unsafe: false };
@@ -101,10 +80,9 @@ async function entryInfo(root, relativePath) {
 			symlink: entry.isSymbolicLink(),
 			isFile: entry.isFile(),
 			isDirectory: entry.isDirectory(),
-			size: entry.size,
-			dev: entry.dev,
-			ino: entry.ino,
+			stats: entry,
 			path: candidate,
+			realPath: resolved,
 		};
 	} catch (error) {
 		if (
@@ -118,37 +96,18 @@ async function entryInfo(root, relativePath) {
 	}
 }
 
-async function openVerifiedFile(info) {
-	const flags = noFollowReadFlags();
-	if (flags === undefined) return { readError: true };
-	let handle;
-	try {
-		handle = await open(info.path, flags);
-		const opened = await handle.stat();
-		if (!opened.isFile() || !openedEntryMatches(info, opened)) {
-			await handle.close();
-			return { unsafe: true };
-		}
-		return { handle, opened };
-	} catch (error) {
-		await handle?.close();
-		if (error?.code === "ELOOP") return { unsafe: true };
-		return { readError: true };
-	}
-}
-
 async function readBoundedText(root, relativePath) {
 	const info = await entryInfo(root, relativePath);
 	if (!info.exists || info.unsafe) return { info };
 	if (!info.isFile) return { info, readError: true };
-	const openedFile = await openVerifiedFile(info);
+	const openedFile = await openVerifiedFile(root, info);
 	if (!openedFile.handle) return { info: { ...info, unsafe: openedFile.unsafe === true }, readError: openedFile.readError === true };
 	const { handle, opened } = openedFile;
 	try {
-		if (opened.size > MAX_FILE_BYTES) return { info, tooLarge: true };
+		if (opened.size > BigInt(MAX_FILE_BYTES)) return { info, tooLarge: true };
 		const bytes = await handle.readFile();
-		const after = await handle.stat();
-		if (bytes.byteLength !== opened.size || !unchangedDuringRead(opened, after)) {
+		const after = await handle.stat({ bigint: true });
+		if (BigInt(bytes.byteLength) !== opened.size || !unchangedDuringRead(opened, after)) {
 			return { info, readError: true };
 		}
 		return { info, text: bytes.toString("utf8"), sha256: sha256(bytes) };
@@ -163,11 +122,17 @@ async function hashLockFile(root, relativePath) {
 	const info = await entryInfo(root, relativePath);
 	if (!info.exists || info.unsafe) return { info };
 	if (!info.isFile) return { info, readError: true };
-	const openedFile = await openVerifiedFile(info);
+	const openedFile = await openVerifiedFile(root, info);
 	if (!openedFile.handle) return { info: { ...info, unsafe: openedFile.unsafe === true }, readError: openedFile.readError === true };
 	const { handle, opened } = openedFile;
 	try {
-		if (opened.size > MAX_LOCKFILE_BYTES) return { info, size: opened.size, tooLarge: true };
+		if (opened.size > BigInt(MAX_LOCKFILE_BYTES)) {
+			return {
+				info,
+				size: opened.size <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(opened.size) : null,
+				tooLarge: true,
+			};
+		}
 		const hash = createHash("sha256");
 		let size = 0;
 		for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) {
@@ -175,8 +140,8 @@ async function hashLockFile(root, relativePath) {
 			if (size > MAX_LOCKFILE_BYTES) return { info, size, tooLarge: true };
 			hash.update(chunk);
 		}
-		const after = await handle.stat();
-		if (size !== opened.size || !unchangedDuringRead(opened, after)) {
+		const after = await handle.stat({ bigint: true });
+		if (BigInt(size) !== opened.size || !unchangedDuringRead(opened, after)) {
 			return { info, size, readError: true };
 		}
 		return { info, size, sha256: hash.digest("hex") };

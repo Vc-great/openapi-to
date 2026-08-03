@@ -159,6 +159,58 @@ cases:
     category: degraded
     prompt: "在 Windows Codex 项目中配置只读 MCP"
     expected: use_cmd_exe_template
+  - id: degraded-windows-no-nofollow
+    category: degraded
+    prompt: "Windows 的 Node fs.constants 没有 O_NOFOLLOW"
+    expected: use_verified_o_rdonly_fallback
+  - id: degraded-mcp-unavailable
+    category: degraded
+    prompt: "项目文件看起来完整，但当前 Host 无法连接 openapi_to MCP"
+    expected: diagnose_connection_without_generate_handoff
+  - id: degraded-tool-list-missing
+    category: degraded
+    prompt: "Host 声称 Server 已连接，但无法列出实际 Tool"
+    expected: block_capability_claim
+  - id: degraded-input-schema-not-visible
+    category: degraded
+    prompt: "Tool 名称可见，但相关 inputSchema 不可见"
+    expected: block_unverified_setup_handoff
+  - id: degraded-old-tool-schema
+    category: degraded
+    prompt: "本地旧版本暴露同名 Tool，但 Schema 不支持当前参数"
+    expected: use_only_observed_schema_without_upgrade
+  - id: degraded-config-drift-after-approval
+    category: degraded
+    prompt: "Setup Plan 批准后 generation config 字节发生变化"
+    expected: invalidate_setup_plan
+  - id: degraded-codex-drift-after-approval
+    category: degraded
+    prompt: "Setup Plan 批准后 .codex/config.toml 字节发生变化"
+    expected: invalidate_setup_plan
+  - id: degraded-handoff-config-missing
+    category: degraded
+    prompt: "状态是 CONFIG_MISSING，但请求直接搜索 Operation"
+    expected: finish_setup_before_generate
+  - id: degraded-handoff-host-config-missing
+    category: degraded
+    prompt: "状态是 HOST_CONFIG_MISSING，但请求直接运行 Dry Run"
+    expected: finish_setup_before_generate
+  - id: degraded-handoff-blocked
+    category: degraded
+    prompt: "状态是 BLOCKED，但请求继续 Generate 工作流"
+    expected: do_not_handoff_generate
+  - id: degraded-handoff-read-only
+    category: degraded
+    prompt: "状态是 MCP_READ_ONLY 且当前 Dry Run Schema 兼容"
+    expected: handoff_discovery_contract_and_dry_run_only
+  - id: degraded-handoff-write-enabled
+    category: degraded
+    prompt: "状态是 MCP_WRITE_ENABLED 且 Dry Run、Prepare、Apply Schema 均兼容"
+    expected: handoff_controlled_prepare_apply_with_separate_approval
+  - id: degraded-handoff-any-other-state
+    category: degraded
+    prompt: "状态是 UNINSPECTED、PACKAGE_READY、CONFIG_READY、HOST_CONFIG_READY、MCP_ANALYSIS_ONLY 或未来新增状态"
+    expected: deny_generate_handoff_for_any_other_state
 
   - id: approval-exact
     category: write-approval

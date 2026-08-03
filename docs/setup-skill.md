@@ -6,6 +6,12 @@ Server. The first-phase `openapi-to-generate` Skill starts only after setup and
 handles API Operation discovery, selective generation, and business-code
 integration.
 
+These phase labels record delivery history. Phase 2.1 hardened Setup Plan
+state hashing, and Phase 2.2 added Windows portable verified reads; both are
+Setup hardening, not additional consumer Skills. The user journey still begins
+with Setup and proceeds to Generate only after restart and capability
+verification.
+
 Use setup for package installation, the existing `openapi init` flow,
 `/.openapi-to/` ignore repair, Codex project MCP configuration, startup
 diagnosis, and 3/8/10 Tool-mode validation. A vague setup request defaults to
@@ -36,6 +42,16 @@ the aggregate package. Multiple actual lockfiles—including two filenames for
 the same manager—are a package-manager conflict. Oversized, unreadable,
 symlinked, replaced, or out-of-root lockfiles fail closed without returning
 their contents.
+
+On platforms that expose `O_NOFOLLOW`, verified reads use
+`O_RDONLY | O_NOFOLLOW`. Windows and other platforms without that constant use
+a verified `O_RDONLY` fallback; they do not drop the initial `lstat`, symlink,
+regular-file, real-root, or opened-file identity checks. All bytes are read
+through the same `FileHandle`, followed by another identity and metadata check.
+Any uncertainty remains `BLOCKED`. This is not an operating-system-level atomic
+snapshot, so Git status and `observedStateHash` are checked again before a Setup
+Plan executes. The focused Inspector suite runs in the repository's real
+Ubuntu, macOS, and Windows A1 CI matrix.
 
 ## Approval-bound writes
 
