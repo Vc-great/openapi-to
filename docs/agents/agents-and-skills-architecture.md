@@ -131,7 +131,7 @@ workflow lifecycle.
 
 | Skill | Trigger and responsibility | Audit action |
 | --- | --- | --- |
-| `implement-and-review` | An authorized feature, bug fix, refactor, CI/configuration change, documentation change, or cross-file implementation needing validation and review closure | Added as the only general primary. Defines discovery, classification, scope lock, implementation, focused validation, full diff review, P0/P1/P2 grading, a three-round repair limit, completion gate, and fresh Git reporting. Excludes pure/read-only and specialized release/review-comment work. |
+| `implement-and-review` | An authorized feature, bug fix, refactor, CI/configuration change, documentation change, or cross-file implementation needing validation and review closure | Added as the only general primary. Defines discovery, classification, scope lock, implementation, focused validation, full diff review, P0/P1/P2 grading, a three-automatic-repair-round budget plus one terminal read-only verification, completion gate, and fresh Git reporting. Excludes pure/read-only and specialized release/review-comment work. |
 | `openapi-to-generate` | A backend-API-dependent feature in an openapi-to consuming project that requires Operation discovery, bounded contract reading, selective generation, controlled Prepare/Apply, and business-code integration | Added as a specialized consumer primary. It uses the consuming project's local dependency and actual MCP Tool list, prefers operation-scoped generation, requires exact-plan approval, and excludes this Monorepo's implementation, pure frontend work, setup automation, publication, and approval bypass. |
 | `openapi-to-setup` | Installation, root config initialization, Codex MCP configuration, or setup diagnosis in an openapi-to consuming project | Added as the phase-two specialized consumer primary. It diagnoses read-only first, defaults to read-only mode, binds every write to an exact Setup Plan, stops for Host restart, validates actual Tools/Schemas, and hands business generation to `openapi-to-generate`. |
 | `fix-github-actions` | An existing failed Actions check or suspected workflow regression | Retained as a specialized primary. It owns run/log evidence and failure classification, not general product refactors, workflow redesign, release, or unauthorized reruns. |
@@ -239,8 +239,11 @@ discover Git-tracked repository rules
   -> independently verify and grade reviewer findings
   -> repair confirmed in-scope P0/P1
   -> rerun affected validation and complete primary diff review
-  -> use a new reviewer after a materially behavior-changing repair
-     (maximum three complete review rounds)
+  -> after the first or second automatic repair round, use a new reviewer
+     after a materially behavior-changing repair
+  -> consume at most three automatic finding-confirm-repair rounds
+  -> after a material third repair, run exactly one terminal read-only reviewer
+     that cannot trigger another repair
   -> re-read final Git state
   -> READY, or NOT READY with blockers
 ```
@@ -252,13 +255,29 @@ reviewer reports only P0/P1; P2 remains a primary-agent, non-blocking quality
 classification. The primary agent verifies every finding before repairing all
 confirmed in-scope P0/P1. It handles only low-risk, tightly scoped P2 findings.
 
-The three-round cap prevents unproductive churn; it never converts unresolved
-P0/P1 or a materially incomplete independent review into success. Each round
-must produce a new finding or validation result. A confirmed repair that
-materially changes external behavior, public contracts, generated output,
-persisted state, security boundaries, or filesystem effects requires a new
-reviewer context. Unrelated P2 and broad architectural follow-ups remain
-outside the diff.
+An automatic repair round exists only when a fresh read-only review reports a
+P0/P1, the primary agent confirms an in-scope finding, a repair actually
+modifies code, tests, configuration, workflows, or documentation, and affected
+validation plus the complete primary diff review run again. Reviews without a
+confirmed file-changing repair do not consume the three-round budget. A
+material repair after the first or second automatic round receives another
+ordinary fresh review and can continue the bounded loop.
+
+After a material repair consumes the third automatic round, exactly one
+additional terminal reviewer uses a fresh context to inspect the complete
+task-base-to-current-state diff. It is strictly read-only, is outside the
+automatic repair budget, and cannot trigger another automatic repair. Only
+`VERDICT: READY` together with `No P0/P1 findings.` passes. A P0/P1,
+`VERDICT: NOT READY`, or materially incomplete scope stops the task as
+`NOT READY`; the primary agent reports the finding and waits for a new task or
+new repair budget instead of fixing it in the current loop.
+
+The separate three-plus-one limits prevent unproductive churn and close the
+third-repair coverage gap without creating a fourth automatic repair round.
+The primary agent cannot rename rounds, reset counters, or start a second
+terminal reviewer. Neither limit converts unresolved P0/P1 or a materially
+incomplete independent review into success. Unrelated P2 and broad
+architectural follow-ups remain outside the diff.
 
 The task base is the immutable `git rev-parse HEAD` recorded before editing; it
 is not automatically `origin/main`. Complete review includes unstaged and

@@ -205,6 +205,20 @@ ${roles.join("\n")}
 \`independent-p0-p1-review\` is a read-only gate in a fresh sub-agent context.
 It never repairs, stages, commits, or performs remote writes.
 
+## \`implement-and-review\` lifecycle
+
+after the first or second automatic repair round, use a new reviewer
+at most three automatic finding-confirm-repair rounds
+after a material third repair, run exactly one terminal read-only reviewer
+
+Reviews without a confirmed file-changing repair do not consume the three-round
+budget. exactly one additional terminal reviewer uses a fresh context to inspect
+the complete task-base-to-current-state diff. It is strictly read-only, is
+outside the automatic repair budget, and cannot trigger another automatic
+repair. Only \`VERDICT: READY\` together with \`No P0/P1 findings.\` passes.
+A finding stops the task as \`NOT READY\`. The primary agent cannot rename
+rounds, reset counters, or start a second terminal reviewer.
+
 ## Real-task Pilot PR gate
 
 Draft PR
@@ -2138,7 +2152,7 @@ test("implementation lifecycle preserves independent review delegation and ratch
 		[
 			"report `NOT READY`",
 			"report `READY`",
-			/must make unresolved P0\/P1 or incomplete independent review block readiness/,
+			/terminal verification must preserve mandatory semantics the primary agent must stop and report `NOT READY`/,
 		],
 		[
 			"every required independent review completed in a fresh read-only context",
@@ -2165,6 +2179,146 @@ test("implementation lifecycle preserves independent review delegation and ratch
 		);
 		assertFailure(await auditAgentAndSkillContracts(root), failure);
 	}
+});
+
+test("implementation review budget accepts ordinary re-review and one terminal verification", async (t) => {
+	const root = await createContractFixture(t);
+	const result = await auditAgentAndSkillContracts(root);
+	assert.deepEqual(result.failures, []);
+
+	const skill = (
+		await readFile(
+			join(root, ".agents/skills/implement-and-review/SKILL.md"),
+			"utf8",
+		)
+	).replace(/\s+/g, " ");
+	assert.match(
+		skill,
+		/After the first or second automatic repair round, a material repair must receive another fresh independent review/,
+	);
+	assert.match(
+		skill,
+		/After the third automatic repair round, the primary agent must run exactly one additional terminal verification reviewer/,
+	);
+	assert.match(
+		skill,
+		/The terminal gate passes only with both `VERDICT: READY` and `No P0\/P1 findings\.`/,
+	);
+});
+
+test("implementation review budget rejects missing or repeatable terminal verification", async (t) => {
+	const cases = [
+		[
+			"the primary agent must run exactly one\nadditional terminal verification reviewer",
+			"the primary agent may run one additional terminal verification reviewer",
+			/terminal verification must preserve mandatory semantics After the third automatic repair round, the primary agent must run exactly one/,
+		],
+		[
+			"The primary agent must not start more than one terminal verification reviewer.",
+			"The primary agent may start a second terminal verification reviewer.",
+			/terminal verification must preserve mandatory semantics The primary agent must not start more than one terminal verification reviewer/,
+		],
+		[
+			"must remain strictly read-only and must not modify, create, delete, rename,\n  format, stage, commit, or push files;",
+			"may modify, stage, commit, or push files;",
+			/terminal verification must preserve mandatory semantics must remain strictly read-only/,
+		],
+		[
+			"Do not rename rounds, reset either counter, or repeat the terminal reviewer to\nbypass the limit.",
+			"Rename rounds or reset a counter to obtain another reviewer.",
+			/terminal verification must preserve mandatory semantics Do not rename rounds, reset either counter/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => contents.replace(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
+test("implementation terminal verification findings block readiness and cannot be auto-repaired", async (t) => {
+	const cases = [
+		[
+			"the\nprimary agent must stop and report `NOT READY`.",
+			"the primary agent may continue and report `READY`.",
+			/terminal verification must preserve mandatory semantics the primary agent must stop and report `NOT READY`/,
+		],
+		[
+			"The primary agent must not\nrepair a terminal finding in the current automatic loop;",
+			"The primary agent may repair a terminal finding in the current automatic loop;",
+			/terminal verification must preserve mandatory semantics The primary agent must not repair a terminal finding/,
+		],
+		[
+			"reports any P0/P1 finding, or has materially incomplete review scope",
+			"reports only a P0 finding",
+			/terminal verification must preserve mandatory semantics reports any P0\/P1 finding/,
+		],
+		[
+			"The terminal gate passes only with both `VERDICT: READY` and\n`No P0/P1 findings.`.",
+			"The terminal gate passes with either `VERDICT: READY` or no findings.",
+			/terminal verification must preserve mandatory semantics The terminal gate passes only with both/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => contents.replace(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
+test("implementation automatic repair budget rejects permissive or non-modifying round semantics", async (t) => {
+	const cases = [
+		[
+			"The primary agent must run no more than three automatic repair rounds.",
+			"The primary agent may run four automatic repair rounds.",
+			/automatic repair budget must preserve mandatory semantics The primary agent must run no more than three/,
+		],
+		[
+			"After the first or second automatic repair round, a material repair must\nreceive another fresh independent review",
+			"After the first or second automatic repair round, a material repair may skip another independent review",
+			/automatic repair budget must preserve mandatory semantics After the first or second automatic repair round/,
+		],
+		[
+			"does not result in a file modification, does not consume an automatic repair\nround.",
+			"does not result in a file modification, still consumes an automatic repair round.",
+			/automatic repair budget must preserve mandatory semantics does not result in a file modification/,
+		],
+		[
+			"does not count as an automatic repair round;",
+			"counts as a fourth automatic repair round;",
+			/terminal verification must preserve mandatory semantics does not count as an automatic repair round/,
+		],
+	];
+	for (const [from, to, failure] of cases) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => contents.replace(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
+});
+
+test("implementation review budget contract accepts CRLF checkout", async (t) => {
+	const root = await createContractFixture(t);
+	for (const relativePath of [
+		".agents/skills/implement-and-review/SKILL.md",
+		"docs/agents/agents-and-skills-architecture.md",
+	]) {
+		await mutateTrackedFixture(root, relativePath, (contents) =>
+			contents.replaceAll("\r\n", "\n").replaceAll("\n", "\r\n"),
+		);
+	}
+	assert.deepEqual((await auditAgentAndSkillContracts(root)).failures, []);
 });
 
 test("root rules preserve the independent review readiness gate", async (t) => {
