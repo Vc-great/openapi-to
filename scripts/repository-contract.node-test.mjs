@@ -1499,6 +1499,13 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 			failure: /missing required workflow marker Tool existence and Tool count do not prove/,
 		},
 		{
+			path: ".agents/skills/openapi-to-generate/SKILL.md",
+			mutate: (contents) =>
+				contents.replace("| Any other state |", "| `MCP_ANALYSIS_ONLY` |"),
+			failure:
+				/must allow only verified read-only and write-enabled states, then deny any other state/,
+		},
+		{
 			path: ".agents/skills/openapi-to-generate/references/mcp-workflow.md",
 			mutate: (contents) =>
 				contents.replace('  "targets": ["<exact-target>"],\n', ""),
@@ -1549,6 +1556,15 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 					"degraded-apply-token-old",
 				),
 			failure: /missing required case degraded-apply-token-expired/,
+		},
+		{
+			path: ".agents/skills/openapi-to-generate/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"degraded-setup-any-other-state",
+					"degraded-setup-analysis-only",
+				),
+			failure: /missing required case degraded-setup-any-other-state/,
 		},
 	];
 	for (const contractCase of cases) {
@@ -1601,6 +1617,21 @@ test("consumer generation Skill preserves trigger, workflow, approval, and evalu
 		await auditAgentAndSkillContracts(missingDistributionFileRoot),
 		/consumer Skill file is not tracked by Git: .*controlled-write\.md/,
 	);
+
+	const openHandoffDocumentRoot = await createContractFixture(t);
+	await mutateTrackedFixture(
+		openHandoffDocumentRoot,
+		"docs/skills.md",
+		(contents) =>
+			contents.replace(
+				"No Generate handoff; finish or repair setup first.",
+				"Generate may start after manual judgment.",
+			),
+	);
+	assertFailure(
+		await auditAgentAndSkillContracts(openHandoffDocumentRoot),
+		/must allow only verified read-only and write-enabled states, then deny any other state/,
+	);
 });
 
 test("consumer setup Skill preserves routing, safety, files, and evaluation contracts", async (t) => {
@@ -1624,6 +1655,16 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 			path: ".agents/skills/openapi-to-setup/SKILL.md",
 			mutate: (contents) => contents.replace("`PACKAGE_JSON_MISSING`", "`PACKAGE_MISSING`"),
 			failure: /missing required workflow marker `PACKAGE_JSON_MISSING`/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/SKILL.md",
+			mutate: (contents) =>
+				contents.replace(
+					"No Generate handoff; finish or repair setup first.",
+					"Generate handoff may be inferred.",
+				),
+			failure:
+				/must allow only verified read-only and write-enabled states, then deny any other state/,
 		},
 		{
 			path: ".agents/skills/openapi-to-setup/references/diagnosis.md",
@@ -1664,6 +1705,15 @@ test("consumer setup Skill preserves routing, safety, files, and evaluation cont
 			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
 			mutate: (contents) => contents.replace("degraded-windows-no-nofollow", "degraded-windows-portable-read"),
 			failure: /missing required case degraded-windows-no-nofollow/,
+		},
+		{
+			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"degraded-handoff-any-other-state",
+					"degraded-handoff-analysis-only",
+				),
+			failure: /missing required case degraded-handoff-any-other-state/,
 		},
 		{
 			path: ".agents/skills/openapi-to-setup/references/evaluation-matrix.yaml",

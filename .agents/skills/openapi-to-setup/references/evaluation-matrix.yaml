@@ -207,6 +207,10 @@ cases:
     category: degraded
     prompt: "状态是 MCP_WRITE_ENABLED 且 Dry Run、Prepare、Apply Schema 均兼容"
     expected: handoff_controlled_prepare_apply_with_separate_approval
+  - id: degraded-handoff-any-other-state
+    category: degraded
+    prompt: "状态是 UNINSPECTED、PACKAGE_READY、CONFIG_READY、HOST_CONFIG_READY、MCP_ANALYSIS_ONLY 或未来新增状态"
+    expected: deny_generate_handoff_for_any_other_state
 
   - id: approval-exact
     category: write-approval

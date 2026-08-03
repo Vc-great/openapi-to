@@ -73,12 +73,16 @@ If setup is missing, explain the exact gap and stop the affected workflow.
 installation or modify `package.json`, `openapi.config.ts`, or
 `.codex/config.toml`. Hand those package, initialization, ignore, Host, restart,
 and capability-verification gaps to the existing `openapi-to-setup` Skill.
-Do not begin this workflow from `PACKAGE_MISSING`, `CONFIG_MISSING`,
-`HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED`. `MCP_READ_ONLY`
-permits discovery, bounded contract reading, and operation-scoped Dry Run;
-Prepare/Apply additionally requires `MCP_WRITE_ENABLED` plus compatible current
-Schemas. `--allow-write` is not Setup Plan approval and is not generation Apply
-approval.
+
+Use this fail-closed handoff matrix:
+
+| Observed setup state | Generate handoff |
+| --- | --- |
+| `MCP_READ_ONLY` with compatible current Tool Schemas | Operation discovery, bounded contract reading, and operation-scoped Dry Run only. |
+| `MCP_WRITE_ENABLED` with compatible current Dry Run, Prepare, and Apply Schemas | The separately approval-bound Prepare/Apply workflow may also begin. |
+| Any other state | No Generate handoff; finish or repair setup first. |
+
+`--allow-write` is not Setup Plan approval and is not generation Apply approval.
 
 ## 2. Discover the required Operation
 

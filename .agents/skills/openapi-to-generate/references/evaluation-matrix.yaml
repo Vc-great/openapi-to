@@ -121,3 +121,7 @@ cases:
     category: degraded
     prompt: "Setup 返回 PACKAGE_MISSING、CONFIG_MISSING、HOST_CONFIG_MISSING、RESTART_REQUIRED 或 BLOCKED"
     expected: do_not_start_generate_workflow
+  - id: degraded-setup-any-other-state
+    category: degraded
+    prompt: "Setup 返回 MCP_ANALYSIS_ONLY、任一尚未验证状态或未来新增状态"
+    expected: do_not_start_generate_for_unlisted_setup_state

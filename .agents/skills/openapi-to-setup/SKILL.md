@@ -205,9 +205,9 @@ Use this fail-closed handoff matrix:
 
 | Observed setup state | Generate handoff |
 | --- | --- |
-| `PACKAGE_MISSING`, `CONFIG_MISSING`, `HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED` | None; finish or repair setup first. |
-| `MCP_READ_ONLY` with compatible current Tool Schemas | Operation discovery, bounded contract preview, and operation-scoped Dry Run only. |
+| `MCP_READ_ONLY` with compatible current Tool Schemas | Operation discovery, bounded contract reading, and operation-scoped Dry Run only. |
 | `MCP_WRITE_ENABLED` with compatible current Dry Run, Prepare, and Apply Schemas | The separately approval-bound Prepare/Apply workflow may also begin. |
+| Any other state | No Generate handoff; finish or repair setup first. |
 
 The presence of `--allow-write` is neither approval of the Setup Plan nor
 approval of a generation plan. Setup owns package/config/Host writes only;

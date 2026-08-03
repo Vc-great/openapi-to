@@ -160,6 +160,10 @@ const REQUIRED_SETUP_DEGRADED_CASES = new Map([
 		"degraded-handoff-write-enabled",
 		"handoff_controlled_prepare_apply_with_separate_approval",
 	],
+	[
+		"degraded-handoff-any-other-state",
+		"deny_generate_handoff_for_any_other_state",
+	],
 ]);
 const CONSUMER_OPERATION_EXAMPLE_FILES = [
 	`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
@@ -203,6 +207,10 @@ const REQUIRED_CONSUMER_DEGRADED_CASES = new Map([
 		"reject_apply_and_require_exact_current_hash",
 	],
 	["degraded-setup-not-ready", "do_not_start_generate_workflow"],
+	[
+		"degraded-setup-any-other-state",
+		"do_not_start_generate_for_unlisted_setup_state",
+	],
 ]);
 export const EXPECTED_SKILL_ROLES = new Map([
 	["implement-and-review", "general-primary"],
@@ -2821,6 +2829,63 @@ function validateArchitectureDocument(contents, trackedSkills, failures) {
 	}
 }
 
+const FAIL_CLOSED_HANDOFF_ROWS = [
+	[
+		"`MCP_READ_ONLY` with compatible current Tool Schemas",
+		"Operation discovery, bounded contract reading, and operation-scoped Dry Run only.",
+	],
+	[
+		"`MCP_WRITE_ENABLED` with compatible current Dry Run, Prepare, and Apply Schemas",
+		"The separately approval-bound Prepare/Apply workflow may also begin.",
+	],
+	[
+		"Any other state",
+		"No Generate handoff; finish or repair setup first.",
+	],
+];
+
+function validateFailClosedHandoffMatrix(relativePath, contents, failures) {
+	const lines = contents.split(/\r?\n/);
+	const header = "| Observed setup state | Generate handoff |";
+	const headerIndexes = lines.flatMap((line, index) =>
+		line.trim() === header ? [index] : [],
+	);
+	if (headerIndexes.length !== 1) {
+		failures.push(
+			`${relativePath} must contain exactly one closed Generate handoff matrix`,
+		);
+		return;
+	}
+	const headerIndex = headerIndexes[0];
+	if (!/^\|\s*-+\s*\|\s*-+\s*\|$/.test(lines[headerIndex + 1]?.trim() ?? "")) {
+		failures.push(`${relativePath} Generate handoff matrix has an invalid header separator`);
+		return;
+	}
+	const rows = [];
+	for (const line of lines.slice(headerIndex + 2)) {
+		const trimmed = line.trim();
+		if (!trimmed.startsWith("|")) break;
+		const cells = trimmed
+			.slice(1, trimmed.endsWith("|") ? -1 : undefined)
+			.split("|")
+			.map((cell) => cell.trim());
+		rows.push(cells);
+	}
+	if (
+		rows.length !== FAIL_CLOSED_HANDOFF_ROWS.length ||
+		rows.some(
+			(row, index) =>
+				row.length !== 2 ||
+				row[0] !== FAIL_CLOSED_HANDOFF_ROWS[index][0] ||
+				row[1] !== FAIL_CLOSED_HANDOFF_ROWS[index][1],
+		)
+	) {
+		failures.push(
+			`${relativePath} Generate handoff matrix must allow only verified read-only and write-enabled states, then deny any other state`,
+		);
+	}
+}
+
 function validateOpenapiToGenerateSkill(contents, failures) {
 	let metadata;
 	try {
@@ -2854,9 +2919,7 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 		"Tool existence and Tool count do not prove",
 		"Never silently substitute a global installation",
 		"existing `openapi-to-setup` Skill",
-		"`PACKAGE_MISSING`, `CONFIG_MISSING`, `HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED`",
-		"`MCP_READ_ONLY` permits discovery",
-		"Prepare/Apply additionally requires `MCP_WRITE_ENABLED`",
+		"Use this fail-closed handoff matrix:",
 		"`--allow-write` is not Setup Plan approval",
 		"pnpm add -D openapi-to",
 		"pnpm exec openapi-to-mcp",
@@ -2897,6 +2960,11 @@ function validateOpenapiToGenerateSkill(contents, failures) {
 			`${CONSUMER_SKILL_NAME} must prohibit automatic installation and setup mutation`,
 		);
 	}
+	validateFailClosedHandoffMatrix(
+		`${SKILL_ROOT}/${CONSUMER_SKILL_NAME}/SKILL.md`,
+		contents,
+		failures,
+	);
 }
 
 function validateOperationScopedDryRunExamples(
@@ -3036,6 +3104,11 @@ async function validateOpenapiToGenerateFiles(
 				`${CONSUMER_SKILL_DOCUMENT} must not use legacy config path ${legacyConfigPath}`,
 			);
 		}
+		validateFailClosedHandoffMatrix(
+			CONSUMER_SKILL_DOCUMENT,
+			documentContents,
+			failures,
+		);
 	}
 	if (skillContents?.includes(legacyConfigPath)) {
 		failures.push(
@@ -3203,14 +3276,17 @@ function validateOpenapiToSetupSkill(contents, failures) {
 		"every lockfile's name, size, and bytes",
 		"Multiple actual lockfiles",
 		"Git status remains a separate pre-apply check",
-		"`PACKAGE_MISSING`, `CONFIG_MISSING`, `HOST_CONFIG_MISSING`, `RESTART_REQUIRED`, or `BLOCKED`",
-		"`MCP_READ_ONLY` with compatible current Tool Schemas",
-		"`MCP_WRITE_ENABLED` with compatible current Dry Run, Prepare, and Apply Schemas",
+		"Use this fail-closed handoff matrix:",
 		"Setup owns package/config/Host writes only",
 		"Generate owns Operation selection, generation Apply, and business-code integration only",
 	]) {
 		if (!normalized.includes(marker)) failures.push(`${SETUP_SKILL_NAME} is missing required workflow marker ${marker}`);
 	}
+	validateFailClosedHandoffMatrix(
+		`${SKILL_ROOT}/${SETUP_SKILL_NAME}/SKILL.md`,
+		contents,
+		failures,
+	);
 	if (contents.includes(".OpenAPI/openapi.config.ts")) {
 		failures.push(`${SETUP_SKILL_NAME} must not use legacy config path .OpenAPI/openapi.config.ts`);
 	}
