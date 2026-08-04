@@ -1,6 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import {
+	access,
+	mkdtemp,
+	readdir,
+	readFile,
+	rm,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -73,6 +80,18 @@ const notifierConfigRoots = [
 	path.join(temporaryRoot, "App Data"),
 	path.join(temporaryRoot, "Local App Data"),
 ];
+const networkTrace = path.join(temporaryRoot, "network-attempted");
+const networkGuard = path.join(temporaryRoot, "deny-network.cjs");
+await writeFile(
+	networkGuard,
+	`const fs = require("node:fs");
+const net = require("node:net");
+net.Socket.prototype.connect = function () {
+  fs.appendFileSync(process.env.OPENAPI_TO_NETWORK_TRACE, "attempted\\n");
+  throw new Error("Unexpected network access in Codex Skill installer smoke");
+};
+`,
+);
 const environment = {
 	CODEX_HOME: codexHome,
 	HOME: notifierConfigRoots[0],
@@ -80,6 +99,10 @@ const environment = {
 	XDG_CONFIG_HOME: notifierConfigRoots[1],
 	APPDATA: notifierConfigRoots[2],
 	LOCALAPPDATA: notifierConfigRoots[3],
+	NODE_OPTIONS: [process.env.NODE_OPTIONS, `--require=${networkGuard}`]
+		.filter(Boolean)
+		.join(" "),
+	OPENAPI_TO_NETWORK_TRACE: networkTrace,
 };
 try {
 	const openapiBinary = path.join(
@@ -138,6 +161,31 @@ try {
 			if (!(error && error.code === "ENOENT")) throw error;
 		}
 	}
+	for (const [alias, argumentsList] of [
+		[
+			"openapi",
+			["--debug", "skills", "install", "--host", "codex", "--dry-run"],
+		],
+		[
+			"openapi-to",
+			["--debug", "skills", "install", "--host", "codex", "--dry-run"],
+		],
+	]) {
+		const result = runAlias(alias, argumentsList, environment, 0, false);
+		if (!result.stdout.includes("No files were written.")) {
+			throw new Error(`${alias} global-debug Skill dry-run contract failed`);
+		}
+		for (const target of [codexHome, ...notifierConfigRoots, networkTrace]) {
+			try {
+				await access(target);
+				throw new Error(
+					`${alias} global-debug Skill dry-run wrote installer, notifier, or network state`,
+				);
+			} catch (error) {
+				if (!(error && error.code === "ENOENT")) throw error;
+			}
+		}
+	}
 	const dryRun = runAlias(
 		"openapi",
 		["skills", "install", "--host", "codex", "--dry-run", "--json"],
@@ -181,6 +229,12 @@ try {
 	) {
 		throw new Error("Cross-platform Codex Skill installed byte check failed");
 	}
+	try {
+		await access(networkTrace);
+		throw new Error("Cross-platform Codex Skill installer attempted network access");
+	} catch (error) {
+		if (!(error && error.code === "ENOENT")) throw error;
+	}
 	const second = runAlias(
 		"openapi",
 		["skills", "install", "--host", "codex", "--json"],
@@ -209,6 +263,8 @@ try {
 				process.platform === "win32" ? "windows-cmd-entry" : "posix-bin-entry",
 				"codex-home-spaces-unicode",
 				"human-dry-run-no-notifier",
+				"global-debug-before-skills-no-notifier",
+				"no-network-attempt",
 				"dry-run-no-write",
 				"two-skill-install",
 				"installed-byte-verification",

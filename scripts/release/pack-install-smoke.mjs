@@ -230,6 +230,18 @@ async function runPackedCodexSkillInstallerScenario({
 	const notifierConfig = join(consumerRoot, "notifier-config");
 	const notifierAppData = join(consumerRoot, "notifier-app-data");
 	const notifierLocalAppData = join(consumerRoot, "notifier-local-app-data");
+	const networkTrace = join(consumerRoot, "codex-skills-network-attempted");
+	const networkGuard = join(consumerRoot, "codex-skills-deny-network.cjs");
+	await writeFile(
+		networkGuard,
+		`const fs = require("node:fs");
+const net = require("node:net");
+net.Socket.prototype.connect = function () {
+  fs.appendFileSync(process.env.OPENAPI_TO_NETWORK_TRACE, "attempted\\n");
+  throw new Error("Unexpected network access in packed Codex Skill installer smoke");
+};
+`,
+	);
 	const environment = {
 		CODEX_HOME: codexHome,
 		HOME: notifierHome,
@@ -237,6 +249,10 @@ async function runPackedCodexSkillInstallerScenario({
 		XDG_CONFIG_HOME: notifierConfig,
 		APPDATA: notifierAppData,
 		LOCALAPPDATA: notifierLocalAppData,
+		NODE_OPTIONS: [process.env.NODE_OPTIONS, `--require=${networkGuard}`]
+			.filter(Boolean)
+			.join(" "),
+		OPENAPI_TO_NETWORK_TRACE: networkTrace,
 	};
 	const humanDryRun = run(
 		openapiExecutable,
@@ -269,6 +285,42 @@ async function runPackedCodexSkillInstallerScenario({
 			);
 		} catch (error) {
 			if (!(error && error.code === "ENOENT")) throw error;
+		}
+	}
+	for (const [executable, alias] of [
+		[openapiExecutable, "openapi"],
+		[openapiToExecutable, "openapi-to"],
+	]) {
+		const globalDebugDryRun = run(
+			executable,
+			["--debug", "skills", "install", "--host", "codex", "--dry-run"],
+			consumerRoot,
+			{
+				env: environment,
+				unsetEnvironment: ["NO_UPDATE_NOTIFIER"],
+			},
+		);
+		if (!globalDebugDryRun.stdout.includes("No files were written")) {
+			throw new Error(
+				`Packed ${alias} global-debug Skill dry-run contract failed`,
+			);
+		}
+		for (const [label, directory] of [
+			["CODEX_HOME", codexHome],
+			["HOME", notifierHome],
+			["XDG_CONFIG_HOME", notifierConfig],
+			["APPDATA", notifierAppData],
+			["LOCALAPPDATA", notifierLocalAppData],
+			["network trace", networkTrace],
+		]) {
+			try {
+				await access(directory);
+				throw new Error(
+					`Packed ${alias} global-debug Skill dry-run created ${label}`,
+				);
+			} catch (error) {
+				if (!(error && error.code === "ENOENT")) throw error;
+			}
 		}
 	}
 	const dryRun = JSON.parse(
@@ -355,6 +407,12 @@ process.stdout.write(JSON.stringify({ assetRoot: path.join(path.dirname(cliEntry
 			"Packed Codex Skill installer bytes differ from packaged assets",
 		);
 	}
+	try {
+		await access(networkTrace);
+		throw new Error("Packed Codex Skill installer attempted network access");
+	} catch (error) {
+		if (!(error && error.code === "ENOENT")) throw error;
+	}
 	const beforeSecondInstall = JSON.stringify(installedHashes);
 	const secondInstall = run(
 		openapiExecutable,
@@ -393,6 +451,8 @@ process.stdout.write(JSON.stringify({ assetRoot: path.join(path.dirname(cliEntry
 		manifestBytes: manifestBytes.byteLength,
 		installMilliseconds,
 		humanDryRunNoNotifier: true,
+		globalDebugDryRunNoNotifier: true,
+		networkAttempted: false,
 		dryRun: true,
 		install: true,
 		secondInstallRejected: true,
@@ -1246,6 +1306,8 @@ await writeClient.close();
 					"aggregate-only-mcp-tool-matrix-3-8-10",
 					"packed-consumer-skills-assets",
 					"packed-codex-skills-human-dry-run-no-notifier",
+					"packed-codex-skills-global-debug-no-notifier",
+					"packed-codex-skills-no-network-attempt",
 					"packed-codex-skills-dry-run",
 					"packed-codex-skills-install",
 					"packed-codex-skills-existing-destination",

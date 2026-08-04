@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import {
+	cp,
 	lstat,
 	mkdir,
 	mkdtemp,
@@ -103,6 +104,24 @@ describe.sequential("Codex Skill installer", () => {
 		vi.restoreAllMocks();
 		await rm(root, { recursive: true, force: true });
 	});
+
+	async function createRetainedTransaction(nonce: string) {
+		await expect(
+			installCodexSkills({ dryRun: false, json: true }, packageVersion, {
+				...dependencies,
+				processId: 999_999,
+				transactionNonce: () => nonce,
+				beforeTargetCommit: async (skill) => {
+					if (skill === "openapi-to-setup") {
+						throw new Error("retain transaction after first target");
+					}
+				},
+				beforeTargetRollback: async () => {
+					throw new Error("retain transaction for recovery");
+				},
+			}),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+	}
 
 	it("requires exactly --host codex and rejects unsupported actions", () => {
 		expect(() => parseSkillsInstallRequest("install", {})).toThrowError(
@@ -439,6 +458,424 @@ describe.sequential("Codex Skill installer", () => {
 		await expect(
 			readFile(path.join(displaced, "SKILL.md"), "utf8"),
 		).resolves.toContain("openapi-to-generate");
+	});
+
+	it("preserves a replaced staging directory during normal failure cleanup", async () => {
+		const nonce = "replaced-normal-staging";
+		const skillsRoot = path.join(codexHome, "skills");
+		const stagingRoot = path.join(
+			skillsRoot,
+			`.openapi-to-skills-install-${nonce}`,
+		);
+		const sentinel = path.join(stagingRoot, "foreign-sentinel.txt");
+		await expect(
+			installCodexSkills({ dryRun: false, json: true }, packageVersion, {
+				...dependencies,
+				transactionNonce: () => nonce,
+				beforeTargetCommit: async (_skill, index) => {
+					if (index !== 0) return;
+					await rm(stagingRoot, { recursive: true, force: false });
+					await mkdir(stagingRoot);
+					await writeFile(sentinel, "preserved\n");
+					throw new Error("fail after replacing staging");
+				},
+			}),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		expect(await readFile(sentinel, "utf8")).toBe("preserved\n");
+		await expect(lstat(stagingRoot)).resolves.toMatchObject({});
+		await expect(
+			lstat(path.join(skillsRoot, ".openapi-to-skills-install.lock")),
+		).resolves.toMatchObject({});
+	});
+
+	it("preserves a replaced staging directory during interrupted recovery", async () => {
+		const nonce = "replaced-recovery-staging";
+		const skillsRoot = path.join(codexHome, "skills");
+		const stagingRoot = path.join(
+			skillsRoot,
+			`.openapi-to-skills-install-${nonce}`,
+		);
+		const sentinel = path.join(stagingRoot, "foreign-sentinel.txt");
+		await createRetainedTransaction(nonce);
+		await rm(stagingRoot, { recursive: true, force: false });
+		await mkdir(stagingRoot);
+		await writeFile(sentinel, "preserved\n");
+
+		await expect(
+			installCodexSkills(
+				{ dryRun: false, json: true },
+				packageVersion,
+				dependencies,
+			),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		expect(await readFile(sentinel, "utf8")).toBe("preserved\n");
+		await expect(lstat(stagingRoot)).resolves.toMatchObject({});
+	});
+
+	it("preserves a staging replacement introduced after normal cleanup verification", async () => {
+		const nonce = "replace-after-normal-verification";
+		const skillsRoot = path.join(codexHome, "skills");
+		const stagingRoot = path.join(
+			skillsRoot,
+			`.openapi-to-skills-install-${nonce}`,
+		);
+		const lockPath = path.join(
+			skillsRoot,
+			".openapi-to-skills-install.lock",
+		);
+		const quarantineRoot = path.join(lockPath, "staging-quarantine");
+		const displaced = path.join(root, "verified-normal-staging");
+		await expect(
+			installCodexSkills({ dryRun: false, json: true }, packageVersion, {
+				...dependencies,
+				transactionNonce: () => nonce,
+				beforeTargetCommit: async (_skill, index) => {
+					if (index === 0) throw new Error("start normal cleanup");
+				},
+				beforeStagingDetach: async () => {
+					await rename(stagingRoot, displaced);
+					await mkdir(stagingRoot);
+					await writeFile(
+						path.join(stagingRoot, "foreign-sentinel.txt"),
+						"preserved\n",
+					);
+				},
+			}),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		expect(
+			await readFile(path.join(quarantineRoot, "foreign-sentinel.txt"), "utf8"),
+		).toBe("preserved\n");
+		await expect(
+			readFile(
+				path.join(displaced, "openapi-to-generate", "SKILL.md"),
+				"utf8",
+			),
+		).resolves.toContain("openapi-to-generate");
+		await expect(lstat(lockPath)).resolves.toMatchObject({});
+	});
+
+	it("preserves a staging replacement introduced after recovery verification", async () => {
+		const nonce = "replace-after-recovery-verification";
+		const skillsRoot = path.join(codexHome, "skills");
+		const stagingRoot = path.join(
+			skillsRoot,
+			`.openapi-to-skills-install-${nonce}`,
+		);
+		const lockPath = path.join(
+			skillsRoot,
+			".openapi-to-skills-install.lock",
+		);
+		const quarantineRoot = path.join(lockPath, "staging-quarantine");
+		const displaced = path.join(root, "verified-recovery-staging");
+		await createRetainedTransaction(nonce);
+
+		await expect(
+			installCodexSkills(
+				{ dryRun: false, json: true },
+				packageVersion,
+				{
+					...dependencies,
+					beforeStagingDetach: async () => {
+						await rename(stagingRoot, displaced);
+						await mkdir(stagingRoot);
+						await writeFile(
+							path.join(stagingRoot, "foreign-sentinel.txt"),
+							"preserved\n",
+						);
+					},
+				},
+			),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		expect(
+			await readFile(path.join(quarantineRoot, "foreign-sentinel.txt"), "utf8"),
+		).toBe("preserved\n");
+		await expect(
+			readFile(
+				path.join(displaced, "openapi-to-generate", "SKILL.md"),
+				"utf8",
+			),
+		).resolves.toContain("openapi-to-generate");
+		await expect(lstat(lockPath)).resolves.toMatchObject({});
+	});
+
+	it("preserves an exact staging replacement introduced after quarantine verification", async () => {
+		const nonce = "replace-after-quarantine-verification";
+		const skillsRoot = path.join(codexHome, "skills");
+		const lockPath = path.join(
+			skillsRoot,
+			".openapi-to-skills-install.lock",
+		);
+		const quarantineRoot = path.join(lockPath, "staging-quarantine");
+		const displaced = path.join(root, "verified-quarantine-staging");
+		await expect(
+			installCodexSkills({ dryRun: false, json: true }, packageVersion, {
+				...dependencies,
+				transactionNonce: () => nonce,
+				beforeTargetCommit: async (_skill, index) => {
+					if (index === 0) throw new Error("start quarantine cleanup");
+				},
+				beforeQuarantineCleanup: async () => {
+					await rename(quarantineRoot, displaced);
+					await cp(displaced, quarantineRoot, { recursive: true });
+					await writeFile(
+						path.join(quarantineRoot, "foreign-sentinel.txt"),
+						"preserved\n",
+					);
+				},
+			}),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		expect(
+			await readFile(path.join(quarantineRoot, "foreign-sentinel.txt"), "utf8"),
+		).toBe("preserved\n");
+		await expect(
+			readFile(
+				path.join(quarantineRoot, "openapi-to-generate", "SKILL.md"),
+				"utf8",
+			),
+		).resolves.toContain("openapi-to-generate");
+		await expect(
+			readFile(
+				path.join(displaced, "openapi-to-generate", "SKILL.md"),
+				"utf8",
+			),
+		).resolves.toContain("openapi-to-generate");
+	});
+
+	it("preserves a recovery replacement introduced after quarantine verification", async () => {
+		const nonce = "recovery-replace-after-quarantine";
+		const skillsRoot = path.join(codexHome, "skills");
+		const lockPath = path.join(
+			skillsRoot,
+			".openapi-to-skills-install.lock",
+		);
+		const quarantineRoot = path.join(lockPath, "staging-quarantine");
+		const displaced = path.join(root, "recovery-verified-quarantine-staging");
+		await createRetainedTransaction(nonce);
+
+		await expect(
+			installCodexSkills(
+				{ dryRun: false, json: true },
+				packageVersion,
+				{
+					...dependencies,
+					beforeQuarantineCleanup: async () => {
+						await rename(quarantineRoot, displaced);
+						await cp(displaced, quarantineRoot, { recursive: true });
+						await writeFile(
+							path.join(quarantineRoot, "foreign-sentinel.txt"),
+							"preserved\n",
+						);
+					},
+				},
+			),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		expect(
+			await readFile(path.join(quarantineRoot, "foreign-sentinel.txt"), "utf8"),
+		).toBe("preserved\n");
+		await expect(
+			readFile(
+				path.join(quarantineRoot, "openapi-to-generate", "SKILL.md"),
+				"utf8",
+			),
+		).resolves.toContain("openapi-to-generate");
+		await expect(
+			readFile(
+				path.join(displaced, "openapi-to-generate", "SKILL.md"),
+				"utf8",
+			),
+		).resolves.toContain("openapi-to-generate");
+	});
+
+	it("rejects an old or incomplete interrupted transaction journal", async () => {
+		const nonce = "old-journal-schema";
+		const skillsRoot = path.join(codexHome, "skills");
+		const lockPath = path.join(
+			skillsRoot,
+			".openapi-to-skills-install.lock",
+		);
+		await createRetainedTransaction(nonce);
+		const journalPath = path.join(lockPath, "transaction.json");
+		const journal = JSON.parse(await readFile(journalPath, "utf8"));
+		journal.schemaVersion = 1;
+		delete journal.stagingOwnerMarker;
+		await writeFile(journalPath, `${JSON.stringify(journal, null, 2)}\n`);
+
+		await expect(
+			installCodexSkills(
+				{ dryRun: false, json: true },
+				packageVersion,
+				dependencies,
+			),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		await expect(
+			lstat(
+				path.join(skillsRoot, `.openapi-to-skills-install-${nonce}`),
+			),
+		).resolves.toMatchObject({});
+		await expect(lstat(lockPath)).resolves.toMatchObject({});
+	});
+
+	it.each([
+		{
+			name: "a missing staging owner marker",
+			mutate: async ({
+				stagingRoot,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				await rm(path.join(stagingRoot, ".openapi-to-staging-owner"));
+			},
+		},
+		{
+			name: "a staging owner marker with the wrong nonce",
+			mutate: async ({
+				stagingRoot,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				await writeFile(
+					path.join(stagingRoot, ".openapi-to-staging-owner"),
+					"openapi-to-staging:wrong-nonce\n",
+				);
+			},
+		},
+		{
+			name: "an unexplained staging file",
+			mutate: async ({
+				stagingRoot,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				await writeFile(path.join(stagingRoot, "foreign.txt"), "preserved\n");
+			},
+		},
+		{
+			name: "an unexplained staging directory",
+			mutate: async ({
+				stagingRoot,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				await mkdir(path.join(stagingRoot, "foreign-directory"));
+			},
+		},
+		{
+			name: "a missing staging ownership record",
+			mutate: async ({
+				lockPath,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				await rm(path.join(lockPath, "staging-owner.json"));
+			},
+		},
+		{
+			name: "a corrupted staging ownership record",
+			mutate: async ({
+				lockPath,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				await writeFile(path.join(lockPath, "staging-owner.json"), "{\n");
+			},
+		},
+		{
+			name: "a persisted staging identity mismatch",
+			mutate: async ({
+				lockPath,
+			}: {
+				stagingRoot: string;
+				lockPath: string;
+			}) => {
+				const recordPath = path.join(lockPath, "staging-owner.json");
+				const record = JSON.parse(await readFile(recordPath, "utf8"));
+				record.stagingIdentity.inode = (
+					BigInt(record.stagingIdentity.inode) + 1n
+				).toString();
+				await writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`);
+			},
+		},
+	])("fails closed for $name", async ({ mutate }) => {
+		const nonce = "tampered-staging";
+		const skillsRoot = path.join(codexHome, "skills");
+		const stagingRoot = path.join(
+			skillsRoot,
+			`.openapi-to-skills-install-${nonce}`,
+		);
+		const lockPath = path.join(
+			skillsRoot,
+			".openapi-to-skills-install.lock",
+		);
+		await expect(
+			installCodexSkills({ dryRun: false, json: true }, packageVersion, {
+				...dependencies,
+				transactionNonce: () => nonce,
+				beforeTargetCommit: async (_skill, index) => {
+					if (index !== 0) return;
+					await mutate({ stagingRoot, lockPath });
+					throw new Error("fail after tampering with staging ownership");
+				},
+			}),
+		).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+		await expect(lstat(stagingRoot)).resolves.toMatchObject({});
+		await expect(lstat(lockPath)).resolves.toMatchObject({});
+	});
+
+	it("fails closed for staging ownership symlinks without following them", async (t) => {
+		if (process.platform === "win32") {
+			t.skip();
+			return;
+		}
+		for (const target of ["staging", "marker", "record"] as const) {
+			const nonce = `symlink-${target}`;
+			const skillsRoot = path.join(codexHome, "skills");
+			const stagingRoot = path.join(
+				skillsRoot,
+				`.openapi-to-skills-install-${nonce}`,
+			);
+			const external = path.join(root, `external-${target}`);
+			await mkdir(external);
+			await writeFile(path.join(external, "sentinel.txt"), "preserved\n");
+			await expect(
+				installCodexSkills({ dryRun: false, json: true }, packageVersion, {
+					...dependencies,
+					transactionNonce: () => nonce,
+					beforeTargetCommit: async (_skill, index) => {
+						if (index !== 0) return;
+						if (target === "staging") {
+							await rm(stagingRoot, { recursive: true, force: false });
+							await symlink(external, stagingRoot, "dir");
+						} else if (target === "marker") {
+							const marker = path.join(
+								stagingRoot,
+								".openapi-to-staging-owner",
+							);
+							await rm(marker);
+							await symlink(path.join(external, "sentinel.txt"), marker);
+						} else {
+							const record = path.join(
+								skillsRoot,
+								".openapi-to-skills-install.lock",
+								"staging-owner.json",
+							);
+							await rm(record);
+							await symlink(path.join(external, "sentinel.txt"), record);
+						}
+						throw new Error("fail after adding staging symlink");
+					},
+				}),
+			).rejects.toMatchObject({ code: "SKILLS_INSTALL_RECOVERY_REQUIRED" });
+			expect(await readFile(path.join(external, "sentinel.txt"), "utf8")).toBe(
+				"preserved\n",
+			);
+			await rm(codexHome, { recursive: true, force: true });
+		}
 	});
 
 	it("cleans staging and destinations after a copy failure", async () => {

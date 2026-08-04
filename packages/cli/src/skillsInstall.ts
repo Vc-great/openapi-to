@@ -2,10 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import {
 	access,
+	link,
 	lstat,
 	mkdir,
 	readdir,
 	readFile,
+	rename,
 	rm,
 	rmdir,
 	unlink,
@@ -24,7 +26,11 @@ const distributionByteLimit = 64 * 1024 * 1024;
 const installLockName = ".openapi-to-skills-install.lock";
 const installJournalName = "transaction.json";
 const stagingDirectoryPrefix = ".openapi-to-skills-install-";
+const stagingOwnerRecordName = "staging-owner.json";
+const stagingOwnerMarkerName = ".openapi-to-staging-owner";
+const stagingQuarantineName = "staging-quarantine";
 const installJournalByteLimit = 16 * 1024;
+const stagingOwnerRecordByteLimit = 4 * 1024;
 const targetOwnerMarkerName = ".openapi-to-install-owner";
 const activeTransactionNonces = new Set<string>();
 
@@ -57,17 +63,27 @@ interface VerifiedSkill {
 }
 
 interface InstallJournal {
-	schemaVersion: 1;
+	schemaVersion: 2;
 	packageVersion: string;
 	pid: number;
 	nonce: string;
 	stagingDirectory: string;
+	stagingOwnerRecord: typeof stagingOwnerRecordName;
+	stagingOwnerMarker: typeof stagingOwnerMarkerName;
+	stagingQuarantine: typeof stagingQuarantineName;
 	skills: SupportedSkillName[];
 }
 
 interface FileIdentity {
 	device: string;
 	inode: string;
+}
+
+interface StagingOwnershipRecord {
+	schemaVersion: 1;
+	nonce: string;
+	stagingDirectory: string;
+	stagingIdentity: FileIdentity;
 }
 
 interface DestinationIdentity {
@@ -92,6 +108,8 @@ export interface SkillsInstallDependencies {
 	environment?: NodeJS.ProcessEnv;
 	homeDirectory?: () => string;
 	beforeStaging?: () => Promise<void>;
+	beforeStagingDetach?: () => Promise<void>;
+	beforeQuarantineCleanup?: () => Promise<void>;
 	beforeTargetCommit?: (
 		skill: SupportedSkillName,
 		index: number,
@@ -173,6 +191,13 @@ function fileIdentity(details: { dev: bigint | number; ino: bigint | number }) {
 	};
 }
 
+function hasExactKeys(value: object, expected: readonly string[]) {
+	return (
+		JSON.stringify(Object.keys(value).sort()) ===
+		JSON.stringify([...expected].sort())
+	);
+}
+
 function sameIdentity(
 	details: { dev: bigint | number; ino: bigint | number },
 	expected: FileIdentity,
@@ -180,6 +205,18 @@ function sameIdentity(
 	return (
 		details.dev.toString() === expected.device &&
 		details.ino.toString() === expected.inode
+	);
+}
+
+function validFileIdentity(value: unknown): value is FileIdentity {
+	return (
+		!!value &&
+		typeof value === "object" &&
+		typeof (value as { device?: unknown }).device === "string" &&
+		/^\d{1,40}$/.test((value as { device: string }).device) &&
+		typeof (value as { inode?: unknown }).inode === "string" &&
+		/^[1-9]\d{0,39}$/.test((value as { inode: string }).inode) &&
+		hasExactKeys(value, ["device", "inode"])
 	);
 }
 
@@ -852,6 +889,45 @@ function validateTransactionNonce(nonce: string) {
 	return nonce;
 }
 
+function stagingOwnerMarkerBytes(nonce: string) {
+	return Buffer.from(`openapi-to-staging:${nonce}\n`, "utf8");
+}
+
+async function createStagingOwnership(
+	lockPath: string,
+	stagingRoot: string,
+	nonce: string,
+): Promise<StagingOwnershipRecord> {
+	const details = await lstat(stagingRoot, { bigint: true });
+	if (
+		details.isSymbolicLink() ||
+		!details.isDirectory() ||
+		details.ino === 0n
+	) {
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging ownership could not be established safely.",
+		);
+	}
+	await writeFile(
+		path.join(stagingRoot, stagingOwnerMarkerName),
+		stagingOwnerMarkerBytes(nonce),
+		{ flag: "wx", mode: 0o600 },
+	);
+	const record: StagingOwnershipRecord = {
+		schemaVersion: 1,
+		nonce,
+		stagingDirectory: path.basename(stagingRoot),
+		stagingIdentity: fileIdentity(details),
+	};
+	await writeExclusiveRecordAtomically(
+		path.join(lockPath, stagingOwnerRecordName),
+		`${stagingOwnerRecordName}.tmp-${nonce}`,
+		record,
+	);
+	return record;
+}
+
 function validateInstallJournal(
 	value: unknown,
 	expectedPackageVersion: string,
@@ -859,13 +935,24 @@ function validateInstallJournal(
 	if (
 		!value ||
 		typeof value !== "object" ||
-		(value as { schemaVersion?: unknown }).schemaVersion !== 1 ||
+		(value as { schemaVersion?: unknown }).schemaVersion !== 2 ||
 		(value as { packageVersion?: unknown }).packageVersion !==
 			expectedPackageVersion ||
 		!Number.isSafeInteger((value as { pid?: unknown }).pid) ||
 		((value as { pid: number }).pid ?? 0) <= 0 ||
 		typeof (value as { nonce?: unknown }).nonce !== "string" ||
-		!Array.isArray((value as { skills?: unknown }).skills)
+		!Array.isArray((value as { skills?: unknown }).skills) ||
+		!hasExactKeys(value, [
+			"schemaVersion",
+			"packageVersion",
+			"pid",
+			"nonce",
+			"stagingDirectory",
+			"stagingOwnerRecord",
+			"stagingOwnerMarker",
+			"stagingQuarantine",
+			"skills",
+		])
 	) {
 		return fail(
 			"SKILLS_INSTALL_RECOVERY_REQUIRED",
@@ -876,6 +963,9 @@ function validateInstallJournal(
 	if (
 		!/^[a-zA-Z0-9-]{1,128}$/.test(journal.nonce) ||
 		journal.stagingDirectory !== `${stagingDirectoryPrefix}${journal.nonce}` ||
+		journal.stagingOwnerRecord !== stagingOwnerRecordName ||
+		journal.stagingOwnerMarker !== stagingOwnerMarkerName ||
+		journal.stagingQuarantine !== stagingQuarantineName ||
 		JSON.stringify(journal.skills) !== JSON.stringify(supportedSkillNames)
 	) {
 		return fail(
@@ -886,15 +976,59 @@ function validateInstallJournal(
 	return journal;
 }
 
+function validateStagingOwnershipRecord(
+	value: unknown,
+	journal: InstallJournal,
+): StagingOwnershipRecord {
+	if (
+		!value ||
+		typeof value !== "object" ||
+		(value as { schemaVersion?: unknown }).schemaVersion !== 1 ||
+		(value as { nonce?: unknown }).nonce !== journal.nonce ||
+		(value as { stagingDirectory?: unknown }).stagingDirectory !==
+			journal.stagingDirectory ||
+		!validFileIdentity(
+			(value as { stagingIdentity?: unknown }).stagingIdentity,
+		) ||
+		!hasExactKeys(value, [
+			"schemaVersion",
+			"nonce",
+			"stagingDirectory",
+			"stagingIdentity",
+		])
+	) {
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging ownership evidence requires manual inspection.",
+		);
+	}
+	return value as StagingOwnershipRecord;
+}
+
 async function writeInstallJournal(
 	lockPath: string,
 	journal: InstallJournal,
 ): Promise<void> {
-	await writeFile(
+	await writeExclusiveRecordAtomically(
 		path.join(lockPath, installJournalName),
-		`${JSON.stringify(journal, null, 2)}\n`,
+		`${installJournalName}.tmp-${journal.nonce}`,
+		journal,
+	);
+}
+
+async function writeExclusiveRecordAtomically(
+	destination: string,
+	temporaryName: string,
+	value: object,
+): Promise<void> {
+	const temporaryPath = path.join(path.dirname(destination), temporaryName);
+	await writeFile(
+		temporaryPath,
+		`${JSON.stringify(value, null, 2)}\n`,
 		{ flag: "wx", mode: 0o600 },
 	);
+	await link(temporaryPath, destination);
+	await unlink(temporaryPath);
 }
 
 async function readInstallJournal(
@@ -904,10 +1038,23 @@ async function readInstallJournal(
 	try {
 		const entries = await readdir(lockPath, { withFileTypes: true });
 		if (
-			entries.length !== 1 ||
-			entries[0]?.name !== installJournalName ||
-			!entries[0].isFile() ||
-			entries[0].isSymbolicLink()
+			entries.length < 1 ||
+			entries.length > 3 ||
+			!entries.some((entry) => entry.name === installJournalName) ||
+			entries.some(
+				(entry) => {
+					if (entry.isSymbolicLink()) return true;
+					if (
+						[installJournalName, stagingOwnerRecordName].includes(entry.name)
+					) {
+						return !entry.isFile();
+					}
+					if (entry.name === stagingQuarantineName) {
+						return !entry.isDirectory();
+					}
+					return true;
+				},
+			)
 		) {
 			return fail(
 				"SKILLS_INSTALL_RECOVERY_REQUIRED",
@@ -940,6 +1087,38 @@ async function readInstallJournal(
 	}
 }
 
+async function readStagingOwnershipRecord(
+	lockPath: string,
+	journal: InstallJournal,
+): Promise<StagingOwnershipRecord | undefined> {
+	try {
+		const recordPath = path.join(lockPath, journal.stagingOwnerRecord);
+		const details = await lstatIfPresent(recordPath);
+		if (!details) return undefined;
+		if (
+			details.isSymbolicLink() ||
+			!details.isFile() ||
+			details.size <= 0 ||
+			details.size > stagingOwnerRecordByteLimit
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership evidence requires manual inspection.",
+			);
+		}
+		return validateStagingOwnershipRecord(
+			JSON.parse(await readFile(recordPath, "utf8")),
+			journal,
+		);
+	} catch (error) {
+		if (error instanceof SkillsInstallError) throw error;
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging ownership evidence requires manual inspection.",
+		);
+	}
+}
+
 function processIsActive(pid: number, nonce: string) {
 	if (pid === process.pid) return activeTransactionNonces.has(nonce);
 	try {
@@ -950,34 +1129,344 @@ function processIsActive(pid: number, nonce: string) {
 	}
 }
 
-async function assertOwnedDirectory(target: string, message: string) {
-	const details = await lstatIfPresent(target);
-	if (!details) return false;
-	if (details.isSymbolicLink() || !details.isDirectory()) {
-		return fail("SKILLS_INSTALL_RECOVERY_REQUIRED", message);
+async function verifyOwnedStagingDirectory(
+	skillsRoot: string,
+	lockPath: string,
+	candidateRoot: string,
+	journal: InstallJournal,
+	ownership: StagingOwnershipRecord,
+	skills: VerifiedSkill[],
+) {
+	try {
+		const expectedStagingRoot = path.join(
+			skillsRoot,
+			journal.stagingDirectory,
+		);
+		const expectedQuarantineRoot = path.join(
+			lockPath,
+			journal.stagingQuarantine,
+		);
+		if (
+			(candidateRoot !== expectedStagingRoot &&
+				candidateRoot !== expectedQuarantineRoot) ||
+			ownership.nonce !== journal.nonce ||
+			ownership.stagingDirectory !== journal.stagingDirectory
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership could not be proven.",
+			);
+		}
+		const details = await lstat(candidateRoot, { bigint: true });
+		if (
+			details.isSymbolicLink() ||
+			!details.isDirectory() ||
+			!sameIdentity(details, ownership.stagingIdentity)
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership could not be proven.",
+			);
+		}
+		const markerPath = path.join(candidateRoot, journal.stagingOwnerMarker);
+		const markerDetails = await lstat(markerPath);
+		const expectedMarker = stagingOwnerMarkerBytes(journal.nonce);
+		if (
+			markerDetails.isSymbolicLink() ||
+			!markerDetails.isFile() ||
+			markerDetails.size !== expectedMarker.byteLength ||
+			!(await readFile(markerPath)).equals(expectedMarker)
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership marker could not be proven.",
+			);
+		}
+		const tree = await listSkillTree(candidateRoot);
+		const expectedDirectories = new Set<string>();
+		const expectedFiles = new Map<string, VerifiedSkillFile>();
+		for (const skill of skills) {
+			expectedDirectories.add(skill.name);
+			for (const directory of expectedSkillDirectories(skill)) {
+				expectedDirectories.add(`${skill.name}/${directory}`);
+			}
+			for (const file of skill.files) {
+				expectedFiles.set(`${skill.name}/${file.path}`, file);
+			}
+		}
+		if (
+			tree.directories.some(
+				(directory) => !expectedDirectories.has(directory),
+			) ||
+			tree.files.some(
+				(file) =>
+					file !== journal.stagingOwnerMarker && !expectedFiles.has(file),
+			)
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging contains unexplained entries.",
+			);
+		}
+		for (const relativePath of tree.files) {
+			if (relativePath === journal.stagingOwnerMarker) continue;
+			const expected = expectedFiles.get(relativePath);
+			if (!expected) {
+				return fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"Codex Skill staging contains unexplained entries.",
+				);
+			}
+			const bytes = await readFile(
+				path.join(candidateRoot, ...relativePath.split("/")),
+			);
+			if (
+				bytes.byteLength !== expected.size ||
+				createHash("sha256").update(bytes).digest("hex") !== expected.sha256
+			) {
+				return fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"Codex Skill staging contains changed bytes.",
+				);
+			}
+		}
+		const finalDetails = await lstat(candidateRoot, { bigint: true });
+		if (
+			finalDetails.isSymbolicLink() ||
+			!finalDetails.isDirectory() ||
+			!sameIdentity(finalDetails, ownership.stagingIdentity)
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership changed during verification.",
+			);
+		}
+	} catch (error) {
+		if (
+			error instanceof SkillsInstallError &&
+			error.code === "SKILLS_INSTALL_RECOVERY_REQUIRED"
+		) {
+			throw error;
+		}
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging ownership could not be proven.",
+		);
 	}
-	return true;
+}
+
+async function assertOwnedStagingRoot(
+	candidateRoot: string,
+	ownership: StagingOwnershipRecord,
+) {
+	try {
+		const details = await lstat(candidateRoot, { bigint: true });
+		if (
+			details.isSymbolicLink() ||
+			!details.isDirectory() ||
+			!sameIdentity(details, ownership.stagingIdentity)
+		) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership changed during cleanup.",
+			);
+		}
+	} catch (error) {
+		if (error instanceof SkillsInstallError) throw error;
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging ownership changed during cleanup.",
+		);
+	}
+}
+
+async function removeVerifiedStagingTree(
+	candidateRoot: string,
+	journal: InstallJournal,
+	ownership: StagingOwnershipRecord,
+	skills: VerifiedSkill[],
+) {
+	try {
+		const expectedFiles = skills
+			.flatMap((skill) =>
+				skill.files.map((file) => `${skill.name}/${file.path}`),
+			)
+			.sort(compareText);
+		for (const relativePath of expectedFiles) {
+			await assertOwnedStagingRoot(candidateRoot, ownership);
+			const target = path.join(
+				candidateRoot,
+				...relativePath.split("/"),
+			);
+			const details = await lstatIfPresent(target);
+			if (!details) continue;
+			if (details.isSymbolicLink() || !details.isFile()) {
+				return fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"Codex Skill staging entries changed during cleanup.",
+				);
+			}
+			await unlink(target);
+		}
+		const expectedDirectories = skills
+			.flatMap((skill) => [
+				skill.name,
+				...[...expectedSkillDirectories(skill)].map(
+					(directory) => `${skill.name}/${directory}`,
+				),
+			])
+			.sort((left, right) => {
+				const depthDifference =
+					right.split("/").length - left.split("/").length;
+				return depthDifference || compareText(right, left);
+			});
+		for (const relativePath of expectedDirectories) {
+			await assertOwnedStagingRoot(candidateRoot, ownership);
+			const target = path.join(
+				candidateRoot,
+				...relativePath.split("/"),
+			);
+			const details = await lstatIfPresent(target);
+			if (!details) continue;
+			if (details.isSymbolicLink() || !details.isDirectory()) {
+				return fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"Codex Skill staging entries changed during cleanup.",
+				);
+			}
+			await rmdir(target);
+		}
+		await assertOwnedStagingRoot(candidateRoot, ownership);
+		const markerPath = path.join(candidateRoot, journal.stagingOwnerMarker);
+		const markerDetails = await lstatIfPresent(markerPath);
+		if (markerDetails) {
+			if (markerDetails.isSymbolicLink() || !markerDetails.isFile()) {
+				return fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"Codex Skill staging ownership marker changed during cleanup.",
+				);
+			}
+			await unlink(markerPath);
+		}
+		await assertOwnedStagingRoot(candidateRoot, ownership);
+		await rmdir(candidateRoot);
+	} catch (error) {
+		if (
+			error instanceof SkillsInstallError &&
+			error.code === "SKILLS_INSTALL_RECOVERY_REQUIRED"
+		) {
+			throw error;
+		}
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging cleanup requires manual inspection.",
+		);
+	}
+}
+
+async function removeOwnedStagingDirectory(
+	codexHome: string,
+	skillsRoot: string,
+	lockPath: string,
+	stagingRoot: string,
+	identity: DestinationIdentity,
+	journal: InstallJournal,
+	ownership: StagingOwnershipRecord | undefined,
+	skills: VerifiedSkill[],
+	beforeStagingDetach?: SkillsInstallDependencies["beforeStagingDetach"],
+	beforeQuarantineCleanup?: SkillsInstallDependencies["beforeQuarantineCleanup"],
+) {
+	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
+	const stagingDetails = await lstatIfPresent(stagingRoot);
+	const quarantineRoot = path.join(lockPath, journal.stagingQuarantine);
+	const quarantineDetails = await lstatIfPresent(quarantineRoot);
+	if (stagingDetails && quarantineDetails) {
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging cleanup contains ambiguous paths.",
+		);
+	}
+	if (!stagingDetails && !quarantineDetails) return;
+	if (!ownership) {
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging ownership evidence is missing.",
+		);
+	}
+	if (stagingDetails) {
+		await verifyOwnedStagingDirectory(
+			skillsRoot,
+			lockPath,
+			stagingRoot,
+			journal,
+			ownership,
+			skills,
+		);
+		await beforeStagingDetach?.();
+		await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
+		try {
+			await rename(stagingRoot, quarantineRoot);
+		} catch {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging could not be detached safely.",
+			);
+		}
+	}
+	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
+	await verifyOwnedStagingDirectory(
+		skillsRoot,
+		lockPath,
+		quarantineRoot,
+		journal,
+		ownership,
+		skills,
+	);
+	await beforeQuarantineCleanup?.();
+	await removeVerifiedStagingTree(
+		quarantineRoot,
+		journal,
+		ownership,
+		skills,
+	);
+	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
 }
 
 async function cleanupTransaction(
+	codexHome: string,
+	skillsRoot: string,
 	lockPath: string,
 	stagingRoot: string,
-	stagingCreated: boolean,
+	identity: DestinationIdentity,
+	journal: InstallJournal,
+	skills: VerifiedSkill[],
+	beforeStagingDetach?: SkillsInstallDependencies["beforeStagingDetach"],
+	beforeQuarantineCleanup?: SkillsInstallDependencies["beforeQuarantineCleanup"],
 ) {
-	if (
-		stagingCreated &&
-		(await assertOwnedDirectory(
-			stagingRoot,
-			"An interrupted Codex Skill staging path requires manual inspection.",
-		))
-	) {
-		await rm(stagingRoot, { recursive: true, force: false });
+	const ownership = await readStagingOwnershipRecord(lockPath, journal);
+	await removeOwnedStagingDirectory(
+		codexHome,
+		skillsRoot,
+		lockPath,
+		stagingRoot,
+		identity,
+		journal,
+		ownership,
+		skills,
+		beforeStagingDetach,
+		beforeQuarantineCleanup,
+	);
+	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
+	if (ownership) {
+		await unlink(path.join(lockPath, journal.stagingOwnerRecord));
+		await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
 	}
 	await unlink(path.join(lockPath, installJournalName)).catch(
 		(error: NodeJS.ErrnoException) => {
 			if (error.code !== "ENOENT") throw error;
 		},
 	);
+	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
 	await rmdir(lockPath);
 }
 
@@ -986,6 +1475,8 @@ async function recoverInterruptedInstallation(
 	skillsRoot: string,
 	packageVersion: string,
 	skills: VerifiedSkill[],
+	beforeStagingDetach?: SkillsInstallDependencies["beforeStagingDetach"],
+	beforeQuarantineCleanup?: SkillsInstallDependencies["beforeQuarantineCleanup"],
 ) {
 	const lockPath = path.join(skillsRoot, installLockName);
 	const lockDetails = await lstatIfPresent(lockPath);
@@ -1021,10 +1512,58 @@ async function recoverInterruptedInstallation(
 		lockPath,
 	);
 	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
-	const stagingPresent = await assertOwnedDirectory(
-		stagingRoot,
-		"An interrupted Codex Skill staging path requires manual inspection.",
-	);
+	const ownership = await readStagingOwnershipRecord(lockPath, journal);
+	const stagingDetails = await lstatIfPresent(stagingRoot);
+	const quarantineRoot = path.join(lockPath, journal.stagingQuarantine);
+	const quarantineDetails = await lstatIfPresent(quarantineRoot);
+	if (stagingDetails && quarantineDetails) {
+		return fail(
+			"SKILLS_INSTALL_RECOVERY_REQUIRED",
+			"Codex Skill staging cleanup contains ambiguous paths.",
+		);
+	}
+	const ownedStagingRoot = stagingDetails
+		? stagingRoot
+		: quarantineDetails
+			? quarantineRoot
+			: undefined;
+	if (ownedStagingRoot) {
+		if (!ownership) {
+			return fail(
+				"SKILLS_INSTALL_RECOVERY_REQUIRED",
+				"Codex Skill staging ownership evidence is missing.",
+			);
+		}
+		await verifyOwnedStagingDirectory(
+			skillsRoot,
+			lockPath,
+			ownedStagingRoot,
+			journal,
+			ownership,
+			skills,
+		);
+	} else if (!ownership) {
+		for (const skill of skills) {
+			if (await lstatIfPresent(path.join(skillsRoot, skill.name))) {
+				return fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"An interrupted Codex Skill installation requires manual inspection.",
+				);
+			}
+		}
+		await cleanupTransaction(
+			codexHome,
+			skillsRoot,
+			lockPath,
+			stagingRoot,
+			identity,
+			journal,
+			skills,
+			beforeStagingDetach,
+			beforeQuarantineCleanup,
+		);
+		return false;
+	}
 	const ownedTargets: OwnedSkillTarget[] = [];
 	for (const skill of skills) {
 		const destination = path.join(skillsRoot, skill.name);
@@ -1083,7 +1622,17 @@ async function recoverInterruptedInstallation(
 		}
 	}
 	await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
-	await cleanupTransaction(lockPath, stagingRoot, stagingPresent);
+	await cleanupTransaction(
+		codexHome,
+		skillsRoot,
+		lockPath,
+		stagingRoot,
+		identity,
+		journal,
+		skills,
+		beforeStagingDetach,
+		beforeQuarantineCleanup,
+	);
 	return installationComplete;
 }
 
@@ -1231,6 +1780,8 @@ export async function installCodexSkills(
 				skillsRoot,
 				packageVersion,
 				verifiedSkills,
+				dependencies.beforeStagingDetach,
+				dependencies.beforeQuarantineCleanup,
 			));
 		const output: SkillsInstallOutput = {
 			success: true,
@@ -1255,9 +1806,9 @@ export async function installCodexSkills(
 
 		let lockAcquired = false;
 		let journalWritten = false;
-		let stagingCreated = false;
 		let preserveTransaction = false;
 		let identity: DestinationIdentity | undefined;
+		let journal: InstallJournal | undefined;
 		let installed = false;
 		const nonce = validateTransactionNonce(
 			(dependencies.transactionNonce ?? randomUUID)(),
@@ -1297,14 +1848,18 @@ export async function installCodexSkills(
 				lockPath,
 			);
 			activeTransactionNonces.add(nonce);
-			await writeInstallJournal(lockPath, {
-				schemaVersion: 1,
+			journal = {
+				schemaVersion: 2,
 				packageVersion,
 				pid: dependencies.processId ?? process.pid,
 				nonce,
 				stagingDirectory: path.basename(stagingRoot),
+				stagingOwnerRecord: stagingOwnerRecordName,
+				stagingOwnerMarker: stagingOwnerMarkerName,
+				stagingQuarantine: stagingQuarantineName,
 				skills: [...supportedSkillNames],
-			});
+			};
+			await writeInstallJournal(lockPath, journal);
 			journalWritten = true;
 			await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
 			const lockedState = await preflightDestination(codexHome, skillsRoot, {
@@ -1319,7 +1874,7 @@ export async function installCodexSkills(
 			await dependencies.beforeStaging?.();
 			await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
 			await mkdir(stagingRoot, { mode: 0o700 });
-			stagingCreated = true;
+			await createStagingOwnership(lockPath, stagingRoot, nonce);
 			await assertDestinationStable(codexHome, skillsRoot, lockPath, identity);
 			const fileWriter = dependencies.writeFile ?? writeFile;
 			await writeStagedSkills(stagingRoot, verifiedSkills, fileWriter);
@@ -1362,9 +1917,25 @@ export async function installCodexSkills(
 			const cleanupSafe =
 				!identity ||
 				(await destinationIsStable(codexHome, skillsRoot, lockPath, identity));
+			if (lockAcquired && !preserveTransaction && !cleanupSafe) {
+				fail(
+					"SKILLS_INSTALL_RECOVERY_REQUIRED",
+					"Codex Skill installation cleanup requires manual inspection.",
+				);
+			}
 			if (lockAcquired && !preserveTransaction && cleanupSafe) {
-				if (journalWritten) {
-					await cleanupTransaction(lockPath, stagingRoot, stagingCreated);
+				if (journalWritten && journal && identity) {
+					await cleanupTransaction(
+						codexHome,
+						skillsRoot,
+						lockPath,
+						stagingRoot,
+						identity,
+						journal,
+						verifiedSkills,
+						dependencies.beforeStagingDetach,
+						dependencies.beforeQuarantineCleanup,
+					);
 				} else {
 					await rmdir(lockPath);
 				}

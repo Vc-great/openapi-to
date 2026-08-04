@@ -4462,13 +4462,26 @@ export async function auditCodexSkillInstallerContracts(root = repositoryRoot) {
 	if (await exists(aggregateBinPath)) {
 		const aggregateBin = await readFile(aggregateBinPath, "utf8");
 		if (
-			!aggregateBin.includes("isSkillsCommand") ||
+			!aggregateBin.includes("function topLevelCommand(argv)") ||
+			!aggregateBin.includes(
+				"topLevelCommand(process.argv) === 'skills'",
+			) ||
 			!aggregateBin.includes(
 				"!isSkillsCommand && !process.argv.includes('--json')",
 			)
 		) {
 			failures.push(
 				"aggregate CLI aliases must skip update-notifier for every skills command",
+			);
+		}
+		if (
+			/process\.argv\s*\[\s*2\s*\]\s*===?\s*["']skills["']/.test(
+				aggregateBin,
+			) ||
+			/process\.argv\.includes\(\s*["']skills["']\s*\)/.test(aggregateBin)
+		) {
+			failures.push(
+				"aggregate CLI aliases must locate the top-level command instead of matching a fixed argv position or arbitrary value",
 			);
 		}
 	}
@@ -4493,6 +4506,8 @@ export async function auditCodexSkillInstallerContracts(root = repositoryRoot) {
 		for (const marker of [
 			'"packed-consumer-skills-assets"',
 			'"packed-codex-skills-human-dry-run-no-notifier"',
+			'"packed-codex-skills-global-debug-no-notifier"',
+			'"packed-codex-skills-no-network-attempt"',
 			'"packed-codex-skills-dry-run"',
 			'"packed-codex-skills-install"',
 			'"packed-codex-skills-existing-destination"',
@@ -4525,12 +4540,36 @@ export async function auditCodexSkillInstallerContracts(root = repositoryRoot) {
 			"recoverInterruptedInstallation",
 			"recoveredComplete",
 			"targetOwnerMarkerName",
+			"stagingOwnerMarkerName",
+			"stagingOwnerRecordName",
+			"stagingQuarantineName",
+			"writeExclusiveRecordAtomically",
+			"verifyOwnedStagingDirectory",
+			"removeVerifiedStagingTree",
+			"removeOwnedStagingDirectory",
 		]) {
 			if (!skillsInstaller.includes(marker)) {
 				failures.push(
 					`Codex Skill installer recovery contract is missing ${marker}`,
 				);
 			}
+		}
+		if (
+			(skillsInstaller.match(/cleanupTransaction\s*\(/g) ?? []).length < 3 ||
+			/rm\((?:stagingRoot|quarantineRoot),\s*\{\s*recursive: true/.test(
+				skillsInstaller,
+			) ||
+			!skillsInstaller.includes("await rename(stagingRoot, quarantineRoot)") ||
+			!skillsInstaller.includes(
+				"await removeVerifiedStagingTree(",
+			) ||
+			!skillsInstaller.includes(
+				"await verifyOwnedStagingDirectory(\n\t\tskillsRoot,\n\t\tlockPath,\n\t\tquarantineRoot,",
+			)
+		) {
+			failures.push(
+				"Codex Skill normal cleanup and interrupted recovery must atomically quarantine, reverify persisted ownership, and avoid path-based recursive staging removal",
+			);
 		}
 	}
 
