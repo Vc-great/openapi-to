@@ -1,5 +1,11 @@
 # @openapi-to/plugin-zod
 
+## 4.0.0-rc.3
+
+### Patch Changes
+
+- @openapi-to/core@4.0.0-rc.3
+
 ## 4.0.0-rc.2
 
 ### Major Changes
