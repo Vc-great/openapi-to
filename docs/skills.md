@@ -147,3 +147,20 @@ Hosts can be diagnosed, but their writes remain manual. Neither Skill uses a
 global package fallback, silently upgrades openapi-to, executes an untrusted
 generation config during setup diagnosis, or treats Tool count as capability
 proof.
+
+## Acceptance-test ownership
+
+The focused Setup Inspector Node tests own setup state transitions and safe
+inspection. `pnpm test:consumer:codegen` owns packed formal-plugin generation,
+strict compile, runtime, drift, and idempotence. Its
+`test:consumer:codegen:review` alias only exports a human-review snapshot after
+that same test passes. `pnpm release:smoke` is the canonical full packed
+consumer acceptance entry and reuses the codegen scenario plus its single
+tarball set.
+
+Release smoke also runs a narrow bridge between the repository-Skill Inspector
+and the packed MCP in one external consumer. It proves the inferred
+read-only/write-enabled mode agrees with the actual named Prepare/Apply
+capability and that Setup evidence expires on observed-state drift. It is not
+a model-behavior test or a second golden path. The complete assignment is in
+the [consumer acceptance coverage matrix](./testing/consumer-acceptance-matrix.md).

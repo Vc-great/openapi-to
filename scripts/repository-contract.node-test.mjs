@@ -16,6 +16,7 @@ import { promisify } from "node:util";
 import {
 	auditAgentAndSkillContracts,
 	auditCiDiagnosticsContracts,
+	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
 	auditPublicationContracts,
 	auditRepositoryContracts,
@@ -37,6 +38,26 @@ async function writeFixtureFile(root, relativePath, contents) {
 	const path = join(root, relativePath);
 	await mkdir(dirname(path), { recursive: true });
 	await writeFile(path, contents);
+}
+
+async function createConsumerAcceptanceContractFixture(t) {
+	const root = await mkdtemp(
+		join(tmpdir(), "openapi-to-consumer-acceptance-contract-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		"package.json",
+		"docs/testing/consumer-acceptance-matrix.md",
+		"scripts/release/pack-install-smoke.mjs",
+		"scripts/release/setup-mcp-handoff-smoke.mjs",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	return root;
 }
 
 async function git(root, ...args) {
@@ -439,6 +460,79 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
+});
+
+test("consumer acceptance contract accepts the consolidated packed path", async (t) => {
+	const root = await createConsumerAcceptanceContractFixture(t);
+	assert.deepEqual(await auditConsumerAcceptanceContracts(root), []);
+});
+
+test("consumer acceptance contract rejects owner, bridge, and duplicate-path drift", async (t) => {
+	const missingOwnerRoot = await createConsumerAcceptanceContractFixture(t);
+	const matrixPath = join(
+		missingOwnerRoot,
+		"docs/testing/consumer-acceptance-matrix.md",
+	);
+	await writeFile(
+		matrixPath,
+		(await readFile(matrixPath, "utf8")).replaceAll(
+			"`release:smoke`",
+			"`removed-release-owner`",
+		),
+	);
+	assertFailure(
+		{ failures: await auditConsumerAcceptanceContracts(missingOwnerRoot) },
+		/missing canonical owner `release:smoke`/,
+	);
+
+	const missingCallRoot = await createConsumerAcceptanceContractFixture(t);
+	const releasePath = join(
+		missingCallRoot,
+		"scripts/release/pack-install-smoke.mjs",
+	);
+	await writeFile(
+		releasePath,
+		(await readFile(releasePath, "utf8")).replaceAll(
+			"runSetupMcpHandoffScenario",
+			"removedSetupMcpHandoffScenario",
+		),
+	);
+	assertFailure(
+		{ failures: await auditConsumerAcceptanceContracts(missingCallRoot) },
+		/release smoke must call the Setup to packed MCP bridge/,
+	);
+
+	for (const [source, failure] of [
+		["packReleasePackages();", /must not use packReleasePackages/],
+		["pnpm link openapi-to;", /must not use pnpm link/],
+		["homedir();", /must not use user Codex home/],
+		["npm install openapi-to;", /must not use npm registry installation/],
+	]) {
+		const forbiddenRoot = await createConsumerAcceptanceContractFixture(t);
+		const bridgePath = join(
+			forbiddenRoot,
+			"scripts/release/setup-mcp-handoff-smoke.mjs",
+		);
+		await writeFile(
+			bridgePath,
+			`${await readFile(bridgePath, "utf8")}\n${source}\n`,
+		);
+		assertFailure(
+			{ failures: await auditConsumerAcceptanceContracts(forbiddenRoot) },
+			failure,
+		);
+	}
+
+	const duplicateRoot = await createConsumerAcceptanceContractFixture(t);
+	await writeFixtureFile(
+		duplicateRoot,
+		"scripts/consumer-golden-path.mjs",
+		"export {};\n",
+	);
+	assertFailure(
+		{ failures: await auditConsumerAcceptanceContracts(duplicateRoot) },
+		/duplicate consumer golden path exists/,
+	);
 });
 
 test("blocking Actions workflows use controlled fixtures and retain diagnostic artifacts", async () => {

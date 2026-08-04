@@ -1,5 +1,12 @@
 # Packed formal-plugin consumer code generation
 
+`pnpm test:consumer:codegen` is the packed formal-plugin consumer codegen
+specialist test. It owns generated file, strict compile, runtime, drift, and
+idempotence coverage; it is not the full packed consumer release acceptance
+entry. See the
+[consumer acceptance coverage matrix](./consumer-acceptance-matrix.md) for the
+canonical owner of each adjacent capability.
+
 Run the independent external-consumer smoke after building the repository:
 
 ```shell
@@ -77,21 +84,27 @@ exercise repository workspaces rather than a newly installed tarball.
 `release:smoke` reuses this exact scenario with its already packed tarballs,
 alongside the package-surface, binary, and MCP checks.
 
-There are two primary maintainer entry points:
+There is one specialist test with an optional review-export mode:
 
 ```shell
 pnpm test:consumer:codegen
 pnpm test:consumer:codegen:review
 ```
 
-`test:consumer:codegen` is the automation-oriented validation and always cleans
-its operating-system temporary workspace. For day-to-day human review of
-generated code, use `test:consumer:codegen:review`. It still installs and
-validates in the operating-system temporary directory, then, only after
+`test:consumer:codegen` is the automation-oriented specialist validation and
+always cleans its operating-system temporary workspace. For day-to-day human
+review of generated code, use `test:consumer:codegen:review`. The latter is not
+a different consumer E2E or a second test layer: it invokes the same specialist
+test and, only after
 validation, drift recovery, strict compilation, the final current check, and
 byte-stable regeneration have passed, atomically exports a compact snapshot to
 `.ci-artifacts/consumer-codegen-review/current`. The original temporary root is
 then removed automatically.
+
+`pnpm release:smoke` remains the canonical full packed consumer acceptance
+entry. It packs once, reuses the same tarballs for this exact codegen scenario,
+then verifies package surfaces, bins, MCP stdio/capabilities, controlled
+Prepare/Apply, and the narrow Setup Inspector-to-packed-MCP handoff bridge.
 
 The review snapshot contains `report.json`, the OpenAPI fixture and config,
 request stub, consumer usage, TypeScript config, `pnpm-lock.yaml`, all final
