@@ -1,5 +1,10 @@
 {
 	"$schema": "https://turbo.build/schema.json",
+	"globalDependencies": [
+		".agents/skills/openapi-to-generate/**",
+		".agents/skills/openapi-to-setup/**",
+		"scripts/build-consumer-skill-assets.mjs"
+	],
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],

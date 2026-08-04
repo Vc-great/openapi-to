@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { access, readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
@@ -204,6 +205,80 @@ for (const { directory, absoluteDirectory, manifest } of publicRecords) {
 		failures.push(
 			"@openapi-to/mcp: repository-only Doctor/Inspector/test scripts must not be published",
 		);
+	}
+	if (manifest.scripts?.postinstall !== undefined) {
+		failures.push(`${manifest.name}: public packages must not use postinstall`);
+	}
+	if (manifest.name === "@openapi-to/cli") {
+		const skillManifestPath = join(
+			absoluteDirectory,
+			"dist",
+			"skills",
+			"manifest.json",
+		);
+		if (!(await exists(skillManifestPath))) {
+			failures.push(
+				"@openapi-to/cli: missing generated dist/skills/manifest.json",
+			);
+		} else {
+			let skillManifest;
+			try {
+				skillManifest = JSON.parse(await readFile(skillManifestPath, "utf8"));
+			} catch {
+				failures.push(
+					"@openapi-to/cli: packaged Skill manifest is invalid JSON",
+				);
+			}
+			if (skillManifest) {
+				if (
+					skillManifest.schemaVersion !== 1 ||
+					skillManifest.packageVersion !== manifest.version ||
+					JSON.stringify(skillManifest.skills?.map(({ name }) => name)) !==
+						JSON.stringify(["openapi-to-generate", "openapi-to-setup"])
+				) {
+					failures.push(
+						"@openapi-to/cli: packaged Skill manifest version or Skill set is invalid",
+					);
+				} else {
+					for (const skill of skillManifest.skills) {
+						for (const file of skill.files ?? []) {
+							const assetPath = join(
+								absoluteDirectory,
+								"dist",
+								"skills",
+								skill.name,
+								...file.path.split("/"),
+							);
+							if (!(await exists(assetPath))) {
+								failures.push(
+									`@openapi-to/cli: missing packaged Skill file ${skill.name}/${file.path}`,
+								);
+								continue;
+							}
+							const bytes = await readFile(assetPath);
+							if (
+								bytes.byteLength !== file.size ||
+								createHash("sha256").update(bytes).digest("hex") !== file.sha256
+							) {
+								failures.push(
+									`@openapi-to/cli: packaged Skill bytes do not match manifest for ${skill.name}/${file.path}`,
+								);
+							}
+						}
+					}
+				}
+			}
+		}
+		if (
+			!manifest.scripts?.build?.includes(
+				"scripts/build-consumer-skill-assets.mjs",
+			) ||
+			manifest.scripts?.prepack !== "pnpm run build"
+		) {
+			failures.push(
+				"@openapi-to/cli: build and prepack must generate packaged consumer Skill assets",
+			);
+		}
 	}
 
 	for (const declarationPath of await declarationFiles(

@@ -41,12 +41,14 @@
 		"!/**/__tests__/**"
 	],
 	"scripts": {
-		"build": "pnpm exec tsup",
+		"build": "pnpm exec tsup && node ../../scripts/build-consumer-skill-assets.mjs",
 		"clean": "pnpm exec rimraf ./dist",
 		"lint": "pnpm exec biome lint .",
 		"lint:fix": "pnpm exec biome lint --write --unsafe .",
+		"prepack": "pnpm run build",
 		"start": "pnpm exec tsup --watch",
 		"test": "pnpm exec vitest run --passWithNoTests",
+		"test:skills-installer": "pnpm exec vitest run src/skillsInstall.test.ts",
 		"typecheck": "pnpm exec tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
 	},
 	"dependencies": {

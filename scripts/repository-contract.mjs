@@ -4295,6 +4295,332 @@ export async function auditConsumerAcceptanceContracts(root = repositoryRoot) {
 	return sortedUnique(failures);
 }
 
+export async function auditCodexSkillInstallerContracts(root = repositoryRoot) {
+	const failures = [];
+	const requiredPaths = [
+		"packages/cli/src/skillsInstall.ts",
+		"scripts/build-consumer-skill-assets.mjs",
+		"scripts/build-consumer-skill-assets.node-test.mjs",
+		"scripts/codex-skills-installer-cross-platform-smoke.mjs",
+	];
+	for (const relativePath of requiredPaths) {
+		if (!(await exists(join(root, relativePath)))) {
+			failures.push(`missing Codex Skill installer asset ${relativePath}`);
+		}
+	}
+	for (const relativePath of [
+		"packages/cli/dist/skills/manifest.json",
+		"packages/cli/dist/skills/openapi-to-generate/SKILL.md",
+		"packages/cli/dist/skills/openapi-to-setup/SKILL.md",
+	]) {
+		if (await isGitTracked(root, relativePath)) {
+			failures.push(
+				`generated consumer Skill distribution must not be tracked: ${relativePath}`,
+			);
+		}
+	}
+
+	const turbo = await readJson(join(root, "turbo.json"));
+	const requiredSkillBuildInputs = [
+		".agents/skills/openapi-to-generate/**",
+		".agents/skills/openapi-to-setup/**",
+		"scripts/build-consumer-skill-assets.mjs",
+	];
+	for (const buildInput of requiredSkillBuildInputs) {
+		if (!turbo.globalDependencies?.includes(buildInput)) {
+			failures.push(
+				`Turbo globalDependencies must invalidate consumer Skill assets for ${buildInput}`,
+			);
+		}
+	}
+
+	const cliManifest = await readJson(join(root, "packages/cli/package.json"));
+	const aggregateManifest = await readJson(
+		join(root, "packages/openapi/package.json"),
+	);
+	if (
+		!cliManifest.scripts?.build?.includes(
+			"scripts/build-consumer-skill-assets.mjs",
+		) ||
+		cliManifest.scripts?.prepack !== "pnpm run build" ||
+		!cliManifest.files?.includes("dist")
+	) {
+		failures.push(
+			"@openapi-to/cli must build, prepack, and publish generated consumer Skill assets from dist",
+		);
+	}
+	for (const [name, manifest] of [
+		["@openapi-to/cli", cliManifest],
+		["openapi-to", aggregateManifest],
+	]) {
+		if (manifest.scripts?.postinstall !== undefined) {
+			failures.push(`${name} must not install Codex Skills from postinstall`);
+		}
+	}
+
+	const buildHelperPath = join(root, "scripts/build-consumer-skill-assets.mjs");
+	if (await exists(buildHelperPath)) {
+		const buildHelper = await readFile(buildHelperPath, "utf8");
+		for (const marker of [
+			'"openapi-to-generate"',
+			'"openapi-to-setup"',
+			'".agents", "skills"',
+			'"dist", "skills"',
+			'"manifest.json"',
+			'createHash("sha256")',
+		]) {
+			if (!buildHelper.includes(marker)) {
+				failures.push(
+					`consumer Skill asset builder is missing contract marker ${marker}`,
+				);
+			}
+		}
+		for (const forbidden of [
+			"implement-and-review",
+			"release-monorepo",
+			"add-cli-command",
+		]) {
+			if (buildHelper.includes(`"${forbidden}"`)) {
+				failures.push(
+					`consumer Skill asset builder must not distribute ${forbidden}`,
+				);
+			}
+		}
+	}
+
+	const cliIndexPath = join(root, "packages/cli/src/index.ts");
+	if (await exists(cliIndexPath)) {
+		const cliIndex = await readFile(cliIndexPath, "utf8");
+		for (const marker of [
+			'.command("skills <action>"',
+			'"--host [host]"',
+			'"--dry-run"',
+			'"--json"',
+			"installCodexSkills",
+		]) {
+			if (!cliIndex.includes(marker)) {
+				failures.push(`CLI Codex Skill command is missing ${marker}`);
+			}
+		}
+		for (const forbidden of [
+			"--force",
+			"--overwrite",
+			"--update",
+			"--merge",
+		]) {
+			if (cliIndex.includes(forbidden)) {
+				failures.push(
+					`CLI Codex Skill command must not expose unsupported flag ${forbidden}`,
+				);
+			}
+		}
+	}
+
+	const installerPath = join(root, "packages/cli/src/skillsInstall.ts");
+	if (await exists(installerPath)) {
+		const installer = await readFile(installerPath, "utf8");
+		for (const marker of [
+			'"codex"',
+			'"SKILLS_HOST_REQUIRED"',
+			'"SKILLS_HOST_UNSUPPORTED"',
+			'"SKILLS_DESTINATION_CONFLICT"',
+			'"SKILLS_ASSET_INTEGRITY_FAILED"',
+			"restartRequired: true",
+			'"packaged-npm-assets"',
+		]) {
+			if (!installer.includes(marker)) {
+				failures.push(
+					`Codex Skill installer is missing fail-closed marker ${marker}`,
+				);
+			}
+		}
+		for (const forbidden of [
+			/from\s+["']node:https?["']/,
+			/from\s+["']node:child_process["']/,
+			/\bfetch\s*\(/,
+			/\b(?:curl|wget|git clone)\b/,
+		]) {
+			if (forbidden.test(installer)) {
+				failures.push(
+					"Codex Skill installer must not contain network or subprocess download code",
+				);
+			}
+		}
+	}
+
+	const initPath = join(root, "packages/cli/src/init.ts");
+	if (await exists(initPath)) {
+		const initSource = await readFile(initPath, "utf8");
+		if (
+			initSource.includes("installCodexSkills") ||
+			initSource.includes("install-skills")
+		) {
+			failures.push("openapi init must not install Codex Skills");
+		}
+	}
+	const aggregateBinPath = join(root, "packages/openapi/bin/openapi.js");
+	if (await exists(aggregateBinPath)) {
+		const aggregateBin = await readFile(aggregateBinPath, "utf8");
+		if (
+			!aggregateBin.includes("function topLevelCommand(argv)") ||
+			!aggregateBin.includes(
+				"topLevelCommand(process.argv) === 'skills'",
+			) ||
+			!aggregateBin.includes(
+				"!isSkillsCommand && !process.argv.includes('--json')",
+			)
+		) {
+			failures.push(
+				"aggregate CLI aliases must skip update-notifier for every skills command",
+			);
+		}
+		if (
+			/process\.argv\s*\[\s*2\s*\]\s*===?\s*["']skills["']/.test(
+				aggregateBin,
+			) ||
+			/process\.argv\.includes\(\s*["']skills["']\s*\)/.test(aggregateBin)
+		) {
+			failures.push(
+				"aggregate CLI aliases must locate the top-level command instead of matching a fixed argv position or arbitrary value",
+			);
+		}
+	}
+
+	const packHelperPath = join(root, "scripts/release/pack-smoke-helpers.mjs");
+	if (await exists(packHelperPath)) {
+		const packHelper = await readFile(packHelperPath, "utf8");
+		for (const marker of [
+			"dist/skills/manifest.json",
+			"dist/skills/openapi-to-generate/SKILL.md",
+			"dist/skills/openapi-to-setup/SKILL.md",
+		]) {
+			if (!packHelper.includes(marker)) {
+				failures.push(`packed package contract is missing ${marker}`);
+			}
+		}
+	}
+
+	const releaseSmokePath = join(root, "scripts/release/pack-install-smoke.mjs");
+	if (await exists(releaseSmokePath)) {
+		const releaseSmoke = await readFile(releaseSmokePath, "utf8");
+		for (const marker of [
+			'"packed-consumer-skills-assets"',
+			'"packed-codex-skills-human-dry-run-no-notifier"',
+			'"packed-codex-skills-global-debug-no-notifier"',
+			'"packed-codex-skills-no-network-attempt"',
+			'"packed-codex-skills-dry-run"',
+			'"packed-codex-skills-install"',
+			'"packed-codex-skills-existing-destination"',
+		]) {
+			if (!releaseSmoke.includes(marker)) {
+				failures.push(`packed Codex Skill release smoke is missing ${marker}`);
+			}
+		}
+		if (
+			(releaseSmoke.match(/await\s+packReleasePackages\s*\(/g) ?? []).length !==
+			1
+		) {
+			failures.push(
+				"packed Codex Skill release smoke must reuse the single public tarball set",
+			);
+		}
+	}
+
+	const skillsInstallerPath = join(
+		root,
+		"packages/cli/src/skillsInstall.ts",
+	);
+	if (await exists(skillsInstallerPath)) {
+		const skillsInstaller = await readFile(skillsInstallerPath, "utf8");
+		for (const marker of [
+			'"SKILLS_INSTALL_RECOVERY_REQUIRED"',
+			'"SKILLS_DESTINATION_CHANGED"',
+			"captureDestinationIdentity",
+			"captureOwnedSkillTarget",
+			"recoverInterruptedInstallation",
+			"recoveredComplete",
+			"targetOwnerMarkerName",
+			"stagingOwnerMarkerName",
+			"stagingOwnerRecordName",
+			"stagingQuarantineName",
+			"writeExclusiveRecordAtomically",
+			"verifyOwnedStagingDirectory",
+			"removeVerifiedStagingTree",
+			"removeOwnedStagingDirectory",
+		]) {
+			if (!skillsInstaller.includes(marker)) {
+				failures.push(
+					`Codex Skill installer recovery contract is missing ${marker}`,
+				);
+			}
+		}
+		if (
+			(skillsInstaller.match(/cleanupTransaction\s*\(/g) ?? []).length < 3 ||
+			/rm\((?:stagingRoot|quarantineRoot),\s*\{\s*recursive: true/.test(
+				skillsInstaller,
+			) ||
+			!skillsInstaller.includes("await rename(stagingRoot, quarantineRoot)") ||
+			!skillsInstaller.includes(
+				"await removeVerifiedStagingTree(",
+			) ||
+			!skillsInstaller.includes(
+				"await verifyOwnedStagingDirectory(\n\t\tskillsRoot,\n\t\tlockPath,\n\t\tquarantineRoot,",
+			)
+		) {
+			failures.push(
+				"Codex Skill normal cleanup and interrupted recovery must atomically quarantine, reverify persisted ownership, and avoid path-based recursive staging removal",
+			);
+		}
+	}
+
+	const a1Path = join(root, ".github/workflows/a1-cross-platform.yml");
+	if (await exists(a1Path)) {
+		const a1 = await readFile(a1Path, "utf8");
+		for (const marker of [
+			"pnpm --filter @openapi-to/cli test:skills-installer",
+			"node scripts/codex-skills-installer-cross-platform-smoke.mjs",
+		]) {
+			if (!a1.includes(marker)) {
+				failures.push(
+					`A1 cross-platform Codex Skill coverage is missing ${marker}`,
+				);
+			}
+		}
+	}
+
+	for (const relativeDocument of [
+		"README.md",
+		"docs/getting-started.md",
+		"docs/skills.md",
+		"docs/setup-skill.md",
+	]) {
+		const documentPath = join(root, relativeDocument);
+		if (!(await exists(documentPath))) {
+			failures.push(
+				`missing Codex Skill installer documentation ${relativeDocument}`,
+			);
+			continue;
+		}
+		const normalized = (await readFile(documentPath, "utf8")).replace(
+			/\s+/g,
+			" ",
+		);
+		for (const marker of [
+			"pnpm exec openapi skills install",
+			"$CODEX_HOME/skills",
+			"Restart Codex",
+			"openapi init",
+		]) {
+			if (!normalized.includes(marker)) {
+				failures.push(
+					`${relativeDocument} is missing Codex Skill installer marker ${marker}`,
+				);
+			}
+		}
+	}
+	return sortedUnique(failures);
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -4376,6 +4702,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	failures.push(...(await auditGitHubWorkflowContexts(root)));
 	failures.push(...(await auditPublicationContracts(root)));
 	failures.push(...(await auditConsumerAcceptanceContracts(root)));
+	failures.push(...(await auditCodexSkillInstallerContracts(root)));
 
 	if (
 		rootManifest.scripts?.["version:canary"] !==

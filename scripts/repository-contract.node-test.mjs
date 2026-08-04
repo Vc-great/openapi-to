@@ -16,6 +16,7 @@ import { promisify } from "node:util";
 import {
 	auditAgentAndSkillContracts,
 	auditCiDiagnosticsContracts,
+	auditCodexSkillInstallerContracts,
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
 	auditPublicationContracts,
@@ -460,6 +461,186 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
+});
+
+test("Codex Skill installer distribution, CLI, packed smoke, and docs stay aligned", async (t) => {
+	assert.deepEqual(await auditCodexSkillInstallerContracts(repositoryRoot), []);
+	const root = await mkdtemp(
+		join(tmpdir(), "openapi-to-codex-skills-contract-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		"turbo.json",
+		"packages/cli/package.json",
+		"packages/openapi/package.json",
+		"packages/cli/src/index.ts",
+		"packages/cli/src/init.ts",
+		"packages/cli/src/skillsInstall.ts",
+		"packages/openapi/bin/openapi.js",
+		"scripts/build-consumer-skill-assets.mjs",
+		"scripts/build-consumer-skill-assets.node-test.mjs",
+		"scripts/codex-skills-installer-cross-platform-smoke.mjs",
+		"scripts/release/pack-smoke-helpers.mjs",
+		"scripts/release/pack-install-smoke.mjs",
+		".github/workflows/a1-cross-platform.yml",
+		"README.md",
+		"docs/getting-started.md",
+		"docs/skills.md",
+		"docs/setup-skill.md",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	const cliIndexPath = join(root, "packages/cli/src/index.ts");
+	await writeFile(
+		cliIndexPath,
+		(await readFile(cliIndexPath, "utf8")).replace(
+			'.command("skills <action>"',
+			'.command("removed <action>"',
+		),
+	);
+	assertFailure(
+		{ failures: await auditCodexSkillInstallerContracts(root) },
+		/CLI Codex Skill command is missing/,
+	);
+	await writeFile(
+		cliIndexPath,
+		await readFile(
+			join(repositoryRoot, "packages/cli/src/index.ts"),
+			"utf8",
+		),
+	);
+	const turboPath = join(root, "turbo.json");
+	const turbo = JSON.parse(await readFile(turboPath, "utf8"));
+	turbo.globalDependencies = turbo.globalDependencies.filter(
+		(entry) => entry !== ".agents/skills/openapi-to-setup/**",
+	);
+	await writeFile(turboPath, `${JSON.stringify(turbo, null, 2)}\n`);
+	assertFailure(
+		{ failures: await auditCodexSkillInstallerContracts(root) },
+		/Turbo globalDependencies must invalidate consumer Skill assets/,
+	);
+});
+
+test("aggregate aliases disable notifier only for the real skills top-level command", async (t) => {
+	const root = await mkdtemp(
+		join(tmpdir(), "openapi-to-aggregate-skills-wrapper-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	const wrapper = await readFile(
+		join(repositoryRoot, "packages/openapi/bin/openapi.js"),
+		"utf8",
+	);
+	for (const relativePath of [
+		"packages/openapi/bin/openapi.js",
+		"packages/openapi/bin/openapi-to.js",
+	]) {
+		await writeFixtureFile(root, relativePath, wrapper);
+	}
+	await writeFixtureFile(
+		root,
+		"package.json",
+		'{"private":true,"type":"module"}\n',
+	);
+	await writeFixtureFile(
+		root,
+		"node_modules/semver/package.json",
+		'{"name":"semver","type":"module","exports":"./index.js"}\n',
+	);
+	await writeFixtureFile(
+		root,
+		"node_modules/semver/index.js",
+		"export default { satisfies: () => true };\n",
+	);
+	await writeFixtureFile(
+		root,
+		"node_modules/@openapi-to/cli/package.json",
+		'{"name":"@openapi-to/cli","type":"module","exports":"./index.js"}\n',
+	);
+	await writeFixtureFile(
+		root,
+		"node_modules/@openapi-to/cli/index.js",
+		`import { appendFile } from "node:fs/promises";
+export async function run(argv) {
+  await appendFile(process.env.OPENAPI_TO_RUN_TRACE, JSON.stringify(argv.slice(2)) + "\\n");
+}
+`,
+	);
+	await writeFixtureFile(
+		root,
+		"packages/openapi/dist/utils.js",
+		`import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+export function updateVersionNotifier() {
+  appendFileSync(process.env.OPENAPI_TO_NOTIFIER_TRACE, "called\\n");
+  mkdirSync(process.env.OPENAPI_TO_NOTIFIER_STATE, { recursive: true });
+  writeFileSync(process.env.OPENAPI_TO_NOTIFIER_STATE + "/state", "created\\n");
+}
+`,
+	);
+	const notifierTrace = join(root, "notifier-calls");
+	const notifierState = join(root, "notifier-state");
+	const runTrace = join(root, "run-calls");
+	const runAlias = async (alias, args) => {
+		await rm(notifierTrace, { force: true });
+		await rm(notifierState, { recursive: true, force: true });
+		await rm(runTrace, { force: true });
+		await execFileAsync(
+			process.execPath,
+			[join(root, "packages/openapi/bin", `${alias}.js`), ...args],
+			{
+				cwd: root,
+				env: {
+					...process.env,
+					OPENAPI_TO_NOTIFIER_TRACE: notifierTrace,
+					OPENAPI_TO_NOTIFIER_STATE: notifierState,
+					OPENAPI_TO_RUN_TRACE: runTrace,
+				},
+			},
+		);
+		assert.deepEqual(
+			JSON.parse((await readFile(runTrace, "utf8")).trim()),
+			args,
+		);
+	};
+	const skillsCases = [
+		["skills", "install", "--host", "codex"],
+		["--debug", "skills", "install", "--host", "codex"],
+		["--json", "skills", "install", "--host", "codex"],
+		["--debug", "--json", "skills", "install", "--host", "codex"],
+		["--json", "--debug", "skills", "unsupported"],
+		["--debug=true", "skills", "install", "--host", "codex"],
+		["--json=true", "skills", "install", "--host", "codex"],
+		["--debug=false", "skills", "install", "--host", "codex"],
+		["--json=false", "skills", "install", "--host", "codex"],
+		["--no-debug", "skills", "install", "--host", "codex"],
+		["--no-json", "skills", "install", "--host", "codex"],
+		["skills", "install", "--host", "codex", "--debug"],
+	];
+	for (const alias of ["openapi", "openapi-to"]) {
+		for (const args of skillsCases) {
+			await runAlias(alias, args);
+			await assert.rejects(readFile(notifierTrace), { code: "ENOENT" });
+			await assert.rejects(readFile(join(notifierState, "state")), {
+				code: "ENOENT",
+			});
+		}
+	}
+	for (const args of [
+		["inspect", "./skills"],
+		["validate", "skills"],
+		["diff", "old-skills.yaml", "new-skills.yaml"],
+		["generate", "--config", "./skills/openapi.config.ts"],
+	]) {
+		await runAlias("openapi", args);
+		assert.equal(await readFile(notifierTrace, "utf8"), "called\n");
+		assert.equal(
+			await readFile(join(notifierState, "state"), "utf8"),
+			"created\n",
+		);
+	}
 });
 
 test("consumer acceptance contract accepts the consolidated packed path", async (t) => {

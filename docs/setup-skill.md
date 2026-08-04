@@ -18,6 +18,29 @@ diagnosis, and 3/8/10 Tool-mode validation. A vague setup request defaults to
 `read-only`. `write-enabled` is explicit and retains prompt approval for
 `openapi_apply_generation`.
 
+## Install this Skill in Codex
+
+An installed `openapi-to` npm package carries version-matched copies of this
+Skill and `openapi-to-generate`. Preview and then explicitly install those
+offline assets:
+
+```sh
+pnpm exec openapi skills install \
+  --host codex \
+  --dry-run
+
+pnpm exec openapi skills install \
+  --host codex
+```
+
+The command writes to `$CODEX_HOME/skills`, defaulting to
+`~/.codex/skills`, and refuses to overwrite either existing Skill. Restart
+Codex after installation. This installer does not configure MCP or a project;
+once Codex reloads the Skill, this setup workflow performs that diagnosis and
+keeps every project/Host write behind its normal Setup Plan approval.
+Installing the npm package and running `openapi init` do not install Skills;
+`openapi init` remains generation-config initialization only.
+
 ## Diagnose before changing anything
 
 The Skill's standard-library inspector reads bounded project metadata without
