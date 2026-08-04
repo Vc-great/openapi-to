@@ -48,6 +48,7 @@ const DOCUMENT_ENTRYPOINTS = [
 	"docs/ai-hosts/claude-code.md",
 	"docs/ai-hosts/cursor.md",
 	"docs/ai-hosts/generic-stdio.md",
+	"docs/testing/consumer-acceptance-matrix.md",
 	"docs/testing/consumer-codegen.md",
 	"docs/testing/ci-diagnostics.md",
 ];
@@ -4162,6 +4163,138 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 	return sortedUnique(failures);
 }
 
+export async function auditConsumerAcceptanceContracts(root = repositoryRoot) {
+	const failures = [];
+	const matrixPath = join(
+		root,
+		"docs/testing/consumer-acceptance-matrix.md",
+	);
+	const releaseSmokePath = join(
+		root,
+		"scripts/release/pack-install-smoke.mjs",
+	);
+	const bridgePath = join(
+		root,
+		"scripts/release/setup-mcp-handoff-smoke.mjs",
+	);
+	const rootManifest = await readJson(join(root, "package.json"));
+
+	for (const [name, expected] of [
+		[
+			"test:consumer:codegen",
+			"node scripts/consumer-codegen-smoke.mjs",
+		],
+		[
+			"test:consumer:codegen:review",
+			"pnpm test:consumer:codegen -- --export-review-dir .ci-artifacts/consumer-codegen-review/current",
+		],
+		["release:smoke", "node scripts/release/pack-install-smoke.mjs"],
+	]) {
+		if (rootManifest.scripts?.[name] !== expected) {
+			failures.push(
+				`${name} must retain its canonical consumer acceptance responsibility`,
+			);
+		}
+	}
+	if (rootManifest.scripts?.["test:consumer:golden"]) {
+		failures.push("test:consumer:golden must not duplicate release:smoke");
+	}
+
+	if (!(await exists(matrixPath))) {
+		failures.push("missing consumer acceptance coverage matrix");
+	} else {
+		const matrix = await readFile(matrixPath, "utf8");
+		for (const owner of [
+			"`openapi-to-setup.node-test`",
+			"`test:consumer:codegen`",
+			"`release:smoke`",
+		]) {
+			if (!matrix.includes(owner)) {
+				failures.push(
+					`consumer acceptance matrix is missing canonical owner ${owner}`,
+				);
+			}
+		}
+		for (const capability of [
+			"Setup Inspector ↔ packed MCP read-only agreement",
+			"Setup Inspector ↔ packed MCP write-enabled agreement",
+			"Token replay rejection",
+			"Three-state commit",
+			"Remote document policy",
+		]) {
+			if (!matrix.includes(`| ${capability} |`)) {
+				failures.push(
+					`consumer acceptance matrix is missing capability ${capability}`,
+				);
+			}
+		}
+	}
+
+	if (!(await exists(bridgePath))) {
+		failures.push("missing Setup to packed MCP handoff bridge");
+	} else {
+		const bridge = await readFile(bridgePath, "utf8");
+		for (const [pattern, label] of [
+			[/packReleasePackages/, "packReleasePackages"],
+			[/\bpnpm\s+link\b/, "pnpm link"],
+			[/~\/\.codex|homedir\s*\(|process\.env\.(?:HOME|USERPROFILE)/, "user Codex home"],
+			[/registry\.npmjs|npmjs\.org|\bpnpm\s+add\b|\bnpm\s+install\b/, "npm registry installation"],
+		]) {
+			if (pattern.test(bridge)) {
+				failures.push(`Setup to packed MCP bridge must not use ${label}`);
+			}
+		}
+	}
+
+	if (!(await exists(releaseSmokePath))) {
+		failures.push("missing packed release smoke");
+	} else {
+		const releaseSmoke = await readFile(releaseSmokePath, "utf8");
+		const bridgeCall = releaseSmoke.lastIndexOf("runSetupMcpHandoffScenario");
+		if (bridgeCall < 0) {
+			failures.push("release smoke must call the Setup to packed MCP bridge");
+		} else {
+			const callSource = releaseSmoke.slice(bridgeCall, bridgeCall + 400);
+			for (const argument of [
+				"consumerRoot: installationDirectory",
+				"packed",
+				"repositoryRoot",
+			]) {
+				if (!callSource.includes(argument)) {
+					failures.push(
+						`release smoke bridge call must reuse ${argument}`,
+					);
+				}
+			}
+		}
+		if (
+			(releaseSmoke.match(/await\s+packReleasePackages\s*\(/g) ?? [])
+				.length !== 1
+		) {
+			failures.push("release smoke must pack public packages exactly once");
+		}
+		for (const check of [
+			"setup-packed-mcp-read-only-handoff",
+			"setup-packed-mcp-write-handoff",
+			"setup-handoff-state-drift",
+		]) {
+			if (!releaseSmoke.includes(`"${check}"`)) {
+				failures.push(`release smoke checks are missing ${check}`);
+			}
+		}
+	}
+
+	for (const forbiddenPath of [
+		"scripts/consumer-golden-path.mjs",
+		"scripts/consumer-golden-path.node-test.mjs",
+	]) {
+		if (await exists(join(root, forbiddenPath))) {
+			failures.push(`duplicate consumer golden path exists: ${forbiddenPath}`);
+		}
+	}
+	return sortedUnique(failures);
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -4242,6 +4375,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	failures.push(...(await auditCiDiagnosticsContracts(root)));
 	failures.push(...(await auditGitHubWorkflowContexts(root)));
 	failures.push(...(await auditPublicationContracts(root)));
+	failures.push(...(await auditConsumerAcceptanceContracts(root)));
 
 	if (
 		rootManifest.scripts?.["version:canary"] !==

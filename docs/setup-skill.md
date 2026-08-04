@@ -53,6 +53,16 @@ snapshot, so Git status and `observedStateHash` are checked again before a Setup
 Plan executes. The focused Inspector suite runs in the repository's real
 Ubuntu, macOS, and Windows A1 CI matrix.
 
+Those focused tests are the canonical setup state and safe-inspection
+coverage. The packed release smoke adds one narrow continuity check in the
+same repository-external consumer: the Inspector from the exact repository
+checkout must infer read-only or write-enabled consistently with the named
+Tools exposed by the MCP installed from that checkout's local tarballs. The
+bridge also proves a bound-file drift changes `observedStateHash`; it does not
+claim that the Inspector ships in the tarball or repeat MCP transaction tests.
+See the
+[consumer acceptance coverage matrix](./testing/consumer-acceptance-matrix.md).
+
 ## Approval-bound writes
 
 Every package install, initializer run, ignore change, and Codex config change

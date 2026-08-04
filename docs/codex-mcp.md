@@ -124,3 +124,12 @@ list, current Tool inputSchema, and returned capability fields.
 The phase labels are historical: Phase 2.1 hardened Setup state binding and
 Phase 2.2 added Windows portable verified reads. They are not new Skills, and
 the operational order remains Setup first, then Generate.
+
+For maintainers, `pnpm release:smoke` is the canonical full packed consumer
+acceptance entry. Its narrow Setup-to-MCP bridge writes these supported
+project-relative Host forms in a repository-external temporary consumer,
+compares the repository-Skill Inspector's inferred mode with the named Tools
+from the locally packed MCP, checks current Tool Schemas, and invalidates the
+handoff after `observedStateHash` drift. It neither reads a user's
+`~/.codex` nor claims the Inspector is part of the npm tarball. See the
+[consumer acceptance coverage matrix](./testing/consumer-acceptance-matrix.md).

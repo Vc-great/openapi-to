@@ -19,6 +19,7 @@ import {
 	packReleasePackages,
 } from "./pack-smoke-helpers.mjs";
 import { verifyPublicationArtifacts } from "./publication.mjs";
+import { runSetupMcpHandoffScenario } from "./setup-mcp-handoff-smoke.mjs";
 
 const repositoryRoot = resolve(
 	dirname(fileURLToPath(import.meta.url)),
@@ -223,6 +224,7 @@ await Promise.all([
 let succeeded = false;
 let remoteFixtureServer;
 let packageBaseline;
+let setupMcpHandoff;
 try {
 	const packed = options.publicationManifest
 		? (
@@ -510,6 +512,11 @@ paths:
 };
 `,
 	);
+	setupMcpHandoff = await runSetupMcpHandoffScenario({
+		consumerRoot: installationDirectory,
+		packed,
+		repositoryRoot,
+	});
 	await writeFile(
 		join(installationDirectory, "esm-smoke.mjs"),
 		`import * as openapiTo from "openapi-to";
@@ -1011,6 +1018,7 @@ await writeClient.close();
 						?.size,
 					...packageBaseline,
 				},
+				setupMcpHandoff,
 				checks: [
 					"esm",
 					"cjs",
@@ -1038,6 +1046,9 @@ await writeClient.close();
 					"mcp-token-replay",
 					"mcp-current",
 					"mcp-full-prepare-unchanged",
+					"setup-packed-mcp-read-only-handoff",
+					"setup-packed-mcp-write-handoff",
+					"setup-handoff-state-drift",
 					"validate-json",
 					"validate-error-exit",
 					"inspect-json",
