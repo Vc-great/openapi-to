@@ -81,6 +81,36 @@ self-import.
 pnpm add -D openapi-to
 ```
 
+### Install the Codex consumer Skills
+
+The aggregate installation carries version-matched copies of
+`openapi-to-setup` and `openapi-to-generate` through its
+`@openapi-to/cli` dependency. Preview and then explicitly install those
+offline assets for Codex:
+
+```shell
+pnpm exec openapi skills install \
+  --host codex \
+  --dry-run
+
+pnpm exec openapi skills install \
+  --host codex
+```
+
+The installer performs no network access. It writes only
+`$CODEX_HOME/skills/openapi-to-setup` and
+`$CODEX_HOME/skills/openapi-to-generate`; when `CODEX_HOME` is unset, the
+root is `~/.codex/skills`. It verifies the package-versioned manifest and
+every file hash, refuses either existing target without overwriting, and does
+not provide force, update, uninstall, or another Host mode. Restart Codex
+after installation so it can load the Skills.
+
+Neither `pnpm add`, `pnpm install`, nor `openapi init` installs Skills.
+`openapi init` still only initializes generation configuration and the state
+ignore rule. The Skill installer does not configure MCP; after restarting,
+use `openapi-to-setup` to inspect and configure the project and Host through
+its separate approval boundary.
+
 ## Usage 
 ```json [package.json]
 {

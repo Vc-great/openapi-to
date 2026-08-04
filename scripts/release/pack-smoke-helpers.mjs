@@ -84,6 +84,19 @@ export async function packReleasePackages({
 		if (!filePaths.includes("package.json")) {
 			throw new Error(`${result.name} tarball is missing package.json`);
 		}
+		if (result.name === "@openapi-to/cli") {
+			for (const requiredSkillAsset of [
+				"dist/skills/manifest.json",
+				"dist/skills/openapi-to-generate/SKILL.md",
+				"dist/skills/openapi-to-setup/SKILL.md",
+			]) {
+				if (!filePaths.includes(requiredSkillAsset)) {
+					throw new Error(
+						`${result.name} tarball is missing packaged Skill asset ${requiredSkillAsset}`,
+					);
+				}
+			}
+		}
 		const packageTargets = [
 			manifest.main,
 			manifest.module,

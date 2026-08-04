@@ -36,19 +36,41 @@ this page's API call with openapi-to”. Do not use it for pure frontend work or
 for changing this Monorepo's MCP, CLI, Core, plugins, or release process.
 
 The repository keeps one authoritative source per Skill under `.agents/skills/`.
-Point a compatible Agent Skills installer at this repository and select
-`openapi-to-setup` or `openapi-to-generate`; do not copy or maintain a second
-source tree inside this repository. Interface metadata lives beside each Skill
-in `agents/openai.yaml`. The canonical GitHub directories are:
+The npm build derives versioned distribution assets from those directories;
+there is no second maintained source tree. Interface metadata lives beside
+each Skill in `agents/openai.yaml`. The canonical GitHub directories remain:
 
 ```text
 https://github.com/Vc-great/openapi-to/tree/main/.agents/skills/openapi-to-generate
 https://github.com/Vc-great/openapi-to/tree/main/.agents/skills/openapi-to-setup
 ```
 
-Installer commands and discovery behavior vary by Agent Host. Use a compatible
-Host's supported Skill installation flow; do not assume every Host accepts the
-same command.
+After installing the aggregate npm package, Codex users can preview and
+explicitly install the two assets carried by that exact package:
+
+```sh
+pnpm exec openapi skills install \
+  --host codex \
+  --dry-run
+
+pnpm exec openapi skills install \
+  --host codex
+```
+
+This command is offline and currently supports only Codex. It verifies the
+package version, manifest, and every packaged file before writing
+`$CODEX_HOME/skills/openapi-to-setup` and
+`$CODEX_HOME/skills/openapi-to-generate`; the default root is
+`~/.codex/skills`. If either target already exists, the command fails before
+writing and never overwrites or merges. Restart Codex after installation.
+There is no update, uninstall, force, project-level, Claude Code, Cursor, or
+generic Host installer in this phase.
+
+The npm install and `openapi init` remain unchanged and never install Skills
+implicitly. `openapi init` still owns only generation-config initialization
+and the state ignore rule. The Skill installer does not configure MCP. After
+restart, invoke `openapi-to-setup` so its separate Setup Plan can diagnose or
+configure the consuming project and Codex Host.
 
 ## Consumer prerequisites
 

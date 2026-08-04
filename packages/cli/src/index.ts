@@ -22,6 +22,12 @@ import path from "node:path";
 import { version } from "../../openapi/package.json";
 import { generate } from "./generate.ts";
 import { init } from "./init.ts";
+import {
+	SkillsInstallError,
+	installCodexSkills,
+	parseSkillsInstallRequest,
+	skillsInstallHumanOutput,
+} from "./skillsInstall.ts";
 
 const moduleName = "openapi";
 
@@ -444,6 +450,46 @@ async function runDiff(
 	};
 }
 
+async function runSkillsInstall(
+	action: unknown,
+	options: Record<string, unknown>,
+	io: CLIIO,
+): Promise<CLIRunResult> {
+	const json = options.json === true;
+	try {
+		const request = parseSkillsInstallRequest(action, options);
+		const output = await installCodexSkills(request, version);
+		if (json) printJSON(io, output);
+		else {
+			for (const line of skillsInstallHumanOutput(output)) io.stdout(line);
+		}
+		return { exitCode: ExitCode.Success, output };
+	} catch (error) {
+		const diagnostics: Diagnostic[] = [
+			{
+				code:
+					error instanceof SkillsInstallError
+						? error.code
+						: "SKILLS_INSTALL_FAILED",
+				severity: "error",
+				message:
+					error instanceof SkillsInstallError
+						? error.message
+						: "Codex Skill installation failed safely.",
+			},
+		];
+		const output = {
+			success: false,
+			command: "skills install",
+			diagnostics,
+			summary: summarizeDiagnostics(diagnostics),
+		};
+		if (json) printJSON(io, output);
+		else printDiagnostics(io, diagnostics);
+		return { exitCode: ExitCode.GeneralError, output };
+	}
+}
+
 export async function run(
 	argv: string[] = process.argv,
 	io: CLIIO = defaultIO,
@@ -459,6 +505,18 @@ export async function run(
 		.command("init", "Generate a root openapi.config file")
 		.action(async () => {
 			await init();
+		});
+	program
+		.command("skills <action>", "Manage packaged Agent Skills")
+		.usage("skills install --host codex [--dry-run] [--json]")
+		.option(
+			"--host [host]",
+			"Install for the selected Host (currently codex only)",
+		)
+		.option("--dry-run", "Preview the exact install plan without writing")
+		.option("--json", "Write JSON to stdout")
+		.action(async (action, options) => {
+			actionResult = await runSkillsInstall(action, options, io);
 		});
 	program
 		.command("generate", "Generate code from an openapi.config file")

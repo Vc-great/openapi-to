@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
 	access,
 	chmod,
@@ -43,16 +44,20 @@ function parseArguments(argumentsList) {
 const options = parseArguments(process.argv.slice(2));
 
 function run(command, args, cwd, options = {}) {
+	const environment = {
+		...process.env,
+		CI: "1",
+		NO_UPDATE_NOTIFIER: "1",
+		...options.env,
+	};
+	for (const name of options.unsetEnvironment ?? []) {
+		delete environment[name];
+	}
 	const result = spawnSync(command, args, {
 		cwd,
 		encoding: "utf8",
 		maxBuffer: 64 * 1024 * 1024,
-		env: {
-			...process.env,
-			CI: "1",
-			NO_UPDATE_NOTIFIER: "1",
-			...options.env,
-		},
+		env: environment,
 	});
 	if (result.error) throw result.error;
 	if (result.status !== (options.expectedStatus ?? 0)) {
@@ -200,6 +205,201 @@ function dependencyNames(node, names = new Set()) {
 	return names;
 }
 
+async function skillTreeHashes(root, manifest) {
+	const hashes = {};
+	for (const skill of manifest.skills) {
+		for (const file of skill.files) {
+			const key = `${skill.name}/${file.path}`;
+			const bytes = await readFile(
+				join(root, skill.name, ...file.path.split("/")),
+			);
+			hashes[key] = createHash("sha256").update(bytes).digest("hex");
+		}
+	}
+	return hashes;
+}
+
+async function runPackedCodexSkillInstallerScenario({
+	consumerRoot,
+	openapiExecutable,
+	openapiToExecutable,
+	packed,
+}) {
+	const codexHome = join(consumerRoot, "Codex Home with spaces 空格");
+	const notifierHome = join(consumerRoot, "notifier-user-home");
+	const notifierConfig = join(consumerRoot, "notifier-config");
+	const notifierAppData = join(consumerRoot, "notifier-app-data");
+	const notifierLocalAppData = join(consumerRoot, "notifier-local-app-data");
+	const environment = {
+		CODEX_HOME: codexHome,
+		HOME: notifierHome,
+		USERPROFILE: notifierHome,
+		XDG_CONFIG_HOME: notifierConfig,
+		APPDATA: notifierAppData,
+		LOCALAPPDATA: notifierLocalAppData,
+	};
+	const humanDryRun = run(
+		openapiExecutable,
+		["skills", "install", "--host", "codex", "--dry-run"],
+		consumerRoot,
+		{
+			env: environment,
+			unsetEnvironment: ["NO_UPDATE_NOTIFIER"],
+		},
+	);
+	if (
+		!humanDryRun.stdout.includes("No files were written") ||
+		!humanDryRun.stdout.includes("Restart Codex")
+	) {
+		throw new Error(
+			"Packed Codex Skill installer human dry-run contract failed",
+		);
+	}
+	for (const [label, directory] of [
+		["CODEX_HOME", codexHome],
+		["HOME", notifierHome],
+		["XDG_CONFIG_HOME", notifierConfig],
+		["APPDATA", notifierAppData],
+		["LOCALAPPDATA", notifierLocalAppData],
+	]) {
+		try {
+			await access(directory);
+			throw new Error(
+				`Packed Codex Skill installer human dry-run created ${label}`,
+			);
+		} catch (error) {
+			if (!(error && error.code === "ENOENT")) throw error;
+		}
+	}
+	const dryRun = JSON.parse(
+		run(
+			openapiExecutable,
+			["skills", "install", "--host", "codex", "--dry-run", "--json"],
+			consumerRoot,
+			{ env: environment },
+		).stdout,
+	);
+	if (
+		dryRun.success !== true ||
+		dryRun.command !== "skills install" ||
+		dryRun.mode !== "dry-run" ||
+		dryRun.host !== "codex" ||
+		dryRun.restartRequired !== true ||
+		dryRun.installed?.length !== 0
+	) {
+		throw new Error("Packed Codex Skill installer dry-run contract failed");
+	}
+	try {
+		await access(codexHome);
+		throw new Error("Packed Codex Skill installer dry-run created CODEX_HOME");
+	} catch (error) {
+		if (!(error && error.code === "ENOENT")) throw error;
+	}
+
+	const resolverPath = join(consumerRoot, "resolve-cli-skill-assets.mjs");
+	await writeFile(
+		resolverPath,
+		`import { createRequire } from "node:module";
+import path from "node:path";
+const consumerRequire = createRequire(import.meta.url);
+const aggregateEntry = consumerRequire.resolve("openapi-to");
+const aggregateRequire = createRequire(aggregateEntry);
+const cliEntry = aggregateRequire.resolve("@openapi-to/cli");
+process.stdout.write(JSON.stringify({ assetRoot: path.join(path.dirname(cliEntry), "skills") }));
+`,
+	);
+	const { assetRoot } = JSON.parse(
+		run(process.execPath, [resolverPath], consumerRoot).stdout,
+	);
+	const manifestBytes = await readFile(join(assetRoot, "manifest.json"));
+	const manifest = JSON.parse(manifestBytes);
+	const cliPackage = packed.find(({ name }) => name === "@openapi-to/cli");
+	if (
+		!cliPackage ||
+		manifest.schemaVersion !== 1 ||
+		manifest.packageVersion !== cliPackage.version ||
+		manifest.skills?.map(({ name }) => name).join(",") !==
+			"openapi-to-generate,openapi-to-setup"
+	) {
+		throw new Error("Packed Codex Skill manifest version or Skill set failed");
+	}
+	const packagedHashes = await skillTreeHashes(assetRoot, manifest);
+	const installStarted = process.hrtime.bigint();
+	const installedResult = run(
+		openapiToExecutable,
+		["skills", "install", "--host", "codex", "--json"],
+		consumerRoot,
+		{ env: environment },
+	);
+	const installMilliseconds =
+		Number(process.hrtime.bigint() - installStarted) / 1_000_000;
+	const installed = JSON.parse(installedResult.stdout);
+	if (
+		installed.success !== true ||
+		installed.mode !== "install" ||
+		installed.restartRequired !== true ||
+		installed.installed?.join(",") !== "openapi-to-generate,openapi-to-setup"
+	) {
+		throw new Error("Packed Codex Skill installer install contract failed");
+	}
+	const installedRoot = join(codexHome, "skills");
+	const installedEntries = (await readdir(installedRoot)).sort();
+	if (installedEntries.join(",") !== "openapi-to-generate,openapi-to-setup") {
+		throw new Error(
+			"Packed Codex Skill installer left an unexpected installed file set",
+		);
+	}
+	const installedHashes = await skillTreeHashes(installedRoot, manifest);
+	if (JSON.stringify(installedHashes) !== JSON.stringify(packagedHashes)) {
+		throw new Error(
+			"Packed Codex Skill installer bytes differ from packaged assets",
+		);
+	}
+	const beforeSecondInstall = JSON.stringify(installedHashes);
+	const secondInstall = run(
+		openapiExecutable,
+		["skills", "install", "--host", "codex", "--json"],
+		consumerRoot,
+		{ env: environment, expectedStatus: 1 },
+	);
+	const secondInstallOutput = JSON.parse(secondInstall.stdout);
+	if (
+		secondInstallOutput.success !== false ||
+		!secondInstallOutput.diagnostics?.some(
+			({ code }) => code === "SKILLS_DESTINATION_CONFLICT",
+		)
+	) {
+		throw new Error(
+			"Packed Codex Skill installer did not reject existing destinations",
+		);
+	}
+	if (
+		JSON.stringify(await skillTreeHashes(installedRoot, manifest)) !==
+		beforeSecondInstall
+	) {
+		throw new Error(
+			"Packed Codex Skill installer modified bytes on its second invocation",
+		);
+	}
+	const skillBytes = manifest.skills
+		.flatMap(({ files }) => files)
+		.reduce((total, { size }) => total + size, 0);
+	return {
+		package: cliPackage.name,
+		version: cliPackage.version,
+		skillCount: manifest.skills.length,
+		fileCount: manifest.skills.flatMap(({ files }) => files).length,
+		skillBytes,
+		manifestBytes: manifestBytes.byteLength,
+		installMilliseconds,
+		humanDryRunNoNotifier: true,
+		dryRun: true,
+		install: true,
+		secondInstallRejected: true,
+		installedBytesVerified: true,
+	};
+}
+
 const temporaryRoot = await mkdtemp(
 	join(tmpdir(), "openapi-to-release-smoke-"),
 );
@@ -225,6 +425,7 @@ let succeeded = false;
 let remoteFixtureServer;
 let packageBaseline;
 let setupMcpHandoff;
+let codexSkillsInstaller;
 try {
 	const packed = options.publicationManifest
 		? (
@@ -333,6 +534,12 @@ if (stderr.join("").includes("Unable to start server")) throw new Error("Aggrega
 			),
 		);
 	}
+	codexSkillsInstaller = await runPackedCodexSkillInstallerScenario({
+		consumerRoot: aggregateInstallationDirectory,
+		openapiExecutable: aggregateOnlyOpenapi,
+		openapiToExecutable: aggregateOnlyOpenapiTo,
+		packed,
+	});
 	pnpm(["exec", "openapi", "--help"], aggregateInstallationDirectory);
 	pnpm(["exec", "openapi-to", "--version"], aggregateInstallationDirectory);
 	pnpm(["exec", "openapi-to-mcp", "--help"], aggregateInstallationDirectory);
@@ -1014,11 +1221,17 @@ await writeClient.close();
 					openapiToTarballBytes: packed.find(
 						({ name }) => name === "openapi-to",
 					)?.size,
+					cliTarballBytes: packed.find(({ name }) => name === "@openapi-to/cli")
+						?.size,
 					mcpTarballBytes: packed.find(({ name }) => name === "@openapi-to/mcp")
 						?.size,
+					packagedSkillBytes: codexSkillsInstaller?.skillBytes,
+					codexSkillsInstallMilliseconds:
+						codexSkillsInstaller?.installMilliseconds,
 					...packageBaseline,
 				},
 				setupMcpHandoff,
+				codexSkillsInstaller,
 				checks: [
 					"esm",
 					"cjs",
@@ -1031,6 +1244,11 @@ await writeClient.close();
 					"aggregate-only-install",
 					"aggregate-only-mcp-stdio",
 					"aggregate-only-mcp-tool-matrix-3-8-10",
+					"packed-consumer-skills-assets",
+					"packed-codex-skills-human-dry-run-no-notifier",
+					"packed-codex-skills-dry-run",
+					"packed-codex-skills-install",
+					"packed-codex-skills-existing-destination",
 					"independent-mcp-bin-stdio",
 					"independent-mcp-tool-matrix-3-8-10",
 					"mcp-stdio",

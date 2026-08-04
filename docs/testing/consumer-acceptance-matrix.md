@@ -33,6 +33,10 @@ Owner names used below:
 | Packed dependency override | `release:smoke` | `test:consumer:codegen` | Yes | Yes | Linux CI | Both reuse `createPackedOverrides`; there is no second override implementation. |
 | Aggregate-only install | `release:smoke` | publication-manifest smoke | Yes | Yes | Linux CI | Installs only `openapi-to` while forcing all transitive workspace packages to the same tarball set. |
 | Installed CLI bins | `release:smoke` | `test:consumer:codegen`, A1 binary checks | Yes | Yes | Linux packed; A1 source builds on all OSes | Verifies installed `openapi` and `openapi-to`; A1 is portability evidence, not packed acceptance. |
+| Versioned consumer Skill assets | `release:smoke` | asset-builder Node tests, package-surface contract | Yes | Yes | Linux packed; deterministic builder tests on local/CI host | The single CLI tarball carries both Skills plus a version-bound manifest; the repository `.agents/skills` directories remain authoritative and are explicit Turbo cache inputs. |
+| Codex Skill installer dry-run | `release:smoke` | focused installer tests, A1 built-bin smoke | Yes | Yes | Linux packed; source-built aliases on Ubuntu/macOS/Windows | Uses isolated Host and notifier homes with spaces; human and JSON dry-runs must create neither and the aggregate wrapper must not run update-notifier. |
+| Codex Skill installer commit/rollback | focused installer tests | `release:smoke`, A1 built-bin smoke | Packed in secondary | Temporary project | Yes: A1 | Unit coverage injects copy, staging, concurrent target creation/replacement, rollback, and destination-identity failures. Atomic target reservations never overwrite an appearing destination; interrupted owned targets recover through a bounded journal and ownership marker, including reporting success when both targets had already committed. Packed smoke verifies both installed Skill trees byte-for-byte. |
+| Codex Skill existing-destination rejection | `release:smoke` | focused installer tests, A1 built-bin smoke | Yes | Yes | Linux packed; source-built aliases on Ubuntu/macOS/Windows | A second invocation exits nonzero and leaves all installed bytes unchanged. |
 | Installed MCP bin | `release:smoke` | MCP stdio E2E, A1 binary checks | Yes | Yes | Linux packed; MCP/A1 smoke on all OSes | Covers aggregate wrapper and independently installed MCP package path. |
 | ESM/CJS exports | `release:smoke` | package unit tests | Yes | Yes | Linux CI | Tests aggregate and direct package exports from installed tarballs. |
 | TypeScript package surface | `release:smoke` | package typechecks | Yes | Yes | Linux CI | Strictly compiles public imports from the installed package set. |
@@ -68,6 +72,14 @@ scenario and all packed package/MCP checks, and runs the Setup-to-MCP bridge in
 the already installed external consumer. The bridge uses the Setup Inspector
 from the exact repository checkout and the MCP runtime installed from that
 checkout's tarballs. The Inspector is not claimed to ship in an npm package.
+
+The same one-pack run installs the aggregate tarball, resolves the transitive
+CLI package's versioned Skill assets, runs a human dry-run with update-notifier
+fully enabled but isolated and proves it creates neither Host nor notifier
+state, repeats the machine-readable dry-run, installs both Skills, compares
+installed hashes with packaged bytes, and proves a second install fails without
+mutation. Restart Codex remains a documented user action; CI does not model
+Host UI restart behavior.
 
 The bridge proves only:
 

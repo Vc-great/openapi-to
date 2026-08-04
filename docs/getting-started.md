@@ -16,6 +16,27 @@ Install the aggregate package:
 pnpm add -D openapi-to
 ```
 
+The installed npm package also contains version-matched
+`openapi-to-setup` and `openapi-to-generate` assets. Codex users can preview
+and explicitly install them without a network request:
+
+```sh
+pnpm exec openapi skills install \
+  --host codex \
+  --dry-run
+
+pnpm exec openapi skills install \
+  --host codex
+```
+
+The only supported installer Host is `codex`. It writes to
+`$CODEX_HOME/skills`, or `~/.codex/skills` when `CODEX_HOME` is unset, and
+refuses to overwrite either existing Skill directory. Restart Codex after
+installation. Installing `openapi-to` does not install Skills automatically,
+and `openapi init` continues to initialize only the generation config and
+state ignore rule. The installer does not configure MCP; use
+`openapi-to-setup` after restart for project and Host diagnosis/configuration.
+
 The binary names are aliases:
 
 ```sh

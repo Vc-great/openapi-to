@@ -10,7 +10,8 @@ if (!semver.satisfies(process.version, requiredVersion)) {
 } else {
   import('@openapi-to/cli').then(async({run}) => {
     const {updateVersionNotifier} = await import('../dist/utils.js')
-    if (!process.argv.includes('--json')) updateVersionNotifier()
+    const isSkillsCommand = process.argv[2] === 'skills'
+    if (!isSkillsCommand && !process.argv.includes('--json')) updateVersionNotifier()
     await run(process.argv)
   }).catch((error) => {
     console.error(error instanceof Error ? error.message : String(error))

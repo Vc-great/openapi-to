@@ -16,6 +16,7 @@ import { promisify } from "node:util";
 import {
 	auditAgentAndSkillContracts,
 	auditCiDiagnosticsContracts,
+	auditCodexSkillInstallerContracts,
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
 	auditPublicationContracts,
@@ -460,6 +461,68 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
+});
+
+test("Codex Skill installer distribution, CLI, packed smoke, and docs stay aligned", async (t) => {
+	assert.deepEqual(await auditCodexSkillInstallerContracts(repositoryRoot), []);
+	const root = await mkdtemp(
+		join(tmpdir(), "openapi-to-codex-skills-contract-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		"turbo.json",
+		"packages/cli/package.json",
+		"packages/openapi/package.json",
+		"packages/cli/src/index.ts",
+		"packages/cli/src/init.ts",
+		"packages/cli/src/skillsInstall.ts",
+		"packages/openapi/bin/openapi.js",
+		"scripts/build-consumer-skill-assets.mjs",
+		"scripts/build-consumer-skill-assets.node-test.mjs",
+		"scripts/codex-skills-installer-cross-platform-smoke.mjs",
+		"scripts/release/pack-smoke-helpers.mjs",
+		"scripts/release/pack-install-smoke.mjs",
+		".github/workflows/a1-cross-platform.yml",
+		"README.md",
+		"docs/getting-started.md",
+		"docs/skills.md",
+		"docs/setup-skill.md",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	const cliIndexPath = join(root, "packages/cli/src/index.ts");
+	await writeFile(
+		cliIndexPath,
+		(await readFile(cliIndexPath, "utf8")).replace(
+			'.command("skills <action>"',
+			'.command("removed <action>"',
+		),
+	);
+	assertFailure(
+		{ failures: await auditCodexSkillInstallerContracts(root) },
+		/CLI Codex Skill command is missing/,
+	);
+	await writeFile(
+		cliIndexPath,
+		await readFile(
+			join(repositoryRoot, "packages/cli/src/index.ts"),
+			"utf8",
+		),
+	);
+	const turboPath = join(root, "turbo.json");
+	const turbo = JSON.parse(await readFile(turboPath, "utf8"));
+	turbo.globalDependencies = turbo.globalDependencies.filter(
+		(entry) => entry !== ".agents/skills/openapi-to-setup/**",
+	);
+	await writeFile(turboPath, `${JSON.stringify(turbo, null, 2)}\n`);
+	assertFailure(
+		{ failures: await auditCodexSkillInstallerContracts(root) },
+		/Turbo globalDependencies must invalidate consumer Skill assets/,
+	);
 });
 
 test("consumer acceptance contract accepts the consolidated packed path", async (t) => {
