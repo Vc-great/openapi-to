@@ -86,6 +86,14 @@ export const plans = Object.freeze({
 		commands: [
 			command("pnpm-launcher", "Verify pnpm launcher"),
 			command("build", "Build packages"),
+			command(
+				"codex-skills-installer-tests",
+				"Run focused Codex Skill installer tests",
+			),
+			command(
+				"codex-skills-installer-built-bin",
+				"Run built Codex Skill installer smoke",
+			),
 			command("a1-contracts", "Run A1 focused contracts"),
 			command("cli-openapi-help", "Verify openapi CLI alias"),
 			command("cli-openapi-to-version", "Verify openapi-to CLI alias"),

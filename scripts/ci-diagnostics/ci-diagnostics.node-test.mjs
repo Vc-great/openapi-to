@@ -1835,6 +1835,19 @@ test("workflow contract keeps finalizers, failure artifacts, gates, and matrices
 		id: "pnpm-launcher",
 		label: "Verify pnpm launcher",
 	});
+	assert.deepEqual(
+		getPlan("a1-contracts").commands.slice(2, 4),
+		[
+			{
+				id: "codex-skills-installer-tests",
+				label: "Run focused Codex Skill installer tests",
+			},
+			{
+				id: "codex-skills-installer-built-bin",
+				label: "Run built Codex Skill installer smoke",
+			},
+		],
+	);
 	const e2e = workflows.find(({ name }) => name === "e2e.yaml").contents;
 	assert.equal(
 		[...e2e.matchAll(/os: \[ubuntu-latest, windows-latest, macos-latest\]/g)]
