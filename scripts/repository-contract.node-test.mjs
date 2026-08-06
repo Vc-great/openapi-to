@@ -21,6 +21,7 @@ import {
 	auditGitHubWorkflowContexts,
 	auditPublicationContracts,
 	auditRepositoryContracts,
+	auditVersionReadinessContracts,
 	discoverAgentDocuments,
 	EXPECTED_SKILL_ROLES,
 	parseOpenAiSkillYaml,
@@ -808,6 +809,82 @@ test("GitHub YAML contracts parse composite actions and report syntax failures",
 test("CI diagnostics repository contract accepts the tracked bounded integration", async (t) => {
 	const root = await createCiDiagnosticsContractFixture(t);
 	assert.deepEqual(await auditCiDiagnosticsContracts(root), []);
+});
+
+test("Version readiness contract accepts source-aware strict and development gates", async (t) => {
+	const root = await createCiDiagnosticsContractFixture(t);
+	assert.deepEqual(await auditVersionReadinessContracts(root), []);
+});
+
+test("Version readiness contract rejects gate selection and bypass regressions", async (t) => {
+	const cases = [
+		{
+			name: "strict command removed",
+			mutate: (contents) =>
+				contents.replace(
+					" -- pnpm verify:changeset-state\n",
+					" -- pnpm verify:changeset-state:development\n",
+				),
+			failure: /must run strict verify:changeset-state only/,
+		},
+		{
+			name: "development command removed",
+			mutate: (contents) =>
+				contents.replace(
+					" -- pnpm verify:changeset-state:development\n",
+					" -- pnpm verify:changeset-state\n",
+				),
+			failure: /must run verify:changeset-state:development for every other PR/,
+		},
+		{
+			name: "strict identity binding weakened",
+			mutate: (contents) =>
+				contents.replace(
+					"        ${{ github.event.pull_request.head.repo.full_name == github.repository &&\n",
+					"        ${{ github.event.pull_request.head.ref == 'changeset-release/main' &&\n",
+				),
+			failure: /strict mode must bind to same-repository/,
+		},
+		{
+			name: "whole Job skipped",
+			mutate: (contents) =>
+				contents.replace(
+					"    runs-on: ubuntu-latest\n",
+					"    if: false\n    runs-on: ubuntu-latest\n",
+				),
+			failure: /Job must not be conditionally skipped/,
+		},
+		{
+			name: "pull request trigger removed",
+			mutate: (contents) =>
+				contents.replace("  pull_request:\n", "  workflow_dispatch:\n"),
+			failure: /must retain its pull_request main-branch and version-state path triggers/,
+		},
+		{
+			name: "continue on error added",
+			mutate: (contents) =>
+				contents.replace(
+					"    runs-on: ubuntu-latest\n",
+					"    runs-on: ubuntu-latest\n    continue-on-error: true\n",
+				),
+			failure: /must not use continue-on-error/,
+		},
+	];
+	for (const fixture of cases) {
+		await t.test(fixture.name, async (t) => {
+			const root = await createCiDiagnosticsContractFixture(t);
+			const workflowPath = join(
+				root,
+				".github/workflows/version-readiness.yml",
+			);
+			const workflow = await readFile(workflowPath, "utf8");
+			await writeFile(workflowPath, fixture.mutate(workflow));
+			assertFailure(
+				{ failures: await auditVersionReadinessContracts(root) },
+				fixture.failure,
+			);
+		});
+	}
 });
 
 test("CI diagnostics repository contract rejects missing or untracked core files", async (t) => {
