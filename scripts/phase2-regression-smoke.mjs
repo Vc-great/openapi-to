@@ -13,6 +13,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dump, load } from "js-yaml";
 
 const repositoryRoot = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -151,6 +152,15 @@ async function writeRegressionConfigs(root) {
 			pluginConfig(`generated-${name}`, "./inline-enum.yaml", plugins, name),
 		);
 	}
+	await writeFile(
+		path.join(root, "inline-reordered.config.ts"),
+		pluginConfig(
+			"generated-inline-reordered",
+			"./inline-enum-reordered.yaml",
+			`[${tsType}]`,
+			"inline-reordered",
+		),
+	);
 	await writeFile(
 		path.join(root, "swr.config.ts"),
 		pluginConfig(
@@ -317,10 +327,23 @@ async function verifyGenerators(root) {
 			path.join(root, fixture),
 		);
 	}
+	const inlineFixture = load(
+		await readFile(path.join(root, "inline-enum.yaml"), "utf8"),
+	);
+	const collisionProperties =
+		inlineFixture.components.schemas.CollisionModel.properties;
+	inlineFixture.components.schemas.CollisionModel.properties =
+		Object.fromEntries(Object.entries(collisionProperties).reverse());
+	await writeFile(
+		path.join(root, "inline-enum-reordered.yaml"),
+		dump(inlineFixture, { noRefs: true, sortKeys: false }),
+	);
 	await writeRegressionConfigs(root);
 
+	const manifests = new Map();
 	for (const name of [
 		"inline-ts-type",
+		"inline-reordered",
 		"inline-ts-request",
 		"inline-zod",
 		"inline-swr",
@@ -339,6 +362,7 @@ async function verifyGenerators(root) {
 			),
 		);
 		assert.equal(generated.success, true);
+		manifests.set(name, generated.servers[0].manifest.entries);
 		assertCurrentCheck(
 			`${name} byte stability`,
 			runCli(
@@ -357,6 +381,34 @@ async function verifyGenerators(root) {
 		path.join(root, "generated-inline-ts-type/types/models/user.model.ts"),
 		"utf8",
 	);
+	const collisionModel = await readFile(
+		path.join(
+			root,
+			"generated-inline-ts-type/types/models/collision-model.model.ts",
+		),
+		"utf8",
+	);
+	const anchoredCollisionModel = await readFile(
+		path.join(
+			root,
+			"generated-inline-ts-type/types/models/anchored-collision-model.model.ts",
+		),
+		"utf8",
+	);
+	const crossHookSchemaModel = await readFile(
+		path.join(
+			root,
+			"generated-inline-ts-type/types/models/request-bodies-foo.model.ts",
+		),
+		"utf8",
+	);
+	const crossHookRequestBody = await readFile(
+		path.join(
+			root,
+			"generated-inline-ts-type/types/requestBodies/foo.model.ts",
+		),
+		"utf8",
+	);
 	assert.match(enumFile, /UserOptionalInlineModeEnumValue/);
 	assert.match(userModel, /UserOptionalInlineModeEnumValue/);
 	assert.doesNotMatch(userModel, /UseroptionalInlineModeEnumValue/);
@@ -365,7 +417,129 @@ async function verifyGenerators(root) {
 	assert.match(enumFile, /UserSimilar_u5f_u2d_NameEnumValue/);
 	const declarations =
 		enumFile.match(/export type ([A-Za-z_$][A-Za-z0-9_$]*)/g) ?? [];
+	const expectedInlineEnumTypeDeclarations =
+		countInlineEnums(inlineFixture) * 2;
+	assert.equal(declarations.length, expectedInlineEnumTypeDeclarations);
 	assert.equal(new Set(declarations).size, declarations.length);
+
+	const collisionSymbols = new Map([
+		["similarName", "CollisionModelSimilarName__15bafc6dca3dEnumValue"],
+		["SimilarName", "CollisionModelSimilarName__c27232e9a0aeEnumValue"],
+		["similar-name", "CollisionModelSimilar_u2d_Name__c715d2d35d32EnumValue"],
+		["similar-Name", "CollisionModelSimilar_u2d_Name__963c4fadafc4EnumValue"],
+		[
+			"foo-bar.mode",
+			"CollisionModelFoo_u5f_u2d_BarMode__2ae51d31ab05EnumValue",
+		],
+		[
+			"foo-Bar.mode",
+			"CollisionModelFoo_u5f_u2d_BarMode__2a928070e275EnumValue",
+		],
+		[
+			"anchorName",
+			"AnchoredCollisionModelAnchorName__977e67d75041EnumValue",
+		],
+		[
+			"AnchorName",
+			"AnchoredCollisionModelAnchorName__c404b3590ffaEnumValue",
+		],
+		[
+			"schema-model",
+			"RequestBodiesFooModel__fa2b5527fa9dEnumValue",
+		],
+		[
+			"request-body-model",
+			"RequestBodiesFooModel__5f9784238592EnumValue",
+		],
+	]);
+	for (const symbol of collisionSymbols.values()) {
+		assert.match(enumFile, new RegExp(`export type ${symbol}\\b`));
+	}
+	assert.match(
+		collisionModel,
+		new RegExp(`similarName: ${collisionSymbols.get("similarName")}\\b`),
+	);
+	assert.match(
+		collisionModel,
+		new RegExp(`SimilarName: ${collisionSymbols.get("SimilarName")}\\b`),
+	);
+	assert.match(
+		collisionModel,
+		new RegExp(
+			`"similar-name": ${collisionSymbols.get("similar-name")}\\b`,
+		),
+	);
+	assert.match(
+		anchoredCollisionModel,
+		new RegExp(`anchorName\\?: ${collisionSymbols.get("anchorName")}\\b`),
+	);
+	assert.match(
+		anchoredCollisionModel,
+		new RegExp(`AnchorName\\?: ${collisionSymbols.get("AnchorName")}\\b`),
+	);
+	assert.match(
+		crossHookSchemaModel,
+		new RegExp(`model\\?: ${collisionSymbols.get("schema-model")}\\b`),
+	);
+	assert.match(
+		crossHookRequestBody,
+		new RegExp(`\\b${collisionSymbols.get("request-body-model")}\\b`),
+	);
+	assert.match(
+		collisionModel,
+		new RegExp(
+			`"similar-Name": ${collisionSymbols.get("similar-Name")}\\b`,
+		),
+	);
+	assert.match(
+		collisionModel,
+		new RegExp(
+			`"foo-bar": \\{[\\s\\S]*?mode\\?: ${collisionSymbols.get("foo-bar.mode")}\\b`,
+		),
+	);
+	assert.match(
+		collisionModel,
+		new RegExp(
+			`"foo-Bar": \\{[\\s\\S]*?mode\\?: ${collisionSymbols.get("foo-Bar.mode")}\\b`,
+		),
+	);
+	const reorderedEnumFile = await readFile(
+		path.join(root, "generated-inline-reordered/types/enum.model.ts"),
+		"utf8",
+	);
+	const reorderedCollisionModel = await readFile(
+		path.join(
+			root,
+			"generated-inline-reordered/types/models/collision-model.model.ts",
+		),
+		"utf8",
+	);
+	for (const symbol of collisionSymbols.values()) {
+		assert.match(reorderedEnumFile, new RegExp(`export type ${symbol}\\b`));
+	}
+	for (const key of [
+		"similarName",
+		"SimilarName",
+		"similar-name",
+		"similar-Name",
+		"foo-bar.mode",
+		"foo-Bar.mode",
+	]) {
+		assert.match(
+			reorderedCollisionModel,
+			new RegExp(`\\b${collisionSymbols.get(key)}\\b`),
+		);
+	}
+	assert.deepEqual(
+		manifests
+			.get("inline-reordered")
+			.map(({ path: entryPath }) => entryPath)
+			.sort(),
+		manifests
+			.get("inline-ts-type")
+			.map(({ path: entryPath }) => entryPath)
+			.sort(),
+	);
 
 	const swr = await readFile(
 		path.join(root, "generated-swr/health/use-get-health.query.ts"),
@@ -430,6 +604,21 @@ async function verifyGenerators(root) {
 	return compilerVersions;
 }
 
+function countInlineEnums(value) {
+	if (Array.isArray(value)) {
+		return value.reduce((count, item) => count + countInlineEnums(item), 0);
+	}
+	if (!value || typeof value !== "object") return 0;
+	return (
+		(Array.isArray(value.enum) ? 1 : 0) +
+		Object.entries(value).reduce(
+			(count, [key, item]) =>
+				key === "enum" ? count : count + countInlineEnums(item),
+			0,
+		)
+	);
+}
+
 const temporaryRoot = await mkdtemp(
 	path.join(os.tmpdir(), "openapi-to-phase2-regressions-"),
 );
@@ -445,6 +634,7 @@ try {
 			tests: [
 				"REG-INIT-DEFAULT-CONFIG-GENERATES",
 				"REG-INLINE-ENUM-SYMBOL-CASING",
+				"REG-INLINE-ENUM-SYMBOL-COLLISIONS",
 				"REG-SWR-FETCHER-STRICT",
 				"REG-MSW-SCHEMALESS-JSON",
 				"REG-INIT-JSON-STDOUT",

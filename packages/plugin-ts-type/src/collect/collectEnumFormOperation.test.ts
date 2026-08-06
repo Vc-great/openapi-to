@@ -19,6 +19,8 @@ describe('collectEnumFormOperation', () => {
   it('应该收集操作中的所有枚举', () => {
     // 创建模拟的 OperationWrapper
     const mockOperation = {
+      path: '/test',
+      method: 'get',
       accessor: {
         operationName: 'testOperation',
         parameters: [{ name: 'param1', in: 'query' }],
@@ -40,11 +42,16 @@ describe('collectEnumFormOperation', () => {
     const result = collectEnumFormOperation(mockOperation as unknown as OperationWrapper)
 
     // 验证函数调用与结果
-    expect(collectEnumsModule.collectEnumsFromPathParameters).toHaveBeenCalledWith(mockOperation.accessor.parameters, mockOperation.accessor.operationName)
+    expect(collectEnumsModule.collectEnumsFromPathParameters).toHaveBeenCalledWith(
+      mockOperation.accessor.parameters,
+      mockOperation.accessor.operationName,
+      ['paths', '/test', 'get'],
+    )
 
     expect(collectEnumsModule.collectEnumsFromPathRequestBodies).toHaveBeenCalledWith(
       mockOperation.accessor.operation.getRequestBody(),
       'TestOperationMutationRequest',
+      ['paths', '/test', 'get'],
     )
 
     // 验证 getResponseAsJSONSchema 被调用了两次，对应两个状态码
@@ -62,6 +69,8 @@ describe('collectEnumFormOperation', () => {
 
   it('应该处理没有响应的情况', () => {
     const mockOperation = {
+      path: '/empty',
+      method: 'get',
       accessor: {
         operationName: 'emptyOperation',
         parameters: [],

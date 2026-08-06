@@ -1,6 +1,10 @@
 import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 import { canRenderAsPlainInterface } from "@/templates/canRenderAsPlainInterface.ts";
+import type {
+	InlineEnumSourcePath,
+	InlineEnumSymbolResolver,
+} from "@/utils/inlineEnumNaming.ts";
 import type { ComponentsSchema } from "@openapi-to/core";
 import { upperFirst } from "lodash-es";
 import type { SchemaObject } from "oas/types";
@@ -18,6 +22,8 @@ export type SchemaDeclarationStructure = InterfaceDeclarationStructure | TypeAli
 export function buildSchemas(
 	schemaName: string,
 	schema: ComponentsSchema,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): SchemaDeclarationStructure[] {
 	if (
 		schema === undefined ||
@@ -46,6 +52,8 @@ export function buildSchemas(
 					buildSchemaPropertiesTypes(
 						objectSchema as SchemaObject,
 						schemaName,
+						inlineEnumSymbols,
+						inlineEnumSourcePath,
 					) ?? [],
 			},
 		];
@@ -58,7 +66,13 @@ export function buildSchemas(
 	return [
 		createTypeAlias(
 			typeName,
-			schemaTemplate(schema, schemaName),
+			schemaTemplate(
+				schema,
+				schemaName,
+				undefined,
+				inlineEnumSymbols,
+				inlineEnumSourcePath,
+			),
 			jsDocTemplateFromSchema(description, schema, schemaName),
 		),
 	];

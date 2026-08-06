@@ -5,6 +5,8 @@ import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
 import {
 	getInlineEnumTypeName,
 	getInlineSchemaContextName,
+	type InlineEnumSourcePath,
+	type InlineEnumSymbolResolver,
 } from "@/utils/inlineEnumNaming.ts";
 import { generateObjectType } from "@openapi-to/core/utils";
 
@@ -16,6 +18,8 @@ export function schemaTemplate(
 	schema: Schema,
 	propertyName: string,
 	parentName?: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string {
 	if (schema === true || isUndefined(schema)) return "unknown";
 	if (schema === false) return "never";
@@ -31,14 +35,33 @@ export function schemaTemplate(
 	if (isRef(schema) || hasUnion || hasIntersection) {
 		const members: string[] = [];
 		if (isRef(schema)) members.push(refType(schema));
-		if (hasUnion) members.push(unionType(record, propertyName, contextName));
+		if (hasUnion)
+			members.push(
+				unionType(
+					record,
+					propertyName,
+					contextName,
+					inlineEnumSymbols,
+					inlineEnumSourcePath,
+				),
+			);
 		if (hasIntersection)
-			members.push(intersectionType(record, propertyName, contextName));
+			members.push(
+				intersectionType(
+					record,
+					propertyName,
+					contextName,
+					inlineEnumSymbols,
+					inlineEnumSourcePath,
+				),
+			);
 
 		const structuralSibling = renderStructuralSibling(
 			record,
 			propertyName,
 			parentName ?? "",
+			inlineEnumSymbols,
+			inlineEnumSourcePath,
 		);
 		if (structuralSibling) members.push(structuralSibling);
 
@@ -50,9 +73,20 @@ export function schemaTemplate(
 	} else if ("const" in schema) {
 		baseType = renderConstType(schema.const);
 	} else if (schema.enum && schema.enum.length > 0) {
-		baseType = getInlineEnumTypeName(parentName, propertyName);
+		const legacyTypeName = getInlineEnumTypeName(parentName, propertyName);
+		baseType =
+			inlineEnumSymbols?.getTypeName(
+				requireInlineEnumSourcePath(inlineEnumSourcePath, legacyTypeName),
+				legacyTypeName,
+			) ?? legacyTypeName;
 	} else {
-		baseType = resolveBaseType(schema, propertyName, contextName);
+		baseType = resolveBaseType(
+			schema,
+			propertyName,
+			contextName,
+			inlineEnumSymbols,
+			inlineEnumSourcePath,
+		);
 	}
 
 	// 处理 nullable
@@ -72,6 +106,8 @@ function renderStructuralSibling(
 	schema: SchemaObjectAndJSONSchema,
 	propertyName: string,
 	parentName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string | undefined {
 	const sibling = { ...(schema as Record<string, unknown>) };
 	delete sibling.$ref;
@@ -101,7 +137,13 @@ function renderStructuralSibling(
 	].some((key) => sibling[key] !== undefined);
 	if (!hasStructuralKeyword) return undefined;
 
-	const rendered = schemaTemplate(sibling as Schema, propertyName, parentName);
+	const rendered = schemaTemplate(
+		sibling as Schema,
+		propertyName,
+		parentName,
+		inlineEnumSymbols,
+		inlineEnumSourcePath,
+	);
 	return rendered === "unknown" ? undefined : rendered;
 }
 
@@ -110,15 +152,26 @@ function unionType(
 	schemas: SchemaObjectAndJSONSchema,
 	propertyName: string,
 	parentName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string {
 	if (
 		("oneOf" in schemas && schemas.oneOf) ||
 		("anyOf" in schemas && schemas.anyOf)
 	) {
-		const types = [
-			...(schemas.oneOf ? schemas.oneOf : []),
-			...(schemas.anyOf ? schemas.anyOf : []),
-		].map((s) => schemaTemplate(s as SchemaObject, propertyName, parentName));
+		const types = (["oneOf", "anyOf"] as const).flatMap((key) =>
+			(schemas[key] ?? []).map((schema, index) =>
+				schemaTemplate(
+					schema as SchemaObject,
+					propertyName,
+					parentName,
+					inlineEnumSymbols,
+					inlineEnumSourcePath
+						? [...inlineEnumSourcePath, key, index]
+						: undefined,
+				),
+			),
+		);
 		return types.join(" | ");
 	}
 	throw new Error(
@@ -131,14 +184,24 @@ function intersectionType(
 	schemas: SchemaObjectAndJSONSchema,
 	propertyName: string,
 	parentName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string {
 	if (!("allOf" in schemas && schemas.allOf)) {
 		throw new Error(
 			`Expected allOf type for property "${propertyName}", but got "${"type" in schemas ? schemas.type : schemas}"`,
 		);
 	}
-	const types = schemas.allOf.map((s) =>
-		schemaTemplate(s as SchemaObject, propertyName, parentName),
+	const types = schemas.allOf.map((s, index) =>
+		schemaTemplate(
+			s as SchemaObject,
+			propertyName,
+			parentName,
+			inlineEnumSymbols,
+			inlineEnumSourcePath
+				? [...inlineEnumSourcePath, "allOf", index]
+				: undefined,
+		),
 	);
 	return types
 		.map((type) => (type.includes(" | ") ? `(${type})` : type))
@@ -150,6 +213,8 @@ export function resolveBaseType(
 	schema: Schema,
 	propertyName: string,
 	parentName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string {
 	if (schema === true) return "unknown";
 	if (schema === false) return "never";
@@ -162,6 +227,8 @@ export function resolveBaseType(
 					{ ...schema, type: member } as Schema,
 					propertyName,
 					parentName,
+					inlineEnumSymbols,
+					inlineEnumSourcePath,
 				);
 			})
 			.filter((member, index, members) => members.indexOf(member) === index)
@@ -194,10 +261,21 @@ export function resolveBaseType(
 				: "number";
 
 		case "array":
-			return resolveArrayType(schema, propertyName, parentName);
+			return resolveArrayType(
+				schema,
+				propertyName,
+				parentName,
+				inlineEnumSymbols,
+				inlineEnumSourcePath,
+			);
 
 		case "object":
-			return resolveObjectType(schema, parentName);
+			return resolveObjectType(
+				schema,
+				parentName,
+				inlineEnumSymbols,
+				inlineEnumSourcePath,
+			);
 
 		case "null":
 			return "null";
@@ -212,6 +290,8 @@ function resolveArrayType(
 	schema: SchemaObjectAndJSONSchema,
 	propertyName: string,
 	parentName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string {
 	if ("type" in schema && schema.type !== "array") {
 		throw new Error(
@@ -225,12 +305,21 @@ function resolveArrayType(
 		schema.items as SchemaObjectAndJSONSchema,
 		propertyName,
 		parentName,
+		inlineEnumSymbols,
+		inlineEnumSourcePath
+			? [...inlineEnumSourcePath, "items"]
+			: undefined,
 	);
 	return `Array<${itemType}>`;
 }
 
 // 对象类型
-function resolveObjectType(schema: Schema, parentName: string): string {
+function resolveObjectType(
+	schema: Schema,
+	parentName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
+): string {
 	if (schema === true) return "unknown";
 	if (schema === false) return "never";
 	if (
@@ -239,10 +328,23 @@ function resolveObjectType(schema: Schema, parentName: string): string {
 			schema.additionalProperties !== undefined)
 	) {
 		const properties =
-			buildSchemaPropertiesTypes(schema as SchemaObject, parentName) || [];
+			buildSchemaPropertiesTypes(
+				schema as SchemaObject,
+				parentName,
+				inlineEnumSymbols,
+				inlineEnumSourcePath,
+			) || [];
 		return generateObjectType(properties);
 	}
 	return "Record<string, unknown>";
+}
+
+function requireInlineEnumSourcePath(
+	sourcePath: InlineEnumSourcePath | undefined,
+	legacyTypeName: string,
+): InlineEnumSourcePath {
+	if (sourcePath) return sourcePath;
+	throw new Error(`Inline enum source path is missing for ${legacyTypeName}.`);
 }
 
 function renderConstType(value: unknown): string {

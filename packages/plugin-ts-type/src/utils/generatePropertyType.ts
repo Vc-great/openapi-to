@@ -11,8 +11,12 @@ import type {
 } from "ts-morph";
 import { CodeBlockWriter } from "ts-morph";
 import { jsDocTemplateFromParameter } from "@/templates/jsDocTemplateFromSchema.ts";
-import { resolveBaseType } from "@/templates/schemaTemplate.ts";
+import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
+import type {
+	InlineEnumSourcePath,
+	InlineEnumSymbolResolver,
+} from "@/utils/inlineEnumNaming.ts";
 
 type OptionalKindOfPropertySignatureStructure =
 	OptionalKind<PropertySignatureStructure>;
@@ -79,6 +83,8 @@ function writeJSDoc(
 export function generateParameterType(
 	parameters: ParameterObjectWithRef[],
 	operationName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	operationSourcePath?: InlineEnumSourcePath,
 ): string {
 	const writer = new CodeBlockWriter({ indentNumberOfSpaces: 4 });
 
@@ -99,7 +105,21 @@ export function generateParameterType(
 				const type =
 					schema === undefined
 						? "string"
-						: resolveBaseType(schema, prop.name, operationName);
+						: schemaTemplate(
+								schema,
+								prop.name,
+								operationName,
+								inlineEnumSymbols,
+								operationSourcePath
+									? [
+											...operationSourcePath,
+											"parameters",
+											prop.in,
+											prop.name,
+											"schema",
+										]
+									: undefined,
+							);
 
 				writer.writeLine(`${name}${optional}: ${type}${comma}`);
 			}

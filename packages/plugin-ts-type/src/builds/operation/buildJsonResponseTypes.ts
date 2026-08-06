@@ -14,9 +14,11 @@ import {
 	getResponseSuccessName,
 } from "@/templates/operationTypeNameTemplate.ts";
 import type { JsonResponseObject } from "@/types.ts";
+import type { InlineEnumSymbolResolver } from "@/utils/inlineEnumNaming.ts";
 
 export function buildJsonResponseTypes(
 	operation: OperationWrapper,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
 ): StatementStructures[] {
 	const responseName = getResponseSuccessName(operation);
 
@@ -39,8 +41,28 @@ export function buildJsonResponseTypes(
 		...response,
 		name: getResponseStatusTypeName(responseName, response.code),
 	}));
-	const responseTypes = namedResponses.map(({ name, ...response }) =>
-		operationResponseTemplate(response, name),
+	const responseTypes = namedResponses.map(({ name, ...response }, index) =>
+		operationResponseTemplate(
+			response,
+			name,
+			inlineEnumSymbols,
+			response.jsonSchema
+				? [
+						"paths",
+						operation.path,
+						operation.method,
+						"responses",
+						descriptors[index]?.sourceStatusCode ?? response.code,
+						"content",
+						getResponseContentType(
+							operation,
+							descriptors[index]?.sourceStatusCode ?? response.code,
+							response.jsonSchema.label,
+						),
+						"schema",
+					]
+				: undefined,
+		),
 	);
 
 	responseTypes.push(
@@ -74,4 +96,16 @@ export function buildJsonResponseTypes(
 	}
 
 	return responseTypes;
+}
+
+function getResponseContentType(
+	operation: OperationWrapper,
+	statusCode: string,
+	fallbackLabel: string,
+): string {
+	const response = operation.accessor.operation.schema.responses?.[statusCode];
+	if (response && !("$ref" in response) && response.content) {
+		return Object.keys(response.content)[0] ?? fallbackLabel;
+	}
+	return fallbackLabel;
 }

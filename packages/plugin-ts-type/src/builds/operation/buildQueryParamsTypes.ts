@@ -2,10 +2,14 @@ import { createTypeAlias } from '@/templates/operationResponseTemplate.ts'
 import { getQueryParamsTypeName } from '@/templates/operationTypeNameTemplate.ts'
 
 import { generateParameterType } from '@/utils/generatePropertyType.ts'
+import type { InlineEnumSymbolResolver } from '@/utils/inlineEnumNaming.ts'
 
 import type { OperationWrapper, ParameterObjectWithRef } from '@openapi-to/core'
 
-export function buildQueryParamsTypes(operation: OperationWrapper) {
+export function buildQueryParamsTypes(
+  operation: OperationWrapper,
+  inlineEnumSymbols?: InlineEnumSymbolResolver,
+) {
   const queryParamsName = getQueryParamsTypeName(operation.accessor.operationName)
 
   const queryParameters: ParameterObjectWithRef[] = operation.accessor.queryParameters
@@ -14,7 +18,14 @@ export function buildQueryParamsTypes(operation: OperationWrapper) {
     return
   }
 
-  const queryTypes = generateParameterType(queryParameters, operation.accessor.operationName)
+  const queryTypes = inlineEnumSymbols
+    ? generateParameterType(
+        queryParameters,
+        operation.accessor.operationName,
+        inlineEnumSymbols,
+        ['paths', operation.path, operation.method],
+      )
+    : generateParameterType(queryParameters, operation.accessor.operationName)
 
   return createTypeAlias(queryParamsName, queryTypes, [])
 }

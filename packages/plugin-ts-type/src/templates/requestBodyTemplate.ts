@@ -3,6 +3,10 @@ import type { MediaTypeObject, ReferenceObject } from "@openapi-to/core";
 import { buildSchemaPropertiesTypes } from "@/builds/components/buildSchemaPropertiesTypes.ts";
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
+import type {
+	InlineEnumSourcePath,
+	InlineEnumSymbolResolver,
+} from "@/utils/inlineEnumNaming.ts";
 import { isBoolean, isEmpty } from "lodash-es";
 
 import {
@@ -18,6 +22,8 @@ type RequestBody = MediaTypeObject | ReferenceObject;
 export function requestBodyTemplate(
 	requestName: string,
 	requestBody: RequestBody,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): InterfaceDeclarationStructure | TypeAliasDeclarationStructure | undefined {
 	if ("$ref" in requestBody && requestBody.$ref) {
 		const refType = getUpperFirstRefAlias(requestBody.$ref);
@@ -30,7 +36,13 @@ export function requestBodyTemplate(
 	if (isBoolean(schema) || isEmpty(schema)) {
 		return createTypeAlias(
 			requestName,
-			schemaTemplate(schema, requestName),
+			schemaTemplate(
+				schema,
+				requestName,
+				undefined,
+				inlineEnumSymbols,
+				inlineEnumSourcePath,
+			),
 			[],
 		);
 	}
@@ -43,7 +55,13 @@ export function requestBodyTemplate(
 
 	// 处理数组类型
 	if (!("$ref" in schema) && schema.type === "array") {
-		const type = schemaTemplate(schema, requestName);
+		const type = schemaTemplate(
+			schema,
+			requestName,
+			undefined,
+			inlineEnumSymbols,
+			inlineEnumSourcePath,
+		);
 		return createTypeAlias(requestName, type, docs);
 	}
 
@@ -70,13 +88,25 @@ export function requestBodyTemplate(
 			name: requestName,
 			isExported: true,
 			docs,
-			properties: buildSchemaPropertiesTypes(schema, requestName) || [],
+			properties:
+				buildSchemaPropertiesTypes(
+					schema,
+					requestName,
+					inlineEnumSymbols,
+					inlineEnumSourcePath,
+				) || [],
 		};
 	}
 
 	return createTypeAlias(
 		requestName,
-		schemaTemplate(schema, requestName),
+		schemaTemplate(
+			schema,
+			requestName,
+			undefined,
+			inlineEnumSymbols,
+			inlineEnumSourcePath,
+		),
 		docs,
 	);
 }

@@ -51,8 +51,8 @@ vi.mock('@/EnumRegistry.ts', () => ({
 
 vi.mock('@/collect/collectEnumFormOperation.ts', () => ({
   collectEnumFormOperation: vi.fn(() => [
-    { name: 'TestEnum', enumValue: 'Value' },
-    { name: 'TestEnum2', enumValue: 'Value2' },
+    { name: 'TestEnum', enumValue: ['Value'], sourcePath: ['operations', 'test', 'enum'] },
+    { name: 'TestEnum2', enumValue: ['Value2'], sourcePath: ['operations', 'test', 'enum2'] },
   ]),
 }))
 
@@ -81,12 +81,18 @@ vi.mock('@/collect/collectRefsFromSchemas.ts', () => ({
 
 vi.mock('@/collect/collectEnumsFromDocument.ts', () => ({
   collectEnumsFromComponentSchema: vi.fn(() => [
-    { name: 'StatusEnum', enumValue: 'Active' },
-    { name: 'TypeEnum', enumValue: 'Normal' },
+    { name: 'StatusEnum', enumValue: ['Active'], sourcePath: ['components', 'schemas', 'status'] },
+    { name: 'TypeEnum', enumValue: ['Normal'], sourcePath: ['components', 'schemas', 'type'] },
   ]),
-  collectEnumsFromComponentParameters: vi.fn(() => [{ name: 'ParamEnum', enumValue: 'Param' }]),
-  collectEnumsFromComponentRequestBody: vi.fn(() => [{ name: 'BodyEnum', enumValue: 'Body' }]),
-  collectEnumsFromComponentResponse: vi.fn(() => [{ name: 'ResponseEnum', enumValue: 'Response' }]),
+  collectEnumsFromComponentParameters: vi.fn(() => [
+    { name: 'ParamEnum', enumValue: ['Param'], sourcePath: ['components', 'parameters', 'param'] },
+  ]),
+  collectEnumsFromComponentRequestBody: vi.fn(() => [
+    { name: 'BodyEnum', enumValue: ['Body'], sourcePath: ['components', 'requestBodies', 'body'] },
+  ]),
+  collectEnumsFromComponentResponse: vi.fn(() => [
+    { name: 'ResponseEnum', enumValue: ['Response'], sourcePath: ['components', 'responses', 'response'] },
+  ]),
 }))
 
 vi.mock('@/collect/collectRefsFromDocument.ts', () => ({
@@ -132,7 +138,11 @@ describe('definePlugin', () => {
   type TestPlugin = { name: string; hooks: Record<HookName, (...args: unknown[]) => unknown> }
   interface MockContext {
     openapiToSingleConfig: { output: { dir: string }; typeOutput: { dir: string } }
-    openapiHelper: { formatterName: ReturnType<typeof vi.fn> }
+    openapiHelper: {
+      formatterName: ReturnType<typeof vi.fn>
+      getAllOperations: ReturnType<typeof vi.fn>
+      oas: { getDefinition: ReturnType<typeof vi.fn> }
+    }
     store: Map<unknown, unknown>
     setSourceFiles: ReturnType<typeof vi.fn>
     paths: { outputPath: string; typesPath: string }
@@ -151,6 +161,17 @@ describe('definePlugin', () => {
       },
       openapiHelper: {
         formatterName: vi.fn((name) => name),
+        getAllOperations: vi.fn(() => [{ path: '/test', method: 'get', accessor: {} }]),
+        oas: {
+          getDefinition: vi.fn(() => ({
+            components: {
+              schemas: { Status: {} },
+              parameters: { Param: {} },
+              requestBodies: { Body: {} },
+              responses: { Response: {} },
+            },
+          })),
+        },
       },
       store: new Map(),
       setSourceFiles: vi.fn(),
@@ -283,11 +304,19 @@ describe('definePlugin', () => {
 
       // 验证收集了枚举
       const collectEnumsFromDocument = await import('@/collect/collectEnumsFromDocument.ts')
-      expect(collectEnumsFromDocument.collectEnumsFromComponentParameters).toHaveBeenCalledWith(mockParameters)
+      expect(collectEnumsFromDocument.collectEnumsFromComponentParameters).toHaveBeenCalledWith(
+        mockParameters,
+        expect.any(Function),
+      )
 
       // 验证构建参数
       const buildComponentParameters = await import('@/builds/components/buildComponentParameters.ts')
-      expect(buildComponentParameters.buildComponentParameters).toHaveBeenCalledWith(mockParameters.UserParam, 'UserParam')
+      expect(buildComponentParameters.buildComponentParameters).toHaveBeenCalledWith(
+        mockParameters.UserParam,
+        'UserParam',
+        expect.anything(),
+        ['components', 'parameters', 'UserParam', 'schema'],
+      )
 
       // 验证 sourceFile 设置
       expect(mockCtx.setSourceFiles).toHaveBeenCalledWith([pluginEnum.TsType, 'componentsParameters', 'UserParam'], expect.anything())
@@ -344,7 +373,12 @@ describe('definePlugin', () => {
 
       // 验证构建请求体
       const buildComponentsRequestBody = await import('@/builds/components/buildComponentsRequestBody.ts')
-      expect(buildComponentsRequestBody.buildComponentsRequestBody).toHaveBeenCalledWith('UserBody', mockRequestBodies.UserBody)
+      expect(buildComponentsRequestBody.buildComponentsRequestBody).toHaveBeenCalledWith(
+        'UserBody',
+        mockRequestBodies.UserBody,
+        expect.anything(),
+        ['components', 'requestBodies', 'UserBody'],
+      )
 
       // 验证 sourceFile 设置
       expect(mockCtx.setSourceFiles).toHaveBeenCalledWith([pluginEnum.TsType, 'componentsRequestBodies', 'UserBody'], expect.anything())
@@ -373,7 +407,12 @@ describe('definePlugin', () => {
 
       // 验证构建响应
       const buildComponentsResponse = await import('@/builds/components/buildComponentsResponse.ts')
-      expect(buildComponentsResponse.buildComponentsResponse).toHaveBeenCalledWith(mockResponses.UserResponse, 'ResponseUserResponse')
+      expect(buildComponentsResponse.buildComponentsResponse).toHaveBeenCalledWith(
+        mockResponses.UserResponse,
+        'ResponseUserResponse',
+        expect.anything(),
+        ['components', 'responses', 'UserResponse'],
+      )
 
       // 验证 sourceFile 设置
       expect(mockCtx.setSourceFiles).toHaveBeenCalledWith([pluginEnum.TsType, 'componentsResponses', 'UserResponse'], expect.anything())
