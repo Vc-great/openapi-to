@@ -381,6 +381,138 @@ async function readWorkflowDocument(root, relativePath, failures) {
 	}
 }
 
+const VERSION_READINESS_WORKFLOW_PATH =
+	".github/workflows/version-readiness.yml";
+const VERSION_READINESS_PATHS = [
+	".changeset/pre.json",
+	"packages/*/package.json",
+	"packages/*/CHANGELOG.md",
+	"e2e/*/package.json",
+	"e2e/*/CHANGELOG.md",
+	"pnpm-lock.yaml",
+];
+const VERSION_PACKAGES_PR_EXPRESSION =
+	`${DOLLAR_SIGN}{{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'changeset-release/main' && github.event.pull_request.user.login == 'github-actions[bot]' }}`;
+const STRICT_CHANGESET_COMMAND =
+	`node scripts/ci-diagnostics/run-command.mjs --dir "${DOLLAR_SIGN}{{ env.CI_DIAGNOSTIC_DIR }}" --id changeset-state -- pnpm verify:changeset-state`;
+const DEVELOPMENT_CHANGESET_COMMAND =
+	`node scripts/ci-diagnostics/run-command.mjs --dir "${DOLLAR_SIGN}{{ env.CI_DIAGNOSTIC_DIR }}" --id changeset-state -- pnpm verify:changeset-state:development`;
+
+function normalizeWhitespace(value) {
+	return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+export async function auditVersionReadinessContracts(root = repositoryRoot) {
+	const failures = [];
+	const document = await readWorkflowDocument(
+		root,
+		VERSION_READINESS_WORKFLOW_PATH,
+		failures,
+	);
+	if (!document) return sortedUnique(failures);
+	if (!(await isGitTracked(root, VERSION_READINESS_WORKFLOW_PATH))) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must remain tracked by Git`,
+		);
+	}
+	if (document.name !== "Version Readiness") {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must retain the Version Readiness workflow`,
+		);
+	}
+
+	const triggers = document.on;
+	const pullRequest = isMapping(triggers) ? triggers.pull_request : undefined;
+	if (
+		JSON.stringify(mappingKeys(triggers)) !== JSON.stringify(["pull_request"]) ||
+		!isMapping(pullRequest) ||
+		JSON.stringify(pullRequest.branches) !== JSON.stringify(["main"]) ||
+		JSON.stringify(pullRequest.paths) !== JSON.stringify(VERSION_READINESS_PATHS)
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must retain its pull_request main-branch and version-state path triggers`,
+		);
+	}
+	if (
+		JSON.stringify(document.permissions) !==
+		JSON.stringify({ contents: "read" })
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must retain contents: read as its only permission`,
+		);
+	}
+
+	const jobs = isMapping(document.jobs) ? document.jobs : {};
+	const job = jobs["changeset-state"];
+	if (
+		JSON.stringify(mappingKeys(jobs)) !== JSON.stringify(["changeset-state"]) ||
+		!isMapping(job)
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must retain its changeset-state Job`,
+		);
+		return sortedUnique(failures);
+	}
+	if (Object.hasOwn(job, "if")) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} changeset-state Job must not be conditionally skipped`,
+		);
+	}
+	if (
+		job.name !== "Verify strict Changesets state" ||
+		job["runs-on"] !== "ubuntu-latest" ||
+		job["timeout-minutes"] !== 15
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must retain the required check name, runner, and timeout`,
+		);
+	}
+	if (
+		normalizeWhitespace(job.env?.IS_VERSION_PACKAGES_PR) !==
+		VERSION_PACKAGES_PR_EXPRESSION
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} strict mode must bind to same-repository changeset-release/main PRs authored by github-actions[bot]`,
+		);
+	}
+
+	const steps = Array.isArray(job.steps) ? job.steps.filter(isMapping) : [];
+	const strictSteps = steps.filter(
+		(step) => step.name === "Verify strict Version Packages Changesets state",
+	);
+	const developmentSteps = steps.filter(
+		(step) => step.name === "Verify development Changesets state",
+	);
+	if (
+		strictSteps.length !== 1 ||
+		strictSteps[0].if !== "env.IS_VERSION_PACKAGES_PR == 'true'" ||
+		strictSteps[0].run !== STRICT_CHANGESET_COMMAND
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must run strict verify:changeset-state only for the bound Version Packages PR`,
+		);
+	}
+	if (
+		developmentSteps.length !== 1 ||
+		developmentSteps[0].if !== "env.IS_VERSION_PACKAGES_PR != 'true'" ||
+		developmentSteps[0].run !== DEVELOPMENT_CHANGESET_COMMAND
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must run verify:changeset-state:development for every other PR`,
+		);
+	}
+	if (
+		Object.hasOwn(job, "continue-on-error") ||
+		steps.some((step) => Object.hasOwn(step, "continue-on-error"))
+	) {
+		failures.push(
+			`${VERSION_READINESS_WORKFLOW_PATH} must not use continue-on-error`,
+		);
+	}
+
+	return sortedUnique(failures);
+}
+
 function validateExactJobPermissions(
 	relativePath,
 	jobId,
@@ -4067,6 +4199,7 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 			}
 		}
 	}
+	failures.push(...(await auditVersionReadinessContracts(root)));
 
 	const qualityPath = join(root, ".github/workflows/quality.yml");
 	if (await exists(qualityPath)) {

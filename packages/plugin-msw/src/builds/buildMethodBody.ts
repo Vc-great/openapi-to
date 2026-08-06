@@ -1,4 +1,5 @@
 import type { OperationWrapper } from "@openapi-to/core";
+import { describeOperationResponses } from "@openapi-to/core";
 import { URLPath } from "@openapi-to/core/utils";
 import type { RequiredPluginConfig } from "../types.ts";
 
@@ -10,15 +11,39 @@ import type { RequiredPluginConfig } from "../types.ts";
  */
 export function buildMethodBody(
 	operation: OperationWrapper,
-	pluginConfig: RequiredPluginConfig,
+	_pluginConfig: RequiredPluginConfig,
 ): string {
 	const url = new URLPath(operation.path);
+	const dataExpression = hasSchemaLessJsonSuccessResponse(operation)
+		? 'data as import("msw").JsonBodyType'
+		: "data";
 	return `return http.get(
     '${url.toURLPath}',
     (info) => {
-      return HttpResponse.json(data, {
+      return HttpResponse.json(${dataExpression}, {
         status: 200,
       });
     },
   )`;
+}
+
+function hasSchemaLessJsonSuccessResponse(
+	operation: OperationWrapper,
+): boolean {
+	return describeOperationResponses(operation.accessor.operation).some(
+		(descriptor) => {
+			if (descriptor.classification !== "success") return false;
+			const response =
+				operation.accessor.operation.schema?.responses?.[
+					descriptor.sourceStatusCode
+				];
+			if (!response || "$ref" in response) return false;
+			return Object.entries(response.content ?? {}).some(
+				([mediaType, media]) =>
+					(mediaType.toLowerCase() === "application/json" ||
+						mediaType.toLowerCase().endsWith("+json")) &&
+					media?.schema === undefined,
+			);
+		},
+	);
 }

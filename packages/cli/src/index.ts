@@ -490,6 +490,44 @@ async function runSkillsInstall(
 	}
 }
 
+async function runInit(
+	options: Record<string, unknown>,
+	io: CLIIO,
+): Promise<CLIRunResult> {
+	const json = options.json === true;
+	try {
+		const result = await init({ quiet: json });
+		const diagnostics: Diagnostic[] = [];
+		const output = {
+			success: true,
+			command: "init",
+			...result,
+			diagnostics,
+			summary: summarizeDiagnostics(diagnostics),
+		};
+		if (json) printJSON(io, output);
+		return { exitCode: ExitCode.Success, output };
+	} catch (error) {
+		const diagnostics: Diagnostic[] = [
+			{
+				code: "CLI_EXECUTION_FAILED",
+				severity: "error",
+				message: error instanceof Error ? error.message : String(error),
+			},
+		];
+		const output = {
+			success: false,
+			command: "init",
+			created: false,
+			diagnostics,
+			summary: summarizeDiagnostics(diagnostics),
+		};
+		if (json) printJSON(io, output);
+		else printDiagnostics(io, diagnostics);
+		return { exitCode: ExitCode.GeneralError, output };
+	}
+}
+
 export async function run(
 	argv: string[] = process.argv,
 	io: CLIIO = defaultIO,
@@ -503,8 +541,8 @@ export async function run(
 	program.option("--debug", "Include debug details where available");
 	program
 		.command("init", "Generate a root openapi.config file")
-		.action(async () => {
-			await init();
+		.action(async (options) => {
+			actionResult = await runInit(options, io);
 		});
 	program
 		.command("skills <action>", "Manage packaged Agent Skills")

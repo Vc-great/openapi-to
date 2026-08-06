@@ -1,8 +1,8 @@
 import type { OperationWrapper } from '@openapi-to/core'
-import { isEmpty } from 'lodash-es'
 import { OpenAPIV3 } from 'openapi-types'
 import type { PluginConfig } from '../types.ts'
 import { formatterQueryKeyName, formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
+import { buildResponseTypes } from './buildResponseTypes.ts'
 
 /**
  * 构建请求方法体
@@ -28,15 +28,7 @@ export function buildMethodBody(operation: OperationWrapper, pluginConfig?: Plug
  * @param pluginConfig
  */
 function infiniteMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
-  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
-  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
-  const responseConfigType = hasResponseConfig
-    ? `${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data']`
-    : operation.accessor.operationTSType?.responseSuccess
-
-  const responseErrorType = hasResponseError
-    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
-    : operation.accessor.operationTSType?.responseError
+  const { data: responseConfigType, error: responseErrorType } = buildResponseTypes(operation, pluginConfig)
 
   return `const { query: queryOptions, shouldFetch = true } = options ?? {}
   const queryKey = ${formatterQueryKeyName(operation)}(${operation.accessor.hasQueryParameters ? 'params' : ''})
@@ -63,15 +55,7 @@ function infiniteMethodBody(operation: OperationWrapper, pluginConfig?: PluginCo
  * @returns 生成的查询方法体字符串
  */
 function queryMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
-  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
-  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
-  const responseConfigType = hasResponseConfig
-    ? `${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data']`
-    : operation.accessor.operationTSType?.responseSuccess
-
-  const responseErrorType = hasResponseError
-    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
-    : operation.accessor.operationTSType?.responseError
+  const { data: responseConfigType, error: responseErrorType } = buildResponseTypes(operation, pluginConfig)
 
   const pathParameters = operation.method === OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name) : ''
 
@@ -89,22 +73,14 @@ function queryMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfi
   ${formatterQueryKeyTypeName(operation)} | null
  >(shouldFetch ? queryKey : null, {
         ...queryOptions,
-        fetcher: async (${operation.method !== OpenAPIV3.HttpMethods.GET ? '' : `_url${operation.accessor.hasRequestBody ? ', { arg: data }' : ''}`}) => {
+        fetcher: async () => {
             return ${operation.accessor.operationRequest?.requestName}(${params});
         }
     })`
 }
 
 function mutationMethodBody(operation: OperationWrapper, pluginConfig?: PluginConfig) {
-  const hasResponseConfig = !isEmpty(pluginConfig?.responseConfigTypeImportDeclaration?.namedImports)
-  const hasResponseError = !isEmpty(pluginConfig?.responseErrorTypeImportDeclaration?.namedImports)
-  const responseConfigType = hasResponseConfig
-    ? `${pluginConfig?.responseConfigTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseSuccess}>['data']`
-    : operation.accessor.operationTSType?.responseSuccess
-
-  const responseErrorType = hasResponseError
-    ? `${pluginConfig?.responseErrorTypeImportDeclaration?.namedImports[0]}<${operation.accessor.operationTSType?.responseError}>`
-    : operation.accessor.operationTSType?.responseError
+  const { data: responseConfigType, error: responseErrorType } = buildResponseTypes(operation, pluginConfig)
 
   const pathParameters = operation.method !== OpenAPIV3.HttpMethods.GET ? operation.accessor.pathParameters.map((x) => x.name) : ''
 

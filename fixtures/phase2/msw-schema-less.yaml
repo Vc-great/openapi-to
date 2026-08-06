@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: MSW schema-less regression
+  version: 1.0.0
+paths:
+  /schema-less:
+    get:
+      operationId: getSchemaLess
+      tags: [responses]
+      responses:
+        "200":
+          description: Unknown JSON
+          content:
+            application/json: {}
+        "204":
+          description: No content
+  /known-object:
+    get:
+      operationId: getKnownObject
+      tags: [responses]
+      responses:
+        "200":
+          description: Object
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id: { type: string }
+  /known-array:
+    get:
+      operationId: getKnownArray
+      tags: [responses]
+      responses:
+        "200":
+          description: Array
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: number }
+  /known-primitives:
+    get:
+      operationId: getKnownPrimitives
+      tags: [responses]
+      responses:
+        "200":
+          description: String
+          content:
+            application/json:
+              schema: { type: string }
+        "201":
+          description: Number
+          content:
+            application/json:
+              schema: { type: number }
+        "202":
+          description: Boolean
+          content:
+            application/json:
+              schema: { type: boolean }
+  /nullable:
+    get:
+      operationId: getNullable
+      tags: [responses]
+      responses:
+        "200":
+          description: Nullable
+          content:
+            application/json:
+              schema:
+                type: string
+                nullable: true
+  /text:
+    get:
+      operationId: getText
+      tags: [responses]
+      responses:
+        "200":
+          description: Text
+          content:
+            text/plain:
+              schema: { type: string }

@@ -2,10 +2,14 @@ import { buildSchemaPropertiesTypes } from "@/builds/components/buildSchemaPrope
 
 import type { SchemaObjectAndJSONSchema } from "@/types.ts";
 import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
+import {
+	getInlineEnumTypeName,
+	getInlineSchemaContextName,
+} from "@/utils/inlineEnumNaming.ts";
 import { generateObjectType } from "@openapi-to/core/utils";
 
 import type { Schema } from "@openapi-to/core";
-import { isUndefined, upperFirst } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import { type SchemaObject, isRef } from "oas/types";
 
 export function schemaTemplate(
@@ -16,7 +20,7 @@ export function schemaTemplate(
 	if (schema === true || isUndefined(schema)) return "unknown";
 	if (schema === false) return "never";
 
-	const contextName = `${upperFirst(parentName)}${propertyName}`;
+	const contextName = getInlineSchemaContextName(parentName, propertyName);
 	let baseType: string;
 	const record = schema as SchemaObjectAndJSONSchema;
 	const hasUnion =
@@ -46,7 +50,7 @@ export function schemaTemplate(
 	} else if ("const" in schema) {
 		baseType = renderConstType(schema.const);
 	} else if (schema.enum && schema.enum.length > 0) {
-		baseType = `${upperFirst(parentName)}${upperFirst(propertyName)}EnumValue`;
+		baseType = getInlineEnumTypeName(parentName, propertyName);
 	} else {
 		baseType = resolveBaseType(schema, propertyName, contextName);
 	}

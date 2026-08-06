@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+  title: Inline enum regression
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      tags: [users]
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+components:
+  schemas:
+    User:
+      type: object
+      required: [requiredInline, camelCase, snake_case, kebab-case, HTTPMode, similarName, similar-name, similar_u2d_Name]
+      properties:
+        requiredInline:
+          type: object
+          required: [mode]
+          properties:
+            mode:
+              type: string
+              enum: [active, disabled]
+        optionalInline:
+          type: object
+          required: [mode]
+          properties:
+            mode:
+              type: string
+              enum: [active, disabled]
+        optionalInlineOptional:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum: [active, disabled]
+        camelCase:
+          type: string
+          enum: [active, disabled]
+        snake_case:
+          type: string
+          enum: [active, disabled]
+        kebab-case:
+          type: string
+          enum: [active, disabled]
+        HTTPMode:
+          type: string
+          enum: [active, disabled]
+        similarName:
+          type: string
+          enum: [one, two]
+        similar-name:
+          type: string
+          enum: [three, four]
+        similar_u2d_Name:
+          type: string
+          enum: [five, six]

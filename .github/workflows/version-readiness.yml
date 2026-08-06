@@ -24,6 +24,10 @@ jobs:
       CI_DIAGNOSTIC_DIR: ${{ github.workspace }}/.ci-artifacts/ci-diagnostics-version-readiness
       CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      IS_VERSION_PACKAGES_PR: >-
+        ${{ github.event.pull_request.head.repo.full_name == github.repository &&
+            github.event.pull_request.head.ref == 'changeset-release/main' &&
+            github.event.pull_request.user.login == 'github-actions[bot]' }}
     steps:
       - name: Check out code
         id: checkout
@@ -37,8 +41,12 @@ jobs:
       - name: Setup
         id: setup
         uses: ./.github/setup
-      - name: Verify release candidate Changesets state
+      - name: Verify strict Version Packages Changesets state
+        if: env.IS_VERSION_PACKAGES_PR == 'true'
         run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id changeset-state -- pnpm verify:changeset-state
+      - name: Verify development Changesets state
+        if: env.IS_VERSION_PACKAGES_PR != 'true'
+        run: node scripts/ci-diagnostics/run-command.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --id changeset-state -- pnpm verify:changeset-state:development
       - name: Finalize CI diagnostics
         if: always()
         run: node scripts/ci-diagnostics/finalize-job.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --upload-dir "${{ steps.diagnostics-init.outputs.upload-dir }}" --plan version-readiness --job-status "${{ job.status }}" --step "checkout=${{ steps.checkout.outcome }}" --step "diagnostics-init=${{ steps.diagnostics-init.outcome }}" --step "setup=${{ steps.setup.outcome }}"

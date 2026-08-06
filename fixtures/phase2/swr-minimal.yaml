@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: SWR strict regression
+  version: 1.0.0
+paths:
+  /health/{region}:
+    get:
+      operationId: getHealth
+      tags: [health]
+      parameters:
+        - in: path
+          name: region
+          required: true
+          schema: { type: string }
+        - in: query
+          name: verbose
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Health
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: { type: boolean }

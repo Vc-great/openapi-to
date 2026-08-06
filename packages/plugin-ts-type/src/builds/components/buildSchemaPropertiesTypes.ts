@@ -21,7 +21,10 @@ export function buildSchemaPropertiesTypes(
 		Object.entries(properties).map(([propertyName, schema]) => {
 			const isRequired = requiredList.includes(propertyName);
 			const typeString = schemaTemplate(schema, propertyName, schemaModelName);
-			const propertyKey = propertyName + (isRequired ? "" : "?");
+			const propertyKey =
+				(/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(propertyName)
+					? propertyName
+					: JSON.stringify(propertyName)) + (isRequired ? "" : "?");
 
 			return {
 				name: propertyKey,

@@ -47,9 +47,9 @@ describe("collectEnumsFromDocument", () => {
 			const result = collectEnumsFromSchema(schema, "User");
 
 			expect(result).toHaveLength(2);
-			expect(result[0].name).toBe("userStatus");
+			expect(result[0].name).toBe("UserStatus");
 			expect(result[0].enumValue).toEqual(["ACTIVE", "INACTIVE"]);
-			expect(result[1].name).toBe("userType");
+			expect(result[1].name).toBe("UserType");
 			expect(result[1].enumValue).toEqual(["TYPE_A", "TYPE_B"]);
 		});
 
@@ -107,7 +107,7 @@ describe("collectEnumsFromDocument", () => {
 					enumValue: ["ACTIVE", "INACTIVE"],
 				}),
 				expect.objectContaining({
-					name: "statusNested",
+					name: "StatusNested",
 					enumValue: ["ONE", "TWO"],
 				}),
 			]);
