@@ -1,5 +1,21 @@
 # openapi-to
 
+## 4.0.0-rc.3
+
+### Patch Changes
+
+- fd923e2: Ship the openapi-to Setup and Generate Skills with the npm distribution and add an explicit offline Codex Skill installer.
+- Updated dependencies [fd923e2]
+  - @openapi-to/cli@4.0.0-rc.3
+  - @openapi-to/core@4.0.0-rc.3
+  - @openapi-to/mcp@4.0.0-rc.3
+  - @openapi-to/plugin-msw@4.0.0-rc.3
+  - @openapi-to/plugin-swr@4.0.0-rc.3
+  - @openapi-to/plugin-ts-request@4.0.0-rc.3
+  - @openapi-to/plugin-ts-type@4.0.0-rc.3
+  - @openapi-to/plugin-vue-query@4.0.0-rc.3
+  - @openapi-to/plugin-zod@4.0.0-rc.3
+
 ## 4.0.0-rc.2
 
 ### Patch Changes

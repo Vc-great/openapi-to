@@ -1,5 +1,12 @@
 # @openapi-to/cli
 
+## 4.0.0-rc.3
+
+### Patch Changes
+
+- fd923e2: Ship the openapi-to Setup and Generate Skills with the npm distribution and add an explicit offline Codex Skill installer.
+  - @openapi-to/core@4.0.0-rc.3
+
 ## 4.0.0-rc.2
 
 ### Patch Changes
