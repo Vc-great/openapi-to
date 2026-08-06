@@ -5,10 +5,11 @@ import {
 	resolveParameterSchema,
 	type Schema,
 } from "@openapi-to/core";
-import { isBoolean, isPlainObject, lowerFirst, upperFirst } from "lodash-es";
+import { isBoolean, isPlainObject, upperFirst } from "lodash-es";
 import type { MediaTypeObject, SchemaObject } from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { EnumItem } from "@/EnumRegistry.ts";
+import { getInlineSchemaContextName } from "@/utils/inlineEnumNaming.ts";
 
 type Reference = OpenAPIV3.ReferenceObject;
 
@@ -139,7 +140,7 @@ export function collectEnumsFromSchema(
 			if (typeof propSchema === "boolean" || isPlainObject(propSchema)) {
 				collectEnumsFromSchema(
 					propSchema as Schema,
-					`${lowerFirst(contextName)}${upperFirst(propName)}`,
+					getInlineSchemaContextName(contextName, propName),
 					enums,
 				);
 			}

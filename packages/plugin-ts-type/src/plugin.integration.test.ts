@@ -13,7 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEST_OUTPUT_DIR = path.resolve(__dirname, '../test-output')
 
 // 模拟简单的 OpenAPI 操作
-const mockOperation = {
+const _mockOperation = {
   accessor: {
     operationName: 'getUser',
     operation: {
@@ -26,7 +26,7 @@ const mockOperation = {
           type: 'object',
         },
       ],
-      getRequestBody: (mediaType?: string): MediaTypeObject | false | [string, MediaTypeObject, ...string[]] => {
+      getRequestBody: (_mediaType?: string): MediaTypeObject | false | [string, MediaTypeObject, ...string[]] => {
         return {
           schema: {
             type: 'object',
@@ -70,7 +70,7 @@ describe('Ts Type Plugin Integration', () => {
     const typesDir = path.join(TEST_OUTPUT_DIR, 'types')
     if (fs.existsSync(typesDir)) {
       const files = fs.readdirSync(typesDir)
-      files.forEach((file) => {
+      files.forEach((_file) => {
         // fs.unlinkSync(path.join(typesDir, file))
       })
     }
@@ -88,11 +88,11 @@ describe('Ts Type Plugin Integration', () => {
           dir: TEST_OUTPUT_DIR,
         },
       },
-      // @ts-ignore
+      // @ts-expect-error
       mockOpenAPI,
     )
 
-    pluginManager.run()
+    await pluginManager.run()
 
     // 检查文件是否生成
     const hasFiles = checkFolderHasFiles(TEST_OUTPUT_DIR)

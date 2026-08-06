@@ -30,6 +30,39 @@ describe("buildSchemaPropertiesTypes", () => {
 		);
 	});
 
+	it("quotes unsafe enum-bearing property names without changing optionality", () => {
+		const result = buildSchemaPropertiesTypes(
+			{
+				type: "object",
+				required: ["kebab-case"],
+				properties: {
+					"kebab-case": {
+						type: "string",
+						enum: ["active", "disabled"],
+					},
+					"optional-value": {
+						type: "string",
+						enum: ["active", "disabled"],
+					},
+				},
+			},
+			"User",
+		);
+
+		expect(result).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: '"kebab-case"',
+					type: "UserKebab_u2d_CaseEnumValue",
+				}),
+				expect.objectContaining({
+					name: '"optional-value"?',
+					type: "UserOptional_u2d_ValueEnumValue",
+				}),
+			]),
+		);
+	});
+
 	it("preserves true and false boolean properties with optionality", () => {
 		const result = buildSchemaPropertiesTypes(
 			{

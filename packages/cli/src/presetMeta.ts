@@ -11,7 +11,8 @@ servers:[
 ],
   plugins:[
     pluginSWR(),
-    pluginVueQuery(),
+    // SWR and Vue Query are alternative query plugins that emit the same paths.
+    // Import pluginVueQuery and replace pluginSWR() when using Vue Query.
     pluginZod(),
     pluginTSType(),
     pluginTSRequest({
@@ -31,8 +32,7 @@ defineConfig,
 pluginSWR,
 pluginTSRequest,
 pluginTSType, 
-pluginZod,
-pluginVueQuery 
+pluginZod
    }= require('openapi-to')
 
 module.exports = defineConfig(${config})`
@@ -42,8 +42,7 @@ defineConfig,
 pluginSWR, 
 pluginTSRequest,
 pluginTSType, 
-pluginZod,
-pluginVueQuery 
+pluginZod
    } from'openapi-to'
 
 export default  defineConfig(${config})`

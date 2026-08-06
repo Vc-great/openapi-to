@@ -4,8 +4,10 @@ import { OpenAPIV3 } from 'openapi-types'
 import type { OptionalKind, ParameterDeclarationStructure } from 'ts-morph'
 import type { PluginConfig } from '../types.ts'
 import { formatterQueryKeyTypeName } from '../utils/formatterQueryKey.ts'
+import { buildResponseTypes } from './buildResponseTypes.ts'
 
 export function buildMethodParameters(operation: OperationWrapper, pluginConfig?: PluginConfig): OptionalKind<ParameterDeclarationStructure>[] {
+  const { data: responseConfigType, error: responseErrorType } = buildResponseTypes(operation, pluginConfig)
   const queryParameters: OptionalKind<ParameterDeclarationStructure> = {
     name: 'params',
     hasQuestionToken: operation.accessor.isQueryParametersOptional,
@@ -22,7 +24,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
   const options: OptionalKind<ParameterDeclarationStructure> = {
     name: 'options?',
     type: `{
-    query?: Parameters<typeof useSWR<${operation.accessor.operationTSType?.responseSuccess}, ${formatterQueryKeyTypeName(operation)} | null, any>>[2]
+    query?: SWRConfiguration<${responseConfigType}, ${responseErrorType}, Fetcher<${responseConfigType}, ${formatterQueryKeyTypeName(operation)}>>
     shouldFetch?: boolean
     }`,
   }
@@ -30,7 +32,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
   const mutationOptions: OptionalKind<ParameterDeclarationStructure> = {
     name: 'options?',
     type: `{
-        mutation?: SWRMutationConfiguration<${operation.accessor.operationTSType?.responseSuccess},  ${operation.accessor.operationTSType?.responseError}, ${formatterQueryKeyTypeName(operation)} | null ${operation.accessor.operationTSType?.body ? `,${operation.accessor.operationTSType?.body}` : ',never'}>;
+        mutation?: SWRMutationConfiguration<${responseConfigType},  ${responseErrorType}, ${formatterQueryKeyTypeName(operation)} | null ${operation.accessor.operationTSType?.body ? `,${operation.accessor.operationTSType?.body}` : ',never'}>;
         shouldFetch?: boolean;
         }`,
   }
@@ -38,7 +40,7 @@ export function buildMethodParameters(operation: OperationWrapper, pluginConfig?
   const infiniteOptions: OptionalKind<ParameterDeclarationStructure> = {
     name: 'options?',
     type: `{
-      query?: Parameters<typeof useSWRInfinite<${operation.accessor.operationTSType?.responseSuccess},${operation.accessor.operationTSType?.responseError}, ${formatterQueryKeyTypeName(operation)} | null>>[2]
+      query?: Parameters<typeof useSWRInfinite<${responseConfigType},${responseErrorType}, ${formatterQueryKeyTypeName(operation)} | null>>[2]
       shouldFetch?: boolean
     }`,
   }

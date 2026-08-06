@@ -18,19 +18,28 @@ const configFileNames = [
 ];
 const stateIgnoreRule = `/${stateDirectoryName}/`;
 
-export async function init(): Promise<undefined> {
-	spinner.start("📦 Initializing openapi-to");
-	await createConfig();
-	await createGitignore();
-	spinner.succeed("📦 initialized openapi-to");
-	return;
+export interface InitResult {
+	configPath: string;
+	moduleType: "module" | "commonjs";
+	created: true;
 }
 
-async function createConfig() {
+export async function init(
+	options: { quiet?: boolean } = {},
+): Promise<InitResult> {
+	if (!options.quiet) spinner.start("📦 Initializing openapi-to");
+	const result = await createConfig(options.quiet === true);
+	await createGitignore(options.quiet === true);
+	if (!options.quiet) spinner.succeed("📦 initialized openapi-to");
+	return result;
+}
+
+async function createConfig(quiet: boolean): Promise<InitResult> {
 	const packageJson = await new PackageManager(
 		path.resolve(process.cwd(), "./package.json"),
 	).getPackageJSON();
-	const extension = packageJson?.type === "module" ? ".ts" : ".js";
+	const moduleType = packageJson?.type === "module" ? "module" : "commonjs";
+	const extension = moduleType === "module" ? ".ts" : ".js";
 	const configName = `openapi.config${extension}`;
 	const filePath = pathParser.resolve(process.cwd(), configName);
 	const existing = [];
@@ -47,22 +56,26 @@ async function createConfig() {
 			`OpenAPI configuration already exists: ${existing.sort().join(", ")}.`,
 		);
 	}
-	spinner.start(`📀 Writing \`${configName}\` ${c.dim(filePath)}`);
+	if (!quiet)
+		spinner.start(`📀 Writing \`${configName}\` ${c.dim(filePath)}`);
 	const presetMeta =
-		packageJson?.type === "module" ? modulePresetMeta : commonPresetMeta;
+		moduleType === "module" ? modulePresetMeta : commonPresetMeta;
 	await writeFile(filePath, presetMeta, { encoding: "utf8", flag: "wx" });
-	spinner.succeed(`📀 Wrote \`${configName}\` ${c.dim(filePath)}`);
+	if (!quiet)
+		spinner.succeed(`📀 Wrote \`${configName}\` ${c.dim(filePath)}`);
+	return { configPath: configName, moduleType, created: true };
 }
 
 /**
  * 创建gitignore文件
  */
-async function createGitignore() {
+async function createGitignore(quiet: boolean) {
 	const gitignorePath = pathParser.resolve(process.cwd(), ".gitignore");
 	const content = `# https://github.com/Vc-great/openapi-to\n${stateIgnoreRule}\n`;
-	spinner.start(
-		`📀 Writing \`${stateIgnoreRule}\` to the .gitignore ${c.dim(gitignorePath)}`,
-	);
+	if (!quiet)
+		spinner.start(
+			`📀 Writing \`${stateIgnoreRule}\` to the .gitignore ${c.dim(gitignorePath)}`,
+		);
 
 	let fileContent = "";
 	try {
@@ -82,7 +95,8 @@ async function createGitignore() {
 			"utf8",
 		);
 	}
-	spinner.succeed(
-		`📀 Wrote \`${stateIgnoreRule}\` to the .gitignore ${c.dim(gitignorePath)}`,
-	);
+	if (!quiet)
+		spinner.succeed(
+			`📀 Wrote \`${stateIgnoreRule}\` to the .gitignore ${c.dim(gitignorePath)}`,
+		);
 }

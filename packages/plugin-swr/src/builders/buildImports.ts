@@ -18,6 +18,12 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
     defaultImport: 'useSWR',
     moduleSpecifier: 'swr',
   }
+  const swrTypes: ImportDeclarationStructure = {
+    kind: StructureKind.ImportDeclaration,
+    namedImports: ['Fetcher', 'SWRConfiguration'],
+    isTypeOnly: true,
+    moduleSpecifier: 'swr',
+  }
 
   const useSWRInfinite: ImportDeclarationStructure = {
     kind: StructureKind.ImportDeclaration,
@@ -57,7 +63,7 @@ export function buildImports(filePath: string, operation: OperationWrapper, plug
   }
 
   return [
-    ...(isMutation ? [useSWRMutation, SWRMutationConfiguration] : isInfinite ? [useSWRInfinite] : [swr]),
+    ...(isMutation ? [useSWRMutation, SWRMutationConfiguration] : isInfinite ? [useSWRInfinite] : [swr, swrTypes]),
 
     ...[
       {
