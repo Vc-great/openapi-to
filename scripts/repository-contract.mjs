@@ -1330,8 +1330,8 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	}
 
 	const rootManifest = await readJson(join(root, "package.json"));
-	if (rootManifest.devDependencies?.["@changesets/cli"] !== "2.28.1") {
-		failures.push("@changesets/cli must remain exactly pinned to 2.28.1");
+	if (rootManifest.devDependencies?.["@changesets/cli"] !== "2.31.1") {
+		failures.push("@changesets/cli must remain exactly pinned to 2.31.1");
 	}
 	for (const [name, script] of Object.entries(rootManifest.scripts ?? {})) {
 		if (/\bchangeset\s+publish\b/.test(script)) {
@@ -1345,12 +1345,16 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 	);
 	const lockedChangesets =
 		lockfile?.importers?.["."]?.devDependencies?.["@changesets/cli"];
+	const lockedChangesetsVersion =
+		typeof lockedChangesets?.version === "string"
+			? lockedChangesets.version.split("(", 1)[0]
+			: undefined;
 	if (
-		lockedChangesets?.specifier !== "2.28.1" ||
-		lockedChangesets?.version !== "2.28.1"
+		lockedChangesets?.specifier !== "2.31.1" ||
+		lockedChangesetsVersion !== "2.31.1"
 	) {
 		failures.push(
-			"pnpm-lock.yaml must bind @changesets/cli specifier and version to 2.28.1",
+			"pnpm-lock.yaml must bind @changesets/cli specifier and version to 2.31.1",
 		);
 	}
 

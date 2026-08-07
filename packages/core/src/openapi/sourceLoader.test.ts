@@ -48,6 +48,20 @@ describe('OpenAPI source loader', () => {
     vi.restoreAllMocks()
   })
 
+  it('treats a null remote content type as absent', async () => {
+    const request = vi.spyOn(axios, 'get').mockResolvedValueOnce({
+      status: 200,
+      headers: { 'content-type': null },
+      data: '{"openapi":"3.1.0","info":{"title":"No type","version":"1"},"paths":{}}',
+    } as never)
+    const result = await loadSource('https://127.0.0.1/openapi', {
+      remote: { allowPrivateNetwork: true },
+    })
+    expect(result.contentType).toBeUndefined()
+    expect(request).toHaveBeenCalledTimes(1)
+    vi.restoreAllMocks()
+  })
+
   it('rejects oversized remote responses without exposing query parameters', async () => {
     vi.spyOn(axios, 'get').mockResolvedValueOnce({ status: 200, headers: { 'content-type': 'application/json' }, data: 'x'.repeat(20) } as never)
     const result = await loadOpenAPIDocument('http://127.0.0.1/openapi.json?token=secret', { remote: { allowPrivateNetwork: true, maxResponseBytes: 10 } })

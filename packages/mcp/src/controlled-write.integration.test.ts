@@ -186,7 +186,7 @@ describe.sequential('controlled-write stdio tools', () => {
     clients.push(connected.client)
     const tools = await connected.client.listTools()
     const prepare = tools.tools.find(({ name }) => name === 'openapi_prepare_generation')
-    expect((prepare?.inputSchema as { properties?: Record<string, unknown> }).properties).toHaveProperty('selection')
+    expect((prepare?.inputSchema as { properties?: Record<string, unknown> } | undefined)?.properties).toHaveProperty('selection')
     const prepared = await connected.client.callTool({
       name: 'openapi_prepare_generation',
       arguments: { targets: ['main'], selection: { type: 'add', operationKeys: ['getUser'] } },
@@ -860,7 +860,8 @@ describe.sequential('controlled-write stdio tools', () => {
       arguments: { planId: plan.planId, token: plan.token, approvedPlanHash: plan.planHash, force: true },
     })
     expect(forbiddenOverride.isError).toBe(true)
-    expect(JSON.stringify(forbiddenOverride.content)).toContain('unrecognized_keys')
+    expect(JSON.stringify(forbiddenOverride.content)).toContain('-32602')
+    expect(JSON.stringify(forbiddenOverride.content)).toContain('force')
 
     const tampered = await connected.client.callTool({
       name: 'openapi_apply_generation',

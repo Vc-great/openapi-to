@@ -60,7 +60,7 @@
 		"execa": "^8.0.1",
 		"lodash": "^4.17.21",
 		"ora": "^7.0.1",
-		"picocolors": "^1.0.0",
+		"picocolors": "^1.1.1",
 		"pretty-error": "^4.0.0",
 		"string-argv": "^0.3.2",
 		"tinyrainbow": "^1.2.0"

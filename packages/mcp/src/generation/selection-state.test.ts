@@ -521,7 +521,7 @@ describe('selective write-plan binding', () => {
         approvedPlanHash: prepared.stored.planHash,
       })
       expect(result.isError).toBe(true)
-      expect((result.structuredContent?.diagnostics as Array<{ code: string }>).map(({ code }) => code)).toContain(expectedCode)
+      expect((result.structuredContent?.diagnostics as Array<{ code: string }> | undefined)?.map(({ code }) => code)).toContain(expectedCode)
       await expect(access(path.join(context.root, '.openapi-to/generated/getUser.txt'))).rejects.toThrow()
       await expect(access(prepared.selection.selectionFile)).rejects.toThrow()
     } finally {

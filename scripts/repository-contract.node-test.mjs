@@ -1699,8 +1699,8 @@ test("publication contract rejects bypasses, tokens, Changesets publishing, and 
 	const packageRoot = await createPublicationContractFixture(t);
 	await mutateTrackedFixture(packageRoot, "package.json", (contents) =>
 		contents.replace(
-			'"@changesets/cli": "2.28.1"',
-			'"@changesets/cli": "^2.28.1"',
+			'"@changesets/cli": "2.31.1"',
+			'"@changesets/cli": "^2.31.1"',
 		),
 	);
 	assertFailure(
