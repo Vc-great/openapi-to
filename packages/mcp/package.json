@@ -73,7 +73,7 @@
 		"evaluate:tools": "node ./scripts/evaluate-tool-selection.mjs"
 	},
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "1.29.0",
+		"@modelcontextprotocol/sdk": "1.30.0",
 		"@openapi-to/core": "workspace:*",
 		"zod": "3.25.76"
 	},

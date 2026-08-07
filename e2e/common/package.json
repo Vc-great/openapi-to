@@ -17,8 +17,8 @@
 		"generate": "openapi g"
 	},
 	"dependencies": {
-		"axios": "1.7.4",
-		"fs-extra": "^11.2.0",
+		"axios": "1.19.0",
+		"fs-extra": "^11.4.0",
 		"openapi-to": "workspace:*",
 		"zod": "^4.4.3"
 	},

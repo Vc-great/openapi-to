@@ -316,10 +316,11 @@ async function fetchRemoteSource(initialURL: URL, options: RemoteSourceOptions, 
       if (Buffer.byteLength(text) > policy.maxResponseBytes) {
         return { source, uri: currentURL.toString(), diagnostics: [sourceDiagnostic('REMOTE_SOURCE_TOO_LARGE', `Remote source exceeds the ${policy.maxResponseBytes} byte limit.`, source)] }
       }
+      const contentType = response.headers['content-type']
       return {
         source,
         uri: currentURL.toString(),
-        contentType: response.headers['content-type'],
+        contentType: typeof contentType === 'string' ? contentType : undefined,
         text,
         diagnostics: [],
         snapshot: contentSnapshot(source, currentURL.toString(), text),
