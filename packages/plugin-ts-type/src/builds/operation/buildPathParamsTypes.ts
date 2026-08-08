@@ -2,10 +2,14 @@ import { createTypeAlias } from '@/templates/operationResponseTemplate.ts'
 import { getOperationPathParamsName } from '@/templates/operationTypeNameTemplate.ts'
 
 import { generateParameterType } from '@/utils/generatePropertyType.ts'
+import type { InlineEnumSymbolResolver } from '@/utils/inlineEnumNaming.ts'
 import type { OperationWrapper, ParameterObjectWithRef } from '@openapi-to/core'
-import { camelCase, isEmpty, upperFirst } from 'lodash-es'
+import { isEmpty } from 'lodash-es'
 
-export function buildPathParamsTypes(operation: OperationWrapper) {
+export function buildPathParamsTypes(
+  operation: OperationWrapper,
+  inlineEnumSymbols?: InlineEnumSymbolResolver,
+) {
   const pathParameterName = getOperationPathParamsName(operation.accessor.operationName)
 
   const pathParameters: ParameterObjectWithRef[] = operation.accessor.pathParameters
@@ -15,7 +19,14 @@ export function buildPathParamsTypes(operation: OperationWrapper) {
   }
 
   // 构建路径参数的属性类型
-  const pathTypes = generateParameterType(pathParameters, operation.accessor.operationName)
+  const pathTypes = inlineEnumSymbols
+    ? generateParameterType(
+        pathParameters,
+        operation.accessor.operationName,
+        inlineEnumSymbols,
+        ['paths', operation.path, operation.method],
+      )
+    : generateParameterType(pathParameters, operation.accessor.operationName)
 
   return createTypeAlias(pathParameterName, pathTypes, [])
 }

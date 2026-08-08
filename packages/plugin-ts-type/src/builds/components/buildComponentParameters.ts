@@ -2,6 +2,10 @@ import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts"
 import { createTypeAlias } from "@/templates/operationResponseTemplate.ts";
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 import { getUpperFirstRefAlias } from "@/utils/getUpperFirstRefAlias.ts";
+import type {
+	InlineEnumSourcePath,
+	InlineEnumSymbolResolver,
+} from "@/utils/inlineEnumNaming.ts";
 
 import type { ComponentsParameterValue } from "@openapi-to/core";
 import { resolveParameterSchema } from "@openapi-to/core";
@@ -10,6 +14,8 @@ import { upperFirst } from "lodash-es";
 export function buildComponentParameters(
 	parameter: ComponentsParameterValue,
 	parameterName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ) {
 	const parameterTypeName = `Parameter${upperFirst(parameterName)}Model`;
 
@@ -22,7 +28,15 @@ export function buildComponentParameters(
 		const schema = resolveParameterSchema(parameter) ?? {
 			type: "string" as const,
 		};
-		const typeString = schemaTemplate(schema, parameterTypeName);
+		const typeString = inlineEnumSymbols
+			? schemaTemplate(
+					schema,
+					parameterTypeName,
+					undefined,
+					inlineEnumSymbols,
+					inlineEnumSourcePath,
+				)
+			: schemaTemplate(schema, parameterTypeName);
 
 		return createTypeAlias(
 			parameterTypeName,

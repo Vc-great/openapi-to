@@ -3,6 +3,10 @@ import { getResponseErrorTypeName } from "@/templates/operationTypeNameTemplate.
 
 import { schemaTemplate } from "@/templates/schemaTemplate.ts";
 import { canRenderAsPlainInterface } from "@/templates/canRenderAsPlainInterface.ts";
+import type {
+	InlineEnumSourcePath,
+	InlineEnumSymbolResolver,
+} from "@/utils/inlineEnumNaming.ts";
 import { upperFirst } from "lodash-es";
 import {
 	type JSDocStructure,
@@ -16,6 +20,8 @@ import type { JsonResponseObject } from "../types.ts";
 export function operationResponseTemplate(
 	{ jsonSchema }: JsonResponseObject,
 	declarationName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): StatementStructures {
 	const schema = jsonSchema?.schema;
 
@@ -52,12 +58,20 @@ export function operationResponseTemplate(
 				buildSchemaPropertiesTypes(
 					schema as Parameters<typeof buildSchemaPropertiesTypes>[0],
 					declarationName,
+					inlineEnumSymbols,
+					inlineEnumSourcePath,
 				) ?? [],
 		};
 	}
 
 	const baseName = `${declarationName}${upperFirst(jsonSchema?.label || "")}`;
-	const aliasedType = schemaTemplate(schema, baseName);
+	const aliasedType = schemaTemplate(
+		schema,
+		baseName,
+		undefined,
+		inlineEnumSymbols,
+		inlineEnumSourcePath,
+	);
 	return createTypeAlias(declarationName, aliasedType, docs);
 }
 

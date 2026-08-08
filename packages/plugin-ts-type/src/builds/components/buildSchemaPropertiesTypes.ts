@@ -4,6 +4,10 @@ import { isArray, isBoolean, isString } from "lodash-es";
 
 import { jsDocTemplateFromSchema } from "@/templates/jsDocTemplateFromSchema.ts";
 import type { SchemaObjectAndJSONSchema } from "@/types.ts";
+import type {
+	InlineEnumSourcePath,
+	InlineEnumSymbolResolver,
+} from "@/utils/inlineEnumNaming.ts";
 import type { SchemaObject } from "oas/types";
 import type { OptionalKind, PropertySignatureStructure } from "ts-morph";
 
@@ -13,6 +17,8 @@ type OptionalKindOfPropertySignatureStructure =
 export function buildSchemaPropertiesTypes(
 	baseSchema: SchemaObject,
 	schemaModelName: string,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): OptionalKindOfPropertySignatureStructure[] | undefined {
 	const properties = baseSchema.properties ?? {};
 	const requiredList = resolveRequiredList(baseSchema.required);
@@ -20,7 +26,15 @@ export function buildSchemaPropertiesTypes(
 	const typeStatements: OptionalKindOfPropertySignatureStructure[] =
 		Object.entries(properties).map(([propertyName, schema]) => {
 			const isRequired = requiredList.includes(propertyName);
-			const typeString = schemaTemplate(schema, propertyName, schemaModelName);
+			const typeString = schemaTemplate(
+				schema,
+				propertyName,
+				schemaModelName,
+				inlineEnumSymbols,
+				inlineEnumSourcePath
+					? [...inlineEnumSourcePath, "properties", propertyName]
+					: undefined,
+			);
 			const propertyKey =
 				(/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(propertyName)
 					? propertyName
@@ -46,7 +60,11 @@ export function buildSchemaPropertiesTypes(
 		baseSchema.additionalProperties !== false
 	) {
 		const additionalPropType = widenIndexSignatureForProperties(
-			resolveAdditionalPropertiesType(baseSchema),
+			resolveAdditionalPropertiesType(
+				baseSchema,
+				inlineEnumSymbols,
+				inlineEnumSourcePath,
+			),
 			typeStatements,
 		);
 		typeStatements.push({
@@ -68,6 +86,8 @@ function resolveRequiredList(required: unknown): string[] {
 
 function resolveAdditionalPropertiesType(
 	schema: SchemaObjectAndJSONSchema,
+	inlineEnumSymbols?: InlineEnumSymbolResolver,
+	inlineEnumSourcePath?: InlineEnumSourcePath,
 ): string {
 	if (
 		!("additionalProperties" in schema) ||
@@ -81,7 +101,15 @@ function resolveAdditionalPropertiesType(
 		return "unknown";
 	}
 
-	return schemaTemplate(additional, "");
+	return schemaTemplate(
+		additional,
+		"",
+		undefined,
+		inlineEnumSymbols,
+		inlineEnumSourcePath
+			? [...inlineEnumSourcePath, "additionalProperties"]
+			: undefined,
+	);
 }
 
 function widenIndexSignatureForProperties(

@@ -14,6 +14,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+  /collisions:
+    get:
+      operationId: getCollisions
+      tags: [collisions]
+      responses:
+        "200":
+          description: Collision model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollisionModel"
 components:
   schemas:
     User:
@@ -61,3 +72,102 @@ components:
         similar_u2d_Name:
           type: string
           enum: [five, six]
+    CollisionModel:
+      type: object
+      required:
+        - similarName
+        - SimilarName
+        - similar-name
+        - similar-Name
+        - similar_name
+        - similar_Name
+        - similar_u2d_Name
+        - similar_u2d_name
+        - foo-bar
+        - foo-Bar
+      properties:
+        similarName:
+          type: string
+          enum: [camelLower]
+        SimilarName:
+          type: string
+          enum: [camelUpper]
+        similar-name:
+          type: string
+          enum: [kebabLower]
+        similar-Name:
+          type: string
+          enum: [kebabUpper]
+        similar_name:
+          type: string
+          enum: [snakeLower]
+        similar_Name:
+          type: string
+          enum: [snakeUpper]
+        similar_u2d_Name:
+          type: string
+          enum: [escapeUpper]
+        similar_u2d_name:
+          type: string
+          enum: [escapeLower]
+        sharedOne:
+          type: string
+          enum: [shared]
+        sharedTwo:
+          type: string
+          enum: [shared]
+        arrayModes:
+          type: array
+          items:
+            type: string
+            enum: [arrayMode]
+        oneOfMode:
+          oneOf:
+            - type: string
+              enum: [oneOfFirst]
+            - type: string
+              enum: [oneOfSecond]
+        anyOfMode:
+          anyOf:
+            - type: string
+              enum: [anyOfFirst]
+            - type: string
+              enum: [anyOfSecond]
+        allOfMode:
+          allOf:
+            - type: string
+              enum: [allOfFirst]
+            - type: string
+              enum: [allOfSecond]
+        foo-bar:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum: [lowerParent]
+        foo-Bar:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum: [upperParent]
+    AnchoredCollisionModel:
+      type: object
+      properties:
+        anchorName: &anchored-mode
+          type: string
+          enum: [anchoredMode]
+        AnchorName: *anchored-mode
+    RequestBodiesFoo:
+      type: object
+      properties:
+        model:
+          type: string
+          enum: [schemaModel]
+  requestBodies:
+    foo:
+      content:
+        application/json:
+          schema:
+            type: string
+            enum: [requestBodyModel]

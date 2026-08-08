@@ -28,6 +28,7 @@ import { EnumRegistry } from "@/EnumRegistry.ts";
 import { getOperationTSTypeName } from "@/templates/operationTypeNameTemplate.ts";
 import { getDataReturnType } from "@/utils/getDataReturnType.ts";
 import { buildRefImports } from "@/utils/buildRefImports.ts";
+import { InlineEnumSymbolAllocator } from "@/utils/inlineEnumNaming.ts";
 import { buildOperationTypes } from "./builds/buildOperationTypes.ts";
 import type { PluginConfig } from "./types.ts";
 
@@ -36,6 +37,9 @@ interface PluginState {
 	componentFolderPath: string;
 	operationFileNameOfTag: Set<string>;
 	enumRegistry: EnumRegistry;
+	inlineEnumSymbols: InlineEnumSymbolAllocator<
+		ReturnType<typeof collectEnumFormOperation>[number]
+	>;
 }
 
 const pluginStateKey = Symbol("@openapi-to/plugin-ts-type/state");
@@ -51,6 +55,44 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 		name: pluginEnum.TsType,
 		hooks: {
 			buildStart: async (ctx) => {
+				const components = ctx.openapiHelper.oas.getDefinition().components;
+				const formatterName = (name: string) =>
+					ctx.openapiHelper.formatterName(name);
+				const inlineEnumSources = [
+					...ctx.openapiHelper
+						.getAllOperations()
+						.flatMap((operation) =>
+							collectEnumFormOperation({ ...operation, tagName: "" }),
+						),
+					...Object.entries(components?.schemas ?? {}).flatMap(
+						([schemaName, schema]) =>
+							collectEnumsFromComponentSchema(
+								schema,
+								formatterName(schemaName),
+								schemaName,
+							),
+					),
+					...collectEnumsFromComponentParameters(
+						components?.parameters ?? {},
+						formatterName,
+					),
+					...Object.entries(components?.requestBodies ?? {}).flatMap(
+						([requestBodyName, requestBody]) =>
+							collectEnumsFromComponentRequestBody(
+								requestBody,
+								`RequestBodies${upperFirst(formatterName(requestBodyName))}Model`,
+								requestBodyName,
+							),
+					),
+					...Object.entries(components?.responses ?? {}).flatMap(
+						([responseName, response]) =>
+							collectEnumsFromComponentResponse(
+								response,
+								`Response${upperFirst(formatterName(responseName))}`,
+								responseName,
+							),
+					),
+				];
 				ctx.store.set(pluginStateKey, {
 					project: new Project(),
 					componentFolderPath: path.join(
@@ -59,6 +101,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					),
 					operationFileNameOfTag: new Set(),
 					enumRegistry: new EnumRegistry(),
+					inlineEnumSymbols: new InlineEnumSymbolAllocator(inlineEnumSources),
 				});
 			},
 			tagStart: async (_tagData, ctx) => {
@@ -72,6 +115,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					componentFolderPath,
 					operationFileNameOfTag,
 					enumRegistry,
+					inlineEnumSymbols,
 				} = getState(ctx.store);
 				const fileName = `${kebabCase(operation.accessor.operationName)}.types.ts`;
 				const filePath = path.join(
@@ -83,10 +127,16 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				operationFileNameOfTag.add(fileName);
 
 				const operationEnums = collectEnumFormOperation(operation);
+				const allocatedOperationEnums = operationEnums.map((item) =>
+					inlineEnumSymbols.getEnumItem(item),
+				);
 
-				enumRegistry.adds(operationEnums);
+				enumRegistry.adds(allocatedOperationEnums);
 
-				const operationStatements = buildOperationTypes(operation);
+				const operationStatements = buildOperationTypes(
+					operation,
+					inlineEnumSymbols,
+				);
 
 				//保存类型名
 				operation.accessor.setOperationTSType({
@@ -108,7 +158,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				);
 				operationSourceFile.addStatements(imports);
 
-				const enumNames = operationEnums.map((item) =>
+				const enumNames = allocatedOperationEnums.map((item) =>
 					enumRegistry.getEnumValueName(item.enumValue, item.name),
 				);
 				operationSourceFile.addStatements(
@@ -127,12 +177,34 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 			},
 			tagEnd: async () => {},
 			componentsSchemas: async (schemas, ctx) => {
-				const { project, componentFolderPath, enumRegistry } = getState(
-					ctx.store,
+				const {
+					project,
+					componentFolderPath,
+					enumRegistry,
+					inlineEnumSymbols,
+				} = getState(ctx.store);
+				const schemaEntries = Object.entries(schemas).map(
+					([schemaName, schema]) => {
+						const formatterSchemaName =
+							ctx.openapiHelper.formatterName(schemaName);
+						return {
+							schemaName,
+							schema,
+							formatterSchemaName,
+							enums: collectEnumsFromComponentSchema(
+								schema,
+								formatterSchemaName,
+								schemaName,
+							),
+						};
+					},
 				);
-				for (const [schemaName, schema] of Object.entries(schemas)) {
-					const formatterSchemaName =
-						ctx.openapiHelper.formatterName(schemaName);
+				for (const {
+					schemaName,
+					schema,
+					formatterSchemaName,
+					enums,
+				} of schemaEntries) {
 
 					const fileName = `${kebabCase(formatterSchemaName)}.model.ts`;
 
@@ -143,14 +215,13 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						fileName,
 					);
 
-					const enums = collectEnumsFromComponentSchema(
-						schema,
-						formatterSchemaName,
+					const allocatedEnums = enums.map((item) =>
+						inlineEnumSymbols.getEnumItem(item),
 					);
 
-					enumRegistry.adds(enums);
+					enumRegistry.adds(allocatedEnums);
 
-					const enumNames = enums.map((item) =>
+					const enumNames = allocatedEnums.map((item) =>
 						enumRegistry.getEnumValueName(item.enumValue, item.name),
 					);
 
@@ -160,6 +231,8 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const statements: SchemaDeclarationStructure[] = buildSchemas(
 						formatterSchemaName,
 						schema,
+						inlineEnumSymbols,
+						["components", "schemas", schemaName],
 					);
 					const refs = collectRefsFromSchema(schema);
 
@@ -184,9 +257,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsParameters(parameters, ctx) {
-				const { project, componentFolderPath, enumRegistry } = getState(
-					ctx.store,
-				);
+				const {
+					project,
+					componentFolderPath,
+					enumRegistry,
+					inlineEnumSymbols,
+				} = getState(ctx.store);
 
 				forEach(parameters, (parameter, parameterName) => {
 					const formatterParameterName =
@@ -202,13 +278,21 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const parameterSourceFile = project.createSourceFile(filePath, "", {
 						overwrite: true,
 					});
+					const enums = collectEnumsFromComponentParameters({
+						[parameterName]: parameter,
+					}, ctx.openapiHelper.formatterName.bind(ctx.openapiHelper));
+					const allocatedEnums = enums.map((item) =>
+						inlineEnumSymbols.getEnumItem(item),
+					);
 					const statements: SchemaDeclarationStructure | undefined =
-						buildComponentParameters(parameter, formatterParameterName);
+						buildComponentParameters(
+							parameter,
+							formatterParameterName,
+							inlineEnumSymbols,
+							["components", "parameters", parameterName, "schema"],
+						);
 					if (statements) {
-						const enums = collectEnumsFromComponentParameters({
-							[parameterName]: parameter,
-						});
-						enumRegistry.adds(enums);
+						enumRegistry.adds(allocatedEnums);
 						const imports = buildRefImports(
 							collectRefsFromComponentParameters({
 								[parameterName]: parameter,
@@ -221,7 +305,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						parameterSourceFile.addStatements(imports);
 						parameterSourceFile.addStatements(
 							buildTypeImports(
-								enums.map((item) =>
+								allocatedEnums.map((item) =>
 									enumRegistry.getEnumValueName(item.enumValue, item.name),
 								),
 								"../enum.model.ts",
@@ -238,9 +322,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				});
 			},
 			componentsRequestBodies(requestBodies, ctx) {
-				const { project, componentFolderPath, enumRegistry } = getState(
-					ctx.store,
-				);
+				const {
+					project,
+					componentFolderPath,
+					enumRegistry,
+					inlineEnumSymbols,
+				} = getState(ctx.store);
 				// components.requestBodies
 				for (const [requestBodyName, requestObject] of Object.entries(
 					requestBodies,
@@ -250,8 +337,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const enums = collectEnumsFromComponentRequestBody(
 						requestObject,
 						`RequestBodies${upperFirst(formatterName)}Model`,
+						requestBodyName,
 					);
-					enumRegistry.adds(enums);
+					const allocatedEnums = enums.map((item) =>
+						inlineEnumSymbols.getEnumItem(item),
+					);
+					enumRegistry.adds(allocatedEnums);
 
 					const refs = collectRefsFromComponentRequestBody(requestObject);
 
@@ -267,7 +358,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						overwrite: true,
 					});
 					const statements: SchemaDeclarationStructure | undefined =
-						buildComponentsRequestBody(formatterName, requestObject);
+						buildComponentsRequestBody(
+							formatterName,
+							requestObject,
+							inlineEnumSymbols,
+							["components", "requestBodies", requestBodyName],
+						);
 					if (statements) {
 						const imports = buildRefImports(
 							refs,
@@ -279,7 +375,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						requestBodySourceFile.addStatements(imports);
 						requestBodySourceFile.addStatements(
 							buildTypeImports(
-								enums.map((item) =>
+								allocatedEnums.map((item) =>
 									enumRegistry.getEnumValueName(item.enumValue, item.name),
 								),
 								"../enum.model.ts",
@@ -295,9 +391,12 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 				}
 			},
 			componentsResponses(responses, ctx) {
-				const { project, componentFolderPath, enumRegistry } = getState(
-					ctx.store,
-				);
+				const {
+					project,
+					componentFolderPath,
+					enumRegistry,
+					inlineEnumSymbols,
+				} = getState(ctx.store);
 				// components.responses
 				forEach(responses, (response, responseName) => {
 					const formatterResponse =
@@ -307,12 +406,18 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 					const enums = collectEnumsFromComponentResponse(
 						response,
 						responseTypeName,
+						responseName,
 					);
-					enumRegistry.adds(enums);
+					const allocatedEnums = enums.map((item) =>
+						inlineEnumSymbols.getEnumItem(item),
+					);
+					enumRegistry.adds(allocatedEnums);
 					//todo responses
 					const statements = buildComponentsResponse(
 						response,
 						responseTypeName,
+						inlineEnumSymbols,
+						["components", "responses", responseName],
 					);
 
 					const refs = collectRefsFromComponentResponse(response);
@@ -340,7 +445,7 @@ export const definePlugin = createPlugin((pluginConfig?: PluginConfig) => {
 						responseSourceFile.addStatements(imports);
 						responseSourceFile.addStatements(
 							buildTypeImports(
-								enums.map((item) =>
+								allocatedEnums.map((item) =>
 									enumRegistry.getEnumValueName(item.enumValue, item.name),
 								),
 								"../enum.model.ts",

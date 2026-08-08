@@ -9,19 +9,36 @@ import { isBoolean, isPlainObject, upperFirst } from "lodash-es";
 import type { MediaTypeObject, SchemaObject } from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { EnumItem } from "@/EnumRegistry.ts";
-import { getInlineSchemaContextName } from "@/utils/inlineEnumNaming.ts";
+import {
+	getInlineSchemaContextName,
+	type InlineEnumSource,
+	type InlineEnumSourcePath,
+} from "@/utils/inlineEnumNaming.ts";
 
 type Reference = OpenAPIV3.ReferenceObject;
+export type CollectedEnumItem = Omit<EnumItem, "sourcePath"> & InlineEnumSource;
 
 export const collectEnumsFromPathParameters = (
 	parameters: ParameterObjectWithRef[],
 	operationName: string,
-): EnumItem[] => {
+	operationSourcePath: InlineEnumSourcePath = ["operations", operationName],
+): CollectedEnumItem[] => {
 	return parameters.flatMap((parameter) => {
 		const schema = resolveParameterSchema(parameter) || {};
 		if (typeof schema !== "object") return [];
-		const name = operationName + upperFirst(parameter.name);
-		return collectEnumsFromSchema(schema, name);
+		const name = `${operationName}${upperFirst(parameter.name)}`;
+		return collectEnumsFromSchema(
+			schema,
+			name,
+			[],
+			[
+				...operationSourcePath,
+				"parameters",
+				parameter.in,
+				parameter.name,
+				"schema",
+			],
+		);
 	});
 };
 
@@ -31,15 +48,33 @@ export const collectEnumsFromPathRequestBodies = (
 		| false
 		| [string, MediaTypeObject, ...string[]],
 	contextName: string,
-): EnumItem[] => {
+	operationSourcePath: InlineEnumSourcePath = ["operations", contextName],
+): CollectedEnumItem[] => {
 	if (requestBodies === false) return [];
 	if (Array.isArray(requestBodies)) {
-		const [_contentType, media] = requestBodies;
+		const [contentType, media] = requestBodies;
 
-		if (media?.schema) return collectEnumsFromSchema(media.schema, contextName);
+		if (media?.schema)
+			return collectEnumsFromSchema(
+				media.schema,
+				contextName,
+				[],
+				[
+					...operationSourcePath,
+					"requestBody",
+					"content",
+					contentType,
+					"schema",
+				],
+			);
 	} else if (requestBodies) {
 		if (requestBodies.schema)
-			return collectEnumsFromSchema(requestBodies.schema, contextName);
+			return collectEnumsFromSchema(
+				requestBodies.schema,
+				contextName,
+				[],
+				[...operationSourcePath, "requestBody", "schema"],
+			);
 	}
 	return [];
 };
@@ -55,29 +90,45 @@ type Responses =
 export const collectEnumsFromPathResponses = (
 	responses: Responses,
 	contextName: string,
-): EnumItem[] => {
+	responseSourcePath: InlineEnumSourcePath = ["operations", contextName, "responses"],
+	contentTypes: readonly string[] = [],
+): CollectedEnumItem[] => {
 	if (!responses) {
 		return [];
 	}
 
-	return responses.flatMap((response) =>
-		collectEnumsFromSchema(
+	return responses.flatMap((response, index) => {
+		const name = `${contextName}${upperFirst(response.label)}`;
+		return collectEnumsFromSchema(
 			response.schema,
-			`${contextName}${upperFirst(response.label)}`,
-		),
-	);
+			name,
+			[],
+			[
+				...responseSourcePath,
+				"content",
+				contentTypes[index] ?? response.label,
+				"schema",
+			],
+		);
+	});
 };
 
 export const collectEnumsFromComponentParameters = (
 	parameters: ComponentsParameters,
-): EnumItem[] => {
-	const enums = [];
+	formatName: (name: string) => string = (name) => name,
+): CollectedEnumItem[] => {
+	const enums: CollectedEnumItem[] = [];
 	for (const [name, parameter] of Object.entries(parameters)) {
 		if ("$ref" in parameter) continue;
 		const schema = resolveParameterSchema(parameter);
 		if (schema !== undefined)
 			enums.push(
-				...collectEnumsFromSchema(schema, `Parameter${upperFirst(name)}Model`),
+				...collectEnumsFromSchema(
+					schema,
+					`Parameter${upperFirst(formatName(name))}Model`,
+					[],
+					["components", "parameters", name, "schema"],
+				),
 			);
 	}
 	return enums;
@@ -86,13 +137,23 @@ export const collectEnumsFromComponentParameters = (
 export const collectEnumsFromComponentRequestBody = (
 	rb: OpenAPIV3.RequestBodyObject | OpenAPIV3_1.RequestBodyObject | Reference,
 	name: string,
-): EnumItem[] => {
+	sourceName: string = name,
+): CollectedEnumItem[] => {
 	if ("$ref" in rb) return [];
-	const enums = [];
+	const enums: CollectedEnumItem[] = [];
 	for (const contentType in rb.content) {
 		const media = rb.content[contentType];
 		if (media?.schema)
-			enums.push(...collectEnumsFromSchema(media.schema, name));
+			enums.push(
+				...collectEnumsFromSchema(media.schema, name, [], [
+					"components",
+					"requestBodies",
+					sourceName,
+					"content",
+					contentType,
+					"schema",
+				]),
+			);
 	}
 	return enums;
 };
@@ -100,25 +161,42 @@ export const collectEnumsFromComponentRequestBody = (
 export const collectEnumsFromComponentResponse = (
 	response: OpenAPIV3.ResponseObject | OpenAPIV3_1.ResponseObject | Reference,
 	contextName: string,
-): EnumItem[] => {
+	sourceName: string = contextName,
+): CollectedEnumItem[] => {
 	if ("$ref" in response) return [];
-	return Object.values(response.content ?? {}).flatMap((media) =>
-		media?.schema ? collectEnumsFromSchema(media.schema, contextName) : [],
+	return Object.entries(response.content ?? {}).flatMap(
+		([contentType, media]) =>
+			media?.schema
+				? collectEnumsFromSchema(media.schema, contextName, [], [
+						"components",
+						"responses",
+						sourceName,
+						"content",
+						contentType,
+						"schema",
+					])
+				: [],
 	);
 };
 
 export const collectEnumsFromComponentSchema = (
 	schema: ComponentsSchema,
 	name: string,
-): EnumItem[] => {
-	return collectEnumsFromSchema(schema, name);
+	sourceName: string = name,
+): CollectedEnumItem[] => {
+	return collectEnumsFromSchema(schema, name, [], [
+		"components",
+		"schemas",
+		sourceName,
+	]);
 };
 
 export function collectEnumsFromSchema(
 	schema: Schema,
 	contextName: string,
-	enums: EnumItem[] = [],
-): EnumItem[] {
+	enums: CollectedEnumItem[] = [],
+	sourcePath: InlineEnumSourcePath = [contextName],
+): CollectedEnumItem[] {
 	if (!schema || typeof schema !== "object") return enums;
 	const record = schema as Record<string, unknown>;
 
@@ -128,6 +206,7 @@ export function collectEnumsFromSchema(
 		enums.push({
 			name: enumName,
 			enumValue: record.enum,
+			sourcePath,
 			description:
 				typeof record.description === "string" ? record.description : undefined,
 		});
@@ -142,6 +221,7 @@ export function collectEnumsFromSchema(
 					propSchema as Schema,
 					getInlineSchemaContextName(contextName, propName),
 					enums,
+					[...sourcePath, "properties", propName],
 				);
 			}
 		}
@@ -156,6 +236,7 @@ export function collectEnumsFromSchema(
 						item as Schema,
 						`${contextName}_${key}_${idx}`,
 						enums,
+						[...sourcePath, key, idx],
 					);
 				}
 			});
@@ -165,16 +246,35 @@ export function collectEnumsFromSchema(
 	if (record.items && typeof record.items === "object") {
 		const items = record.items;
 		if (isPlainObject(items)) {
-			collectEnumsFromSchema(items as Schema, contextName, enums);
+			collectEnumsFromSchema(items as Schema, contextName, enums, [
+				...sourcePath,
+				"items",
+			]);
 		}
 
 		if (Array.isArray(items)) {
-			items.forEach((item) => {
+			items.forEach((item, index) => {
 				if (!isBoolean(item)) {
-					collectEnumsFromSchema(item as Schema, contextName, enums);
+					collectEnumsFromSchema(item as Schema, contextName, enums, [
+						...sourcePath,
+						"items",
+						index,
+					]);
 				}
 			});
 		}
+	}
+
+	if (
+		record.additionalProperties &&
+		typeof record.additionalProperties === "object"
+	) {
+		collectEnumsFromSchema(
+			record.additionalProperties as Schema,
+			contextName,
+			enums,
+			[...sourcePath, "additionalProperties"],
+		);
 	}
 	return enums;
 }
