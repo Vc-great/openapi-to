@@ -1,5 +1,11 @@
 # @openapi-to/core
 
+## 4.0.0-rc.4
+
+### Major Changes
+
+- d71e14f: Raise the minimum supported Node.js runtime from Node 20 to Node 22.
+
 ## 4.0.0-rc.3
 
 ## 4.0.0-rc.2

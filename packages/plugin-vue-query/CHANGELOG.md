@@ -1,5 +1,16 @@
 # @openapi-to/plugin-vue-query
 
+## 4.0.0-rc.4
+
+### Major Changes
+
+- d71e14f: Raise the minimum supported Node.js runtime from Node 20 to Node 22.
+
+### Patch Changes
+
+- Updated dependencies [d71e14f]
+  - @openapi-to/core@4.0.0-rc.4
+
 ## 4.0.0-rc.3
 
 ### Patch Changes
