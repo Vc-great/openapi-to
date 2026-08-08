@@ -423,8 +423,8 @@ describe("collectRefsFromDocument", () => {
 			);
 
 			expect(result).toContain("#/components/schemas/Success");
-			expect(result).toContain("#/components/schemas/RefFromObject");
-			expect(result).toHaveLength(2);
+			expect(result).not.toContain("#/components/schemas/RefFromObject");
+			expect(result).toHaveLength(1);
 		});
 
 		it("does not collect response header refs as body imports", () => {

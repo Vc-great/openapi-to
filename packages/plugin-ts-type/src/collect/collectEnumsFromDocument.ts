@@ -1,12 +1,14 @@
 import {
 	type ComponentsParameters,
+	type ComponentsResponsesValue,
 	type ComponentsSchema,
+	describeResponse,
 	type ParameterObjectWithRef,
 	resolveParameterSchema,
 	type Schema,
 } from "@openapi-to/core";
 import { isBoolean, isPlainObject, upperFirst } from "lodash-es";
-import type { MediaTypeObject, SchemaObject } from "oas/types";
+import type { MediaTypeObject } from "oas/types";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import type { EnumItem } from "@/EnumRegistry.ts";
 import {
@@ -83,7 +85,7 @@ type Responses =
 	| {
 			description?: string;
 			label: string;
-			schema: SchemaObject;
+			schema: Schema;
 			type: string | string[];
 	  }[]
 	| null;
@@ -159,24 +161,21 @@ export const collectEnumsFromComponentRequestBody = (
 };
 
 export const collectEnumsFromComponentResponse = (
-	response: OpenAPIV3.ResponseObject | OpenAPIV3_1.ResponseObject | Reference,
+	response: ComponentsResponsesValue,
 	contextName: string,
 	sourceName: string = contextName,
 ): CollectedEnumItem[] => {
 	if ("$ref" in response) return [];
-	return Object.entries(response.content ?? {}).flatMap(
-		([contentType, media]) =>
-			media?.schema
-				? collectEnumsFromSchema(media.schema, contextName, [], [
-						"components",
-						"responses",
-						sourceName,
-						"content",
-						contentType,
-						"schema",
-					])
-				: [],
-	);
+	const descriptor = describeResponse(response);
+	if (descriptor.schema === undefined || !descriptor.contentType) return [];
+	return collectEnumsFromSchema(descriptor.schema, contextName, [], [
+		"components",
+		"responses",
+		sourceName,
+		"content",
+		descriptor.contentType,
+		"schema",
+	]);
 };
 
 export const collectEnumsFromComponentSchema = (

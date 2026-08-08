@@ -7,6 +7,22 @@ import {
 } from "./collectRefsFromDocument.ts";
 
 describe("collectRefsFromComponentResponse", () => {
+	it("collects refs only from the preferred response media", () => {
+		expect(
+			collectRefsFromComponentResponse({
+				description: "Multiple media",
+				content: {
+					"application/xml": {
+						schema: { $ref: "#/components/schemas/XmlMessage" },
+					},
+					"application/json": {
+						schema: { $ref: "#/components/schemas/JsonMessage" },
+					},
+				},
+			} as never),
+		).toEqual(["#/components/schemas/JsonMessage"]);
+	});
+
 	it("collects body schema refs without treating response header refs as body imports", () => {
 		expect(
 			collectRefsFromComponentResponse({

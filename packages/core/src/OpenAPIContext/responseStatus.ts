@@ -1,4 +1,6 @@
 import type { Operation } from "oas/operation";
+import { getParameterContentType } from "oas/utils";
+import { resolveJSONPointer } from "../openapi/refResolver.ts";
 import type { ComponentsResponsesValue, Schema } from "./types.ts";
 
 export interface ClassifiedResponseStatusCodes {
@@ -17,18 +19,80 @@ export interface ResponseDescriptor {
 	sourceStatusCode: string;
 	classification: "success" | "error";
 	kind: ResponseSemanticKind;
+	contentType?: string;
 	schema?: Schema;
 	description?: string;
 	label?: string;
+	type?: string;
+	inspection?: ResponseInspection[];
+}
+
+export interface ResponseInspection {
+	contentType?: string;
+	description?: string;
+	label?: string;
+	schema?: Schema;
 	type?: string;
 }
 
-type ConvertedResponse = {
-	description?: string;
-	label?: string;
-	schema?: Schema;
-	type?: string;
-};
+export function selectResponseContentType(
+	response: ComponentsResponsesValue,
+): string | undefined {
+	if ("$ref" in response || !response.content) return undefined;
+	return getParameterContentType(Object.keys(response.content)) || undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function resolveResponseForInspection(
+	operation: Operation,
+	response: ComponentsResponsesValue,
+): ComponentsResponsesValue | undefined {
+	let current: unknown = response;
+	const seenRefs = new Set<string>();
+	while (isRecord(current) && typeof current.$ref === "string") {
+		if (seenRefs.has(current.$ref)) return undefined;
+		seenRefs.add(current.$ref);
+		const resolved = resolveJSONPointer(operation.api, current.$ref);
+		if (!resolved.found) return undefined;
+		current = resolved.value;
+	}
+	return isRecord(current)
+		? (current as ComponentsResponsesValue)
+		: undefined;
+}
+
+function inspectResponse(
+	operation: Operation,
+	statusCode: string,
+	response: ComponentsResponsesValue | undefined,
+): ResponseInspection[] {
+	if (response) {
+		const resolved = resolveResponseForInspection(operation, response);
+		if (!resolved || "$ref" in resolved) return [];
+		const content = resolved.content ?? {};
+		const selectedContentType = selectResponseContentType(resolved);
+		if (!selectedContentType) {
+			return [{ description: resolved.description }];
+		}
+		const media = content[selectedContentType];
+		return [{
+			contentType: selectedContentType,
+			description: resolved.description,
+			label: selectedContentType,
+			schema: media?.schema ?? true,
+		}];
+	}
+
+	return (
+		(operation.getResponseAsJSONSchema?.(statusCode) as
+			| ResponseInspection[]
+			| null
+			| undefined) ?? []
+	);
+}
 
 function compareStatus(left: string, right: string): number {
 	const rank = (status: string) => {
@@ -90,14 +154,15 @@ export function selectSuccessResponseStatusCode(
 
 export function describeResponse(
 	response: ComponentsResponsesValue | undefined,
-	converted?: ConvertedResponse,
+	converted?: ResponseInspection,
 ): Pick<
 	ResponseDescriptor,
-	"kind" | "schema" | "description" | "label" | "type"
+	"kind" | "contentType" | "schema" | "description" | "label" | "type"
 > {
 	if (response && "$ref" in response && response.$ref) {
 		return {
 			kind: "reference",
+			contentType: converted?.contentType,
 			schema: { $ref: response.$ref },
 			description: converted?.description,
 			label: converted?.label,
@@ -107,13 +172,14 @@ export function describeResponse(
 
 	if (response && !("$ref" in response)) {
 		const description = response.description || converted?.description;
-		const media = response.content
-			? Object.values(response.content)[0]
-			: undefined;
+		const contentType =
+			converted?.contentType ?? selectResponseContentType(response);
+		const media = contentType ? response.content?.[contentType] : undefined;
 		if (media) {
 			if (media.schema === undefined) {
 				return {
 					kind: "unknown-media",
+					contentType,
 					schema: true,
 					description,
 					label: converted?.label,
@@ -122,6 +188,7 @@ export function describeResponse(
 			}
 			return {
 				kind: "schema",
+				contentType,
 				schema: media.schema,
 				description,
 				label: converted?.label,
@@ -139,6 +206,7 @@ export function describeResponse(
 	if (converted?.schema !== undefined) {
 		return {
 			kind: "schema",
+			contentType: converted.contentType,
 			schema: converted.schema,
 			description: converted.description,
 			label: converted.label,
@@ -172,17 +240,17 @@ export function describeOperationResponses(
 		const response = operation.schema?.responses?.[sourceStatusCode] as
 			| ComponentsResponsesValue
 			| undefined;
-		const converted =
-			response && "$ref" in response
-				? undefined
-				: (operation.getResponseAsJSONSchema?.(sourceStatusCode)?.[0] as
-						| ConvertedResponse
-						| undefined);
+		const inspection = inspectResponse(
+			operation,
+			sourceStatusCode,
+			response,
+		);
 		return {
 			statusCode,
 			sourceStatusCode,
 			classification: success.includes(statusCode) ? "success" : "error",
-			...describeResponse(response, converted),
+			...describeResponse(response, inspection[0]),
+			inspection,
 		};
 	});
 }

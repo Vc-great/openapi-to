@@ -2,6 +2,7 @@ import {
 	type ComponentsParameters,
 	type ComponentsResponsesValue,
 	describeOperationResponses,
+	describeResponse,
 	getOperationRequestBodyMediaTypeObject,
 	type ParameterObjectWithRef,
 	resolveParameterSchema,
@@ -112,16 +113,12 @@ export function collectRefsFromComponentResponse(
 		return [...refs];
 	}
 
-	// 处理包含 content 的情况
-	if (response && "content" in response && response.content) {
-		for (const media of Object.values(response.content)) {
-			if (media?.schema) {
-				collectRefsFromSchema(media.schema).forEach((ref) => {
-					refs.add(ref);
-				});
-			}
-		}
-	}
+
+	const schema = describeResponse(response).schema;
+	if (schema !== undefined)
+		collectRefsFromSchema(schema).forEach((ref) => {
+			refs.add(ref);
+		});
 
 	return [...refs];
 }

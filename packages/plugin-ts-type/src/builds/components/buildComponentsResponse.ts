@@ -26,16 +26,12 @@ export function buildComponentsResponse(
 		return createTypeAlias(responseName, "undefined", []);
 	if (descriptor.kind === "unknown-media")
 		return createTypeAlias(responseName, "unknown", []);
-	const contentType =
-		!("$ref" in response) && response.content
-			? Object.keys(response.content)[0]
-			: undefined;
 	return componentResponseTemplate(
 		{ schema: descriptor.schema },
 		responseName,
 		inlineEnumSymbols,
-		inlineEnumSourcePath && contentType
-			? [...inlineEnumSourcePath, "content", contentType, "schema"]
+		inlineEnumSourcePath && descriptor.contentType
+			? [...inlineEnumSourcePath, "content", descriptor.contentType, "schema"]
 			: inlineEnumSourcePath,
 	);
 }

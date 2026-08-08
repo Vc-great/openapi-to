@@ -10,4 +10,5 @@
 
 Upgrade the compiler and official generator plugins to `oas` 38 while preserving
 operation discovery, OpenAPI 3.0/3.1/3.2 compatibility, referenced parameter and
-request-body semantics, selective generation, and deterministic generated output.
+request-body semantics, response component identity, response media and composition
+semantics, selective generation, and deterministic generated output.
