@@ -261,7 +261,7 @@ async function inspect(rootArgument) {
 	const root = await realpath(path.resolve(rootArgument));
 	const blockingReasons = [];
 	const nodeMajor = Number(process.versions.node.split(".")[0]);
-	if (nodeMajor < 20) blockingReasons.push("NODE_VERSION_UNSUPPORTED");
+	if (nodeMajor < 22) blockingReasons.push("NODE_VERSION_UNSUPPORTED");
 	const packageRead = await readBoundedText(root, "package.json");
 	let manifest;
 	let packageJsonValid = false;
@@ -374,7 +374,7 @@ async function inspect(rootArgument) {
 				valid: packageJsonValid,
 				sha256: packageRead.sha256 ?? null,
 			},
-			node: { major: nodeMajor, supported: nodeMajor >= 20 },
+			node: { major: nodeMajor, supported: nodeMajor >= 22 },
 			gitRepository: gitEntry.exists === true && !gitEntry.unsafe,
 		},
 		packageManager: {

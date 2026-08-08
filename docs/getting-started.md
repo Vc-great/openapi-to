@@ -6,7 +6,7 @@
 - It exports Core plus all official generator plugins.
 - It installs the `openapi-to-mcp` stdio server command.
 
-Node.js 20 or newer is required. This repository is pinned to pnpm 10.14.0.
+Node.js 22 or newer is required. This repository is pinned to pnpm 10.14.0.
 
 ## CLI
 

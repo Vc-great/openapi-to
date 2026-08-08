@@ -33,8 +33,21 @@ async function write(root, relativePath, contents) {
 	await writeFile(target, contents);
 }
 
-async function inspect(root) {
-	const { stdout, stderr } = await execFileAsync(process.execPath, [inspector, "--root", root]);
+async function inspect(root, nodeVersion) {
+	const preload = join(root, "override-node-version.cjs");
+	if (nodeVersion) {
+		await write(
+			root,
+			"override-node-version.cjs",
+			`Object.defineProperty(process.versions, "node", { configurable: true, value: ${JSON.stringify(nodeVersion)} });\n`,
+		);
+	}
+	const { stdout, stderr } = await execFileAsync(process.execPath, [
+		...(nodeVersion ? ["--require", preload] : []),
+		inspector,
+		"--root",
+		root,
+	]);
 	assert.equal(stderr, "");
 	return { output: stdout, value: JSON.parse(stdout) };
 }
@@ -263,6 +276,24 @@ test("inspector reports a clean pnpm project with all setup capabilities missing
 	assert.match(value.observedStateHash, /^[a-f0-9]{64}$/);
 	assert.ok(Buffer.byteLength(output) < 64 * 1024);
 	assert.doesNotMatch(output, new RegExp(root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("inspector blocks Node 20 while accepting Node 22 and Node 24", async (t) => {
+	for (const [nodeVersion, supported] of [
+		["20.20.2", false],
+		["22.0.0", true],
+		["24.0.0", true],
+	]) {
+		const root = await fixture(t);
+		const { value } = await inspect(root, nodeVersion);
+		assert.equal(value.workspace.node.major, Number.parseInt(nodeVersion, 10));
+		assert.equal(value.workspace.node.supported, supported);
+		assert.equal(
+			value.blockingReasons.includes("NODE_VERSION_UNSUPPORTED"),
+			!supported,
+		);
+		assert.equal(value.state, supported ? "PACKAGE_MISSING" : "BLOCKED");
+	}
 });
 
 test("inspector blocks a directory without package.json", async (t) => {

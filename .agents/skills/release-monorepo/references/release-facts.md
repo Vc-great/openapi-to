@@ -9,7 +9,7 @@ These facts route an investigation. Re-read the files because release configurat
 - Published packages commonly declare ESM/CJS entrypoints and declarations under `dist`, built with tsup.
 - The `openapi-to` aggregate package depends on CLI, core, and official plugins through workspace ranges, re-exports core/official factories, and exposes both `openapi` and `openapi-to` bin aliases through `bin/openapi.js`.
 - P0 adds public compiler, diagnostic, artifact/manifest/result, diff/inspect, and exit-code exports. Treat `@openapi-to/core`, `@openapi-to/cli`, and the aggregate package as direct release candidates; inspect official plugin declarations/dependency edges before deciding whether they need coordinated bumps.
-- Root development policy, CI, bins, and package manifests require Node >=20. A lower runtime must not be claimed unless it has its own maintained CI and pack-install smoke lane.
+- Root development policy, CI, bins, and package manifests require Node >=22. A lower runtime must not be claimed unless it has its own maintained CI and pack-install smoke lane.
 - Package manifests use `workspace:*` for internal edges; never replace those values or lockfile entries manually as a release workaround.
 - Package `CHANGELOG.md` files exist. Root and some packages have README files, but plugin packages do not all have package-local READMEs at this revision.
 - `.changeset/config.json` is tracked. It uses public access, `main` as the base branch, workspace-protocol-aware internal dependency bumps, and one fixed-version group for all ten public packages. Private config packages are excluded by `private: true`, not `ignore`.
@@ -21,7 +21,7 @@ These facts route an investigation. Re-read the files because release configurat
 - The current 4.0 RC branch/prerelease policy remains unchanged. A future `release/next` branch or stable migration is not implied by the publication workflow.
 - `npm-production` Environment protection, npm Trusted Publisher bindings, main Branch Ruleset, and repository merge methods are external settings. Repository code cannot prove they are configured. Until they are configured and a controlled real publication succeeds, the workflow is `CODE READY`, not end-to-end release ready; no real npm publication smoke is implied.
 - Root release quality uses the full tracked-file `lint:ci` gate alongside `test:release-scripts`, `verify:repository-contract`, and `verify:package-surface`; local change preparation also uses `lint:changed`. `release:check` runs the ordinary pack-install smoke before its strict Changesets release-candidate gate so an expected `NEXT_RC_REQUIRED` result still preserves smoke evidence. The publication workflow instead uses `release:check:prepack` to apply that strict gate before creating publication artifacts, then passes its one already-packed tarball set to the smoke script so it verifies ESM/CJS/types and both aggregate CLI aliases without repacking.
-- CI on Node 20 builds, typechecks packages and root project references, runs Vitest, rejects changed-file lint warnings, verifies Changesets under the appropriate development or strict mode, and performs pack-install smoke. e2e generation runs on Linux, Windows, and macOS.
+- CI on Node 22 builds, typechecks packages and root project references, runs Vitest, rejects changed-file lint warnings, verifies Changesets under the appropriate development or strict mode, and performs pack-install smoke. e2e generation runs on Linux, Windows, and macOS.
 
 ## Files to inspect
 

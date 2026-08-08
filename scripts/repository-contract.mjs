@@ -4758,6 +4758,84 @@ export async function auditCodexSkillInstallerContracts(root = repositoryRoot) {
 	return sortedUnique(failures);
 }
 
+export async function auditNodeRuntimeContracts(
+	root = repositoryRoot,
+	manifests,
+) {
+	const failures = [];
+	for (const [directory, manifest] of manifests) {
+		if (manifest.engines?.node !== ">=22") {
+			failures.push(
+				`${directory}/package.json must declare engines.node >=22`,
+			);
+		}
+	}
+
+	const setupAction = loadYaml(
+		await readFile(join(root, ".github/setup/action.yml"), "utf8"),
+	);
+	const setupNodeStep = setupAction?.runs?.steps?.find(
+		(step) => step.uses === "actions/setup-node@v4",
+	);
+	if (String(setupNodeStep?.with?.["node-version"]) !== "22") {
+		failures.push("shared GitHub setup must use Node 22");
+	}
+
+	const aggregateBin = await readFile(
+		join(root, "packages/openapi/bin/openapi.js"),
+		"utf8",
+	);
+	const requiredVersion = aggregateBin.match(
+		/const\s+requiredVersion\s*=\s*['"]([^'"]+)['"]/,
+	)?.[1];
+	if (requiredVersion !== ">=22.0.0") {
+		failures.push("aggregate CLI runtime guard must require Node >=22.0.0");
+	}
+
+	const doctor = await readFile(
+		join(root, "packages/mcp/scripts/doctor.mjs"),
+		"utf8",
+	);
+	if (
+		!/major\s*>=\s*22\b/.test(doctor) ||
+		!doctor.includes("Node.js 22 or newer is required.")
+	) {
+		failures.push("MCP Doctor runtime guard must require Node 22 or newer");
+	}
+
+	const packageSurface = await readFile(
+		join(root, "scripts/release/verify-package-surface.mjs"),
+		"utf8",
+	);
+	if (
+		!packageSurface.includes('manifest.engines?.node !== ">=22"') ||
+		!packageSurface.includes("engines.node must be >=22")
+	) {
+		failures.push("package-surface verifier must require engines.node >=22");
+	}
+
+	const setupInspector = await readFile(
+		join(root, ".agents/skills/openapi-to-setup/scripts/inspect-project.mjs"),
+		"utf8",
+	);
+	if (
+		!setupInspector.includes("nodeMajor < 22") ||
+		!setupInspector.includes("supported: nodeMajor >= 22")
+	) {
+		failures.push("setup inspector must require Node 22 or newer");
+	}
+
+	const troubleshooting = await readFile(
+		join(root, "docs/troubleshooting.md"),
+		"utf8",
+	);
+	if (!troubleshooting.includes("Confirm Node.js is 22 or newer")) {
+		failures.push("troubleshooting must identify Node 22 as the minimum runtime");
+	}
+
+	return sortedUnique(failures);
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -4789,6 +4867,12 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			await readJson(join(root, directory, "package.json")),
 		);
 	}
+	failures.push(
+		...(await auditNodeRuntimeContracts(root, [
+			[".", rootManifest],
+			...workspaceManifests,
+		])),
+	);
 
 	const rootDependencies = allDependencies(rootManifest);
 	for (const [directory, manifest] of [
