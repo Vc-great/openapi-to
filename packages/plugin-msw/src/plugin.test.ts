@@ -19,9 +19,9 @@ const mockCreateSourceFile = vi.fn(() => ({
 
 vi.mock("ts-morph", () => {
 	return {
-		Project: vi.fn(() => ({
-			createSourceFile: mockCreateSourceFile,
-		})),
+		Project: class {
+			createSourceFile = mockCreateSourceFile;
+		},
 		StructureKind: {
 			Function: "Function",
 			ImportDeclaration: "ImportDeclaration",
