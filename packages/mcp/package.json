@@ -82,7 +82,7 @@
 		"@openapi-to/config-tsup": "workspace:*"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": ">=22"
 	},
 	"publishConfig": {
 		"access": "public",

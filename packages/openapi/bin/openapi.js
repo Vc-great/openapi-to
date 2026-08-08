@@ -3,7 +3,7 @@ import process from 'node:process'
 import semver from 'semver'
 
 
-const requiredVersion =  '>=20.0.0';
+const requiredVersion =  '>=22.0.0';
 const globalBooleanOptions = new Set([
   '--debug',
   '--json',

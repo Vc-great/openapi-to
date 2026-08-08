@@ -34,7 +34,7 @@ jobs:
       - name: Initialize CI diagnostics
         id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan a1-contracts
-      - name: Setup Node 20 and pnpm
+      - name: Setup Node 22 and pnpm
         id: setup
         uses: ./.github/setup
       - name: Run openapi-to setup inspector tests

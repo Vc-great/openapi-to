@@ -1,6 +1,6 @@
 # Use openapi-to MCP with Codex
 
-Codex reads MCP servers from `config.toml`; a trusted project may use `.codex/config.toml`. Current fields for a local stdio server include `command`, `args`, `env`/`env_vars`, `cwd`, `startup_timeout_sec`, and `tool_timeout_sec`. This project requires Node.js 20 or newer. Do not commit a machine-specific absolute path.
+Codex reads MCP servers from `config.toml`; a trusted project may use `.codex/config.toml`. Current fields for a local stdio server include `command`, `args`, `env`/`env_vars`, `cwd`, `startup_timeout_sec`, and `tool_timeout_sec`. This project requires Node.js 22 or newer. Do not commit a machine-specific absolute path.
 
 The examples follow the current official [Codex MCP documentation](https://learn.chatgpt.com/docs/extend/mcp). Project configuration is loaded only for trusted projects.
 

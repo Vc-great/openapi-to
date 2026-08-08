@@ -10,7 +10,7 @@ Publish an independent `@openapi-to/mcp` package that exposes five bounded read-
 
 The stable protocol target is MCP revision **2025-11-25**. The server does not hard-code a protocol version; the SDK performs initialization negotiation.
 
-The SDK package itself declares Node.js 18 or newer. This repository and every public `openapi-to` runtime package require Node.js **20 or newer**, so `@openapi-to/mcp` keeps the stricter monorepo baseline in `engines.node`.
+The SDK package itself declares Node.js 18 or newer. This repository and every public `openapi-to` runtime package require Node.js **22 or newer**, so `@openapi-to/mcp` keeps the stricter monorepo baseline in `engines.node`.
 
 Primary references: [official TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk), [stable MCP specification](https://modelcontextprotocol.io/specification/2025-11-25), and [tool schema](https://modelcontextprotocol.io/specification/2025-11-25/schema).
 

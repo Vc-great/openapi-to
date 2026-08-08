@@ -37,6 +37,6 @@
 		"@openapi-to/config-ts": "workspace:*"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": ">=22"
 	}
 }

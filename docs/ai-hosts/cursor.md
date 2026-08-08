@@ -4,7 +4,7 @@ Cursor can launch the `openapi-to-mcp` command installed by `openapi-to` as a lo
 
 ## Prerequisites and installation
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - Cursor with MCP support
 - A trusted local Workspace
 

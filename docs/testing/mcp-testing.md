@@ -71,7 +71,7 @@ substitute for the source-tree E2E and recovery gates.
 ## CI responsibilities
 
 Quality retains the full-repository Vitest suite. The E2E workflow adds named
-Node 20 jobs so MCP status is visible on the CI page:
+Node 22 jobs so MCP status is visible on the CI page:
 
 - **MCP stdio E2E** runs the built binary, controlled-write E2E, and Doctor;
 - **MCP cross-platform smoke** runs on Linux, Windows, and macOS;

@@ -4,7 +4,7 @@ Claude Code can launch the `openapi-to-mcp` command installed by `openapi-to` as
 
 ## Prerequisites and installation
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - Claude Code installed and authenticated
 - A trusted local Workspace
 

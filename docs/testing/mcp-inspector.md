@@ -17,11 +17,11 @@ foreground. Inspector Proxy authentication remains enabled. The script never
 sets `DANGEROUSLY_OMIT_AUTH`, never binds a public interface, and never uses
 `nohup` or an orphaned background process.
 
-The openapi-to runtime baseline remains Node.js 20. Inspector 0.22.0 separately
+The openapi-to runtime baseline is Node.js 22. Inspector 0.22.0 separately
 requires Node.js `>=22.7.5`; the launcher checks that exact minimum before
 starting and prints an actionable message without changing package engines.
 Use a compatible Node executable for the Inspector command while retaining Node
-20 in CI and for the published MCP Server.
+22 in CI and for the published MCP Server.
 
 Run the launcher in a persistent foreground PTY. Keep that terminal open while
 using the browser. Closing the PTY sends EOF/signals through the Inspector

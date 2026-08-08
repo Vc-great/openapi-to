@@ -239,7 +239,7 @@ function assertServerIdentity(connection, state) {
 
 function assertNodeVersion() {
   const major = Number.parseInt(process.versions.node.split('.')[0] ?? '', 10)
-  assert(Number.isInteger(major) && major >= 20, 'Node.js 20 or newer is required.')
+  assert(Number.isInteger(major) && major >= 22, 'Node.js 22 or newer is required.')
 }
 
 async function missing(filePath) {
