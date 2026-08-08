@@ -16,6 +16,16 @@ import { init } from "./init.ts";
 import { type CLIIO, run } from "./index.ts";
 import { spinner } from "./utils/spinner.ts";
 
+function isolatedGitEnvironment(): NodeJS.ProcessEnv {
+	const environment = { ...process.env };
+	for (const name of Object.keys(environment)) {
+		if (name.startsWith("GIT_")) {
+			delete environment[name];
+		}
+	}
+	return environment;
+}
+
 describe.sequential("openapi init filesystem behavior", () => {
 	let originalCwd: string;
 	let originalExitCode: string | number | undefined;
@@ -74,18 +84,33 @@ describe.sequential("openapi init filesystem behavior", () => {
 				".openapi-to-cache/\n# https://github.com/Vc-great/openapi-to\n/.openapi-to/\n",
 			);
 
-			await execa("git", ["init", "--quiet"], { cwd: root });
+			const gitEnvironment = isolatedGitEnvironment();
+			await execa("git", ["init", "--quiet"], {
+				cwd: root,
+				env: gitEnvironment,
+				extendEnv: false,
+			});
 			await mkdir(path.join(root, ".openapi-to"));
 			await writeFile(path.join(root, ".openapi-to", "state.json"), "{}\n");
 			const ignoredState = await execa(
 				"git",
 				["check-ignore", "--quiet", ".openapi-to/state.json"],
-				{ cwd: root, reject: false },
+				{
+					cwd: root,
+					env: gitEnvironment,
+					extendEnv: false,
+					reject: false,
+				},
 			);
 			const trackedConfig = await execa(
 				"git",
 				["check-ignore", "--quiet", configName],
-				{ cwd: root, reject: false },
+				{
+					cwd: root,
+					env: gitEnvironment,
+					extendEnv: false,
+					reject: false,
+				},
 			);
 			expect(ignoredState.exitCode).toBe(0);
 			expect(trackedConfig.exitCode).toBe(1);
