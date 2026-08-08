@@ -1,12 +1,7 @@
 //@ts-nocheck
-import path from "node:path";
 import { pluginEnum } from "@openapi-to/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildImports } from "./builds/buildImports.ts";
-import { buildMethodBody } from "./builds/buildMethodBody.ts";
-import { buildMethodParameters } from "./builds/buildMethodParameters.ts";
 import { definePlugin } from "./plugin";
-import { jsDocTemplateFromMethod } from "./template/jsDocTemplateFromMethod.ts";
 
 // 模拟依赖
 const mockAddFunction = vi.fn();
@@ -18,9 +13,9 @@ const mockCreateSourceFile = vi.fn(() => ({
 
 vi.mock("ts-morph", () => {
 	return {
-		Project: vi.fn(() => ({
-			createSourceFile: mockCreateSourceFile,
-		})),
+		Project: class {
+			createSourceFile = mockCreateSourceFile;
+		},
 		StructureKind: {
 			Function: "Function",
 			ImportDeclaration: "ImportDeclaration",
@@ -93,7 +88,7 @@ describe("definePlugin", () => {
 		description: string;
 	};
 
-	let mockOperation: MockOperation;
+	let _mockOperation: MockOperation;
 	let mockContext: MockContext;
 	let mockTagData: MockTagData;
 
@@ -102,7 +97,7 @@ describe("definePlugin", () => {
 		vi.clearAllMocks();
 
 		// 准备测试数据
-		mockOperation = {
+		_mockOperation = {
 			tagName: "test-tag",
 			accessor: {
 				operationName: "testOperation",

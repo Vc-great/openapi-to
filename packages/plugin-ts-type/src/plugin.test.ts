@@ -25,7 +25,9 @@ vi.mock('ts-morph', async () => {
   }
 
   return {
-    Project: vi.fn(() => mockProject),
+    Project: class {
+      createSourceFile = mockProject.createSourceFile
+    },
     StructureKind,
   }
 })
@@ -39,14 +41,14 @@ vi.mock('@/builds/buildOperationTypes.ts', () => ({
 }))
 
 vi.mock('@/EnumRegistry.ts', () => ({
-  EnumRegistry: vi.fn(() => ({
-    adds: vi.fn(),
-    getAll: vi.fn(() => [
+  EnumRegistry: class {
+    adds = vi.fn()
+    getAll = vi.fn(() => [
       { name: 'TestEnum', values: ['Value1', 'Value2'] },
       { name: 'StatusEnum', values: ['Active', 'Inactive'] },
-    ]),
-    getEnumValueName: vi.fn((val, name) => `${name}${val}`),
-  })),
+    ])
+    getEnumValueName = vi.fn((val, name) => `${name}${val}`)
+  },
 }))
 
 vi.mock('@/collect/collectEnumFormOperation.ts', () => ({
