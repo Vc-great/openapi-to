@@ -286,6 +286,122 @@ function usesRunnerContext(value) {
 	);
 }
 
+function collectActionUses(value, actions = []) {
+	if (Array.isArray(value)) {
+		for (const item of value) collectActionUses(item, actions);
+		return actions;
+	}
+	if (!isMapping(value)) return actions;
+	for (const [key, item] of Object.entries(value)) {
+		if (key === "uses" && typeof item === "string") actions.push(item);
+		collectActionUses(item, actions);
+	}
+	return actions;
+}
+
+const ORDINARY_PR_CONCURRENCY_GROUP = `${DOLLAR_SIGN}{{ github.workflow }}-${DOLLAR_SIGN}{{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}`;
+const ORDINARY_PR_CANCEL_IN_PROGRESS = `${DOLLAR_SIGN}{{ github.event_name == 'pull_request' }}`;
+const PR_WORKFLOW_CONCURRENCY_CONTRACTS = new Map([
+	[
+		".github/workflows/a1-cross-platform.yml",
+		{
+			group: ORDINARY_PR_CONCURRENCY_GROUP,
+			cancelInProgress: ORDINARY_PR_CANCEL_IN_PROGRESS,
+		},
+	],
+	[
+		".github/workflows/e2e.yaml",
+		{
+			group: ORDINARY_PR_CONCURRENCY_GROUP,
+			cancelInProgress: ORDINARY_PR_CANCEL_IN_PROGRESS,
+		},
+	],
+	[
+		".github/workflows/quality.yml",
+		{
+			group: ORDINARY_PR_CONCURRENCY_GROUP,
+			cancelInProgress: ORDINARY_PR_CANCEL_IN_PROGRESS,
+		},
+	],
+	[
+		".github/workflows/version-readiness.yml",
+		{
+			group: `${DOLLAR_SIGN}{{ github.workflow }}-pr-${DOLLAR_SIGN}{{ github.event.pull_request.number }}`,
+			cancelInProgress: true,
+		},
+	],
+]);
+
+export async function auditCiFoundationContracts(root = repositoryRoot) {
+	const failures = [];
+	for (const [relativePath, expected] of PR_WORKFLOW_CONCURRENCY_CONTRACTS) {
+		const workflow = await readWorkflowDocument(root, relativePath, failures);
+		if (!workflow) continue;
+		if (!isMapping(workflow.concurrency)) {
+			failures.push(`${relativePath} must define PR-aware concurrency`);
+			continue;
+		}
+		if (
+			JSON.stringify(mappingKeys(workflow.concurrency)) !==
+			JSON.stringify(["cancel-in-progress", "group"])
+		) {
+			failures.push(`${relativePath} must define only the required concurrency`);
+		}
+		if (workflow.concurrency.group !== expected.group) {
+			failures.push(
+				`${relativePath} must use the required PR-aware concurrency group`,
+			);
+		}
+		if (
+			workflow.concurrency["cancel-in-progress"] !== expected.cancelInProgress
+		) {
+			failures.push(
+				`${relativePath} must use the required PR-only cancellation policy`,
+			);
+		}
+	}
+
+	const dependabotPath = ".github/dependabot.yml";
+	const absoluteDependabotPath = join(root, dependabotPath);
+	if (!(await exists(absoluteDependabotPath))) {
+		failures.push(`missing ${dependabotPath}`);
+	} else {
+		let document;
+		try {
+			document = loadYaml(await readFile(absoluteDependabotPath, "utf8"), {
+				filename: dependabotPath,
+			});
+		} catch (error) {
+			failures.push(
+				`${dependabotPath} contains invalid YAML: ${error?.reason ?? "parse failed"}`,
+			);
+		}
+		const update = Array.isArray(document?.updates) ? document.updates[0] : null;
+		if (
+			document?.version !== 2 ||
+			JSON.stringify(mappingKeys(document)) !==
+				JSON.stringify(["updates", "version"]) ||
+			!Array.isArray(document.updates) ||
+			document.updates.length !== 1 ||
+			!isMapping(update) ||
+			JSON.stringify(mappingKeys(update)) !==
+				JSON.stringify(["directory", "package-ecosystem", "schedule"]) ||
+			update["package-ecosystem"] !== "github-actions" ||
+			update.directory !== "/" ||
+			!isMapping(update.schedule) ||
+			JSON.stringify(mappingKeys(update.schedule)) !==
+				JSON.stringify(["interval"]) ||
+			update.schedule.interval !== "weekly"
+		) {
+			failures.push(
+				`${dependabotPath} must contain exactly one weekly root github-actions update`,
+			);
+		}
+	}
+
+	return sortedUnique(failures);
+}
+
 export async function auditGitHubWorkflowContexts(root = repositoryRoot) {
 	const failures = [];
 	const yamlFiles = (
@@ -299,9 +415,10 @@ export async function auditGitHubWorkflowContexts(root = repositoryRoot) {
 		.sort(comparePaths);
 
 	for (const relativePath of yamlFiles) {
+		const source = await readFile(join(root, relativePath), "utf8");
 		let document;
 		try {
-			document = loadYaml(await readFile(join(root, relativePath), "utf8"), {
+			document = loadYaml(source, {
 				filename: relativePath,
 			});
 		} catch (error) {
@@ -312,6 +429,31 @@ export async function auditGitHubWorkflowContexts(root = repositoryRoot) {
 				`${relativePath}${location}: invalid YAML: ${error?.reason ?? "parse failed"}`,
 			);
 			continue;
+		}
+		const sourceComments = new Map();
+		for (const match of source.matchAll(
+			/^\s*(?:-\s*)?uses:\s+(?:(["'])([^"']+)\1|([^#\s]+))(?:\s+#\s*(.*?))?\s*$/gm,
+		)) {
+			const action = match[2] ?? match[3];
+			const comments = sourceComments.get(action) ?? [];
+			comments.push(match[4]);
+			sourceComments.set(action, comments);
+		}
+		for (const action of collectActionUses(document)) {
+			if (action.startsWith("./")) continue;
+			if (!/^[^/@\s]+\/[^@\s]+@[0-9a-f]{40}$/.test(action)) {
+				failures.push(
+					`${relativePath}: third-party Action must use a full 40-character SHA: ${action}`,
+				);
+				continue;
+			}
+			const comments = sourceComments.get(action) ?? [];
+			const comment = comments.shift();
+			if (!/^v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(comment ?? "")) {
+				failures.push(
+					`${relativePath}: SHA-pinned Action must retain an exact version comment: ${action}`,
+				);
+			}
 		}
 		if (
 			!relativePath.startsWith(".github/workflows/") ||
@@ -4154,7 +4296,10 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 			);
 		}
 		if (
-			occurrences(workflow, /^\s+uses: actions\/checkout@v4\s*$/gm) !==
+			occurrences(
+				workflow,
+				/^\s+uses: actions\/checkout@[0-9a-f]{40} # v\d+\.\d+\.\d+\s*$/gm,
+			) !==
 				expectedJobs ||
 			occurrences(workflow, /^\s+persist-credentials: false\s*$/gm) !==
 				expectedJobs
@@ -4775,7 +4920,7 @@ export async function auditNodeRuntimeContracts(
 		await readFile(join(root, ".github/setup/action.yml"), "utf8"),
 	);
 	const setupNodeStep = setupAction?.runs?.steps?.find(
-		(step) => step.uses === "actions/setup-node@v4",
+		(step) => /^actions\/setup-node@[0-9a-f]{40}$/.test(step.uses ?? ""),
 	);
 	if (String(setupNodeStep?.with?.["node-version"]) !== "22") {
 		failures.push("shared GitHub setup must use Node 22");
@@ -4920,6 +5065,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	});
 	failures.push(...agentSkillAudit.failures);
 	failures.push(...(await auditCiDiagnosticsContracts(root)));
+	failures.push(...(await auditCiFoundationContracts(root)));
 	failures.push(...(await auditGitHubWorkflowContexts(root)));
 	failures.push(...(await auditPublicationContracts(root)));
 	failures.push(...(await auditConsumerAcceptanceContracts(root)));
@@ -5079,10 +5225,16 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 				"Version Packages workflow must grant only contents: write and pull-requests: write",
 			);
 		}
-		if (!workflow.includes("uses: changesets/action@v1")) {
-			failures.push("Version Packages workflow must use changesets/action@v1");
+		if (
+			!/uses:\s+changesets\/action@[0-9a-f]{40}\s+# v1\.\d+\.\d+/.test(
+				workflow,
+			)
+		) {
+			failures.push(
+				"Version Packages workflow must use a full-SHA pinned changesets/action v1 release",
+			);
 		}
-		if (workflow.includes("uses: changesets/action@v2")) {
+		if (/uses:\s+changesets\/action@[^\s]+\s+# v2(?:\.|\s|$)/.test(workflow)) {
 			failures.push(
 				"Version Packages workflow must not use changesets/action@v2",
 			);
@@ -5183,7 +5335,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"working-directory: e2e/common",
 			"packages/openapi/bin/openapi-to-mcp.js",
 			"packages/mcp/bin/openapi-to-mcp.js",
-			"actions/upload-artifact@v4",
+			"actions/upload-artifact@",
 			"A1_TEST_ARTIFACT_DIR",
 			"name: Run openapi-to setup inspector tests",
 			"run: node --test scripts/openapi-to-setup.node-test.mjs",
@@ -5215,7 +5367,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 			"pnpm test:e2e:remote",
 			"MCP cross-platform smoke",
 			"MCP_TEST_ARTIFACT_DIR",
-			"actions/upload-artifact@v4",
+			"actions/upload-artifact@",
 		]) {
 			if (!e2eWorkflow.includes(required))
 				failures.push(`E2E workflow is missing ${required}`);

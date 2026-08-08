@@ -16,6 +16,7 @@ import { promisify } from "node:util";
 import {
 	auditAgentAndSkillContracts,
 	auditCiDiagnosticsContracts,
+	auditCiFoundationContracts,
 	auditCodexSkillInstallerContracts,
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
@@ -791,14 +792,111 @@ test("blocking Actions workflows use controlled fixtures and retain diagnostic a
 	]);
 	assert.match(a1, /fail-fast:\s*false/);
 	assert.match(a1, /working-directory:\s*e2e\/common/);
-	assert.match(a1, /actions\/upload-artifact@v4/);
+	assert.match(a1, /actions\/upload-artifact@[0-9a-f]{40} # v\d+\.\d+\.\d+/);
 	assert.match(a1, /name:\s*Run openapi-to setup inspector tests/);
 	assert.match(a1, /run:\s*node --test scripts\/openapi-to-setup\.node-test\.mjs/);
 	assert.doesNotMatch(e2e, /petstore\.swagger\.io/);
 	assert.doesNotMatch(e2e, /fail-fast:\s*true/);
 	assert.match(e2e, /pnpm test:e2e:remote/);
 	assert.match(e2e, /MCP_TEST_ARTIFACT_DIR/);
-	assert.match(e2e, /actions\/upload-artifact@v4/);
+	assert.match(e2e, /actions\/upload-artifact@[0-9a-f]{40} # v\d+\.\d+\.\d+/);
+});
+
+test("GitHub YAML contracts require immutable third-party Action pins with exact version comments", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-action-pins-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	await writeFixtureFile(
+		root,
+		".github/workflows/pins.yml",
+		`name: Pins
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./local-action
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4 # current stable version
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # current stable version
+`,
+	);
+
+	const failures = await auditGitHubWorkflowContexts(root);
+	assert.deepEqual(failures, [
+		".github/workflows/pins.yml: SHA-pinned Action must retain an exact version comment: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+		".github/workflows/pins.yml: SHA-pinned Action must retain an exact version comment: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+		".github/workflows/pins.yml: third-party Action must use a full 40-character SHA: actions/checkout@v4",
+		".github/workflows/pins.yml: third-party Action must use a full 40-character SHA: actions/upload-artifact@v4",
+	]);
+});
+
+async function createCiFoundationContractFixture(t) {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-ci-foundation-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		".github/workflows/a1-cross-platform.yml",
+		".github/workflows/e2e.yaml",
+		".github/workflows/quality.yml",
+		".github/workflows/version-readiness.yml",
+		".github/dependabot.yml",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	return root;
+}
+
+test("CI foundation contracts require PR-only cancellation and weekly Action updates", async (t) => {
+	const validRoot = await createCiFoundationContractFixture(t);
+	assert.deepEqual(await auditCiFoundationContracts(validRoot), []);
+
+	const missingConcurrencyRoot = await createCiFoundationContractFixture(t);
+	const qualityPath = join(
+		missingConcurrencyRoot,
+		".github/workflows/quality.yml",
+	);
+	await writeFile(
+		qualityPath,
+		(await readFile(qualityPath, "utf8")).replace(
+			/concurrency:\n(?: {2}.*\n){2}\n/,
+			"",
+		),
+	);
+	assert.deepEqual(await auditCiFoundationContracts(missingConcurrencyRoot), [
+		".github/workflows/quality.yml must define PR-aware concurrency",
+	]);
+
+	const broadCancellationRoot = await createCiFoundationContractFixture(t);
+	const e2ePath = join(broadCancellationRoot, ".github/workflows/e2e.yaml");
+	await writeFile(
+		e2ePath,
+		(await readFile(e2ePath, "utf8")).replace(
+			`cancel-in-progress: ${DOLLAR_SIGN}{{ github.event_name == 'pull_request' }}`,
+			"cancel-in-progress: true",
+		),
+	);
+	assert.deepEqual(await auditCiFoundationContracts(broadCancellationRoot), [
+		".github/workflows/e2e.yaml must use the required PR-only cancellation policy",
+	]);
+
+	const missingDependabotRoot = await createCiFoundationContractFixture(t);
+	await rm(join(missingDependabotRoot, ".github/dependabot.yml"));
+	assert.deepEqual(await auditCiFoundationContracts(missingDependabotRoot), [
+		"missing .github/dependabot.yml",
+	]);
+
+	const weakDependabotRoot = await createCiFoundationContractFixture(t);
+	const dependabotPath = join(weakDependabotRoot, ".github/dependabot.yml");
+	await writeFile(
+		dependabotPath,
+		(await readFile(dependabotPath, "utf8")).replace("weekly", "monthly"),
+	);
+	assert.deepEqual(await auditCiFoundationContracts(weakDependabotRoot), [
+		".github/dependabot.yml must contain exactly one weekly root github-actions update",
+	]);
 });
 
 test("GitHub YAML contracts reject runner context in Job env without rejecting runner-assigned contexts", async (t) => {
@@ -1806,6 +1904,21 @@ test("publication contract rejects Version Packages publication and unpinned Act
 	assertFailure(
 		{ failures: await auditPublicationContracts(versionRoot) },
 		/version-packages\.yml contains forbidden publication behavior changeset publish/,
+	);
+
+	const versionActionRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		versionActionRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			contents.replace(
+				"changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0",
+				"changesets/action@v1",
+			),
+	);
+	assertFailure(
+		{ failures: await auditGitHubWorkflowContexts(versionActionRoot) },
+		/third-party Action must use a full 40-character SHA: changesets\/action@v1/,
 	);
 
 	const actionRoot = await createPublicationContractFixture(t);
