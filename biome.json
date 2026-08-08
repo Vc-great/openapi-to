@@ -23,6 +23,23 @@
 			"quoteStyle": "double"
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["scripts/run-a1-contracts.mjs"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noUndeclaredEnvVars": {
+							"level": "on",
+							"options": {
+								"allowedEnvVars": ["A1_TEST_ARTIFACT_DIR", "npm_execpath"]
+							}
+						}
+					}
+				}
+			}
+		}
+	],
 	"assist": {
 		"enabled": true,
 		"actions": {
