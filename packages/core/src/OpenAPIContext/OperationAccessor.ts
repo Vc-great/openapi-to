@@ -1,7 +1,7 @@
 import { map as _map, camelCase, head, some } from "lodash-es";
 
 import type { Operation } from "oas/operation";
-import { findSchemaDefinition } from "oas/utils";
+import { resolveJSONPointer } from "../openapi/refResolver.ts";
 import type {
 	ParameterObject,
 	ParameterObjectWithRef,
@@ -59,23 +59,53 @@ export class OperationAccessor {
 		return camelCase(head(_map(this.operation?.getTags(), "name")));
 	}
 	get parameters(): ParameterObjectWithRef[] {
-		const parameters = this.operation.getParameters() as (
-			| ReferenceObject
-			| ParameterObject
-		)[];
-		return parameters.map((parameterObject) => {
-			if (
-				parameterObject &&
-				"$ref" in parameterObject &&
-				parameterObject.$ref
-			) {
-				return {
-					...findSchemaDefinition(parameterObject.$ref, this.operation?.api),
-					$ref: parameterObject.$ref,
-				};
-			}
-			return parameterObject;
-		});
+		const operationParameters = Array.isArray(this.operation.schema?.parameters)
+			? this.operation.schema.parameters
+			: undefined;
+		const pathParameters = Array.isArray(
+			this.operation.api?.paths?.[this.operation.path]?.parameters,
+		)
+			? this.operation.api?.paths?.[this.operation.path]?.parameters
+			: undefined;
+		const parameters =
+			operationParameters || pathParameters
+				? [...(operationParameters ?? []), ...(pathParameters ?? [])]
+				: this.operation.getParameters();
+		const seen = new Set<string>();
+		return parameters
+			.map<ParameterObjectWithRef>((parameterObject) => {
+				if (
+					parameterObject &&
+					"$ref" in parameterObject &&
+					parameterObject.$ref
+				) {
+					const resolved = resolveJSONPointer(
+						this.operation.api,
+						parameterObject.$ref,
+					);
+					return {
+						...(resolved.found &&
+						typeof resolved.value === "object" &&
+						resolved.value !== null &&
+						!Array.isArray(resolved.value)
+							? resolved.value
+							: {}),
+						$ref: parameterObject.$ref,
+					} as ParameterObjectWithRef;
+				}
+				return parameterObject as ParameterObjectWithRef;
+			})
+			.filter((parameterObject) => {
+				if (
+					typeof parameterObject.in !== "string" ||
+					typeof parameterObject.name !== "string"
+				)
+					return true;
+				const key = `${parameterObject.in}\0${parameterObject.name}`;
+				if (seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			});
 	}
 
 	get queryParameters(): ParameterObjectWithRef[] {

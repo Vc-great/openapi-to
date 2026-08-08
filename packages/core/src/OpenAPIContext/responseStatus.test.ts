@@ -91,6 +91,7 @@ describe("response status selection", () => {
 	});
 
 	it("describes schema, unknown-media, no-content, and reference responses without losing original wildcard keys", () => {
+		let convertedReferences = 0;
 		const operation = {
 			schema: {
 				responses: {
@@ -106,7 +107,10 @@ describe("response status selection", () => {
 					"2xx": { $ref: "#/components/responses/Wildcard" },
 				},
 			},
-			getResponseAsJSONSchema: () => [],
+			getResponseAsJSONSchema: (status: string) => {
+				if (status.toLowerCase() === "2xx") convertedReferences += 1;
+				return [];
+			},
 		} as unknown as Operation;
 
 		expect(describeOperationResponses(operation)).toMatchObject([
@@ -136,6 +140,7 @@ describe("response status selection", () => {
 				schema: { $ref: "#/components/responses/Wildcard" },
 			},
 		]);
+		expect(convertedReferences).toBe(0);
 	});
 });
 

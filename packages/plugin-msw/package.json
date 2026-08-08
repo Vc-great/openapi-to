@@ -57,7 +57,7 @@
 	"license": "MIT",
 	"dependencies": {
 		"@openapi-to/core": "workspace:*",
-		"oas": "^24.9.0",
+		"oas": "^38.2.0",
 		"type-fest": "^4.40.0",
 		"ts-morph": "^23.0.0"
 	},

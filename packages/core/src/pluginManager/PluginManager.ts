@@ -1,5 +1,6 @@
 import { execa } from "execa";
 import Oas from "oas";
+import type { OASDocument } from "oas/types";
 import type { SourceFile, ts } from "ts-morph";
 import { type PluginEnumType, PluginStatus } from "../enums.ts";
 import { OpenAPIHelper } from "../OpenAPIContext/OpenAPIHelper.ts";
@@ -7,11 +8,18 @@ import type { OpenAPIDocument, OpenapiToSingleConfig } from "../types";
 import { sortPluginsByStages } from "./graph.ts";
 import { runPluginsByTags } from "./runPluginsByTags.ts";
 import type { PluginDefinition } from "./types.ts";
-import { DiagnosticError, hasDiagnosticErrors } from '../diagnostics.ts'
-import { compareArtifacts, formatMaterializedArtifacts, materializeArtifacts, sortGeneratedArtifacts, sourceFileToArtifact, writeArtifacts } from '../artifacts/index.ts'
-import type { Diagnostic } from '../diagnostics.ts'
-import type { GeneratedArtifact } from '../artifacts/types.ts'
-import { throwIfAborted } from '../execution.ts'
+import { DiagnosticError, hasDiagnosticErrors } from "../diagnostics.ts";
+import {
+	compareArtifacts,
+	formatMaterializedArtifacts,
+	materializeArtifacts,
+	sortGeneratedArtifacts,
+	sourceFileToArtifact,
+	writeArtifacts,
+} from "../artifacts/index.ts";
+import type { Diagnostic } from "../diagnostics.ts";
+import type { GeneratedArtifact } from "../artifacts/types.ts";
+import { throwIfAborted } from "../execution.ts";
 export type PluginStatusValue = `${PluginStatus}`;
 type Executed = {
 	name: string;
@@ -48,31 +56,35 @@ export class PluginManager {
 		failedPluginNames: string[];
 	}> {
 		throwIfAborted(this.signal);
-		const helperDocument = this.openapiToSingleConfig && String((this.openAPIDocument as { openapi?: string }).openapi).startsWith('3.2.')
-			? { ...this.openAPIDocument, openapi: '3.1.0' }
-			: this.openAPIDocument;
+		const helperDocument =
+			this.openapiToSingleConfig &&
+			String((this.openAPIDocument as { openapi?: string }).openapi).startsWith(
+				"3.2.",
+			)
+				? { ...this.openAPIDocument, openapi: "3.1.0" }
+				: this.openAPIDocument;
 		const openAPIHelper = new OpenAPIHelper(
-			new Oas({ ...helperDocument }),
+			new Oas(structuredClone(helperDocument) as OASDocument),
 		);
 		const sourceFileAll = [];
 		const failedPluginNameSet = new Set<string>();
 
-		const { sourceFiles, artifacts, diagnostics, failedPluginNames } = await runPluginsByTags(
-			this.pluginsByStages,
-			{
+		const { sourceFiles, artifacts, diagnostics, failedPluginNames } =
+			await runPluginsByTags(this.pluginsByStages, {
 				openAPIHelper: openAPIHelper,
 				openapiToSingleConfig: this.openapiToSingleConfig,
 				openAPIDocument: this.openAPIDocument,
 				pluginNames: this.pluginNames,
 				signal: this.signal,
-			},
-		);
+			});
 		sourceFileAll.push(...sourceFiles);
 		for (const name of failedPluginNames) failedPluginNameSet.add(name);
 		this.diagnostics = diagnostics;
 		this.executed = this.plugins.map((plugin) => ({
 			name: plugin.name,
-			status: failedPluginNames.includes(plugin.name) ? PluginStatus.Failed : PluginStatus.Succeeded,
+			status: failedPluginNames.includes(plugin.name)
+				? PluginStatus.Failed
+				: PluginStatus.Succeeded,
 		}));
 
 		return {
@@ -107,7 +119,7 @@ export class PluginManager {
 			placeOpenBraceOnNewLineForControlBlocks: false,
 
 			// 分号策略
-			semicolons: 'insert' as ts.SemicolonPreference,
+			semicolons: "insert" as ts.SemicolonPreference,
 		};
 	}
 
@@ -126,10 +138,14 @@ export class PluginManager {
 
 	async formatterCode() {
 		const outputDir = this.openapiToSingleConfig.output.dir;
-    //检查是否安装了biome
-    if (!(await execa("which", ["biome"]).then(() => true).catch(() => false))) {
-      console.warn("Biome not found， please install it first.");
-    }
+		//检查是否安装了biome
+		if (
+			!(await execa("which", ["biome"])
+				.then(() => true)
+				.catch(() => false))
+		) {
+			console.warn("Biome not found， please install it first.");
+		}
 
 		await execa("biome", ["format", "--write", outputDir]).catch((e) => {
 			console.warn(e);
@@ -139,12 +155,30 @@ export class PluginManager {
 
 	async run(): Promise<void> {
 		const { sourceFiles, artifacts, diagnostics } = await this.execute();
-		if (hasDiagnosticErrors(diagnostics)) throw new DiagnosticError('Plugin execution failed.', diagnostics);
-		const collected = sortGeneratedArtifacts([...sourceFiles.map((sourceFile) => sourceFileToArtifact(sourceFile)), ...artifacts]);
-		const materialized = materializeArtifacts(collected, this.openapiToSingleConfig.output.dir);
-		if (hasDiagnosticErrors(materialized.diagnostics)) throw new DiagnosticError('Generated artifact collection failed.', materialized.diagnostics);
-		const formatted = await formatMaterializedArtifacts(materialized.artifacts, this.openapiToSingleConfig.output.format);
-		const manifest = await compareArtifacts(formatted.artifacts, this.openapiToSingleConfig.output.dir, this.openapiToSingleConfig.output.clean === true);
+		if (hasDiagnosticErrors(diagnostics))
+			throw new DiagnosticError("Plugin execution failed.", diagnostics);
+		const collected = sortGeneratedArtifacts([
+			...sourceFiles.map((sourceFile) => sourceFileToArtifact(sourceFile)),
+			...artifacts,
+		]);
+		const materialized = materializeArtifacts(
+			collected,
+			this.openapiToSingleConfig.output.dir,
+		);
+		if (hasDiagnosticErrors(materialized.diagnostics))
+			throw new DiagnosticError(
+				"Generated artifact collection failed.",
+				materialized.diagnostics,
+			);
+		const formatted = await formatMaterializedArtifacts(
+			materialized.artifacts,
+			this.openapiToSingleConfig.output.format,
+		);
+		const manifest = await compareArtifacts(
+			formatted.artifacts,
+			this.openapiToSingleConfig.output.dir,
+			this.openapiToSingleConfig.output.clean === true,
+		);
 		await writeArtifacts(formatted.artifacts, manifest);
 		this.filesCreated = materialized.artifacts.length;
 	}

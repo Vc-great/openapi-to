@@ -26,6 +26,7 @@ export * from "./openapi/index.ts";
 export * from "./OpenAPIContext/OpenAPIHelper.ts";
 export * from "./OpenAPIContext/OperationAccessor.ts";
 export * from "./OpenAPIContext/parameterSchema.ts";
+export * from "./OpenAPIContext/requestBody.ts";
 export * from "./OpenAPIContext/responseStatus.ts";
 export * from "./pluginManager/index.ts";
 export type * from "./types";

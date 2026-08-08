@@ -1,7 +1,6 @@
-import type { OperationWrapper } from "@openapi-to/core";
+import { resolveJSONPointer, type OperationWrapper } from "@openapi-to/core";
 import type { SchemaObject } from "oas/types";
 import { isRef } from "oas/types";
-import { findSchemaDefinition } from "oas/utils";
 import type { JsonResponseObject } from "@/types.ts";
 
 export function getDataReturnType(operation: OperationWrapper): string[] {
@@ -26,15 +25,25 @@ export function getDataReturnType(operation: OperationWrapper): string[] {
 	}
 
 	// 递归解析 schema，处理可能的多层 $ref
-	function resolveSchema(schema: SchemaObject): SchemaObject {
+	function resolveSchema(
+		schema: SchemaObject,
+		seenRefs = new Set<string>(),
+	): SchemaObject {
 		if (isRef(schema)) {
-			const resolvedSchema = findSchemaDefinition(
-				schema.$ref,
+			if (seenRefs.has(schema.$ref)) return schema;
+			seenRefs.add(schema.$ref);
+			const resolved = resolveJSONPointer(
 				operation.accessor.operation.api,
+				schema.$ref,
 			);
-			if (resolvedSchema) {
+			if (
+				resolved.found &&
+				typeof resolved.value === "object" &&
+				resolved.value !== null &&
+				!Array.isArray(resolved.value)
+			) {
 				// 递归解析，因为解析后的 schema 可能还包含 $ref
-				return resolveSchema(resolvedSchema);
+				return resolveSchema(resolved.value as SchemaObject, seenRefs);
 			}
 		}
 		return schema;

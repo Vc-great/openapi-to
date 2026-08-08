@@ -8,14 +8,30 @@ import {
 	getResponseStatusTypeName,
 	getResponseSuccessName,
 } from "@/templates/operationTypeNameTemplate.ts";
-import type { OperationWrapper } from "@openapi-to/core";
+import {
+	getOperationRequestBodyMediaType,
+	type OperationWrapper,
+} from "@openapi-to/core";
 
 export function collectEnumFormOperation(operation: OperationWrapper) {
 	const responseTagEnums = [];
-	const operationSourcePath = ["paths", operation.path, operation.method] as const;
+	const operationSourcePath = [
+		"paths",
+		operation.path,
+		operation.method,
+	] as const;
 
 	const statusCodes = operation.accessor.operation.getResponseStatusCodes();
 	const responseName = getResponseSuccessName(operation);
+	const requestBody = operation.accessor.operation.schema?.requestBody;
+	const requestBodyEnums =
+		requestBody && "$ref" in requestBody
+			? []
+			: collectEnumsFromPathRequestBodies(
+					getOperationRequestBodyMediaType(operation.accessor.operation),
+					getRequestBodyTypeName(operation.accessor.operationName),
+					operationSourcePath,
+				);
 	for (const statusCode of statusCodes) {
 		const responses =
 			operation.accessor.operation.getResponseAsJSONSchema(statusCode);
@@ -41,11 +57,7 @@ export function collectEnumFormOperation(operation: OperationWrapper) {
 			operation.accessor.operationName,
 			operationSourcePath,
 		),
-		...collectEnumsFromPathRequestBodies(
-			operation.accessor.operation.getRequestBody(),
-			getRequestBodyTypeName(operation.accessor.operationName),
-			operationSourcePath,
-		),
+		...requestBodyEnums,
 		...responseTagEnums,
 	];
 }

@@ -172,9 +172,12 @@ export function describeOperationResponses(
 		const response = operation.schema?.responses?.[sourceStatusCode] as
 			| ComponentsResponsesValue
 			| undefined;
-		const converted = operation.getResponseAsJSONSchema?.(
-			sourceStatusCode,
-		)?.[0] as ConvertedResponse | undefined;
+		const converted =
+			response && "$ref" in response
+				? undefined
+				: (operation.getResponseAsJSONSchema?.(sourceStatusCode)?.[0] as
+						| ConvertedResponse
+						| undefined);
 		return {
 			statusCode,
 			sourceStatusCode,

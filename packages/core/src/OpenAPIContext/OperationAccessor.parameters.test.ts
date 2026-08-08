@@ -12,6 +12,16 @@ function accessorFor(parameters: unknown[]): OperationAccessor {
 	} as unknown as Operation);
 }
 
+function accessorForDocument(
+	parameters: unknown[],
+	api: Record<string, unknown>,
+): OperationAccessor {
+	return new OperationAccessor({
+		api,
+		getParameters: () => parameters,
+	} as unknown as Operation);
+}
+
 describe("OperationAccessor parameter classification", () => {
 	it("classifies all four request parameter locations from parameter.in", () => {
 		const accessor = accessorFor([
@@ -29,6 +39,38 @@ describe("OperationAccessor parameter classification", () => {
 		expect(accessor.headerParameters).toHaveLength(1);
 		expect(accessor.cookieParameters).toHaveLength(1);
 		expect(accessor.pathParameters[0]?.required).toBe(true);
+	});
+
+	it("resolves referenced parameters with Core JSON Pointer semantics", () => {
+		const accessor = accessorForDocument(
+			[{ $ref: "#/components/parameters/Limit" }],
+			{
+				components: {
+					parameters: {
+						Limit: {
+							name: "limit",
+							in: "query",
+							required: false,
+							style: "form",
+							explode: false,
+							schema: { type: "integer" },
+						},
+					},
+				},
+			},
+		);
+
+		expect(accessor.queryParameters).toEqual([
+			{
+				$ref: "#/components/parameters/Limit",
+				name: "limit",
+				in: "query",
+				required: false,
+				style: "form",
+				explode: false,
+				schema: { type: "integer" },
+			},
+		]);
 	});
 });
 

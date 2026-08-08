@@ -48,7 +48,7 @@
 	"dependencies": {
 		"@openapi-to/core": "workspace:*",
 		"lodash": "^4.17.21",
-		"oas": "^24.9.0",
+		"oas": "^38.2.0",
 		"ts-morph": "^23.0.0"
 	},
 	"keywords": [

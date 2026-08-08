@@ -81,17 +81,19 @@ describe("request body reference collection", () => {
 	it("does not short-circuit a schema carrying $ref siblings", () => {
 		expect(
 			collectRefsFromOperationRequestBody({
-				schema: { requestBody: {} },
-				getRequestBody: () => ({
-					schema: {
-						$ref: "#/components/schemas/Base",
-						oneOf: [{ $ref: "#/components/schemas/Extra" }],
+				schema: {
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/Base",
+									oneOf: [{ $ref: "#/components/schemas/Extra" }],
+								},
+							},
+						},
 					},
-				}),
+				},
 			} as never),
-		).toEqual([
-			"#/components/schemas/Base",
-			"#/components/schemas/Extra",
-		]);
+		).toEqual(["#/components/schemas/Base", "#/components/schemas/Extra"]);
 	});
 });
