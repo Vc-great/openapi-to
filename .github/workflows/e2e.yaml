@@ -254,7 +254,7 @@ jobs:
       - name: Initialize CI diagnostics
         id: diagnostics-init
         run: node scripts/ci-diagnostics/initialize.mjs --dir "${{ env.CI_DIAGNOSTIC_DIR }}" --plan e2e-mcp-cross-platform
-      - name: Setup Node 20 and pnpm
+      - name: Setup Node 22 and pnpm
         id: setup
         uses: ./.github/setup
       - name: Initialize, list tools, validate, and close

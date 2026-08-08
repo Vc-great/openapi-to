@@ -112,7 +112,7 @@ For a P0 compiler release, explicitly verify:
 - `@openapi-to/cli` command behavior/declarations for validate, inspect, diff, generate, dry-run, check, JSON output, and exit-code mapping.
 - The `openapi-to` aggregate re-export of core plus both `openapi` and `openapi-to` bin aliases.
 - Whether additive `HookContext` fields require coordinated plugin releases even while legacy `setSourceFiles()` remains source-compatible.
-- Runtime-engine consistency. The repository, CI, bins, and all package manifests require Node >=20. Never claim compatibility with another version based only on API inspection; add and pass a maintained CI/smoke lane first.
+- Runtime-engine consistency. The repository, CI, bins, and all package manifests require Node >=22. Never claim compatibility with another version based only on API inspection; add and pass a maintained CI/smoke lane first.
 
 Do not edit built output by hand. Rebuild it from source.
 

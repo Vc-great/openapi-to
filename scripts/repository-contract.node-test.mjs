@@ -19,6 +19,7 @@ import {
 	auditCodexSkillInstallerContracts,
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
+	auditNodeRuntimeContracts,
 	auditPublicationContracts,
 	auditRepositoryContracts,
 	auditVersionReadinessContracts,
@@ -464,6 +465,22 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 	]);
 });
 
+test("Node runtime contracts reject a split workspace baseline", async () => {
+	const rootManifest = JSON.parse(
+		await readFile(join(repositoryRoot, "package.json"), "utf8"),
+	);
+	const failures = await auditNodeRuntimeContracts(repositoryRoot, [
+		[".", rootManifest],
+		[
+			"packages/split-runtime",
+			{ name: "@openapi-to/split-runtime", engines: { node: ">=20" } },
+		],
+	]);
+	assert.deepEqual(failures, [
+		"packages/split-runtime/package.json must declare engines.node >=22",
+	]);
+});
+
 test("Codex Skill installer distribution, CLI, packed smoke, and docs stay aligned", async (t) => {
 	assert.deepEqual(await auditCodexSkillInstallerContracts(repositoryRoot), []);
 	const root = await mkdtemp(
@@ -554,7 +571,21 @@ test("aggregate aliases disable notifier only for the real skills top-level comm
 	await writeFixtureFile(
 		root,
 		"node_modules/semver/index.js",
-		"export default { satisfies: () => true };\n",
+		`export default {
+  satisfies(version, range) {
+    return range === ">=22.0.0" && Number.parseInt(version.slice(1).split(".")[0], 10) >= 22;
+  },
+};
+`,
+	);
+	await writeFixtureFile(
+		root,
+		"override-node-version.cjs",
+		`Object.defineProperty(process, "version", {
+  configurable: true,
+  value: process.env.OPENAPI_TO_TEST_NODE_VERSION,
+});
+`,
 	);
 	await writeFixtureFile(
 		root,
@@ -584,13 +615,19 @@ export function updateVersionNotifier() {
 	const notifierTrace = join(root, "notifier-calls");
 	const notifierState = join(root, "notifier-state");
 	const runTrace = join(root, "run-calls");
-	const runAlias = async (alias, args) => {
+	const runAlias = async (alias, args, nodeVersion) => {
 		await rm(notifierTrace, { force: true });
 		await rm(notifierState, { recursive: true, force: true });
 		await rm(runTrace, { force: true });
 		await execFileAsync(
 			process.execPath,
-			[join(root, "packages/openapi/bin", `${alias}.js`), ...args],
+			[
+				...(nodeVersion
+					? ["--require", join(root, "override-node-version.cjs")]
+					: []),
+				join(root, "packages/openapi/bin", `${alias}.js`),
+				...args,
+			],
 			{
 				cwd: root,
 				env: {
@@ -598,6 +635,7 @@ export function updateVersionNotifier() {
 					OPENAPI_TO_NOTIFIER_TRACE: notifierTrace,
 					OPENAPI_TO_NOTIFIER_STATE: notifierState,
 					OPENAPI_TO_RUN_TRACE: runTrace,
+					OPENAPI_TO_TEST_NODE_VERSION: nodeVersion,
 				},
 			},
 		);
@@ -606,6 +644,32 @@ export function updateVersionNotifier() {
 			args,
 		);
 	};
+	await runAlias("openapi", ["--json", "--help"], "v22.0.0");
+	const unsupported = await execFileAsync(
+		process.execPath,
+		[
+			"--require",
+			join(root, "override-node-version.cjs"),
+			join(root, "packages/openapi/bin/openapi.js"),
+		],
+		{
+			cwd: root,
+			env: {
+				...process.env,
+				OPENAPI_TO_TEST_NODE_VERSION: "v20.19.5",
+			},
+		},
+	).then(
+		() => undefined,
+		(error) => error,
+	);
+	assert(unsupported);
+	assert.equal(unsupported.code, 1);
+	assert.equal(unsupported.stdout, "");
+	assert.equal(
+		unsupported.stderr,
+		"Error: This tool requires Node.js >=22.0.0, but you are using v20.19.5\n",
+	);
 	const skillsCases = [
 		["skills", "install", "--host", "codex"],
 		["--debug", "skills", "install", "--host", "codex"],

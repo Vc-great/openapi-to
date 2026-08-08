@@ -4,7 +4,7 @@ Any MCP Host that supports local stdio processes can launch the `openapi-to-mcp`
 
 ## Prerequisites and installation
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - A Host with MCP stdio support
 - A trusted local Workspace
 

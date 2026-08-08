@@ -160,8 +160,8 @@ for (const { directory, absoluteDirectory, manifest } of publicRecords) {
 		failures.push(`${manifest.name}: bugs.url must be ${bugsUrl}`);
 	if (manifest.homepage !== homepage)
 		failures.push(`${manifest.name}: homepage must be ${homepage}`);
-	if (manifest.engines?.node !== ">=20")
-		failures.push(`${manifest.name}: engines.node must be >=20`);
+	if (manifest.engines?.node !== ">=22")
+		failures.push(`${manifest.name}: engines.node must be >=22`);
 	if (!Array.isArray(manifest.files) || manifest.files.length === 0)
 		failures.push(`${manifest.name}: package files allowlist is missing`);
 	if (!manifest.exports || typeof manifest.exports !== "object")

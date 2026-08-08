@@ -32,7 +32,7 @@ Schema is compatible.
   Setup Plan to this exact value. It does not bind the whole worktree.
 - `blockingReasons` is sorted and closed: do not guess through a reason.
 - `workspace` reports only bounded booleans, a relative root marker, and the
-  running Node major/support decision. `workspace.packageJson.sha256` hashes
+  running Node >=22 support decision. `workspace.packageJson.sha256` hashes
   original bytes even when JSON is invalid, is `null` when missing, and never
   exposes the manifest. It never prints the absolute Workspace.
 - `packageManager` prefers `package.json#packageManager`, then a unique lockfile
