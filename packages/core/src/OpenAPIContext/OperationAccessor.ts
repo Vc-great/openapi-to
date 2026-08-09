@@ -2,11 +2,7 @@ import { map as _map, camelCase, head, some } from "lodash-es";
 
 import type { Operation } from "oas/operation";
 import { resolveJSONPointer } from "../openapi/refResolver.ts";
-import type {
-	ParameterObject,
-	ParameterObjectWithRef,
-	ReferenceObject,
-} from "./types.ts";
+import type { ParameterObjectWithRef } from "./types.ts";
 import { selectSuccessResponseStatusCode } from "./responseStatus.ts";
 
 type OperationTSType = {
