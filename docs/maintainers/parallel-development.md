@@ -62,17 +62,24 @@ Any active state -> BLOCKED -> READY or CODING after the blocker clears
   record the blocker on the Issue before returning to another state.
 
 The repository runs its universal CI workflows on pull requests, pushes to
-`main`, and GitHub's `merge_group` `checks_requested` event. The stable future
-required-check candidates are `Required quality`, `Required E2E`, and
+`main`, and GitHub's `merge_group` `checks_requested` event. The required
+checks are `Required quality`, `Required E2E`, and
 `Required A1 cross-platform`; each fails unless every ordinary dependency in
 its workflow succeeds. E2E performance and bounded stress remains a push,
 schedule, or manual check rather than a merge-group dependency. Version
 Readiness remains a path-filtered, pull-request-only conditional release gate.
 
-This workflow compatibility does not prove or activate branch protection,
-required checks, auto-merge, or GitHub Merge Queue. Those remain separate
-repository settings, and the user remains the merge authority. Name the actual
-workflow/check and exact commit when recording remote or post-merge evidence.
+The repository-level `main-protection` ruleset is active for the default branch.
+It requires pull requests, the three aggregate checks above, and GitHub Merge
+Queue. Required checks use the loose policy because the queue's `merge_group`
+run provides the latest-`main` integration proof. The initial queue is
+serialized: one build and one pull request per `ALLGREEN` group, merged by
+squash.
+
+The user remains the enqueue and merge authority. Successful CI does not add a
+pull request to the queue, repository auto-merge remains disabled, and Codex
+has no autonomous merge authority. Name the actual workflow/check and exact
+commit when recording remote or post-merge evidence.
 
 ## Parallelization decisions
 
@@ -96,14 +103,14 @@ review.
 
 ## Integration queue
 
-Use a lightweight ordered list of `MERGE READY` PRs. Do not add a custom queue,
-enable auto-merge, or weaken the user's merge authority.
+Use GitHub Merge Queue for user-authorized `MERGE READY` PRs. Do not add a
+custom queue, enable repository auto-merge, or weaken the user's merge
+authority.
 
 ```text
 PR A --\
-PR B ----> merge-ready queue -> integrate A -> main changes
-PR C --/                          -> re-evaluate B -> integrate B
-                                   -> re-evaluate C
+PR B ----> MERGE READY -> user-authorized enqueue -> merge_group CI
+PR C --/                                             -> squash into main
 ```
 
 Before integrating each candidate:
@@ -116,7 +123,11 @@ Before integrating each candidate:
    fresh remote evidence.
 4. Remove it from `MERGE READY` if evidence is stale or a blocking conflict is
    found.
-5. Merge only with explicit user authority, then observe relevant `main`
+5. Enqueue only with explicit user authority. Merge only with explicit user
+   authority through an enqueue scoped to the intended pull request and head.
+   Confirm the queue created a real `merge_group` commit and that its required
+   aggregate checks passed.
+6. After the queue integrates the pull request, observe relevant `main`
    validation before marking the Issue `DONE`.
 
 Passing A and B independently against an older `main` does not prove that
@@ -184,5 +195,5 @@ Useful built-in automation may add matching Issues and PRs to the Project and
 move closed Issues or merged PRs to `Done`. Treat automation as presentation:
 the Issue/PR and observed CI remain authoritative, and maintainers still
 verify post-merge `main` before declaring the task `DONE`. Configure Project
-fields and automation separately; this repository does not create or mutate a
-Project, labels, branch protection, or merge settings.
+fields and automation separately; this Project guidance does not create or
+mutate a Project, labels, branch protection, or merge settings.
