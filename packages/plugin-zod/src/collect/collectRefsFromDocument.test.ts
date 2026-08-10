@@ -7,6 +7,22 @@ import {
 } from "./collectRefsFromDocument.ts";
 
 describe("collectRefsFromComponentResponse", () => {
+	it("collects refs only from the preferred response media", () => {
+		expect(
+			collectRefsFromComponentResponse({
+				description: "Multiple media",
+				content: {
+					"application/xml": {
+						schema: { $ref: "#/components/schemas/XmlMessage" },
+					},
+					"application/json": {
+						schema: { $ref: "#/components/schemas/JsonMessage" },
+					},
+				},
+			} as never),
+		).toEqual(["#/components/schemas/JsonMessage"]);
+	});
+
 	it("collects body schema refs without treating response header refs as body imports", () => {
 		expect(
 			collectRefsFromComponentResponse({
@@ -81,17 +97,19 @@ describe("request body reference collection", () => {
 	it("does not short-circuit a schema carrying $ref siblings", () => {
 		expect(
 			collectRefsFromOperationRequestBody({
-				schema: { requestBody: {} },
-				getRequestBody: () => ({
-					schema: {
-						$ref: "#/components/schemas/Base",
-						oneOf: [{ $ref: "#/components/schemas/Extra" }],
+				schema: {
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/Base",
+									oneOf: [{ $ref: "#/components/schemas/Extra" }],
+								},
+							},
+						},
 					},
-				}),
+				},
 			} as never),
-		).toEqual([
-			"#/components/schemas/Base",
-			"#/components/schemas/Extra",
-		]);
+		).toEqual(["#/components/schemas/Base", "#/components/schemas/Extra"]);
 	});
 });

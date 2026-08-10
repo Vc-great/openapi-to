@@ -31,9 +31,8 @@ const asOperation = (value: unknown): OperationFixture =>
 	value as OperationFixture;
 const asComponentParameters = (value: unknown): ComponentParametersFixture =>
 	value as ComponentParametersFixture;
-const asComponentRequestBody = (
-	value: unknown,
-): ComponentRequestBodyFixture => value as ComponentRequestBodyFixture;
+const asComponentRequestBody = (value: unknown): ComponentRequestBodyFixture =>
+	value as ComponentRequestBodyFixture;
 const asComponentResponse = (value: unknown): ComponentResponseFixture =>
 	value as ComponentResponseFixture;
 
@@ -147,11 +146,14 @@ describe("collectRefsFromDocument", () => {
 		it("应该从请求体模式中收集引用", () => {
 			const oasOperation = {
 				schema: {
-					requestBody: {},
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: { $ref: "#/components/schemas/User" },
+							},
+						},
+					},
 				},
-				getRequestBody: vi.fn().mockReturnValue({
-					schema: { $ref: "#/components/schemas/User" },
-				}),
 			};
 
 			const result = collectRefsFromOperationRequestBody(
@@ -165,11 +167,14 @@ describe("collectRefsFromDocument", () => {
 		it("应该从请求体模式中收集深层引用", () => {
 			const oasOperation = {
 				schema: {
-					requestBody: {},
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: { type: "object" },
+							},
+						},
+					},
 				},
-				getRequestBody: vi.fn().mockReturnValue({
-					schema: { type: "object" },
-				}),
 			};
 
 			const result = collectRefsFromOperationRequestBody(
@@ -186,34 +191,39 @@ describe("collectRefsFromDocument", () => {
 		it("does not short-circuit schema $ref siblings", () => {
 			const oasOperation = {
 				schema: {
-					requestBody: {},
-				},
-				getRequestBody: vi.fn().mockReturnValue({
-					schema: {
-						$ref: "#/components/schemas/Base",
-						allOf: [{ type: "object" }],
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/Base",
+									allOf: [{ type: "object" }],
+								},
+							},
+						},
 					},
-				}),
+				},
 			};
 
 			collectRefsFromOperationRequestBody(asOperation(oasOperation));
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
-			).toHaveBeenCalledWith(oasOperation.getRequestBody().schema);
+			).toHaveBeenCalledWith(
+				oasOperation.schema.requestBody.content["application/json"].schema,
+			);
 		});
 
-		it("应该处理数组形式的请求体", () => {
+		it("应该处理 OAS 选择的请求体媒体类型", () => {
 			const oasOperation = {
 				schema: {
-					requestBody: {},
+					requestBody: {
+						content: {
+							"application/json": {
+								schema: { type: "object" },
+							},
+						},
+					},
 				},
-				getRequestBody: vi
-					.fn()
-					.mockReturnValue([
-						"application/json",
-						{ schema: { type: "object" } },
-					]),
 			};
 
 			const result = collectRefsFromOperationRequestBody(
@@ -243,7 +253,9 @@ describe("collectRefsFromDocument", () => {
 				}),
 			};
 
-			const result = collectRefsFromOperationResponse(asOperation(oasOperation));
+			const result = collectRefsFromOperationResponse(
+				asOperation(oasOperation),
+			);
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -262,7 +274,9 @@ describe("collectRefsFromDocument", () => {
 					]),
 			};
 
-			const result = collectRefsFromOperationResponse(asOperation(oasOperation));
+			const result = collectRefsFromOperationResponse(
+				asOperation(oasOperation),
+			);
 
 			expect(
 				collectRefsFromSchemasModule.collectRefsFromSchema,
@@ -277,7 +291,9 @@ describe("collectRefsFromDocument", () => {
 				getResponseAsJSONSchema: vi.fn().mockReturnValue(null),
 			};
 
-			const result = collectRefsFromOperationResponse(asOperation(oasOperation));
+			const result = collectRefsFromOperationResponse(
+				asOperation(oasOperation),
+			);
 
 			expect(result).toHaveLength(0);
 		});
@@ -407,8 +423,8 @@ describe("collectRefsFromDocument", () => {
 			);
 
 			expect(result).toContain("#/components/schemas/Success");
-			expect(result).toContain("#/components/schemas/RefFromObject");
-			expect(result).toHaveLength(2);
+			expect(result).not.toContain("#/components/schemas/RefFromObject");
+			expect(result).toHaveLength(1);
 		});
 
 		it("does not collect response header refs as body imports", () => {

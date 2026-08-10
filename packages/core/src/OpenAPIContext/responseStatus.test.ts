@@ -5,6 +5,7 @@ import { OperationAccessor } from "./OperationAccessor.ts";
 import {
 	classifyResponseStatusCodes,
 	describeOperationResponses,
+	describeResponse,
 	selectSuccessResponseStatusCode,
 } from "./responseStatus.ts";
 
@@ -90,7 +91,26 @@ describe("response status selection", () => {
 		]);
 	});
 
+	it("selects JSON media for a standalone response component", () => {
+		expect(
+			describeResponse({
+				description: "Multiple media",
+				content: {
+					"application/xml": { schema: { type: "string" } },
+					"application/json": {
+						schema: { type: "object", properties: { id: { type: "string" } } },
+					},
+				},
+			}),
+		).toMatchObject({
+			kind: "schema",
+			contentType: "application/json",
+			schema: { type: "object", properties: { id: { type: "string" } } },
+		});
+	});
+
 	it("describes schema, unknown-media, no-content, and reference responses without losing original wildcard keys", () => {
+		let convertedReferences = 0;
 		const operation = {
 			schema: {
 				responses: {
@@ -106,7 +126,27 @@ describe("response status selection", () => {
 					"2xx": { $ref: "#/components/responses/Wildcard" },
 				},
 			},
-			getResponseAsJSONSchema: () => [],
+			api: {
+				components: {
+					responses: {
+						Wildcard: {
+							description: "Resolved wildcard",
+							content: {
+								"application/xml": {
+									schema: { type: "string", enum: ["unused"] },
+								},
+								"application/json": {
+									schema: { $ref: "#/components/schemas/Wildcard" },
+								},
+							},
+						},
+					},
+				},
+			},
+			getResponseAsJSONSchema: (status: string) => {
+				if (status.toLowerCase() === "2xx") convertedReferences += 1;
+				return [];
+			},
 		} as unknown as Operation;
 
 		expect(describeOperationResponses(operation)).toMatchObject([
@@ -134,8 +174,17 @@ describe("response status selection", () => {
 				classification: "success",
 				kind: "reference",
 				schema: { $ref: "#/components/responses/Wildcard" },
+				inspection: [
+					{
+						contentType: "application/json",
+						description: "Resolved wildcard",
+						label: "application/json",
+						schema: { $ref: "#/components/schemas/Wildcard" },
+					},
+				],
 			},
 		]);
+		expect(convertedReferences).toBe(0);
 	});
 });
 

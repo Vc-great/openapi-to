@@ -54,11 +54,8 @@ export function buildJsonResponseTypes(
 						"responses",
 						descriptors[index]?.sourceStatusCode ?? response.code,
 						"content",
-						getResponseContentType(
-							operation,
-							descriptors[index]?.sourceStatusCode ?? response.code,
+						descriptors[index]?.inspection?.[0]?.contentType ??
 							response.jsonSchema.label,
-						),
 						"schema",
 					]
 				: undefined,
@@ -96,16 +93,4 @@ export function buildJsonResponseTypes(
 	}
 
 	return responseTypes;
-}
-
-function getResponseContentType(
-	operation: OperationWrapper,
-	statusCode: string,
-	fallbackLabel: string,
-): string {
-	const response = operation.accessor.operation.schema.responses?.[statusCode];
-	if (response && !("$ref" in response) && response.content) {
-		return Object.keys(response.content)[0] ?? fallbackLabel;
-	}
-	return fallbackLabel;
 }

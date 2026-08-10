@@ -5,9 +5,10 @@ import type {
 } from "@openapi-to/core";
 import {
 	describeOperationResponses,
+	describeResponse,
+	getOperationRequestBodyMediaTypeObject,
 	resolveParameterSchema,
 } from "@openapi-to/core";
-import { isBoolean } from "lodash-es";
 import type { Operation } from "oas/operation";
 import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { collectRefsFromSchema } from "@/collect/collectRefsFromSchemas.ts";
@@ -39,22 +40,11 @@ export function collectRefsFromOperationRequestBody(oasOperation: Operation) {
 		return [requestBody.$ref];
 	}
 	//
-	const mediaTypeObject = oasOperation.getRequestBody();
+	const mediaTypeObject = getOperationRequestBodyMediaTypeObject(oasOperation);
 
-	if (
-		mediaTypeObject &&
-		!Array.isArray(mediaTypeObject) &&
-		!isBoolean(mediaTypeObject)
-	) {
+	if (mediaTypeObject) {
 		if (mediaTypeObject.schema) {
 			collectRefsFromSchema(mediaTypeObject.schema).forEach((ref) => {
-				refs.add(ref);
-			});
-		}
-	} else if (Array.isArray(mediaTypeObject)) {
-		const [, media] = mediaTypeObject;
-		if (media?.schema) {
-			collectRefsFromSchema(media.schema).forEach((ref) => {
 				refs.add(ref);
 			});
 		}
@@ -125,16 +115,12 @@ export function collectRefsFromComponentResponse(
 		return [...refs];
 	}
 
-	// 处理包含 content 的情况
-	if (response && "content" in response && response.content) {
-		for (const media of Object.values(response.content)) {
-			if (media?.schema) {
-				collectRefsFromSchema(media.schema).forEach((ref) => {
-					refs.add(ref);
-				});
-			}
-		}
-	}
+
+	const schema = describeResponse(response).schema;
+	if (schema !== undefined)
+		collectRefsFromSchema(schema).forEach((ref) => {
+			refs.add(ref);
+		});
 
 	return [...refs];
 }

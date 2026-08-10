@@ -14,7 +14,7 @@ describe("buildOperationRequestBodyTypes", () => {
 					schema: {
 						requestBody: undefined,
 					},
-					getRequestBody: () => undefined,
+					getRequestBody: () => false,
 				},
 			},
 		};
@@ -33,18 +33,21 @@ describe("buildOperationRequestBodyTypes", () => {
 				operationName: "createUser",
 				operation: {
 					schema: {
-						requestBody: {},
-					},
-					getRequestBody: () => ({
-						schema: {
-							type: "object",
-							properties: {
-								name: { type: "string" },
-								email: { type: "string" },
+						requestBody: {
+							content: {
+								"application/json": {
+									schema: {
+										type: "object",
+										properties: {
+											name: { type: "string" },
+											email: { type: "string" },
+										},
+										required: ["name", "email"],
+									},
+								},
 							},
-							required: ["name", "email"],
 						},
-					}),
+					},
 				},
 			},
 		};
@@ -79,7 +82,7 @@ describe("buildOperationRequestBodyTypes", () => {
 							$ref: "#/components/schemas/User",
 						},
 					},
-					getRequestBody: () => undefined,
+					getRequestBody: () => false,
 				},
 			},
 		};
@@ -89,7 +92,7 @@ describe("buildOperationRequestBodyTypes", () => {
 		expect(result?.name).toBe("UpdateUserMutationRequest");
 	});
 
-	it("should handle array response from getRequestBody", () => {
+	it("should use the selected media type from the oas request-body wrapper", () => {
 		const mockOperation = {
 			path: "/users/bulk",
 			method: "post",
@@ -99,22 +102,22 @@ describe("buildOperationRequestBodyTypes", () => {
 				operationName: "createBulkUsers",
 				operation: {
 					schema: {
-						requestBody: {},
-					},
-					getRequestBody: () => [
-						{ contentType: "application/json" },
-						{
-							schema: {
-								type: "array",
-								items: {
-									type: "object",
-									properties: {
-										name: { type: "string" },
+						requestBody: {
+							content: {
+								"application/json": {
+									schema: {
+										type: "array",
+										items: {
+											type: "object",
+											properties: {
+												name: { type: "string" },
+											},
+										},
 									},
 								},
 							},
 						},
-					],
+					},
 				},
 			},
 		};
@@ -129,13 +132,18 @@ describe("buildOperationRequestBodyTypes", () => {
 			accessor: {
 				operationName: "updateUser",
 				operation: {
-					schema: { requestBody: { content: { "application/json": {} } } },
-					getRequestBody: () => ({
-						schema: {
-							$ref: "#/components/schemas/User",
-							nullable: true,
+					schema: {
+						requestBody: {
+							content: {
+								"application/json": {
+									schema: {
+										$ref: "#/components/schemas/User",
+										nullable: true,
+									},
+								},
+							},
 						},
-					}),
+					},
 				},
 			},
 		} as never);
