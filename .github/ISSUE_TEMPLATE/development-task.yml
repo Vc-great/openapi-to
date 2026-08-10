@@ -27,6 +27,17 @@ body:
       description: What must not expand into this task?
     validations:
       required: true
+  - type: dropdown
+    id: authorization-mode
+    attributes:
+      label: Execution / Authorization Mode
+      description: This governance field records the proposed future mode. It does not grant runtime authority or trigger automation.
+      options:
+        - Manual
+        - Design Approved
+        - Autonomous
+    validations:
+      required: true
   - type: textarea
     id: dependencies
     attributes:

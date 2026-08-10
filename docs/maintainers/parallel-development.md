@@ -81,6 +81,11 @@ pull request to the queue, repository auto-merge remains disabled, and Codex
 has no autonomous merge authority. Name the actual workflow/check and exact
 commit when recording remote or post-merge evidence.
 
+The future authorization model is defined in
+[autonomous maintenance governance](./autonomous-maintenance.md). Its trigger,
+execution, review orchestration, repair, Policy Gate, and policy-authorized
+enqueue remain planned; that contract does not change current user authority.
+
 ## Parallelization decisions
 
 Classify each task in its Issue:

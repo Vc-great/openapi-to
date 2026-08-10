@@ -7,6 +7,13 @@
 
 ## Non-goals
 
+## Governance evidence
+
+- Authorization mode: Manual / Design Approved / Autonomous
+- Root-of-Trust intersection: none / details
+- Independent review: READY / NOT READY / not applicable
+- Authorization evidence belongs to the linked Issue/task and trusted policy; this PR text does not grant runtime authority.
+
 ## Public impact
 
 ## Changeset
