@@ -4699,8 +4699,8 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 	const schemaPath = join(root, "scripts/ci-diagnostics/schema.mjs");
 	if (await exists(schemaPath)) {
 		const schema = await readFile(schemaPath, "utf8");
-		if (!/SCHEMA_VERSION\s*=\s*1\b/.test(schema)) {
-			failures.push("CI diagnostics schema entrypoint must declare version 1");
+		if (!/SCHEMA_VERSION\s*=\s*2\b/.test(schema)) {
+			failures.push("CI diagnostics schema entrypoint must declare version 2");
 		}
 		if (!schema.includes('DIAGNOSTIC_KIND = "openapi-to-ci-diagnostic"')) {
 			failures.push(
@@ -4737,6 +4737,36 @@ export async function auditCiDiagnosticsContracts(root = repositoryRoot) {
 			if (!filesystem.includes(required)) {
 				failures.push(
 					`CI diagnostics bounded file reader is missing ${required}`,
+				);
+			}
+		}
+		if (
+			runCommand.includes("TURBO_LOG_FILE") ||
+			runCommand.includes('"--log-file"')
+		) {
+			failures.push(
+				"CI diagnostics must not enable Turbo's unbounded structured log channel",
+			);
+		}
+		for (const required of [
+			"processLifecycle",
+			"resourceSnapshot",
+		]) {
+			if (!runCommand.includes(required)) {
+				failures.push(
+					`CI diagnostics process evidence is missing ${required}`,
+				);
+			}
+		}
+		for (const required of [
+			"normalizeProcessLifecycle",
+			"normalizeResources",
+			"within(repositoryRoot, turboManifestPath)",
+			"sanitizeText(turboManifest.version",
+		]) {
+			if (!finalizer.includes(required)) {
+				failures.push(
+					`CI diagnostics runtime normalization is missing ${required}`,
 				);
 			}
 		}

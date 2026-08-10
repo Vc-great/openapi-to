@@ -1479,13 +1479,13 @@ test("CI diagnostics repository contract rejects schema and retention drift", as
 	await writeFile(
 		schemaPath,
 		schema
-			.replace("SCHEMA_VERSION = 1", "SCHEMA_VERSION = 2")
+			.replace("SCHEMA_VERSION = 2", "SCHEMA_VERSION = 3")
 			.replace("ARTIFACT_RETENTION_DAYS = 14", "ARTIFACT_RETENTION_DAYS = 7"),
 	);
 	const failures = await auditCiDiagnosticsContracts(root);
 	assert.ok(
 		failures.some((failure) =>
-			/schema entrypoint must declare version 1/.test(failure),
+			/schema entrypoint must declare version 2/.test(failure),
 		),
 	);
 	assert.ok(
@@ -1587,23 +1587,30 @@ test("CI diagnostics repository contract rejects missing bounded reads, child en
 	const runCommandPath = join(root, "scripts/ci-diagnostics/run-command.mjs");
 	await writeFile(
 		runCommandPath,
-		(await readFile(runCommandPath, "utf8")).replace(
-			"CHILD_ENV_DENYLIST",
-			"REMOVED_CHILD_POLICY",
-		),
+		`${(await readFile(runCommandPath, "utf8"))
+			.replace("CHILD_ENV_DENYLIST", "REMOVED_CHILD_POLICY")
+			.replaceAll("resourceSnapshot", "REMOVED_RESOURCE_SNAPSHOT")}\n// TURBO_LOG_FILE\n`,
 	);
 	const finalizerPath = join(root, "scripts/ci-diagnostics/finalize-job.mjs");
 	await writeFile(
 		finalizerPath,
-		(await readFile(finalizerPath, "utf8")).replaceAll(
-			"materializeUploadDirectory",
-			"unsafeUploadDirectory",
-		),
+		(await readFile(finalizerPath, "utf8"))
+			.replaceAll("materializeUploadDirectory", "unsafeUploadDirectory")
+			.replaceAll(
+				"within(repositoryRoot, turboManifestPath)",
+				"removedTurboManifestContainment",
+			),
 	);
 	const failures = await auditCiDiagnosticsContracts(root);
 	assertFailure({ failures }, /bounded file reader is missing/);
 	assertFailure({ failures }, /child environment policy is missing/);
 	assertFailure({ failures }, /upload materialization is missing/);
+	assertFailure(
+		{ failures },
+		/process evidence is missing resourceSnapshot/,
+	);
+	assertFailure({ failures }, /runtime normalization is missing within/);
+	assertFailure({ failures }, /unbounded structured log channel/);
 });
 
 test("CI diagnostics repository contract rejects gate and matrix shrinkage", async (t) => {
