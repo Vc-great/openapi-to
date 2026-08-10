@@ -61,10 +61,18 @@ Any active state -> BLOCKED -> READY or CODING after the blocker clears
 - **BLOCKED**: a dependency, decision, failure, or conflict prevents progress;
   record the blocker on the Issue before returning to another state.
 
-The repository currently runs CI on pull requests and pushes to `main`, but
-repository files do not prove a required-check or native merge-queue setting.
-Do not infer either setting. Name the actual workflow/check and exact commit
-when recording remote or post-merge evidence.
+The repository runs its universal CI workflows on pull requests, pushes to
+`main`, and GitHub's `merge_group` `checks_requested` event. The stable future
+required-check candidates are `Required quality`, `Required E2E`, and
+`Required A1 cross-platform`; each fails unless every ordinary dependency in
+its workflow succeeds. E2E performance and bounded stress remains a push,
+schedule, or manual check rather than a merge-group dependency. Version
+Readiness remains a path-filtered, pull-request-only conditional release gate.
+
+This workflow compatibility does not prove or activate branch protection,
+required checks, auto-merge, or GitHub Merge Queue. Those remain separate
+repository settings, and the user remains the merge authority. Name the actual
+workflow/check and exact commit when recording remote or post-merge evidence.
 
 ## Parallelization decisions
 

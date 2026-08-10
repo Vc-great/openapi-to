@@ -305,6 +305,9 @@ function collectActionUses(value, actions = []) {
 
 const ORDINARY_PR_CONCURRENCY_GROUP = `${DOLLAR_SIGN}{{ github.workflow }}-${DOLLAR_SIGN}{{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}`;
 const ORDINARY_PR_CANCEL_IN_PROGRESS = `${DOLLAR_SIGN}{{ github.event_name == 'pull_request' }}`;
+const MERGE_QUEUE_BASE_SHA = `${DOLLAR_SIGN}{{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || '' }}`;
+const MERGE_QUEUE_HEAD_SHA = `${DOLLAR_SIGN}{{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}`;
+const REQUIRED_RESULTS_EXPRESSION = `${DOLLAR_SIGN}{{ toJSON(needs) }}`;
 const PR_WORKFLOW_CONCURRENCY_CONTRACTS = new Map([
 	[
 		".github/workflows/a1-cross-platform.yml",
@@ -335,6 +338,230 @@ const PR_WORKFLOW_CONCURRENCY_CONTRACTS = new Map([
 		},
 	],
 ]);
+
+const MERGE_QUEUE_WORKFLOW_CONTRACTS = new Map([
+	[
+		".github/workflows/quality.yml",
+		{
+			triggerKeys: ["merge_group", "pull_request", "push"],
+			requiredJobs: [
+				"build",
+				"typecheck",
+				"tests",
+				"lint-changed",
+				"release-smoke",
+			],
+			aggregateJob: "required-quality",
+			aggregateName: "Required quality",
+			aggregateIf: "always()",
+		},
+	],
+	[
+		".github/workflows/e2e.yaml",
+		{
+			triggerKeys: [
+				"merge_group",
+				"pull_request",
+				"push",
+				"schedule",
+				"workflow_dispatch",
+			],
+			requiredJobs: [
+				"common",
+				"module",
+				"remote",
+				"mcp-stdio-e2e",
+				"mcp-cross-platform",
+				"mcp-transaction-safety",
+			],
+			requiredJobIf: "github.event_name != 'schedule'",
+			aggregateJob: "required-e2e",
+			aggregateName: "Required E2E",
+			aggregateIf: "always() && github.event_name != 'schedule'",
+		},
+	],
+	[
+		".github/workflows/a1-cross-platform.yml",
+		{
+			triggerKeys: [
+				"merge_group",
+				"pull_request",
+				"push",
+				"workflow_dispatch",
+			],
+			requiredJobs: ["contracts"],
+			aggregateJob: "required-a1",
+			aggregateName: "Required A1 cross-platform",
+			aggregateIf: "always()",
+		},
+	],
+]);
+
+export async function auditMergeQueueContracts(root = repositoryRoot) {
+	const failures = [];
+	const aggregateNames = new Map();
+	for (const [relativePath, contract] of MERGE_QUEUE_WORKFLOW_CONTRACTS) {
+		const workflow = await readWorkflowDocument(root, relativePath, failures);
+		if (!workflow) continue;
+		const triggers = isMapping(workflow.on) ? workflow.on : {};
+		if (
+			JSON.stringify(mappingKeys(triggers)) !==
+			JSON.stringify(contract.triggerKeys)
+		) {
+			failures.push(
+				`${relativePath} must retain its exact universal, manual, and schedule trigger surface`,
+			);
+		}
+		if (
+			!isMapping(triggers.merge_group) ||
+			JSON.stringify(mappingKeys(triggers.merge_group)) !==
+				JSON.stringify(["types"]) ||
+			JSON.stringify(triggers.merge_group.types) !==
+				JSON.stringify(["checks_requested"])
+		) {
+			failures.push(
+				`${relativePath} must run on merge_group checks_requested`,
+			);
+		}
+		if (
+			!isMapping(triggers.pull_request) ||
+			JSON.stringify(mappingKeys(triggers.pull_request)) !==
+				JSON.stringify(["branches"]) ||
+			JSON.stringify(triggers.pull_request.branches) !==
+				JSON.stringify(["main"])
+		) {
+			failures.push(
+				`${relativePath} universal pull_request validation must target main without path filters`,
+			);
+		}
+
+		const jobs = isMapping(workflow.jobs) ? workflow.jobs : {};
+		for (const jobId of contract.requiredJobs) {
+			const job = jobs[jobId];
+			if (!isMapping(job)) {
+				failures.push(`${relativePath} is missing required Job ${jobId}`);
+				continue;
+			}
+			if (contract.requiredJobIf === undefined) {
+				if (Object.hasOwn(job, "if")) {
+					failures.push(
+						`${relativePath} jobs.${jobId} must not conditionally skip universal validation`,
+					);
+				}
+			} else if (job.if !== contract.requiredJobIf) {
+				failures.push(
+					`${relativePath} jobs.${jobId} must run for pull_request, push, merge_group, and workflow_dispatch while skipping only schedule`,
+				);
+			}
+			const expectedBaseSha =
+				relativePath === ".github/workflows/quality.yml" &&
+				jobId === "lint-changed"
+					? `${DOLLAR_SIGN}{{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}`
+					: MERGE_QUEUE_BASE_SHA;
+			if (
+				job.env?.CI_BASE_SHA !== expectedBaseSha ||
+				job.env?.CI_HEAD_SHA !== MERGE_QUEUE_HEAD_SHA
+			) {
+				failures.push(
+					`${relativePath} jobs.${jobId} must record event-aware pull_request and merge_group SHAs`,
+				);
+			}
+		}
+
+		const aggregate = jobs[contract.aggregateJob];
+		if (!isMapping(aggregate)) {
+			failures.push(
+				`${relativePath} is missing stable aggregate Job ${contract.aggregateJob}`,
+			);
+			continue;
+		}
+		const previousPath = aggregateNames.get(aggregate.name);
+		if (previousPath) {
+			failures.push(
+				`${relativePath} aggregate check name ${aggregate.name} is ambiguous with ${previousPath}`,
+			);
+		} else if (typeof aggregate.name === "string") {
+			aggregateNames.set(aggregate.name, relativePath);
+		}
+		const steps = Array.isArray(aggregate.steps)
+			? aggregate.steps.filter(isMapping)
+			: [];
+		const gateRun = steps.length === 1 ? steps[0].run : undefined;
+		if (
+			aggregate.name !== contract.aggregateName ||
+			aggregate.if !== contract.aggregateIf ||
+			JSON.stringify(normalizedNeeds(aggregate.needs)) !==
+				JSON.stringify(contract.requiredJobs) ||
+			aggregate["runs-on"] !== "ubuntu-latest" ||
+			aggregate["timeout-minutes"] !== 5 ||
+			aggregate.env?.CI_REQUIRED_JOBS !== contract.requiredJobs.join(",") ||
+			aggregate.env?.CI_REQUIRED_RESULTS !== REQUIRED_RESULTS_EXPRESSION ||
+			steps.length !== 1 ||
+			typeof gateRun !== "string" ||
+			!gateRun.includes('value.result !== "success"') ||
+			!gateRun.includes("required Job set mismatch") ||
+			Object.hasOwn(aggregate, "continue-on-error") ||
+			steps.some((step) => Object.hasOwn(step, "continue-on-error"))
+		) {
+			failures.push(
+				`${relativePath} ${contract.aggregateJob} must fail closed over the exact required Job set`,
+			);
+		}
+	}
+
+	const quality = await readWorkflowDocument(
+		root,
+		".github/workflows/quality.yml",
+		failures,
+	);
+	const lintJob = quality?.jobs?.["lint-changed"];
+	const lintSteps = Array.isArray(lintJob?.steps)
+		? lintJob.steps.filter(isMapping)
+		: [];
+	const mergeGroupLint = lintSteps.find(
+		(step) => step.name === "Lint merge-group files",
+	);
+	if (
+		lintJob?.steps?.find((step) => step?.name === "Check out code")?.with?.[
+			"fetch-depth"
+		] !== 0 ||
+		mergeGroupLint?.if !== "github.event_name == 'merge_group'" ||
+		mergeGroupLint?.env?.MERGE_GROUP_BASE_SHA !==
+			`${DOLLAR_SIGN}{{ github.event.merge_group.base_sha }}` ||
+		mergeGroupLint?.env?.MERGE_GROUP_HEAD_SHA !==
+			`${DOLLAR_SIGN}{{ github.event.merge_group.head_sha }}` ||
+		typeof mergeGroupLint?.run !== "string" ||
+		!mergeGroupLint.run.includes(
+			`test -n "${DOLLAR_SIGN}{MERGE_GROUP_BASE_SHA}"`,
+		) ||
+		!mergeGroupLint.run.includes(
+			`test "${DOLLAR_SIGN}{MERGE_GROUP_HEAD_SHA}" = "${DOLLAR_SIGN}{GITHUB_SHA}"`,
+		) ||
+		!mergeGroupLint.run.includes(
+			`pnpm lint:changed --base "${DOLLAR_SIGN}{MERGE_GROUP_BASE_SHA}"`,
+		)
+	) {
+		failures.push(
+			".github/workflows/quality.yml merge_group lint must validate the event head, fail closed without a base, and compare the full checked-out graph",
+		);
+	}
+
+	const e2e = await readWorkflowDocument(
+		root,
+		".github/workflows/e2e.yaml",
+		failures,
+	);
+	if (
+		e2e?.jobs?.["mcp-performance"]?.if !==
+		"github.event_name != 'pull_request' && github.event_name != 'merge_group'"
+	) {
+		failures.push(
+			".github/workflows/e2e.yaml performance and stress validation must remain excluded from pull_request and merge_group",
+		);
+	}
+
+	return sortedUnique(failures);
+}
 
 export async function auditCiFoundationContracts(root = repositoryRoot) {
 	const failures = [];
@@ -5378,6 +5605,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 	failures.push(...(await auditParallelDevelopmentContracts(root)));
 	failures.push(...(await auditCiDiagnosticsContracts(root)));
 	failures.push(...(await auditCiFoundationContracts(root)));
+	failures.push(...(await auditMergeQueueContracts(root)));
 	failures.push(...(await auditGitHubWorkflowContexts(root)));
 	failures.push(...(await auditPublicationContracts(root)));
 	failures.push(...(await auditConsumerAcceptanceContracts(root)));
