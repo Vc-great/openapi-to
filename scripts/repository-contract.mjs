@@ -80,6 +80,10 @@ const IMPLEMENT_AND_REVIEW_HEADINGS = [
 	"## 10. Completion gate",
 ];
 const PUBLISH_WORKFLOW_PATH = ".github/workflows/publish.yml";
+const DEVELOPMENT_TASK_ISSUE_FORM =
+	".github/ISSUE_TEMPLATE/development-task.yml";
+const PARALLEL_DEVELOPMENT_DOCUMENT =
+	"docs/maintainers/parallel-development.md";
 const PUBLICATION_SHA_GUARD_PATH =
 	"scripts/release/publication-sha-guard.mjs";
 const ARCHITECTURE_DOCUMENT = "docs/agents/agents-and-skills-architecture.md";
@@ -1703,6 +1707,241 @@ async function exists(path) {
 
 async function readJson(path) {
 	return JSON.parse(await readFile(path, "utf8"));
+}
+
+export async function auditParallelDevelopmentContracts(
+	root = repositoryRoot,
+) {
+	const failures = [];
+	const issueFormPath = join(root, DEVELOPMENT_TASK_ISSUE_FORM);
+	if (!(await exists(issueFormPath))) {
+		failures.push(`missing development task Issue Form ${DEVELOPMENT_TASK_ISSUE_FORM}`);
+	} else {
+		let issueForm;
+		let issueFormParsed = false;
+		try {
+			issueForm = loadYaml(await readFile(issueFormPath, "utf8"));
+			issueFormParsed = true;
+		} catch (error) {
+			failures.push(
+				`${DEVELOPMENT_TASK_ISSUE_FORM} is invalid YAML: ${error.message}`,
+			);
+		}
+		if (issueFormParsed && !isMapping(issueForm)) {
+			failures.push(`${DEVELOPMENT_TASK_ISSUE_FORM} must be a YAML mapping`);
+		} else if (issueFormParsed) {
+			if (
+				typeof issueForm.name !== "string" ||
+				!/^development task$/i.test(issueForm.name.trim())
+			) {
+				failures.push(
+					`${DEVELOPMENT_TASK_ISSUE_FORM} must identify itself as a development task`,
+				);
+			}
+			if (
+				typeof issueForm.description !== "string" ||
+				issueForm.description.trim().length === 0
+			) {
+				failures.push(
+					`${DEVELOPMENT_TASK_ISSUE_FORM} must have a non-empty description`,
+				);
+			}
+			if (!Array.isArray(issueForm.body)) {
+				failures.push(`${DEVELOPMENT_TASK_ISSUE_FORM} body must be a list`);
+			} else {
+				const fields = new Map();
+				for (const field of issueForm.body) {
+					if (!isMapping(field) || typeof field.id !== "string") continue;
+					if (fields.has(field.id)) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} has duplicate field id ${field.id}`,
+						);
+					}
+					fields.set(field.id, field);
+				}
+				for (const [id, type] of [
+					["goal", "textarea"],
+					["scope", "textarea"],
+					["non-goals", "textarea"],
+					["dependencies", "textarea"],
+					["parallelization", "dropdown"],
+					["conflict-surface", "textarea"],
+					["risk", "dropdown"],
+					["acceptance-criteria", "textarea"],
+					["validation-expectations", "textarea"],
+				]) {
+					const field = fields.get(id);
+					if (!field) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} is missing required field ${id}`,
+						);
+						continue;
+					}
+					if (field.type !== type) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} field ${id} must use ${type}`,
+						);
+					}
+					if (
+						!isMapping(field.attributes) ||
+						typeof field.attributes.label !== "string" ||
+						field.attributes.label.trim().length === 0
+					) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} field ${id} must have a non-empty label`,
+						);
+					}
+					if (field.validations?.required !== true) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} field ${id} must be required`,
+						);
+					}
+				}
+				for (const [id, options] of [
+					["parallelization", ["Parallel Safe", "Shared Surface", "Dependent"]],
+					["risk", ["Low", "Medium", "High"]],
+				]) {
+					const actual = fields.get(id)?.attributes?.options;
+					if (
+						!Array.isArray(actual) ||
+						actual.length !== options.length ||
+						new Set(actual).size !== actual.length ||
+						actual.some((option) => typeof option !== "string") ||
+						options.some((option) => !actual.includes(option))
+					) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} field ${id} must offer ${options.join(", ")}`,
+						);
+					}
+				}
+			}
+		}
+	}
+
+	const developmentDocumentPath = join(root, PARALLEL_DEVELOPMENT_DOCUMENT);
+	if (!(await exists(developmentDocumentPath))) {
+		failures.push(
+			`missing parallel development documentation ${PARALLEL_DEVELOPMENT_DOCUMENT}`,
+		);
+	} else {
+		const contents = await readFile(developmentDocumentPath, "utf8");
+		const normalizedContents = contents.replace(/\s+/g, " ");
+		const semanticContents = normalizedContents
+			.replace(/<!--.*?-->/g, " ")
+			.replace(/<[^>]+>/g, "")
+			.replace(/\[([^\]]+)\]\((?:[^()]|\([^()]*\))*\)/g, "$1")
+			.replace(/\[([^\]]+)\]\[[^\]]*\]/g, "$1")
+			.replaceAll("[", "")
+			.replaceAll("]", "")
+			.replace(/[`*_~]/g, "");
+		for (const heading of [
+			"## Task identity",
+			"## Task lifecycle",
+			"## Parallelization decisions",
+			"## Integration queue",
+			"## Phase and task",
+			"## CI failure routing",
+			"## Maintainer WIP guidance",
+			"## GitHub Project setup",
+		]) {
+			if (!hasExactLine(contents, heading)) {
+				failures.push(
+					`${PARALLEL_DEVELOPMENT_DOCUMENT} is missing section ${heading}`,
+				);
+			}
+		}
+		for (const marker of [
+			"durable unit of work is a GitHub Issue, not a Codex session",
+			"parallel development, serialized integration",
+			"[`implement-and-review`](../../.agents/skills/implement-and-review/SKILL.md)",
+			"`LOCAL READY` is not remote CI success",
+			"A local `PASS` must never be represented as remote CI `PASS`",
+			"This state enters the maintainer integration queue; it does not authorize a merge",
+			"relevant post-merge validation on `main` has been observed",
+			"Passing A and B independently against an older `main` does not prove that A plus B is correct",
+			"Merge only with explicit user authority",
+			"not enforced by CI",
+			"normally stays in the same Issue, branch, and PR",
+		]) {
+			if (!normalizedContents.includes(marker)) {
+				failures.push(
+					`${PARALLEL_DEVELOPMENT_DOCUMENT} is missing orchestration invariant ${marker}`,
+				);
+			}
+		}
+		for (const [pattern, description] of [
+			[
+				/\bLOCAL READY\b (?:equals|means|is) (?:remote )?CI (?:PASS|success)/i,
+				"equate LOCAL READY with remote CI success",
+			],
+			[
+				/\bCodex (?:may|can|will) (?:automatically )?merge\b/i,
+				"grant Codex automatic merge authority",
+			],
+		]) {
+			if (pattern.test(semanticContents)) {
+				failures.push(
+					`${PARALLEL_DEVELOPMENT_DOCUMENT} must not ${description}`,
+				);
+			}
+		}
+		for (const state of [
+			"BACKLOG",
+			"READY",
+			"CODING",
+			"LOCAL READY",
+			"REMOTE CI",
+			"MERGE READY",
+			"MERGED",
+			"DONE",
+			"BLOCKED",
+		]) {
+			if (!contents.includes(`**${state}**`)) {
+				failures.push(
+					`${PARALLEL_DEVELOPMENT_DOCUMENT} must define lifecycle state ${state}`,
+				);
+			}
+		}
+	}
+
+	const rootAgentPath = join(root, "AGENTS.md");
+	if (!(await exists(rootAgentPath))) {
+		failures.push("missing root Agent instruction AGENTS.md");
+	} else {
+		const rootAgent = await readFile(rootAgentPath, "utf8");
+		const normalizedRootAgent = rootAgent.replace(/\s+/g, " ");
+		for (const marker of [
+			"## Parallel development",
+			"GitHub Issues are the durable identity",
+			"integration into `main` is serialized",
+			"CI success never grants Codex merge authority",
+		]) {
+			if (!normalizedRootAgent.includes(marker)) {
+				failures.push(
+					`AGENTS.md is missing parallel development marker ${marker}`,
+				);
+			}
+		}
+	}
+
+	const pullRequestTemplatePath = join(
+		root,
+		".github/pull_request_template.md",
+	);
+	if (!(await exists(pullRequestTemplatePath))) {
+		failures.push("missing pull request template .github/pull_request_template.md");
+	} else {
+		const pullRequestTemplate = await readFile(pullRequestTemplatePath, "utf8");
+		for (const marker of ["Issue / task", "Integration dependency"]) {
+			if (!pullRequestTemplate.includes(marker)) {
+				failures.push(
+					`.github/pull_request_template.md is missing orchestration field ${marker}`,
+				);
+			}
+		}
+	}
+
+	return sortedUnique(failures);
 }
 
 async function isGitTracked(root, path) {
@@ -5064,6 +5303,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		workspaceManifests,
 	});
 	failures.push(...agentSkillAudit.failures);
+	failures.push(...(await auditParallelDevelopmentContracts(root)));
 	failures.push(...(await auditCiDiagnosticsContracts(root)));
 	failures.push(...(await auditCiFoundationContracts(root)));
 	failures.push(...(await auditGitHubWorkflowContexts(root)));

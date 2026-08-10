@@ -21,6 +21,7 @@ import {
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
 	auditNodeRuntimeContracts,
+	auditParallelDevelopmentContracts,
 	auditPublicationContracts,
 	auditRepositoryContracts,
 	auditVersionReadinessContracts,
@@ -464,6 +465,111 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
+});
+
+test("parallel development contracts accept the repository-backed workflow", async () => {
+	assert.deepEqual(await auditParallelDevelopmentContracts(repositoryRoot), []);
+});
+
+test("parallel development contracts reject incomplete task intake", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-parallel-contract-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		"AGENTS.md",
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		".github/pull_request_template.md",
+		"docs/maintainers/parallel-development.md",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	await git(root, "init");
+	await mutateTrackedFixture(
+		root,
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		(contents) =>
+			contents
+				.replace("        - Shared Surface\n", "")
+				.replace("      label: Goal\n", "")
+				.replace("      required: true\n", "      required: false\n"),
+	);
+	const result = await auditParallelDevelopmentContracts(root);
+	assertFailure({ failures: result }, /field goal must be required/);
+	assertFailure({ failures: result }, /field goal must have a non-empty label/);
+	assertFailure(
+		{ failures: result },
+		/field parallelization must offer Parallel Safe, Shared Surface, Dependent/,
+	);
+
+	const issueFormPath = join(
+		root,
+		".github/ISSUE_TEMPLATE/development-task.yml",
+	);
+	await writeFile(issueFormPath, "null\n");
+	assertFailure(
+		{ failures: await auditParallelDevelopmentContracts(root) },
+		/must be a YAML mapping/,
+	);
+	await writeFile(
+		issueFormPath,
+		(
+			await readFile(
+				join(repositoryRoot, ".github/ISSUE_TEMPLATE/development-task.yml"),
+				"utf8",
+			)
+		).replace(
+			"description: Define a durable, reviewable openapi-to implementation task.\n",
+			"",
+		),
+	);
+	assertFailure(
+		{ failures: await auditParallelDevelopmentContracts(root) },
+		/must have a non-empty description/,
+	);
+});
+
+test("parallel development contracts reject collapsed completion and authority gates", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-parallel-contract-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		"AGENTS.md",
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		".github/pull_request_template.md",
+		"docs/maintainers/parallel-development.md",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	await git(root, "init");
+	await mutateTrackedFixture(
+		root,
+		"docs/maintainers/parallel-development.md",
+		(contents) =>
+			`${contents}\n\`LOCAL READY\` equals remote CI \`PASS\`. **Codex** may automatically merge.\n`,
+	);
+	const result = await auditParallelDevelopmentContracts(root);
+	assertFailure({ failures: result }, /must not equate LOCAL READY/);
+	assertFailure({ failures: result }, /must not grant Codex automatic merge/);
+
+	await writeFile(
+		join(root, "docs/maintainers/parallel-development.md"),
+		`${await readFile(join(repositoryRoot, "docs/maintainers/parallel-development.md"), "utf8")}\n[LOCAL READY][local] equals remote CI [PASS][pass]. [Codex][agent] may automatically merge.\n\n[local]: #local-ready\n[pass]: #remote-ci\n[agent]: #authority\n`,
+	);
+	const referenceLinkResult = await auditParallelDevelopmentContracts(root);
+	assertFailure(
+		{ failures: referenceLinkResult },
+		/must not equate LOCAL READY/,
+	);
+	assertFailure(
+		{ failures: referenceLinkResult },
+		/must not grant Codex automatic merge/,
+	);
 });
 
 test("Node runtime contracts reject a split workspace baseline", async () => {

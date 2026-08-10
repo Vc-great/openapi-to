@@ -1,5 +1,8 @@
 ## Summary
 
+- Issue / task:
+- Integration dependency: none / issue or PR / merge order
+
 ## Scope
 
 ## Non-goals
