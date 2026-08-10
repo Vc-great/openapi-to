@@ -210,6 +210,21 @@ publication. Once the maintained publication workflow exists, npm packages
 must be published through `.github/workflows/publish.yml`, not directly by an
 ordinary implementation task.
 
+## Parallel development
+
+GitHub Issues are the durable identity for development tasks; Codex sessions
+and worktrees are replaceable execution contexts. Independent tasks may be
+developed concurrently, but integration into `main` is serialized. Before each
+merge, re-evaluate the candidate against the latest `main`; successful checks
+against an older base do not prove that multiple candidates work together.
+
+The existing `implement-and-review` Skill remains authoritative for local
+readiness and remote handoff. Local readiness, remote CI, merge readiness,
+merge, and post-merge completion are distinct states. CI success never grants
+Codex merge authority. Detailed task intake, lifecycle, conflict categories,
+integration-queue, and maintainer WIP guidance live in the maintainer
+development documentation rather than in this repository-wide policy.
+
 ## Definition of done
 
 ### All tasks
