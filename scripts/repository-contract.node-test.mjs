@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
+import { load as loadYaml } from "js-yaml";
 
 import {
 	auditAgentAndSkillContracts,
@@ -20,6 +21,7 @@ import {
 	auditCodexSkillInstallerContracts,
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
+	auditMergeQueueContracts,
 	auditNodeRuntimeContracts,
 	auditParallelDevelopmentContracts,
 	auditPublicationContracts,
@@ -1096,6 +1098,194 @@ test("CI foundation contracts require PR-only cancellation and weekly Action upd
 	assert.deepEqual(await auditCiFoundationContracts(weakDependabotRoot), [
 		".github/dependabot.yml must contain exactly one weekly root github-actions update",
 	]);
+});
+
+test("merge queue contracts accept universal checks and the conditional release gate", async (t) => {
+	const root = await createCiFoundationContractFixture(t);
+	assert.deepEqual(await auditMergeQueueContracts(root), []);
+
+	const trackedRoot = await createCiDiagnosticsContractFixture(t);
+	assert.deepEqual(await auditVersionReadinessContracts(trackedRoot), []);
+});
+
+test("stable aggregate checks fail closed for every non-success dependency result", async (t) => {
+	const contracts = [
+		{
+			workflow: ".github/workflows/quality.yml",
+			job: "required-quality",
+			dependencies: [
+				"build",
+				"typecheck",
+				"tests",
+				"lint-changed",
+				"release-smoke",
+			],
+		},
+		{
+			workflow: ".github/workflows/e2e.yaml",
+			job: "required-e2e",
+			dependencies: [
+				"common",
+				"module",
+				"remote",
+				"mcp-stdio-e2e",
+				"mcp-cross-platform",
+				"mcp-transaction-safety",
+			],
+		},
+		{
+			workflow: ".github/workflows/a1-cross-platform.yml",
+			job: "required-a1",
+			dependencies: ["contracts"],
+		},
+	];
+
+	for (const contract of contracts) {
+		await t.test(contract.job, async () => {
+			const source = await readFile(join(repositoryRoot, contract.workflow), "utf8");
+			const workflow = loadYaml(source);
+			const run = workflow.jobs[contract.job].steps[0].run.trim();
+			const match = /^node -e '([\s\S]+)'$/.exec(run);
+			assert.ok(match, `${contract.job} must contain one executable node gate`);
+
+			const results = Object.fromEntries(
+				contract.dependencies.map((dependency) => [
+					dependency,
+					{ outputs: {}, result: "success" },
+				]),
+			);
+			const env = {
+				...process.env,
+				CI_REQUIRED_JOBS: contract.dependencies.join(","),
+				CI_REQUIRED_RESULTS: JSON.stringify(results),
+			};
+			await execFileAsync(process.execPath, ["-e", match[1]], { env });
+
+			for (const result of ["failure", "cancelled", "skipped"]) {
+				results[contract.dependencies[0]].result = result;
+				await assert.rejects(
+					execFileAsync(process.execPath, ["-e", match[1]], {
+						env: {
+							...env,
+							CI_REQUIRED_RESULTS: JSON.stringify(results),
+						},
+					}),
+					(error) => {
+						assert.equal(error.code, 1);
+						assert.match(error.stderr, new RegExp(`=${result}`));
+						return true;
+					},
+				);
+			}
+		});
+	}
+});
+
+test("merge queue contracts reject trigger, event, lint, and aggregate regressions", async (t) => {
+	const cases = [
+		{
+			name: "universal workflow loses merge_group",
+			workflow: ".github/workflows/a1-cross-platform.yml",
+			mutate: (contents) =>
+				contents.replace("  merge_group:\n    types: [checks_requested]\n", ""),
+			failure: /must run on merge_group checks_requested/,
+		},
+		{
+			name: "universal workflow gains a PR path filter",
+			workflow: ".github/workflows/quality.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"  pull_request:\n    branches: [main]\n",
+					"  pull_request:\n    branches: [main]\n    paths: [packages/**]\n",
+				),
+			failure: /must target main without path filters/,
+		},
+		{
+			name: "merge-group head metadata is removed",
+			workflow: ".github/workflows/a1-cross-platform.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha",
+					"github.event.pull_request.head.sha || github.sha",
+				),
+			failure: /must record event-aware pull_request and merge_group SHAs/,
+		},
+		{
+			name: "ordinary E2E validation becomes PR-only",
+			workflow: ".github/workflows/e2e.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"    if: github.event_name != 'schedule'\n",
+					"    if: github.event_name == 'pull_request'\n",
+				),
+			failure: /must run for pull_request, push, merge_group, and workflow_dispatch/,
+		},
+		{
+			name: "performance validation expands to merge groups",
+			workflow: ".github/workflows/e2e.yaml",
+			mutate: (contents) =>
+				contents.replace(
+					"github.event_name != 'pull_request' && github.event_name != 'merge_group'",
+					"github.event_name != 'pull_request'",
+				),
+			failure: /must remain excluded from pull_request and merge_group/,
+		},
+		{
+			name: "merge-group lint loses its fail-closed base check",
+			workflow: ".github/workflows/quality.yml",
+			mutate: (contents) =>
+				contents.replace(
+					`          test -n "${DOLLAR_SIGN}{MERGE_GROUP_BASE_SHA}"\n`,
+					"",
+				),
+			failure: /merge_group lint must validate the event head, fail closed without a base/,
+		},
+		{
+			name: "Quality aggregate omits release smoke",
+			workflow: ".github/workflows/quality.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"needs: [build, typecheck, tests, lint-changed, release-smoke]",
+					"needs: [build, typecheck, tests, lint-changed]",
+				),
+			failure: /must fail closed over the exact required Job set/,
+		},
+		{
+			name: "A1 aggregate accepts skipped dependencies",
+			workflow: ".github/workflows/a1-cross-platform.yml",
+			mutate: (contents) =>
+				contents.replace(
+					'value.result !== "success"',
+					'value.result === "failure"',
+				),
+			failure: /must fail closed over the exact required Job set/,
+		},
+		{
+			name: "aggregate check names become ambiguous",
+			workflow: ".github/workflows/a1-cross-platform.yml",
+			mutate: (contents) =>
+				contents.replace(
+					"    name: Required A1 cross-platform\n",
+					"    name: Required quality\n",
+				),
+			failure: /aggregate check name Required quality is ambiguous/,
+		},
+	];
+
+	for (const fixture of cases) {
+		await t.test(fixture.name, async (t) => {
+			const root = await createCiFoundationContractFixture(t);
+			const workflowPath = join(root, fixture.workflow);
+			const contents = await readFile(workflowPath, "utf8");
+			const mutated = fixture.mutate(contents);
+			assert.notEqual(mutated, contents, "fixture mutation must change workflow");
+			await writeFile(workflowPath, mutated);
+			assertFailure(
+				{ failures: await auditMergeQueueContracts(root) },
+				fixture.failure,
+			);
+		});
+	}
 });
 
 test("GitHub YAML contracts reject runner context in Job env without rejecting runner-assigned contexts", async (t) => {
