@@ -570,6 +570,99 @@ test("parallel development contracts reject collapsed completion and authority g
 		{ failures: referenceLinkResult },
 		/must not grant Codex automatic merge/,
 	);
+
+	await writeFile(
+		join(root, "docs/maintainers/parallel-development.md"),
+		`${await readFile(join(repositoryRoot, "docs/maintainers/parallel-development.md"), "utf8")}\n[LOCAL READY](#local-ready) equals remote CI [PASS](#remote-ci). [Codex](#authority) may automatically merge.\n`,
+	);
+	const inlineLinkResult = await auditParallelDevelopmentContracts(root);
+	assertFailure({ failures: inlineLinkResult }, /must not equate LOCAL READY/);
+	assertFailure(
+		{ failures: inlineLinkResult },
+		/must not grant Codex automatic merge/,
+	);
+
+	await writeFile(
+		join(root, "docs/maintainers/parallel-development.md"),
+		`${await readFile(join(repositoryRoot, "docs/maintainers/parallel-development.md"), "utf8")}\nLOCAL READY <!-- gap --> is remote CI PASS. Codex <em> may </em> automatically merge.\n`,
+	);
+	const htmlMarkupResult = await auditParallelDevelopmentContracts(root);
+	assertFailure({ failures: htmlMarkupResult }, /must not equate LOCAL READY/);
+	assertFailure(
+		{ failures: htmlMarkupResult },
+		/must not grant Codex automatic merge/,
+	);
+
+	for (const contradiction of [
+		"LOCAL REA<!-- gap -->DY is remote CI PASS. Co<!-- gap -->dex may automatically merge.",
+		"LOCAL READY<br>is remote CI PASS. Codex<br>may automatically merge.",
+		`LOCAL READY<br title=">">is remote CI PASS. Codex<br data-gap='>'>may automatically merge.`,
+		"LOCAL READY<center>is remote CI PASS.</center> Codex<center>may automatically merge.</center>",
+		"LOCAL REA&#x200B;DY is remote CI PASS. Cod&#x200B;ex may automatically merge.",
+		"LOCAL REA&#129;DY is remote CI PASS. Cod&#129;ex may automatically merge.",
+		"LOCAL REA&shy;DY is remote CI PASS. Cod&shy;ex may automatically merge.",
+		"LOCAL READY&af;is remote CI PASS. Codex&af;may automatically merge.",
+		"LOCAL READY&it;is remote CI PASS. Codex&ic;may automatically merge.",
+	]) {
+		await writeFile(
+			join(root, "docs/maintainers/parallel-development.md"),
+			`${await readFile(join(repositoryRoot, "docs/maintainers/parallel-development.md"), "utf8")}\n${contradiction}\n`,
+		);
+		const renderedEquivalentResult =
+			await auditParallelDevelopmentContracts(root);
+		assertFailure(
+			{ failures: renderedEquivalentResult },
+			/must not equate LOCAL READY/,
+		);
+		assertFailure(
+			{ failures: renderedEquivalentResult },
+			/must not grant Codex automatic merge/,
+		);
+	}
+});
+
+test("parallel development contracts reject character-reference bypasses safely", async (t) => {
+	const root = await mkdtemp(join(tmpdir(), "openapi-to-parallel-contract-"));
+	t.after(() => rm(root, { recursive: true, force: true }));
+	for (const relativePath of [
+		"AGENTS.md",
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		".github/pull_request_template.md",
+		"docs/maintainers/parallel-development.md",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	await git(root, "init");
+	const developmentDocument = await readFile(
+		join(repositoryRoot, "docs/maintainers/parallel-development.md"),
+		"utf8",
+	);
+	for (const encodedSpace of [
+		"&nbsp;",
+		"&#32;",
+		"&#x20;",
+		"&Tab;",
+		"&NonBreakingSpace;",
+		"&ThinSpace;",
+	]) {
+		await writeFile(
+			join(root, "docs/maintainers/parallel-development.md"),
+			`${developmentDocument}\nLOCAL READY${encodedSpace}is remote CI PASS. Codex${encodedSpace}may automatically merge.\n`,
+		);
+		const result = await auditParallelDevelopmentContracts(root);
+		assertFailure({ failures: result }, /must not equate LOCAL READY/);
+		assertFailure({ failures: result }, /must not grant Codex automatic merge/);
+	}
+
+	await writeFile(
+		join(root, "docs/maintainers/parallel-development.md"),
+		`${developmentDocument}\nMalformed references remain inert: &#0; &#xD800; &#x110000; &#xZZ;.\n`,
+	);
+	assert.deepEqual(await auditParallelDevelopmentContracts(root), []);
 });
 
 test("Node runtime contracts reject a split workspace baseline", async () => {

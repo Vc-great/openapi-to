@@ -1675,6 +1675,69 @@ export function parseSkillRoutingTable(contents) {
 	});
 }
 
+const GOVERNANCE_SEPARATOR_CHARACTER_REFERENCES = new Set([
+	"MediumSpace",
+	"NewLine",
+	"NonBreakingSpace",
+	"Tab",
+	"ThickSpace",
+	"ThinSpace",
+	"VeryThinSpace",
+	"emsp",
+	"emsp13",
+	"emsp14",
+	"ensp",
+	"hairsp",
+	"nbsp",
+	"numsp",
+	"puncsp",
+	"thinsp",
+]);
+const GOVERNANCE_IGNORABLE_CHARACTER_REFERENCES = new Set([
+	"ApplyFunction",
+	"InvisibleComma",
+	"InvisiblePlus",
+	"InvisibleTimes",
+	"NegativeMediumSpace",
+	"NegativeThickSpace",
+	"NegativeThinSpace",
+	"NegativeVeryThinSpace",
+	"NoBreak",
+	"ZeroWidthSpace",
+	"af",
+	"ic",
+	"it",
+	"lrm",
+	"rlm",
+	"shy",
+	"zwj",
+	"zwnj",
+]);
+
+function decodeGovernanceCharacterReferences(contents) {
+	return contents.replace(
+		/&(?:([A-Za-z][A-Za-z0-9]{0,31})|#([0-9]+)|#[xX]([0-9A-Fa-f]+));/g,
+		(reference, name, decimalDigits, hexadecimalDigits) => {
+			if (GOVERNANCE_SEPARATOR_CHARACTER_REFERENCES.has(name)) return " ";
+			if (GOVERNANCE_IGNORABLE_CHARACTER_REFERENCES.has(name)) return "";
+			if (name !== undefined) return reference;
+			const radix = decimalDigits === undefined ? 16 : 10;
+			const digits =
+				(decimalDigits ?? hexadecimalDigits).replace(/^0+/, "") || "0";
+			if (digits.length > (radix === 16 ? 6 : 7)) return reference;
+			const codePoint = Number.parseInt(digits, radix);
+			if (
+				codePoint === 0 ||
+				codePoint > 0x10ffff ||
+				(codePoint >= 0xd800 && codePoint <= 0xdfff)
+			) {
+				return reference;
+			}
+			return String.fromCodePoint(codePoint);
+		},
+	);
+}
+
 function parseDocumentedSkillRoles(contents) {
 	const section = markdownSection(contents, "## Contract-verified Skill roles");
 	const rows = parseTwoColumnTable(
@@ -1825,15 +1888,24 @@ export async function auditParallelDevelopmentContracts(
 		);
 	} else {
 		const contents = await readFile(developmentDocumentPath, "utf8");
-		const normalizedContents = contents.replace(/\s+/g, " ");
+		const normalizedContents = decodeGovernanceCharacterReferences(
+			contents,
+		).replace(/\s+/g, " ");
 		const semanticContents = normalizedContents
-			.replace(/<!--.*?-->/g, " ")
-			.replace(/<[^>]+>/g, "")
+			.replace(/<!--.*?-->/g, "")
+			.replace(
+				/<\/?(?:address|article|aside|base|basefont|blockquote|body|br|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hgroup|hr|html|iframe|legend|li|link|listing|main|marquee|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|plaintext|pre|script|search|section|style|summary|table|tbody|td|textarea|tfoot|th|thead|title|tr|track|ul|xmp)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi,
+				" ",
+			)
+			.replace(/<(?:[^>"']|"[^"]*"|'[^']*')+>/g, "")
+			.replace(/\p{Cc}+/gu, "")
+			.replace(/\p{Default_Ignorable_Code_Point}+/gu, "")
 			.replace(/\[([^\]]+)\]\((?:[^()]|\([^()]*\))*\)/g, "$1")
 			.replace(/\[([^\]]+)\]\[[^\]]*\]/g, "$1")
 			.replaceAll("[", "")
 			.replaceAll("]", "")
-			.replace(/[`*_~]/g, "");
+			.replace(/[`*_~]/g, "")
+			.replace(/\s+/g, " ");
 		for (const heading of [
 			"## Task identity",
 			"## Task lifecycle",
@@ -1871,11 +1943,11 @@ export async function auditParallelDevelopmentContracts(
 		}
 		for (const [pattern, description] of [
 			[
-				/\bLOCAL READY\b (?:equals|means|is) (?:remote )?CI (?:PASS|success)/i,
+				/\bLOCAL\s*READY\s*(?:equals|means|is)\s*(?:remote\s*)?CI\s*(?:PASS|success)\b/i,
 				"equate LOCAL READY with remote CI success",
 			],
 			[
-				/\bCodex (?:may|can|will) (?:automatically )?merge\b/i,
+				/\bCodex\s*(?:may|can|will)\s*(?:automatically\s*)?merge\b/i,
 				"grant Codex automatic merge authority",
 			],
 		]) {
