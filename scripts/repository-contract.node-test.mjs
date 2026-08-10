@@ -16,6 +16,7 @@ import { load as loadYaml } from "js-yaml";
 
 import {
 	auditAgentAndSkillContracts,
+	auditAutonomousMaintenanceContracts,
 	auditCiDiagnosticsContracts,
 	auditCiFoundationContracts,
 	auditCodexSkillInstallerContracts,
@@ -420,6 +421,29 @@ async function createCiDiagnosticsContractFixture(t) {
 	return root;
 }
 
+async function createAutonomousMaintenanceContractFixture(t) {
+	const root = await mkdtemp(
+		join(tmpdir(), "openapi-to-autonomous-maintenance-contract-"),
+	);
+	t.after(() => rm(root, { recursive: true, force: true }));
+	await git(root, "init", "--quiet");
+	for (const relativePath of [
+		"AGENTS.md",
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		".github/pull_request_template.md",
+		"docs/maintainers/autonomous-maintenance.md",
+		"docs/maintainers/parallel-development.md",
+	]) {
+		await writeFixtureFile(
+			root,
+			relativePath,
+			await readFile(join(repositoryRoot, relativePath), "utf8"),
+		);
+	}
+	await git(root, "add", "--", ".");
+	return root;
+}
+
 function assertFailure(result, pattern) {
 	assert.ok(
 		result.failures.some((failure) => pattern.test(failure)),
@@ -471,6 +495,156 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 
 test("parallel development contracts accept the repository-backed workflow", async () => {
 	assert.deepEqual(await auditParallelDevelopmentContracts(repositoryRoot), []);
+});
+
+test("autonomous maintenance contracts accept the governance-only future model", async () => {
+	assert.deepEqual(
+		await auditAutonomousMaintenanceContracts(repositoryRoot),
+		[],
+	);
+});
+
+test("development task authorization modes stay closed and non-operational", async (t) => {
+	const invalidModeRoot = await createAutonomousMaintenanceContractFixture(t);
+	await mutateTrackedFixture(
+		invalidModeRoot,
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		(contents) => contents.replace("        - Autonomous\n", "        - Agent Decides\n"),
+	);
+	assertFailure(
+		{ failures: await auditParallelDevelopmentContracts(invalidModeRoot) },
+		/field authorization-mode must offer Manual, Design Approved, Autonomous/,
+	);
+
+	const grantingDescriptionRoot =
+		await createAutonomousMaintenanceContractFixture(t);
+	await mutateTrackedFixture(
+		grantingDescriptionRoot,
+		".github/ISSUE_TEMPLATE/development-task.yml",
+		(contents) =>
+			contents.replace(
+				"does not grant runtime authority or trigger automation",
+				"grants runtime authority and triggers automation",
+			),
+	);
+	assertFailure(
+		{
+			failures: await auditParallelDevelopmentContracts(
+				grantingDescriptionRoot,
+			),
+		},
+		/authorization mode must not grant runtime authority or trigger automation/,
+	);
+});
+
+test("autonomous maintenance contracts reject self-authorizing governance drift", async (t) => {
+	const cases = [
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					"\n## Risk and eligibility\n",
+					"\n   ## Authorization modes ##\n\n### `AGENT_DECIDES`\n\nA duplicate unsafe authorization section.\n\n## Risk and eligibility\n",
+				),
+			failure: /must contain exactly one section ## Authorization modes/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					"\n## Trust and threat model\n",
+					"\n## Status and current authority\n\nAutonomous execution is implemented.\n\n## Trust and threat model\n",
+				),
+			failure: /must contain exactly one section ## Status and current authority/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					"\n## Risk and eligibility\n",
+					"\n### `AGENT_DECIDES`\n\nAn unsafe fourth mode.\n\n## Risk and eligibility\n",
+				),
+			failure: /must define exactly MANUAL, DESIGN_APPROVED, and AUTONOMOUS/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					"\n## Risk and eligibility\n",
+					"\n   ### `AGENT_DECIDES`\n\nAn indented unsafe fourth mode.\n\n## Risk and eligibility\n",
+				),
+			failure: /must define exactly MANUAL, DESIGN_APPROVED, and AUTONOMOUS/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					"| Authorization model | DEFINED |",
+					"| Authorization model | IMPLEMENTED |",
+				),
+			failure: /status for Authorization model must be exactly DEFINED/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					"There is no self-approval path.",
+					"A candidate may approve its own policy change.",
+				),
+			failure: /missing governance invariant There is no self-approval path/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace("**Review authority**", "**Review guidance**"),
+			failure: /missing governance invariant \*\*Review authority\*\*/,
+		},
+		{
+			path: "docs/maintainers/autonomous-maintenance.md",
+			mutate: (contents) =>
+				contents.replace(
+					/it must not produce or\s+exercise `DIRECT_MERGE`/,
+					"it may produce and exercise `DIRECT_MERGE`",
+				),
+			failure: /missing governance invariant it must not produce or exercise `DIRECT_MERGE`/,
+		},
+		{
+			path: "AGENTS.md",
+			mutate: (contents) =>
+				contents.replace(
+					"Root-of-Trust changes cannot authorize themselves",
+					"Root-of-Trust changes may authorize themselves",
+				),
+			failure: /missing autonomous governance marker Root-of-Trust changes cannot authorize themselves/,
+		},
+		{
+			path: ".github/pull_request_template.md",
+			mutate: (contents) =>
+				contents.replace(
+					"this PR text does not grant runtime authority",
+					"this PR text grants runtime authority",
+				),
+			failure: /missing autonomous governance field this PR text does not grant runtime authority/,
+		},
+		{
+			path: ".github/pull_request_template.md",
+			mutate: (contents) =>
+				contents.replace(
+					"Independent review: READY / NOT READY / not applicable",
+					"Implementer self-review: READY",
+				),
+			failure: /missing autonomous governance field Independent review/,
+		},
+	];
+
+	for (const contractCase of cases) {
+		const root = await createAutonomousMaintenanceContractFixture(t);
+		await mutateTrackedFixture(root, contractCase.path, contractCase.mutate);
+		assertFailure(
+			{ failures: await auditAutonomousMaintenanceContracts(root) },
+			contractCase.failure,
+		);
+	}
 });
 
 test("parallel development contracts reject incomplete task intake", async (t) => {
