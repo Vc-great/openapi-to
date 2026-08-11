@@ -27,6 +27,7 @@ import {
 	auditParallelDevelopmentContracts,
 	auditPublicationContracts,
 	auditRepositoryContracts,
+	auditVersionPackagesContracts,
 	auditVersionReadinessContracts,
 	discoverAgentDocuments,
 	EXPECTED_SKILL_ROLES,
@@ -491,6 +492,83 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
+});
+
+test("Version Packages contract accepts the manual-only workflow", async (t) => {
+	const root = await createPublicationContractFixture(t);
+	assert.deepEqual(await auditVersionPackagesContracts(root), []);
+});
+
+test("Version Packages contract rejects missing dispatch and automatic triggers", async (t) => {
+	const triggerCases = [
+		"  push:\n    branches: [main]",
+		"  pull_request:",
+		"  pull_request_target:",
+		"  merge_group:",
+		"  workflow_run:\n    workflows: [Quality]\n    types: [completed]",
+		"  schedule:\n    - cron: '0 0 * * *'",
+		"  issue_comment:",
+		"  release:",
+		"  repository_dispatch:",
+		"  delete:",
+	];
+
+	for (const automaticTrigger of triggerCases) {
+		await t.test(automaticTrigger.trim().split(":", 1)[0], async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				(contents) =>
+					contents.replace(
+						"on:\n  workflow_dispatch:\n",
+						`on:\n${automaticTrigger}\n  workflow_dispatch:\n`,
+					),
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				/workflow_dispatch as its only trigger/,
+			);
+		});
+	}
+
+	const missingDispatchRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		missingDispatchRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			contents.replace(
+				"on:\n  workflow_dispatch:\n",
+				"on:\n  push:\n    branches: [main]\n",
+			),
+	);
+	assertFailure(
+		{ failures: await auditVersionPackagesContracts(missingDispatchRoot) },
+		/workflow_dispatch as its only trigger/,
+	);
+});
+
+test("Version Packages contract rejects a missing or weakened main ref guard", async (t) => {
+	for (const replacement of [
+		"",
+		"    if: github.ref == 'refs/heads/release'\n",
+		"    if: github.event_name == 'workflow_dispatch'\n",
+	]) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/version-packages.yml",
+			(contents) =>
+				contents.replace(
+					"    if: github.ref == 'refs/heads/main'\n",
+					replacement,
+				),
+		);
+		assertFailure(
+			{ failures: await auditVersionPackagesContracts(root) },
+			/fail closed outside the main branch ref/,
+		);
+	}
 });
 
 test("parallel development contracts accept the repository-backed workflow", async () => {
