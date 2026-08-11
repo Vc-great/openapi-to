@@ -1,0 +1,54 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Bounded Codex implementation result",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"taskSnapshotHash",
+		"baseSha",
+		"implementationSummary",
+		"proposedPatch",
+		"claimedChangedPaths",
+		"localValidationSummary",
+		"limitations"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "codex-implementation-result-v1"
+		},
+		"taskSnapshotHash": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{64}$"
+		},
+		"baseSha": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{40}$"
+		},
+		"implementationSummary": {
+			"type": "string",
+			"maxLength": 4096
+		},
+		"proposedPatch": {
+			"type": "string",
+			"maxLength": 262144
+		},
+		"claimedChangedPaths": {
+			"type": "array",
+			"maxItems": 12,
+			"uniqueItems": true,
+			"items": {
+				"type": "string",
+				"maxLength": 240
+			}
+		},
+		"localValidationSummary": {
+			"type": "string",
+			"maxLength": 8192
+		},
+		"limitations": {
+			"type": "string",
+			"maxLength": 4096
+		}
+	}
+}

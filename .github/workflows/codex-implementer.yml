@@ -1,0 +1,386 @@
+name: Bounded Codex Implementer
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Open Development Task Issue number
+        required: true
+        type: string
+      authorized_paths_json:
+        description: JSON array of exact repository-relative paths (no globs)
+        required: true
+        type: string
+
+concurrency:
+  group: bounded-codex-implementer
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Validate trusted manual dispatch
+    if: ${{ github.run_attempt == 1 && github.actor == 'Vc-great' && github.triggering_actor == 'Vc-great' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      base_sha: ${{ steps.preflight.outputs.base_sha }}
+      snapshot_base64: ${{ steps.preflight.outputs.snapshot_base64 }}
+      snapshot_hash: ${{ steps.preflight.outputs.snapshot_hash }}
+    steps:
+      - name: Check out exact dispatch baseline
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up explicit Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.15.0
+          package-manager-cache: false
+
+      - name: Bind trigger, Issue, base, and exact path authority
+        id: preflight
+        env:
+          AUTHORIZED_PATHS_JSON: ${{ inputs.authorized_paths_json }}
+          CODEX_IMPLEMENTER_ENABLED: ${{ vars.CODEX_IMPLEMENTER_ENABLED }}
+          DISPATCH_RUN_ATTEMPT: ${{ github.run_attempt }}
+          DISPATCH_TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: node scripts/codex-implementer/cli.mjs preflight
+
+  implement:
+    name: Run one bounded Codex implementation
+    needs: preflight
+    if: ${{ github.run_attempt == 1 && github.actor == 'Vc-great' && github.triggering_actor == 'Vc-great' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact authorized base
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ needs.preflight.outputs.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+        with:
+          version: 10.14.0
+
+      - name: Set up explicit Node toolchain without dependency cache
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.15.0
+          package-manager-cache: false
+
+      - name: Install trusted baseline dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Materialize trusted snapshot and no-network permission profile
+        env:
+          CODEX_HOME_PATH: ${{ runner.temp }}/codex-home
+          CODEX_TASK_SNAPSHOT_PATH: ${{ runner.temp }}/codex-task-snapshot.json
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+        run: node scripts/codex-implementer/cli.mjs materialize
+
+      - name: Run Codex as the final Agent-controlled step
+        id: codex
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11.0
+        env:
+          CODEX_TASK_SNAPSHOT_PATH: ${{ runner.temp }}/codex-task-snapshot.json
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/implementer-prompt.md
+          output-schema-file: .github/codex/implementation-result.schema.json
+          output-file: ${{ runner.temp }}/codex-result.json
+          codex-home: ${{ runner.temp }}/codex-home
+          codex-version: 0.147.0
+          codex-args: '["--ephemeral"]'
+          model: gpt-5.6-terra
+          effort: medium
+          permission-profile: bounded-implementer
+          safety-strategy: drop-sudo
+          allow-users: Vc-great
+          allow-bots: "false"
+
+      # This pinned action uploads only the Action-written file from runner.temp.
+      # It runs no repository command and holds no repository write authority.
+      - name: Transport the bounded result as an immutable run artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: codex-implementation-result
+          path: ${{ runner.temp }}/codex-result.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  validate:
+    name: Validate structured patch without privileged credentials
+    needs: [preflight, implement]
+    if: ${{ github.run_attempt == 1 && github.actor == 'Vc-great' && github.triggering_actor == 'Vc-great' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      patch_sha256: ${{ steps.finalize.outputs.patch_sha256 }}
+    steps:
+      - name: Check out exact authorized base without push credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ needs.preflight.outputs.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+        with:
+          version: 10.14.0
+
+      - name: Set up explicit Node toolchain without dependency cache
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.15.0
+          package-manager-cache: false
+
+      - name: Install trusted baseline dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Pull the immutable validation sandbox before applying candidate bytes
+        env:
+          VALIDATION_IMAGE: docker.io/library/node:24.15.0-bookworm@sha256:f22d6a1f082c02f292e86929b5b0442ac2e5eaf438a5dea9b1566601c3e05940
+        run: docker pull "${VALIDATION_IMAGE}"
+
+      - name: Download the bounded structured result
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: codex-implementation-result
+          path: ${{ runner.temp }}/codex-result
+
+      - name: Parse, authorize, and apply the structured result
+        env:
+          CODEX_RESULT_PATH: ${{ runner.temp }}/codex-result/codex-result.json
+          CODEX_VALIDATION_STATE_PATH: ${{ runner.temp }}/codex-validation-state.json
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+        run: node scripts/codex-implementer/cli.mjs validate-result
+
+      - name: Seal actual diff and validation evidence before candidate execution
+        id: finalize
+        env:
+          CODEX_VALIDATION_STATE_PATH: ${{ runner.temp }}/codex-validation-state.json
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+          VALIDATED_BUNDLE_PATH: ${{ runner.temp }}/codex-validated-bundle.json
+        run: node scripts/codex-implementer/cli.mjs finalize-validation
+
+      - name: Run fixed checks in an unprivileged no-network private filesystem
+        env:
+          VALIDATION_IMAGE: docker.io/library/node:24.15.0-bookworm@sha256:f22d6a1f082c02f292e86929b5b0442ac2e5eaf438a5dea9b1566601c3e05940
+        run: |
+          set -euo pipefail
+          pnpm_entry="$(readlink -f "$(command -v pnpm)")"
+          pnpm_root="$(cd "$(dirname "${pnpm_entry}")/.." && pwd)"
+          test -f "${pnpm_root}/bin/pnpm.cjs"
+          test -f "${pnpm_root}/dist/pnpm.cjs"
+          docker run --rm \
+            --network none \
+            --ipc none \
+            --read-only \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --pids-limit 1024 \
+            --cpus 2 \
+            --memory 6g \
+            --memory-swap 6g \
+            --ulimit nofile=4096:4096 \
+            --user "$(id -u):$(id -g)" \
+            --env CI=true \
+            --env HOME=/tmp \
+            --mount "type=bind,src=${GITHUB_WORKSPACE},dst=/input,readonly" \
+            --mount "type=bind,src=${pnpm_root},dst=/opt/pnpm,readonly" \
+            --tmpfs /workspace:rw,exec,nosuid,nodev,size=6g,mode=1777 \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=1g,mode=1777 \
+            --workdir /workspace \
+            "${VALIDATION_IMAGE}" \
+            sh -euc '
+              mkdir -p /tmp/bin
+              ln -s /opt/pnpm/bin/pnpm.cjs /tmp/bin/pnpm
+              export PATH="/tmp/bin:${PATH}"
+              test "$(pnpm --version)" = "10.14.0"
+              cp -R /input/. /workspace/
+              node /opt/pnpm/bin/pnpm.cjs build --concurrency=1
+              node /opt/pnpm/bin/pnpm.cjs typecheck --concurrency=1
+              node /opt/pnpm/bin/pnpm.cjs test:vitest
+              node /opt/pnpm/bin/pnpm.cjs lint:ci
+              node /opt/pnpm/bin/pnpm.cjs verify:repository-contract
+            '
+
+      - name: Transport only the pre-execution sealed bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: codex-validated-bundle
+          path: ${{ runner.temp }}/codex-validated-bundle.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publisher-preflight:
+    name: Revalidate publication boundary without write authority
+    needs: [preflight, validate]
+    if: ${{ github.run_attempt == 1 && github.actor == 'Vc-great' && github.triggering_actor == 'Vc-great' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Check out exact authorized base without push credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ needs.preflight.outputs.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up explicit Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.15.0
+          package-manager-cache: false
+
+      - name: Download the exact validated bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: codex-validated-bundle
+          path: ${{ runner.temp }}/codex-validated-bundle
+
+      - name: Revalidate Issue, main, collisions, patch, and pure diff facts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_BODY_PATH: ${{ runner.temp }}/codex-draft-pr.md
+          PUBLISHER_STATE_PATH: ${{ runner.temp }}/codex-publisher-state.json
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+          VALIDATED_BUNDLE_PATH: ${{ runner.temp }}/codex-validated-bundle/codex-validated-bundle.json
+        run: node scripts/codex-implementer/cli.mjs verify-publisher
+
+  publish-draft:
+    name: Publish one new Draft pull request only
+    needs: [preflight, validate, publisher-preflight]
+    if: ${{ github.run_attempt == 1 && github.actor == 'Vc-great' && github.triggering_actor == 'Vc-great' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+      issues: read
+      pull-requests: write
+    steps:
+      - name: Check out exact authorized base without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ needs.preflight.outputs.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up explicit Node toolchain without candidate dependencies
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.15.0
+          package-manager-cache: false
+
+      - name: Download the exact validated bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: codex-validated-bundle
+          path: ${{ runner.temp }}/codex-validated-bundle
+
+      - name: Repeat pure publisher checks and apply only validated bytes
+        id: guard
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_BODY_PATH: ${{ runner.temp }}/codex-draft-pr.md
+          PUBLISHER_STATE_PATH: ${{ runner.temp }}/codex-publisher-state.json
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+          VALIDATED_BUNDLE_PATH: ${{ runner.temp }}/codex-validated-bundle/codex-validated-bundle.json
+        run: node scripts/codex-implementer/cli.mjs verify-publisher
+
+      - name: Create one deterministic local branch and commit
+        env:
+          BRANCH_NAME: ${{ steps.guard.outputs.branch_name }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          git switch -c "${BRANCH_NAME}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Implement Issue #${ISSUE_NUMBER} with bounded Codex"
+
+      - name: Render deterministic Draft PR evidence for exact committed head
+        env:
+          PR_BODY_PATH: ${{ runner.temp }}/codex-draft-pr.md
+          PUBLISHER_STATE_PATH: ${{ runner.temp }}/codex-publisher-state.json
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+          VALIDATED_BUNDLE_PATH: ${{ runner.temp }}/codex-validated-bundle/codex-validated-bundle.json
+        run: node scripts/codex-implementer/cli.mjs render-pr-body
+
+      - name: Recheck Issue and authoritative main immediately before publication
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+        run: node scripts/codex-implementer/cli.mjs recheck-publication-authority
+
+      - name: Atomically reserve the absent runtime branch at the authorized base
+        env:
+          BASE_SHA: ${{ needs.preflight.outputs.base_sha }}
+          BRANCH_NAME: ${{ steps.guard.outputs.branch_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f ref="refs/heads/${BRANCH_NAME}" \
+            -f sha="${BASE_SHA}" \
+            --silent
+
+      - name: Fast-forward the reserved branch without persisted credentials
+        env:
+          BRANCH_NAME: ${{ steps.guard.outputs.branch_name }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          askpass="${RUNNER_TEMP}/codex-git-askpass.sh"
+          printf '%s\n' '#!/bin/sh' 'case "$1" in' '*Username*) printf "%s" "x-access-token" ;;' '*Password*) printf "%s" "$GITHUB_TOKEN" ;;' 'esac' > "${askpass}"
+          chmod 0700 "${askpass}"
+          GIT_ASKPASS="${askpass}" GIT_TERMINAL_PROMPT=0 git push origin "HEAD:refs/heads/${BRANCH_NAME}"
+
+      - name: Bind Issue, main, and exact remote head before Draft creation
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TASK_SNAPSHOT_BASE64: ${{ needs.preflight.outputs.snapshot_base64 }}
+        run: node scripts/codex-implementer/cli.mjs verify-publication-head
+
+      - name: Create one Draft pull request
+        env:
+          BRANCH_NAME: ${{ steps.guard.outputs.branch_name }}
+          GH_TOKEN: ${{ github.token }}
+          PR_BODY_PATH: ${{ steps.guard.outputs.pr_body_path }}
+          PR_TITLE_BASE64: ${{ steps.guard.outputs.pr_title_base64 }}
+        run: |
+          set -euo pipefail
+          title="$(printf '%s' "${PR_TITLE_BASE64}" | base64 --decode)"
+          pr_url="$(gh pr create --draft --base main --head "${BRANCH_NAME}" --title "${title}" --body-file "${PR_BODY_PATH}")"
+          pr_number="${pr_url##*/}"
+          expected_head="$(git rev-parse HEAD)"
+          published_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq .head.sha)"
+          test "${published_head}" = "${expected_head}"
+          printf '%s\n' "${pr_url}"

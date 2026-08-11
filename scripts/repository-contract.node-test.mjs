@@ -19,6 +19,7 @@ import {
 	auditAutonomousMaintenanceContracts,
 	auditCiDiagnosticsContracts,
 	auditCiFoundationContracts,
+	auditCodexImplementerContracts,
 	auditCodexSkillInstallerContracts,
 	auditConsumerAcceptanceContracts,
 	auditGitHubWorkflowContexts,
@@ -429,10 +430,18 @@ async function createAutonomousMaintenanceContractFixture(t) {
 	await git(root, "init", "--quiet");
 	for (const relativePath of [
 		"AGENTS.md",
+		".github/codex/implementation-result.schema.json",
+		".github/codex/implementer-policy.json",
+		".github/codex/implementer-prompt.md",
 		".github/ISSUE_TEMPLATE/development-task.yml",
 		".github/pull_request_template.md",
+		".github/workflows/codex-implementer.yml",
 		"docs/maintainers/autonomous-maintenance.md",
 		"docs/maintainers/parallel-development.md",
+		"package.json",
+		"scripts/codex-implementer/cli.mjs",
+		"scripts/codex-implementer/policy.mjs",
+		"scripts/codex-implementer/policy.node-test.mjs",
 	]) {
 		await writeFixtureFile(
 			root,
@@ -502,6 +511,147 @@ test("autonomous maintenance contracts accept the governance-only future model",
 		await auditAutonomousMaintenanceContracts(repositoryRoot),
 		[],
 	);
+});
+
+test("bounded Codex implementer contracts preserve the disabled manual boundary", async () => {
+	assert.deepEqual(await auditCodexImplementerContracts(repositoryRoot), []);
+});
+
+test("bounded Codex implementer contracts reject authority and publication regressions", async (t) => {
+	for (const { failure, mutate, path } of [
+		{
+			failure: /trigger must be exactly workflow_dispatch/,
+			mutate: (contents) =>
+				contents.replace("  workflow_dispatch:\n", "  issues:\n"),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /trusted actor allowlist must be explicit and minimal/,
+			mutate: (contents) =>
+				contents.replace('["Vc-great"]', '["Vc-great", "public-user"]'),
+			path: ".github/codex/implementer-policy.json",
+		},
+		{
+			failure: /feature gate must be exact and default-off/,
+			mutate: (contents) =>
+				contents.replace('"enabledValue": "true"', '"enabledValue": "TRUE"'),
+			path: ".github/codex/implementer-policy.json",
+		},
+		{
+			failure: /policy must support MANUAL only/,
+			mutate: (contents) =>
+				contents.replace('["Manual"]', '["Manual", "Autonomous"]'),
+			path: ".github/codex/implementer-policy.json",
+		},
+		{
+			failure: /Root-of-Trust policy must protect \.github\//,
+			mutate: (contents) => contents.replace('\t\t\t".github/",\n', ""),
+			path: ".github/codex/implementer-policy.json",
+		},
+		{
+			failure:
+				/every Codex implementer checkout must disable persisted credentials/,
+			mutate: (contents) =>
+				contents.replace(
+					"persist-credentials: false",
+					"persist-credentials: true",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /must never force-push/,
+			mutate: (contents) =>
+				contents.replace("git push origin", "git push --force origin"),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /atomically reserve the absent branch at base/,
+			mutate: (contents) =>
+				contents.replace(
+					"node scripts/codex-implementer/cli.mjs recheck-publication-authority",
+					"node scripts/codex-implementer/cli.mjs verify-publisher",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /missing boundary DISPATCH_TRIGGERING_ACTOR/,
+			mutate: (contents) =>
+				contents.replace(
+					`          DISPATCH_TRIGGERING_ACTOR: ${DOLLAR_SIGN}{{ github.triggering_actor }}\n`,
+					"",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /use the dispatch feature context only for initial preflight/,
+			mutate: (contents) =>
+				contents.replace(
+					`          CODEX_IMPLEMENTER_ENABLED: ${DOLLAR_SIGN}{{ vars.CODEX_IMPLEMENTER_ENABLED }}\n`,
+					"",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /validate job must reject every rerun provenance/,
+			mutate: (contents) =>
+				contents.replace(
+					`    if: ${DOLLAR_SIGN}{{ github.run_attempt == 1 && github.actor == 'Vc-great' && github.triggering_actor == 'Vc-great' }}\n    runs-on: ubuntu-latest\n    timeout-minutes: 45`,
+					"    runs-on: ubuntu-latest\n    timeout-minutes: 45",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /missing boundary --network none/,
+			mutate: (contents) => contents.replace("            --network none \\\n", ""),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /must not transport oversized payloads through CODEX_RESULT:/,
+			mutate: (contents) =>
+				contents.replace(
+					"          CODEX_RESULT_PATH:",
+					"          CODEX_RESULT:\n          CODEX_RESULT_PATH:",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+		{
+			failure: /must protect nested pnpm-workspace\.yaml/,
+			mutate: (contents) =>
+				contents.replaceAll('\t\t\t"pnpm-workspace.yaml",\n', ""),
+			path: ".github/codex/implementer-policy.json",
+		},
+		{
+			failure: /validation sandbox image must be immutable/,
+			mutate: (contents) =>
+				contents.replace(
+					"docker.io/library/node:24.15.0-bookworm@sha256:f22d6a1f082c02f292e86929b5b0442ac2e5eaf438a5dea9b1566601c3e05940",
+					"node:latest",
+				),
+			path: ".github/codex/implementer-policy.json",
+		},
+		{
+			failure: /missing boundary "\.gitmodules" = "read"/,
+			mutate: (contents) =>
+				contents.replace('".gitmodules" = "read"', '".gitmodules" = "write"'),
+			path: "scripts/codex-implementer/cli.mjs",
+		},
+		{
+			failure: /missing boundary node scripts\/codex-implementer\/cli\.mjs verify-publication-head/,
+			mutate: (contents) =>
+				contents.replace(
+					"node scripts/codex-implementer/cli.mjs verify-publication-head",
+					"node scripts/codex-implementer/cli.mjs recheck-publication-authority",
+				),
+			path: ".github/workflows/codex-implementer.yml",
+		},
+	]) {
+		const root = await createAutonomousMaintenanceContractFixture(t);
+		await mutateTrackedFixture(root, path, mutate);
+		assertFailure(
+			{ failures: await auditCodexImplementerContracts(root) },
+			failure,
+		);
+	}
 });
 
 test("development task authorization modes stay closed and non-operational", async (t) => {

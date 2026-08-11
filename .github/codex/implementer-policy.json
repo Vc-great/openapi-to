@@ -1,0 +1,110 @@
+{
+	"schemaVersion": "codex-implementer-policy-v1",
+	"repository": {
+		"fullName": "openapi-to/openapi-to",
+		"id": 646310819,
+		"defaultBranch": "main",
+		"authoritativeRef": "refs/heads/main",
+		"trustedActors": ["Vc-great"]
+	},
+	"featureGate": {
+		"variable": "CODEX_IMPLEMENTER_ENABLED",
+		"enabledValue": "true"
+	},
+	"authorization": {
+		"supportedModes": ["Manual"],
+		"supportedRisks": ["Low", "Medium"],
+		"requiredDependenciesValue": "none"
+	},
+	"limits": {
+		"issueBodyBytes": 65536,
+		"issueFieldBytes": 16384,
+		"authorizedPathInputBytes": 8192,
+		"authorizedPathCount": 12,
+		"pathBytes": 240,
+		"resultBytes": 393216,
+		"patchBytes": 262144,
+		"summaryBytes": 4096,
+		"validationSummaryBytes": 8192,
+		"limitationsBytes": 4096
+	},
+	"pathPolicy": {
+		"version": "codex-implementer-path-policy-v1",
+		"allowedPathPatterns": [
+			"^docs/[A-Za-z0-9._/-]+\\.md$",
+			"^packages/[a-z0-9-]+/src/[A-Za-z0-9._/-]+\\.(?:ts|tsx|js|mjs|cjs)$",
+			"^e2e/[A-Za-z0-9._/-]+\\.(?:ts|js|mjs|cjs|json|ya?ml)$"
+		],
+		"protectedExactPaths": [
+			"AGENTS.md",
+			"package.json",
+			"pnpm-lock.yaml",
+			"pnpm-workspace.yaml",
+			"turbo.json",
+			"biome.json",
+			"tsconfig.json",
+			".gitmodules",
+			".npmrc",
+			"docs/skills.md",
+			"docs/setup-skill.md",
+			"scripts/repository-contract.mjs",
+			"scripts/repository-contract.node-test.mjs"
+		],
+		"protectedPrefixes": [
+			".agents/",
+			".changeset/",
+			".codex/",
+			".github/",
+			"docs/agents/",
+			"docs/ai-hosts/",
+			"docs/maintainers/",
+			"scripts/codex-implementer/",
+			"scripts/release/"
+		],
+		"protectedBasenames": [
+			"AGENTS.md",
+			"package.json",
+			"package-lock.json",
+			"npm-shrinkwrap.json",
+			"pnpm-lock.yaml",
+			"pnpm-workspace.yaml",
+			"yarn.lock",
+			"bun.lock",
+			"bun.lockb",
+			".npmrc",
+			".yarnrc",
+			".yarnrc.yml",
+			"biome.json",
+			"turbo.json",
+			"deno.json",
+			"deno.jsonc"
+		],
+		"protectedBasenamePatterns": [
+			"^tsconfig(?:\\.[A-Za-z0-9_-]+)?\\.json$",
+			"^(?:babel|eslint|jest|playwright|prettier|rollup|tsup|vite|vitest|webpack)\\.config\\.(?:ts|js|mjs|cjs|json|ya?ml)$"
+		]
+	},
+	"patchPolicy": {
+		"version": "codex-implementer-patch-policy-v1",
+		"allowBinary": false,
+		"allowRenames": false,
+		"allowModeChanges": false,
+		"allowSymlinks": false,
+		"allowSubmodules": false
+	},
+	"validationPolicy": {
+		"version": "codex-implementer-validation-policy-v1",
+		"sandboxImage": "docker.io/library/node:24.15.0-bookworm@sha256:f22d6a1f082c02f292e86929b5b0442ac2e5eaf438a5dea9b1566601c3e05940",
+		"commands": [
+			"pnpm build --concurrency=1",
+			"pnpm typecheck --concurrency=1",
+			"pnpm test:vitest",
+			"pnpm lint:ci",
+			"pnpm verify:repository-contract"
+		]
+	},
+	"triggerPolicyVersion": "codex-implementer-trigger-policy-v1",
+	"taskSnapshotSchemaVersion": "codex-task-snapshot-v1",
+	"resultSchemaVersion": "codex-implementation-result-v1",
+	"validationEvidenceSchemaVersion": "codex-validation-evidence-v1"
+}

@@ -1,10 +1,12 @@
 # Autonomous maintenance governance
 
 This document defines the governance contract for future autonomous repository
-maintenance. Phase 3C1 is design-only: it does not start an Agent, grant a
-credential, implement a Policy Gate, enqueue a pull request, or change GitHub
+maintenance. Phase 3C1 remains the design authority. Phase 3C2A adds a
+default-disabled, manually dispatched implementation foundation, but it does
+not grant an active credential, prove a runtime canary, implement autonomous
+authorization or a Policy Gate, enqueue a pull request, or change GitHub
 repository settings. Current repository behavior remains authoritative until a
-later phase implements and validates a narrower capability explicitly.
+later phase validates and enables a narrower capability explicitly.
 
 The governing principle is:
 
@@ -19,10 +21,12 @@ experience, and Agent convenience, in that order.
 
 ## Status and current authority
 
-| Capability | Status after Phase 3C1 |
+| Capability | Current status |
 | --- | --- |
 | Authorization model | DEFINED |
-| Trusted trigger | PLANNED |
+| Trusted manual trigger foundation | IMPLEMENTED / DEFAULT DISABLED / RUNTIME UNPROVEN |
+| Bounded Codex implementer foundation | IMPLEMENTED / DEFAULT DISABLED / RUNTIME UNPROVEN |
+| Trusted autonomous trigger | PLANNED |
 | Codex autonomous execution | PLANNED |
 | Independent autonomous review | PLANNED |
 | Automatic repair | PLANNED |
@@ -40,6 +44,102 @@ required CI evidence; native GitHub Merge Queue provides serialized
 integration and `merge_group` validation. Repository auto-merge is disabled.
 The user remains enqueue and merge authority, and CI or review success does not
 grant Codex merge authority. Phase 3C1 changes none of these facts.
+
+## Phase 3C2A manual runtime foundation
+
+`.github/workflows/codex-implementer.yml` is the only implementer entry point.
+It accepts `workflow_dispatch` with one Issue number and a JSON array of exact
+repository-relative paths. It independently binds the repository full name and
+numeric ID, `refs/heads/main`, current main SHA, and the single trusted
+maintainer `Vc-great`. Reruns fail closed: the original and triggering actors
+must match the allowlist and the run attempt must be exactly one at every job,
+including partial failed-job reruns. The repository variable
+`CODEX_IMPLEMENTER_ENABLED` must equal the exact lowercase value `true`;
+absence or every other value disables the run. Phase 3C2A does not create or
+change that variable and does not dispatch the workflow.
+
+The initial runtime accepts only Development Task Issues whose proposed mode is
+`Manual`, risk is `Low` or `Medium`, and `Dependencies` is exactly `none`.
+`Design Approved`, `Autonomous`, `High`, unresolved, malformed, closed, stale,
+or oversized tasks fail closed. Issue comments are not read. The bounded
+snapshot contains only normalized Issue Form fields and binds the Issue number,
+`updated_at`, body hash, main/base SHA, dispatch actor, exact authorized paths,
+and trigger/path policy versions into a deterministic SHA-256 hash. Issue text
+remains untrusted data and cannot add a path or grant authority.
+
+The versioned policy is `.github/codex/implementer-policy.json`. It permits at
+most 12 exact paths and only registered non-authoritative Markdown,
+`packages/*/src` source, and E2E text surfaces. It rejects absolute, traversal,
+backslash, control-character, duplicate, case-ambiguous, `.git`, symlink,
+submodule, and unknown paths. Root-of-Trust protection covers:
+
+- `.github/`, `.agents/`, `.changeset/`, and `.codex/`;
+- root and nested `AGENTS.md`, package manifests, dependency/lock/workspace and
+  toolchain authority;
+- `docs/maintainers/`, Agent/host/Skill authority documents, and the current
+  autonomous-maintenance contract;
+- implementer policy, prompt, schemas, scripts, tests, and repository-contract
+  enforcement;
+- release, publication, package-version, and supply-chain scripts.
+
+The implementation job starts from the exact base without persisted checkout
+credentials, installs the frozen trusted dependency baseline before the Agent,
+and then invokes the official `openai/codex-action` v1.11 source pinned to full
+commit `52fe01ec70a42f454c9d2ebd47598f9fd6893d56`. Codex CLI and proxy are fixed
+at `0.147.0`; runtime configuration selects `gpt-5.6-terra` with `medium`
+reasoning as the initial quality/cost-balanced canary posture. The Action uses
+`drop-sudo` and a named permission profile derived from `:workspace`, makes
+Root-of-Trust paths read-only, and disables command network access. The Agent
+job has only `contents: read`, receives no GitHub write token or publishing
+credential, and the Codex Action is its final Agent-controlled step. The only
+following step is a full-SHA-pinned artifact Action that uploads the Action's
+bounded result file from runner temporary storage; it runs no repository
+command and holds no repository write authority.
+
+The Agent returns the enforced `codex-implementation-result-v1` JSON shape.
+Repository-owned code rejects results or text patches above their byte limits,
+binary data, renames, symlinks, submodules, mode surprises, excessive or
+unlisted files, Root-of-Trust changes, mismatched claims, and stale task/base
+hashes. The structured result and validated bundle cross job boundaries as
+bounded files, not single environment variables. A fresh validation job applies
+the patch to the exact base, recomputes and seals the actual Git diff, and binds
+the validated patch hash and paths into versioned evidence before candidate
+execution. It then runs only the fixed repository-owned command set inside an
+immutable Node 24.15.0 Bookworm container with no network, a read-only root,
+dropped Linux capabilities, no-new-privileges, no credentials, an unprivileged
+UID, and a private temporary workspace. Candidate code therefore cannot mutate
+the host checkout, sealed bundle, or runner state used by later jobs.
+
+A fresh read-only publisher preflight and then a separate minimal publisher
+repeat the Issue, main, collision, patch, path, mode, and drift checks. The
+write-capable publisher installs no dependencies and runs no candidate package,
+build, test, or lifecycle code. It may create only the deterministic
+`codex/<issue-number>-implementer` branch and one Draft pull request; an
+existing branch or open pull request fails closed. Immediately before the first
+external write it reads the repository variable through the live GitHub API and
+rechecks the bound Issue and authoritative `main`, then
+atomically reserves the previously absent branch at the authorized base before
+an ordinary fast-forward push. It reads the live feature gate again and rechecks
+the Issue, `main`, and exact remote head before Draft creation, then verifies the
+created Draft's head matches the validated commit. It cannot force-push, mark
+Ready, rerun Actions, enqueue, merge, use admin bypass, or update an existing
+Agent pull request.
+
+As verified before Phase 3C2A implementation, the repository had no
+`OPENAI_API_KEY` secret, no `CODEX_IMPLEMENTER_ENABLED` variable, read-only
+default workflow permissions, and the repository setting that allows Actions
+to create and approve pull requests was disabled. Those are external Phase
+3C2B prerequisites and remain unchanged. Current GitHub behavior also places
+`pull_request` workflows caused by an Actions-created pull request using
+`GITHUB_TOKEN` into an approval-required state; see GitHub's
+[`GITHUB_TOKEN` event behavior](https://docs.github.com/en/actions/concepts/security/github_token).
+No PAT, `ACCESS_TOKEN`, or GitHub App substitutes for that boundary.
+
+The foundation is runtime-unproven until Phase 3C2B explicitly authorizes the
+external prerequisites and one controlled canary after this workflow exists on
+the default branch. It implements no independent autonomous review, repair
+loop, autonomous Policy Gate, automatic Actions rerun, enqueue, merge, or
+post-merge recovery.
 
 ## Trust and threat model
 
