@@ -5754,6 +5754,173 @@ export async function auditNodeRuntimeContracts(
 	return sortedUnique(failures);
 }
 
+const VERSION_PACKAGES_WORKFLOW_PATH =
+	".github/workflows/version-packages.yml";
+const VERSION_PACKAGES_CHECKOUT_ACTION =
+	"actions/checkout@11d5960a326750d5838078e36cf38b85af677262";
+const VERSION_PACKAGES_CHANGESETS_ACTION =
+	"changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d";
+const VERSION_PACKAGES_MAIN_REF_GUARD = "github.ref == 'refs/heads/main'";
+const VERSION_PACKAGES_CONCURRENCY_GROUP =
+	`version-packages-${DOLLAR_SIGN}{{ github.ref }}`;
+const REPOSITORY_GITHUB_TOKEN =
+	`${DOLLAR_SIGN}{{ secrets.GITHUB_TOKEN }}`;
+
+export async function auditVersionPackagesContracts(root = repositoryRoot) {
+	const failures = [];
+	const document = await readWorkflowDocument(
+		root,
+		VERSION_PACKAGES_WORKFLOW_PATH,
+		failures,
+	);
+	if (!document) return sortedUnique(failures);
+
+	const allowedDocumentKeys = new Set([
+		"concurrency",
+		"jobs",
+		"name",
+		"on",
+		"permissions",
+		"run-name",
+	]);
+	if (mappingKeys(document).some((key) => !allowedDocumentKeys.has(key))) {
+		failures.push(
+			"Version Packages workflow must not define unexpected top-level execution configuration",
+		);
+	}
+
+	const triggers = document.on;
+	if (
+		!isMapping(triggers) ||
+		JSON.stringify(mappingKeys(triggers)) !==
+			JSON.stringify(["workflow_dispatch"]) ||
+		triggers.workflow_dispatch !== null
+	) {
+		failures.push(
+			"Version Packages workflow must use workflow_dispatch as its only trigger with no configuration",
+		);
+	}
+	if (
+		JSON.stringify(mappingKeys(document.concurrency)) !==
+			JSON.stringify(["cancel-in-progress", "group"]) ||
+		document.concurrency.group !== VERSION_PACKAGES_CONCURRENCY_GROUP ||
+		document.concurrency["cancel-in-progress"] !== false
+	) {
+		failures.push(
+			"Version Packages workflow must retain its ref-scoped non-cancelling concurrency",
+		);
+	}
+	if (
+		JSON.stringify(mappingKeys(document.permissions)) !==
+			JSON.stringify(["contents", "pull-requests"]) ||
+		document.permissions.contents !== "write" ||
+		document.permissions["pull-requests"] !== "write"
+	) {
+		failures.push(
+			"Version Packages workflow must grant only contents: write and pull-requests: write",
+		);
+	}
+
+	const jobs = isMapping(document.jobs) ? document.jobs : {};
+	const versionJob = isMapping(jobs.version) ? jobs.version : {};
+	if (JSON.stringify(mappingKeys(jobs)) !== JSON.stringify(["version"])) {
+		failures.push(
+			"Version Packages workflow must define exactly the version Job",
+		);
+	}
+	const versionJobKeys = mappingKeys(versionJob).filter((key) => key !== "name");
+	if (
+		JSON.stringify(versionJobKeys) !==
+		JSON.stringify(["if", "runs-on", "steps", "timeout-minutes"])
+	) {
+		failures.push(
+			"Version Packages version Job must contain only its guard, runner, timeout, and steps",
+		);
+	}
+	if (versionJob.if !== VERSION_PACKAGES_MAIN_REF_GUARD) {
+		failures.push(
+			"Version Packages workflow must fail closed outside the main branch ref",
+		);
+	}
+	if (
+		versionJob["runs-on"] !== "ubuntu-latest" ||
+		versionJob["timeout-minutes"] !== 15
+	) {
+		failures.push(
+			"Version Packages version Job must retain its runner and timeout",
+		);
+	}
+
+	const steps =
+		Array.isArray(versionJob.steps) && versionJob.steps.every(isMapping)
+			? versionJob.steps
+			: [];
+	if (steps.length !== 3) {
+		failures.push(
+			"Version Packages version Job must contain exactly checkout, repository setup, and Changesets steps",
+		);
+	}
+	const [checkoutStep = {}, setupStep = {}, changesetsStep = {}] = steps;
+	const checkoutKeys = mappingKeys(checkoutStep).filter(
+		(key) => key !== "name",
+	);
+	if (
+		JSON.stringify(checkoutKeys) !== JSON.stringify(["uses", "with"]) ||
+		checkoutStep.uses !== VERSION_PACKAGES_CHECKOUT_ACTION ||
+		JSON.stringify(mappingKeys(checkoutStep.with)) !==
+			JSON.stringify(["fetch-depth"]) ||
+		checkoutStep.with["fetch-depth"] !== 0
+	) {
+		failures.push(
+			"Version Packages workflow must begin with the pinned full-history checkout step",
+		);
+	}
+	const setupKeys = mappingKeys(setupStep).filter((key) => key !== "name");
+	if (
+		JSON.stringify(setupKeys) !== JSON.stringify(["uses"]) ||
+		setupStep.uses !== "./.github/setup"
+	) {
+		failures.push(
+			"Version Packages workflow must use the repository setup Action as its second step",
+		);
+	}
+	const changesetsKeys = mappingKeys(changesetsStep).filter(
+		(key) => key !== "name",
+	);
+	if (
+		JSON.stringify(changesetsKeys) !==
+			JSON.stringify(["env", "uses", "with"]) ||
+		changesetsStep.uses !== VERSION_PACKAGES_CHANGESETS_ACTION
+	) {
+		failures.push(
+			"Version Packages workflow must end with the full-SHA pinned Changesets Action step",
+		);
+	}
+	if (
+		JSON.stringify(mappingKeys(changesetsStep.with)) !==
+			JSON.stringify(["commit", "title", "version"]) ||
+		changesetsStep.with.commit !== "Version Packages" ||
+		changesetsStep.with.title !== "Version Packages" ||
+		changesetsStep.with.version !== "pnpm run version"
+	) {
+		failures.push(
+			"Version Packages Changesets step must use only the maintained Version Packages inputs and root version command",
+		);
+	}
+	if (
+		JSON.stringify(mappingKeys(changesetsStep.env)) !==
+			JSON.stringify(["GITHUB_TOKEN", "HUSKY"]) ||
+		changesetsStep.env.GITHUB_TOKEN !== REPOSITORY_GITHUB_TOKEN ||
+		changesetsStep.env.HUSKY !== "0"
+	) {
+		failures.push(
+			"Version Packages Changesets step must scope only the repository GITHUB_TOKEN and HUSKY=0",
+		);
+	}
+
+	return sortedUnique(failures);
+}
+
 export async function auditRepositoryContracts(root = repositoryRoot) {
 	const failures = [];
 	const rootManifest = await readJson(join(root, "package.json"));
@@ -5953,104 +6120,7 @@ export async function auditRepositoryContracts(root = repositoryRoot) {
 		);
 	}
 
-	const versionWorkflowPath = join(
-		root,
-		".github/workflows/version-packages.yml",
-	);
-	if (!(await exists(versionWorkflowPath))) {
-		failures.push("missing Version Packages workflow");
-	} else {
-		const workflow = await readFile(versionWorkflowPath, "utf8");
-		const triggerLines = (
-			workflow.match(/^on:\s*\r?\n([\s\S]*?)^concurrency:/m)?.[1] ?? ""
-		)
-			.split(/\r?\n/)
-			.map((line) => line.trim())
-			.filter(Boolean);
-		if (
-			JSON.stringify(triggerLines) !==
-			JSON.stringify(["push:", "branches:", "- main"])
-		) {
-			failures.push(
-				"Version Packages workflow must run only on pushes to main",
-			);
-		}
-		for (const forbiddenEvent of [
-			"pull_request:",
-			"pull_request_target:",
-			"workflow_dispatch:",
-			"schedule:",
-		]) {
-			if (workflow.includes(forbiddenEvent))
-				failures.push(
-					`Version Packages workflow must not use ${forbiddenEvent}`,
-				);
-		}
-		const permissions =
-			workflow.match(/permissions:\s*\r?\n([\s\S]*?)\r?\njobs:/)?.[1] ?? "";
-		const permissionLines = permissions
-			.split(/\r?\n/)
-			.map((line) => line.trim())
-			.filter(Boolean)
-			.sort();
-		if (
-			JSON.stringify(permissionLines) !==
-			JSON.stringify(["contents: write", "pull-requests: write"])
-		) {
-			failures.push(
-				"Version Packages workflow must grant only contents: write and pull-requests: write",
-			);
-		}
-		if (
-			!/uses:\s+changesets\/action@[0-9a-f]{40}\s+# v1\.\d+\.\d+/.test(
-				workflow,
-			)
-		) {
-			failures.push(
-				"Version Packages workflow must use a full-SHA pinned changesets/action v1 release",
-			);
-		}
-		if (/uses:\s+changesets\/action@[^\s]+\s+# v2(?:\.|\s|$)/.test(workflow)) {
-			failures.push(
-				"Version Packages workflow must not use changesets/action@v2",
-			);
-		}
-		if (!workflow.includes("version: pnpm run version")) {
-			failures.push(
-				"Version Packages workflow must use the root version script",
-			);
-		}
-		if (!/GITHUB_TOKEN:\s+\$\{\{\s*secrets\.GITHUB_TOKEN\s*}}/.test(workflow)) {
-			failures.push(
-				"Version Packages workflow must use the repository GITHUB_TOKEN",
-			);
-		}
-		if (/^\s*publish:/m.test(workflow)) {
-			failures.push("Version Packages workflow must not configure publishing");
-		}
-		for (const forbidden of [
-			"NPM_TOKEN",
-			"NODE_AUTH_TOKEN",
-			"changeset publish",
-			"pnpm publish",
-			"npm publish",
-			"pnpm release",
-			"changeset pre exit",
-			"changeset tag",
-			"npm dist-tag",
-			"git tag",
-			"git push --tags",
-			"gh release",
-			"actions/create-release",
-			"gh pr merge",
-			"auto-merge",
-		]) {
-			if (workflow.includes(forbidden))
-				failures.push(
-					`Version Packages workflow contains forbidden release behavior: ${forbidden}`,
-				);
-		}
-	}
+	failures.push(...(await auditVersionPackagesContracts(root)));
 
 	const readinessWorkflowPath = join(
 		root,

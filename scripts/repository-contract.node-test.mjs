@@ -27,6 +27,7 @@ import {
 	auditParallelDevelopmentContracts,
 	auditPublicationContracts,
 	auditRepositoryContracts,
+	auditVersionPackagesContracts,
 	auditVersionReadinessContracts,
 	discoverAgentDocuments,
 	EXPECTED_SKILL_ROLES,
@@ -491,6 +492,358 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 		"openapi-to-generate",
 		"openapi-to-setup",
 	]);
+});
+
+test("Version Packages contract accepts the manual-only workflow", async (t) => {
+	const root = await createPublicationContractFixture(t);
+	const workflow = loadYaml(
+		await readFile(
+			join(root, ".github/workflows/version-packages.yml"),
+			"utf8",
+		),
+	);
+	assert.equal(workflow.on.workflow_dispatch, null);
+	assert.deepEqual(await auditVersionPackagesContracts(root), []);
+});
+
+test("Version Packages contract rejects configured or malformed dispatch", async (t) => {
+	const dispatchCases = [
+		{
+			name: "false",
+			replacement: "  workflow_dispatch: false\n",
+		},
+		{
+			name: "true",
+			replacement: "  workflow_dispatch: true\n",
+		},
+		{
+			name: "empty sequence",
+			replacement: "  workflow_dispatch: []\n",
+		},
+		{
+			name: "non-empty sequence",
+			replacement: "  workflow_dispatch: [unexpected]\n",
+		},
+		{
+			name: "string scalar",
+			replacement: '  workflow_dispatch: "manual"\n',
+		},
+		{
+			name: "numeric scalar",
+			replacement: "  workflow_dispatch: 1\n",
+		},
+		{
+			name: "empty mapping",
+			replacement: "  workflow_dispatch: {}\n",
+		},
+		{
+			name: "empty inputs mapping",
+			replacement: "  workflow_dispatch:\n    inputs: {}\n",
+		},
+		{
+			name: "non-empty inputs mapping",
+			replacement:
+				"  workflow_dispatch:\n    inputs:\n      release:\n        type: boolean\n",
+		},
+		{
+			name: "malformed inputs sequence",
+			replacement: "  workflow_dispatch:\n    inputs: []\n",
+		},
+	];
+
+	for (const dispatchCase of dispatchCases) {
+		await t.test(dispatchCase.name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				(contents) =>
+					contents.replace(
+						"  workflow_dispatch:\n",
+						dispatchCase.replacement,
+					),
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				/workflow_dispatch as its only trigger with no configuration/,
+			);
+		});
+	}
+});
+
+test("Version Packages contract rejects missing dispatch and automatic triggers", async (t) => {
+	const triggerCases = [
+		"  push:\n    branches: [main]",
+		"  pull_request:",
+		"  pull_request_target:",
+		"  merge_group:",
+		"  workflow_run:\n    workflows: [Quality]\n    types: [completed]",
+		"  schedule:\n    - cron: '0 0 * * *'",
+		"  issue_comment:",
+		"  release:",
+		"  repository_dispatch:",
+		"  delete:",
+	];
+
+	for (const automaticTrigger of triggerCases) {
+		await t.test(automaticTrigger.trim().split(":", 1)[0], async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				(contents) =>
+					contents.replace(
+						"on:\n  workflow_dispatch:\n",
+						`on:\n${automaticTrigger}\n  workflow_dispatch:\n`,
+					),
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				/workflow_dispatch as its only trigger/,
+			);
+		});
+	}
+
+	const missingDispatchRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		missingDispatchRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			contents.replace(
+				"on:\n  workflow_dispatch:\n",
+				"on:\n  push:\n    branches: [main]\n",
+			),
+	);
+	assertFailure(
+		{ failures: await auditVersionPackagesContracts(missingDispatchRoot) },
+		/workflow_dispatch as its only trigger/,
+	);
+});
+
+test("Version Packages contract rejects a missing or weakened main ref guard", async (t) => {
+	for (const replacement of [
+		"",
+		"    if: github.ref == 'refs/heads/release'\n",
+		"    if: github.event_name == 'workflow_dispatch'\n",
+	]) {
+		const root = await createPublicationContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".github/workflows/version-packages.yml",
+			(contents) =>
+				contents.replace(
+					"    if: github.ref == 'refs/heads/main'\n",
+					replacement,
+				),
+		);
+		assertFailure(
+			{ failures: await auditVersionPackagesContracts(root) },
+			/fail closed outside the main branch ref/,
+		);
+	}
+});
+
+test("Version Packages contract rejects unexpected or substituted Jobs", async (t) => {
+	const jobCases = [
+		{
+			name: "additional unguarded executable Job",
+			mutate: (contents) => `${contents}
+  unexpected:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo unexpected
+`,
+		},
+		{
+			name: "additional write-capable executable Job",
+			mutate: (contents) => `${contents}
+  unexpected-write:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/setup
+`,
+		},
+		{
+			name: "missing version Job",
+			mutate: (contents) => contents.replace(/jobs:\n[\s\S]*$/, "jobs: {}\n"),
+		},
+		{
+			name: "renamed substitute Job",
+			mutate: (contents) => contents.replace("  version:\n", "  substitute:\n"),
+		},
+	];
+
+	for (const jobCase of jobCases) {
+		await t.test(jobCase.name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				jobCase.mutate,
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				/define exactly the version Job/,
+			);
+		});
+	}
+});
+
+test("Version Packages contract rejects comment-spoofed Changesets semantics", async (t) => {
+	const changesetsStepPattern =
+		/\n {6}- name: Create or update Version Packages PR[\s\S]*$/;
+	const actionMarker =
+		"      # uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0";
+	const versionMarker = "      # version: pnpm run version";
+	const tokenMarker =
+		`      # GITHUB_TOKEN: ${DOLLAR_SIGN}{{ secrets.GITHUB_TOKEN }}`;
+
+	const spoofCases = [
+		{
+			name: "comment-only Changesets action marker",
+			mutate: (contents) =>
+				contents.replace(
+					changesetsStepPattern,
+					`\n${actionMarker}\n${versionMarker}\n${tokenMarker}\n`,
+				),
+			failure: /exactly checkout, repository setup, and Changesets steps/,
+		},
+		{
+			name: "comment-only root version command",
+			mutate: (contents) =>
+				contents.replace(
+					"          version: pnpm run version\n",
+					"          # version: pnpm run version\n",
+				),
+			failure: /maintained Version Packages inputs and root version command/,
+		},
+		{
+			name: "comment-only repository token",
+			mutate: (contents) =>
+				contents.replace(
+					`          GITHUB_TOKEN: ${DOLLAR_SIGN}{{ secrets.GITHUB_TOKEN }}\n`,
+					`          # GITHUB_TOKEN: ${DOLLAR_SIGN}{{ secrets.GITHUB_TOKEN }}\n`,
+				),
+			failure: /scope only the repository GITHUB_TOKEN and HUSKY=0/,
+		},
+		{
+			name: "unexpected shell step with comment markers",
+			mutate: (contents) =>
+				contents.replace(
+					changesetsStepPattern,
+					`\n      - run: echo unexpected\n${actionMarker}\n${versionMarker}\n${tokenMarker}\n`,
+				),
+			failure: /full-SHA pinned Changesets Action step/,
+		},
+	];
+
+	for (const spoofCase of spoofCases) {
+		await t.test(spoofCase.name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				spoofCase.mutate,
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				spoofCase.failure,
+			);
+		});
+	}
+});
+
+test("Version Packages contract bounds the complete executable step surface", async (t) => {
+	const stepCases = [
+		{
+			name: "additional executable step",
+			from: "      - name: Create or update Version Packages PR\n",
+			to: "      - run: echo unexpected\n      - name: Create or update Version Packages PR\n",
+			failure: /exactly checkout, repository setup, and Changesets steps/,
+		},
+		{
+			name: "mutable Changesets Action reference",
+			from: "changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0",
+			to: "changesets/action@v1",
+			failure: /full-SHA pinned Changesets Action step/,
+		},
+		{
+			name: "publish input",
+			from: "          version: pnpm run version\n",
+			to: "          version: pnpm run version\n          publish: pnpm run publish\n",
+			failure: /maintained Version Packages inputs and root version command/,
+		},
+		{
+			name: "missing scoped Husky bypass",
+			from: '          HUSKY: "0"\n',
+			to: "",
+			failure: /scope only the repository GITHUB_TOKEN and HUSKY=0/,
+		},
+	];
+
+	for (const stepCase of stepCases) {
+		await t.test(stepCase.name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				(contents) => contents.replace(stepCase.from, stepCase.to),
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				stepCase.failure,
+			);
+		});
+	}
+});
+
+test("Version Packages contract rejects broadened workflow or Job authority", async (t) => {
+	const workflowEnvironmentRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		workflowEnvironmentRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			contents.replace(
+				"concurrency:\n",
+				`env:\n  NODE_AUTH_TOKEN: ${DOLLAR_SIGN}{{ secrets.NODE_AUTH_TOKEN }}\n\nconcurrency:\n`,
+			),
+	);
+	assertFailure(
+		{ failures: await auditVersionPackagesContracts(workflowEnvironmentRoot) },
+		/unexpected top-level execution configuration/,
+	);
+
+	const workflowPermissionRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		workflowPermissionRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			contents.replace(
+				"  pull-requests: write\n",
+				"  pull-requests: write\n  id-token: write\n",
+			),
+	);
+	assertFailure(
+		{ failures: await auditVersionPackagesContracts(workflowPermissionRoot) },
+		/grant only contents: write and pull-requests: write/,
+	);
+
+	const jobPermissionRoot = await createPublicationContractFixture(t);
+	await mutateTrackedFixture(
+		jobPermissionRoot,
+		".github/workflows/version-packages.yml",
+		(contents) =>
+			contents.replace(
+				"    runs-on: ubuntu-latest\n",
+				"    permissions:\n      id-token: write\n    runs-on: ubuntu-latest\n",
+			),
+	);
+	assertFailure(
+		{ failures: await auditVersionPackagesContracts(jobPermissionRoot) },
+		/contain only its guard, runner, timeout, and steps/,
+	);
 });
 
 test("parallel development contracts accept the repository-backed workflow", async () => {

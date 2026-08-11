@@ -232,11 +232,12 @@ pnpm release:smoke
 Feature changesets are merged into `main` as valid pending development state.
 Quality CI uses `pnpm verify:changeset-state:development`, while
 `release:check` and the Version Readiness workflow keep the strict validator.
-After a push to `main`, `changesets/action@v1` creates or updates the Version
-Packages PR and runs the root `version` script there to settle versions,
-changelogs, prerelease state, internal dependencies, and the lockfile. Merging
-that PR is version metadata maintenance only: npm publication, tags, and GitHub
-Releases remain separate, explicitly authorized operations.
+On explicit manual dispatch against `main`, `changesets/action@v1` creates or
+updates the Version Packages PR and runs the root `version` script there to
+settle versions, changelogs, prerelease state, internal dependencies, and the
+lockfile. Merging that PR is version metadata maintenance only: npm
+publication, tags, and GitHub Releases remain separate, explicitly authorized
+operations.
 
 `test:consumer:codegen` proves that the packed aggregate package can generate
 and strictly compile real TypeScript, Zod, and request-client output in an
