@@ -5793,10 +5793,11 @@ export async function auditVersionPackagesContracts(root = repositoryRoot) {
 	if (
 		!isMapping(triggers) ||
 		JSON.stringify(mappingKeys(triggers)) !==
-			JSON.stringify(["workflow_dispatch"])
+			JSON.stringify(["workflow_dispatch"]) ||
+		triggers.workflow_dispatch !== null
 	) {
 		failures.push(
-			"Version Packages workflow must use workflow_dispatch as its only trigger",
+			"Version Packages workflow must use workflow_dispatch as its only trigger with no configuration",
 		);
 	}
 	if (

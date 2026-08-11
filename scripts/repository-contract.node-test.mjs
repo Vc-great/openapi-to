@@ -496,7 +496,79 @@ test("repository scripts, workspaces, docs, packages, and binary claims stay ali
 
 test("Version Packages contract accepts the manual-only workflow", async (t) => {
 	const root = await createPublicationContractFixture(t);
+	const workflow = loadYaml(
+		await readFile(
+			join(root, ".github/workflows/version-packages.yml"),
+			"utf8",
+		),
+	);
+	assert.equal(workflow.on.workflow_dispatch, null);
 	assert.deepEqual(await auditVersionPackagesContracts(root), []);
+});
+
+test("Version Packages contract rejects configured or malformed dispatch", async (t) => {
+	const dispatchCases = [
+		{
+			name: "false",
+			replacement: "  workflow_dispatch: false\n",
+		},
+		{
+			name: "true",
+			replacement: "  workflow_dispatch: true\n",
+		},
+		{
+			name: "empty sequence",
+			replacement: "  workflow_dispatch: []\n",
+		},
+		{
+			name: "non-empty sequence",
+			replacement: "  workflow_dispatch: [unexpected]\n",
+		},
+		{
+			name: "string scalar",
+			replacement: '  workflow_dispatch: "manual"\n',
+		},
+		{
+			name: "numeric scalar",
+			replacement: "  workflow_dispatch: 1\n",
+		},
+		{
+			name: "empty mapping",
+			replacement: "  workflow_dispatch: {}\n",
+		},
+		{
+			name: "empty inputs mapping",
+			replacement: "  workflow_dispatch:\n    inputs: {}\n",
+		},
+		{
+			name: "non-empty inputs mapping",
+			replacement:
+				"  workflow_dispatch:\n    inputs:\n      release:\n        type: boolean\n",
+		},
+		{
+			name: "malformed inputs sequence",
+			replacement: "  workflow_dispatch:\n    inputs: []\n",
+		},
+	];
+
+	for (const dispatchCase of dispatchCases) {
+		await t.test(dispatchCase.name, async (t) => {
+			const root = await createPublicationContractFixture(t);
+			await mutateTrackedFixture(
+				root,
+				".github/workflows/version-packages.yml",
+				(contents) =>
+					contents.replace(
+						"  workflow_dispatch:\n",
+						dispatchCase.replacement,
+					),
+			);
+			assertFailure(
+				{ failures: await auditVersionPackagesContracts(root) },
+				/workflow_dispatch as its only trigger with no configuration/,
+			);
+		});
+	}
 });
 
 test("Version Packages contract rejects missing dispatch and automatic triggers", async (t) => {
