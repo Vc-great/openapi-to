@@ -438,6 +438,34 @@ export async function addPetService(data: AddPetMutationRequest, requestConfig?:
 }
 ```
 
+Pass an operation header through the generated service's existing
+`requestConfig` argument. With the Axios client, for example:
+
+```ts
+import type { AddPetMutationRequest } from './add-pet.types'
+import { addPetService } from './add-pet.service'
+
+const pet: AddPetMutationRequest = {
+  name: 'Fido',
+  photoUrls: [],
+}
+
+await addPetService(pet, {
+  headers: {
+    'X-Request-Id': 'request-123',
+  },
+})
+```
+
+For a common client, use the equivalent header property supported by the
+configured request-config type and client. Generated TypeScript header types
+and Zod header schemas describe or validate an operation's header values; they
+do not add a `headers` method argument or automatically transport those values.
+Header merging remains request-client behavior, so this documentation does not
+define a complete merge-precedence contract. Cookie delivery through client
+configuration is likewise not automatic and remains runtime-dependent,
+including browser-versus-Node differences.
+
 **requestImportDeclaration**
 
 Request the client Import
