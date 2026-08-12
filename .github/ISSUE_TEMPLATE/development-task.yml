@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this Issue as durable task context. Keep ephemeral Codex instructions in the execution session, not here.
+        Use this Issue as the Task Contract: durable why, what, scope, and acceptance criteria. It is not an Agent execution transcript; keep ephemeral instructions, command logs, and session history in the execution session.
   - type: textarea
     id: goal
     attributes:

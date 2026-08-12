@@ -218,6 +218,15 @@ developed concurrently, but integration into `main` is serialized. Before each
 merge, re-evaluate the candidate against the latest `main`; successful checks
 against an older base do not prove that multiple candidates work together.
 
+The GitHub Issue is the Task Contract for intended work. The pull request and
+actual diff are the Implementation Contract for what changed. The structured
+PR Handoff, independent review, and exact-head CI are the Evidence Contract for
+why the candidate may be ready. A GitHub Project is a Planning View derived
+from authoritative Issue, PR, CI, and repository state, not a second task
+database. Do not commit routine Agent execution transcripts, command logs,
+temporary debugging output, or repeated per-run status summaries; repository
+files are for durable product, test, documentation, and governance artifacts.
+
 The existing `implement-and-review` Skill remains authoritative for local
 readiness and remote handoff. Local readiness, remote CI, merge readiness,
 merge, and post-merge completion are distinct states. CI success never grants
