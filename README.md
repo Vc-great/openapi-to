@@ -610,10 +610,12 @@ express them safely. Unsupported combinations produce a structured Zod plugin
 diagnostic instead of being silently ignored. This includes a uniform
 generator policy for preserved `$ref` siblings; the legacy plugin context does
 not currently select different rendering rules for OpenAPI 3.0 versus 3.1 at
-that call site. Recursive validators use `z.lazy()` and parse recursively at
-runtime, but their explicit
-`z.ZodType<unknown>` cycle annotation means `z.infer` is currently `unknown`;
-use `pluginTSType` when a precise recursive static type is required.
+that call site. Generated recursive component declarations retain precise
+`z.infer` output types for the maintained structurally guarded direct-object,
+array, schema-valued map, and mutually recursive component shapes. Their
+runtime references remain cycle-safe through `z.lazy()`. Unguarded composition
+cycles that TypeScript cannot express without a circular type-alias error use
+a bounded `unknown` output fallback while retaining recursive runtime parsing.
 
 **importWithExtension**
 
