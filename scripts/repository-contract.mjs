@@ -1761,6 +1761,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 			"## Remaining risks / limitations",
 			"## External operations",
 			"Publication / tag / GitHub Release",
+			"Repository-setting changes",
 		]) {
 			if (!template.includes(marker)) {
 				failures.push(`${templatePath} is missing handoff field ${marker}`);
@@ -2196,6 +2197,7 @@ export async function auditParallelDevelopmentContracts(
 			"**Evidence Contract**",
 			"**Planning View**",
 			"The PR Handoff is a concise evidence index, not a new source of truth",
+			"Refresh the PR Handoff after head verification",
 			"Normal Agent execution records remain outside the repository",
 			"It is not a second task database",
 			"[`implement-and-review`](../../.agents/skills/implement-and-review/SKILL.md)",
@@ -2310,6 +2312,7 @@ export async function auditParallelDevelopmentContracts(
 			"## Remaining risks / limitations",
 			"## External operations",
 			"Issue / Project / workflow / enqueue / merge",
+			"Repository-setting changes",
 			"not an Agent execution transcript",
 		]) {
 			if (!pullRequestTemplate.includes(marker)) {
@@ -3252,6 +3255,8 @@ function validateImplementationSkill(contents, failures) {
 		"local reviewed SHA",
 		"current PR head SHA",
 		"remaining risks and limitations",
+		"Refresh the PR Handoff after head verification",
+		"Read back the PR Handoff and current head",
 		"post-merge completion as separate states",
 	]) {
 		if (!contents.includes(marker))

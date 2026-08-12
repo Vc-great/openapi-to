@@ -59,6 +59,11 @@ such as `PASS`, `READY`, or `P0 = 0` never replaces the referenced diff, review,
 or CI evidence. A new PR head invalidates review or CI claims that were bound
 to an older candidate where exact-head evidence is required.
 
+Refresh the PR Handoff after head verification or review and CI evidence
+changes, then read back both the Handoff and current PR head. Provisional
+`PENDING` or `UNVERIFIED` claims must not remain after the corresponding
+exact-head evidence is known.
+
 A human or AI reviewer should read the linked Task Issue, inspect the current
 PR metadata and complete diff, apply current repository rules, inspect the
 relevant tests and changed behavior, then verify the Handoff's independent

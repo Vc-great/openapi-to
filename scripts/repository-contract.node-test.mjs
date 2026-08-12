@@ -871,6 +871,12 @@ test("development handoff contracts reject missing durable carriers", async (t) 
 			failure: /missing orchestration invariant Normal Agent execution records/,
 		},
 		{
+			path: "docs/maintainers/parallel-development.md",
+			from: "Refresh the PR Handoff after head verification",
+			to: "Leave the initial PR Handoff unchanged after verification",
+			failure: /missing orchestration invariant Refresh the PR Handoff/,
+		},
+		{
 			path: ".github/pull_request_template.md",
 			from: "## Candidate identity",
 			to: "## Candidate notes",
@@ -881,6 +887,12 @@ test("development handoff contracts reject missing durable carriers", async (t) 
 			from: "Exact-head relationship",
 			to: "CI relationship",
 			failure: /missing orchestration field Exact-head relationship/,
+		},
+		{
+			path: ".github/pull_request_template.md",
+			from: "Repository-setting changes",
+			to: "Remote configuration summary",
+			failure: /missing orchestration field Repository-setting changes/,
 		},
 	];
 
@@ -2972,6 +2984,11 @@ test("implementation Skill preserves the structured evidence handoff", async (t)
 			"each exact validation command",
 			"a validation summary",
 			/missing required lifecycle marker each exact validation command/,
+		],
+		[
+			"Refresh the PR Handoff after head verification",
+			"Leave the initial PR Handoff unchanged after verification",
+			/missing required lifecycle marker Refresh the PR Handoff/,
 		],
 		[
 			"post-merge completion as separate states",

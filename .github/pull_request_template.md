@@ -62,3 +62,4 @@ not paste session logs here. It is not an Agent execution transcript.
 - PR state: Draft / Ready
 - Issue / Project / workflow / enqueue / merge: not performed / details
 - Publication / tag / GitHub Release: not performed / details
+- Repository-setting changes: not performed / details

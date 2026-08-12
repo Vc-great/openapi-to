@@ -378,6 +378,12 @@ create/update a pull request.
    failure, and `REMOTE CI UNVERIFIED` when the required-check policy or
    current-SHA evidence cannot be confirmed. Report `REMOTE CI PASS` only for
    verified successful required checks on that exact SHA.
+7. Refresh the PR Handoff after head verification or review and CI evidence
+   changes. Replace provisional values with the current candidate identity,
+   review disposition, exact-head CI, remaining findings and risks, and external
+   operations. Read back the PR Handoff and current head, verify their binding,
+   and do not leave `PENDING` or `UNVERIFIED` claims when later evidence is
+   known.
 
 Never enable auto-merge, merge the PR, or bypass required checks. The user is
 always the merge authority.
