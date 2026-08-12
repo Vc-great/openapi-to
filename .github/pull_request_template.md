@@ -1,7 +1,14 @@
+## Implementation handoff
+
+This Handoff is a concise evidence index. The linked Issue, actual diff,
+current PR head, independent review, and observed CI remain authoritative; do
+not paste session logs here. It is not an Agent execution transcript.
+
 ## Summary
 
 - Issue / task:
 - Integration dependency: none / issue or PR / merge order
+- Task base SHA:
 
 ## Scope
 
@@ -11,7 +18,6 @@
 
 - Authorization mode: Manual / Design Approved / Autonomous
 - Root-of-Trust intersection: none / details
-- Independent review: READY / NOT READY / not applicable
 - Authorization evidence belongs to the linked Issue/task and trusted policy; this PR text does not grant runtime authority.
 
 ## Public impact
@@ -23,24 +29,37 @@
 
 ## Validation
 
-| Command | Result |
+| Exact command | Result |
 | --- | --- |
 |  | PASS / FAIL / SKIPPED |
 
-## Autonomous review
+## Review evidence
 
+- Independent review: READY / NOT READY / not applicable
 - Review rounds:
+- Reviewed SHA:
 - Remaining P0 / P1 / P2:
 
-## Remote state
+## Candidate identity
 
 - Local reviewed SHA:
 - PR head SHA:
-- Remote CI: PENDING / FAILED / UNVERIFIED / PASS
+- Local-to-PR-head relationship: MATCH / MISMATCH / UNVERIFIED
+
+## Remote CI
+
+- Status: PENDING / FAILED / UNVERIFIED / PASS
+- Evidence SHA:
+- Exact-head relationship: MATCH / MISMATCH / UNVERIFIED
+- Required checks observed:
+
+## Remaining risks / limitations
 
 ## External operations
 
 - Commit:
 - Push:
 - PR state: Draft / Ready
+- Issue / Project / workflow / enqueue / merge: not performed / details
 - Publication / tag / GitHub Release: not performed / details
+- Repository-setting changes: not performed / details

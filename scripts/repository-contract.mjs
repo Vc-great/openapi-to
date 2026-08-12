@@ -1742,6 +1742,7 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 		}
 		const template = await readFile(join(root, templatePath), "utf8");
 		for (const marker of [
+			"## Implementation handoff",
 			"## Summary",
 			"## Scope",
 			"## Non-goals",
@@ -1749,14 +1750,18 @@ export async function auditPublicationContracts(root = repositoryRoot) {
 			"## Changeset",
 			"Not required — reason",
 			"## Validation",
-			"## Autonomous review",
+			"## Review evidence",
+			"Independent review",
 			"Remaining P0 / P1 / P2",
-			"## Remote state",
+			"## Candidate identity",
 			"Local reviewed SHA",
 			"PR head SHA",
-			"Remote CI",
+			"## Remote CI",
+			"Exact-head relationship",
+			"## Remaining risks / limitations",
 			"## External operations",
 			"Publication / tag / GitHub Release",
+			"Repository-setting changes",
 		]) {
 			if (!template.includes(marker)) {
 				failures.push(`${templatePath} is missing handoff field ${marker}`);
@@ -2041,6 +2046,21 @@ export async function auditParallelDevelopmentContracts(
 			if (!Array.isArray(issueForm.body)) {
 				failures.push(`${DEVELOPMENT_TASK_ISSUE_FORM} body must be a list`);
 			} else {
+				const introductoryText = issueForm.body
+					.filter((field) => isMapping(field) && field.type === "markdown")
+					.map((field) => field.attributes?.value)
+					.filter((value) => typeof value === "string")
+					.join("\n");
+				for (const marker of [
+					"Task Contract",
+					"not an Agent execution transcript",
+				]) {
+					if (!introductoryText.includes(marker)) {
+						failures.push(
+							`${DEVELOPMENT_TASK_ISSUE_FORM} is missing durable task-context marker ${marker}`,
+						);
+					}
+				}
 				const fields = new Map();
 				for (const field of issueForm.body) {
 					if (!isMapping(field) || typeof field.id !== "string") continue;
@@ -2154,6 +2174,7 @@ export async function auditParallelDevelopmentContracts(
 			.replace(/\s+/g, " ");
 		for (const heading of [
 			"## Task identity",
+			"## Development handoff contracts",
 			"## Task lifecycle",
 			"## Parallelization decisions",
 			"## Integration queue",
@@ -2171,6 +2192,14 @@ export async function auditParallelDevelopmentContracts(
 		for (const marker of [
 			"durable unit of work is a GitHub Issue, not a Codex session",
 			"parallel development, serialized integration",
+			"**Task Contract**",
+			"**Implementation Contract**",
+			"**Evidence Contract**",
+			"**Planning View**",
+			"The PR Handoff is a concise evidence index, not a new source of truth",
+			"Refresh the PR Handoff after head verification",
+			"Normal Agent execution records remain outside the repository",
+			"It is not a second task database",
 			"[`implement-and-review`](../../.agents/skills/implement-and-review/SKILL.md)",
 			"`LOCAL READY` is not remote CI success",
 			"A local `PASS` must never be represented as remote CI `PASS`",
@@ -2231,6 +2260,11 @@ export async function auditParallelDevelopmentContracts(
 		for (const marker of [
 			"## Parallel development",
 			"GitHub Issues are the durable identity",
+			"The GitHub Issue is the Task Contract",
+			"actual diff are the Implementation Contract",
+			"PR Handoff, independent review, and exact-head CI are the Evidence Contract",
+			"A GitHub Project is a Planning View",
+			"Do not commit routine Agent execution transcripts",
 			"integration into `main` is serialized",
 			"CI success never grants Codex merge authority",
 		]) {
@@ -2250,7 +2284,37 @@ export async function auditParallelDevelopmentContracts(
 		failures.push("missing pull request template .github/pull_request_template.md");
 	} else {
 		const pullRequestTemplate = await readFile(pullRequestTemplatePath, "utf8");
-		for (const marker of ["Issue / task", "Integration dependency"]) {
+		for (const marker of [
+			"## Implementation handoff",
+			"Issue / task",
+			"Integration dependency",
+			"Task base SHA",
+			"## Scope",
+			"## Non-goals",
+			"## Public impact",
+			"## Changeset",
+			"## Validation",
+			"Exact command",
+			"PASS / FAIL / SKIPPED",
+			"## Review evidence",
+			"Independent review: READY / NOT READY / not applicable",
+			"Review rounds",
+			"Reviewed SHA",
+			"Remaining P0 / P1 / P2",
+			"## Candidate identity",
+			"Local reviewed SHA",
+			"PR head SHA",
+			"Local-to-PR-head relationship",
+			"## Remote CI",
+			"PENDING / FAILED / UNVERIFIED / PASS",
+			"Evidence SHA",
+			"Exact-head relationship",
+			"## Remaining risks / limitations",
+			"## External operations",
+			"Issue / Project / workflow / enqueue / merge",
+			"Repository-setting changes",
+			"not an Agent execution transcript",
+		]) {
 			if (!pullRequestTemplate.includes(marker)) {
 				failures.push(
 					`.github/pull_request_template.md is missing orchestration field ${marker}`,
@@ -3182,6 +3246,18 @@ function validateImplementationSkill(contents, failures) {
 		"`REMOTE CI UNVERIFIED`",
 		"Never enable auto-merge",
 		"always the merge authority",
+		"structured PR Handoff",
+		"concise evidence index",
+		"not an execution transcript",
+		"actual diff",
+		"each exact validation command",
+		"task base SHA",
+		"local reviewed SHA",
+		"current PR head SHA",
+		"remaining risks and limitations",
+		"Refresh the PR Handoff after head verification",
+		"Read back the PR Handoff and current head",
+		"post-merge completion as separate states",
 	]) {
 		if (!contents.includes(marker))
 			failures.push(

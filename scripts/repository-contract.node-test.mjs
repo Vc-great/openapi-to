@@ -850,6 +850,64 @@ test("parallel development contracts accept the repository-backed workflow", asy
 	assert.deepEqual(await auditParallelDevelopmentContracts(repositoryRoot), []);
 });
 
+test("development handoff contracts reject missing durable carriers", async (t) => {
+	const cases = [
+		{
+			path: ".github/ISSUE_TEMPLATE/development-task.yml",
+			from: "Task Contract",
+			to: "task record",
+			failure: /missing durable task-context marker Task Contract/,
+		},
+		{
+			path: "docs/maintainers/parallel-development.md",
+			from: "**Implementation Contract**",
+			to: "**Change Summary**",
+			failure: /missing orchestration invariant \*\*Implementation Contract\*\*/,
+		},
+		{
+			path: "docs/maintainers/parallel-development.md",
+			from: "Normal Agent execution records remain outside the repository",
+			to: "Agent execution records may be committed",
+			failure: /missing orchestration invariant Normal Agent execution records/,
+		},
+		{
+			path: "docs/maintainers/parallel-development.md",
+			from: "Refresh the PR Handoff after head verification",
+			to: "Leave the initial PR Handoff unchanged after verification",
+			failure: /missing orchestration invariant Refresh the PR Handoff/,
+		},
+		{
+			path: ".github/pull_request_template.md",
+			from: "## Candidate identity",
+			to: "## Candidate notes",
+			failure: /missing orchestration field ## Candidate identity/,
+		},
+		{
+			path: ".github/pull_request_template.md",
+			from: "Exact-head relationship",
+			to: "CI relationship",
+			failure: /missing orchestration field Exact-head relationship/,
+		},
+		{
+			path: ".github/pull_request_template.md",
+			from: "Repository-setting changes",
+			to: "Remote configuration summary",
+			failure: /missing orchestration field Repository-setting changes/,
+		},
+	];
+
+	for (const contractCase of cases) {
+		const root = await createAutonomousMaintenanceContractFixture(t);
+		await mutateTrackedFixture(root, contractCase.path, (contents) =>
+			contents.replace(contractCase.from, contractCase.to),
+		);
+		assertFailure(
+			{ failures: await auditParallelDevelopmentContracts(root) },
+			contractCase.failure,
+		);
+	}
+});
+
 test("autonomous maintenance contracts accept the governance-only future model", async () => {
 	assert.deepEqual(
 		await auditAutonomousMaintenanceContracts(repositoryRoot),
@@ -2908,6 +2966,44 @@ test("Skill contracts reject removal of remote handoff and two-phase release saf
 		await auditAgentAndSkillContracts(releaseRoot),
 		/missing safety marker partial publication recovery/,
 	);
+});
+
+test("implementation Skill preserves the structured evidence handoff", async (t) => {
+	for (const [from, to, failure] of [
+		[
+			"structured PR Handoff",
+			"free-form PR description",
+			/missing required lifecycle marker structured PR Handoff/,
+		],
+		[
+			"concise evidence index",
+			"complete execution record",
+			/missing required lifecycle marker concise evidence index/,
+		],
+		[
+			"each exact validation command",
+			"a validation summary",
+			/missing required lifecycle marker each exact validation command/,
+		],
+		[
+			"Refresh the PR Handoff after head verification",
+			"Leave the initial PR Handoff unchanged after verification",
+			/missing required lifecycle marker Refresh the PR Handoff/,
+		],
+		[
+			"post-merge completion as separate states",
+			"post-merge completion as one state",
+			/missing required lifecycle marker post-merge completion as separate states/,
+		],
+	]) {
+		const root = await createContractFixture(t);
+		await mutateTrackedFixture(
+			root,
+			".agents/skills/implement-and-review/SKILL.md",
+			(contents) => contents.replace(from, to),
+		);
+		assertFailure(await auditAgentAndSkillContracts(root), failure);
+	}
 });
 
 test("consumer generation Skill preserves trigger, workflow, approval, and evaluation contracts", async (t) => {
